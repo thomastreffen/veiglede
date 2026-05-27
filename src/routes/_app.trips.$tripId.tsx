@@ -99,10 +99,14 @@ function TripPlanner() {
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
           <BookOpen className="h-4 w-4" /> Åpne roadbook
         </Link>
-        <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2">
-          <Share2 className="h-4 w-4" /> Del
+        <button
+          onClick={() => setShareOpen(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2 hover:border-primary">
+          <Share2 className="h-4 w-4" /> Del tur
         </button>
       </section>
+
+      <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
       {/* Quick-jump pills */}
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
