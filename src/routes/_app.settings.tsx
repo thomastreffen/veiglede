@@ -31,13 +31,13 @@ function Settings() {
         <DemoDebugPanel
           title="Demo"
           items={[
-            { label: "Storage key", value: "veiglede.v3" },
+            { label: "Storage key", value: "veiglede.v4" },
             { label: "Reset", value: "Sletter lokale demo-turer" },
           ]}
         />
 
         <button
-          onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); localStorage.removeItem("veiglede.v3"); location.reload(); } }}
+          onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); localStorage.removeItem("veiglede.v3"); localStorage.removeItem("veiglede.v4"); location.reload(); } }}
           className="mt-4 w-full rounded-2xl border border-border bg-background py-3 text-sm hover:border-primary"
         >
           Tilbakestill demo-data
