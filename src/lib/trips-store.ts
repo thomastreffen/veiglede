@@ -350,6 +350,19 @@ function shiftDate(start: string | undefined, days: number): string | undefined 
   return d.toISOString().slice(0, 10);
 }
 
+function formatPause(min: number): string {
+  if (min >= 60 && min % 60 === 0) {
+    const h = min / 60;
+    return h === 1 ? "hver time" : h === 2 ? "annenhver time" : `hver ${h}. time`;
+  }
+  if (min >= 60) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `hver ${h}t ${m}min`;
+  }
+  return `hvert ${min}. minutt`;
+}
+
 interface SuggestedSeed {
   name: string;
   type: StopType;
