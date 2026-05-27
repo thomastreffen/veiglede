@@ -63,6 +63,10 @@ function Roadbook() {
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
+      <section className="mt-4 max-w-2xl mx-auto">
+        <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
+      </section>
+
       <header className="mt-6 text-center max-w-2xl mx-auto">
         <div className="flex justify-center mb-3"><VeigledeLogo size="sm" /></div>
         <p className="text-[11px] uppercase tracking-[0.3em] text-primary">Roadbook</p>
