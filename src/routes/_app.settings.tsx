@@ -1,6 +1,43 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
+import { useAuth, signOut } from "@/lib/auth";
+import { LogOut, LogIn } from "lucide-react";
+
+function AccountCard() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) {
+    return (
+      <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">Du utforsker i demo-modus</p>
+          <p className="text-xs text-muted-foreground">Logg inn for å lagre turer, kjøretøy og kjørestil på tvers av enheter.</p>
+        </div>
+        <Link to="/signup" className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110">
+          <LogIn className="h-3.5 w-3.5" /> Opprett konto
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-2xl border border-border bg-surface-1 p-4 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold">
+          {(user.email ?? "?").charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate">{user.email}</p>
+          <p className="text-xs text-muted-foreground">Innlogget · turer synkroniseres</p>
+        </div>
+      </div>
+      <button onClick={() => signOut()} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-surface-2">
+        <LogOut className="h-3.5 w-3.5" /> Logg ut
+      </button>
+    </div>
+  );
+}
+
 import { useTheme, setTheme, type Theme } from "@/lib/theme";
 import { ROUTE_STYLES, stopMeta, vehicleMeta, styleMeta } from "@/lib/trips-store";
 import {
@@ -37,6 +74,9 @@ function Settings() {
         <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Førerprofil</h1>
         <p className="mt-2 text-sm text-muted-foreground">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre — og hvilket kjøretøy du tar med.</p>
       </header>
+
+      <AccountCard />
+
 
       {/* 1 — Driver profile */}
       <Section title="Sjåfør" caption="Grunninnstillinger">

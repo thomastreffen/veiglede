@@ -85,6 +85,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  if (typeof window !== "undefined") {
+    // Start cloud sync once on the client
+    import("@/lib/cloud-sync").then((m) => m.startCloudSync());
+  }
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
