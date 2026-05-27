@@ -97,12 +97,12 @@ function NewTripWizard() {
         </div>
       </div>
 
-      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 4</p>
+      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 4 · {["Kjøretøy", "Stil", "Rute", "Forslag"][step - 1]}</p>
 
       {step === 1 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg kjøretøy</h1>
-          <p className="mt-3 text-muted-foreground">Vi tilpasser ruten etter hva du kjører.</p>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hva kjører du?</h1>
+          <p className="mt-3 text-muted-foreground">Vi tilpasser veier, stopp og tempo etter kjøretøyet ditt.</p>
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
             {VEHICLES.map((v) => (
               <button key={v.value} onClick={() => setVehicle(v.value)}
@@ -124,8 +124,8 @@ function NewTripWizard() {
 
       {step === 2 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg kjørestil</h1>
-          <p className="mt-3 text-muted-foreground">Hva slags opplevelse ønsker du?</p>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hvordan vil du kjøre?</h1>
+          <p className="mt-3 text-muted-foreground">Velg en stil — vi bygger ruta rundt opplevelsen, ikke bare avstanden.</p>
           <div className="mt-8 grid grid-cols-2 gap-3">
             {ROUTE_STYLES.map((s) => (
               <button key={s.value} onClick={() => setStyle(s.value)}
