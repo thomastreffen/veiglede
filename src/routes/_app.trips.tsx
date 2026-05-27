@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useTripsStore, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, VEHICLES, type CoverKey, type VehicleType } from "@/lib/trips-store";
+import { useTripsStore, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, VEHICLES, type CoverKey } from "@/lib/trips-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight } from "lucide-react";
