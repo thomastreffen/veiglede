@@ -78,13 +78,13 @@
   --ring: oklch(0.78 0.17 65);
 }
 
-/* Light theme — bright premium, same Veiglede identity */
+/* Light theme — warm premium, same Veiglede identity */
 .light {
-  --background: oklch(0.985 0.006 85);          /* warm off-white */
-  --foreground: oklch(0.20 0.02 250);
+  --background: oklch(0.975 0.012 80);          /* warm sand off-white */
+  --foreground: oklch(0.18 0.02 250);
 
-  --surface: oklch(1 0 0);                       /* clean cards */
-  --surface-2: oklch(0.96 0.008 85);
+  --surface: oklch(0.995 0.004 85);              /* near-white card */
+  --surface-2: oklch(0.945 0.014 80);            /* warmer panel */
 
   --card: var(--surface);
   --card-foreground: var(--foreground);
@@ -92,25 +92,25 @@
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
 
-  --primary: oklch(0.70 0.18 55);                /* slightly deeper orange for contrast */
+  --primary: oklch(0.68 0.19 50);                /* deeper warm orange */
   --primary-foreground: oklch(0.99 0.005 90);
-  --amber: oklch(0.78 0.17 75);
+  --amber: oklch(0.76 0.17 75);
 
-  --secondary: oklch(0.94 0.01 85);
-  --secondary-foreground: oklch(0.20 0.02 250);
+  --secondary: oklch(0.93 0.014 80);
+  --secondary-foreground: oklch(0.18 0.02 250);
 
-  --muted: oklch(0.94 0.01 85);
-  --muted-foreground: oklch(0.45 0.02 250);
+  --muted: oklch(0.93 0.014 80);
+  --muted-foreground: oklch(0.38 0.025 250);     /* stronger secondary contrast */
 
-  --accent: oklch(0.70 0.18 55);
+  --accent: oklch(0.68 0.19 50);
   --accent-foreground: oklch(0.99 0.005 90);
 
-  --destructive: oklch(0.58 0.22 25);
+  --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
 
-  --border: oklch(0.89 0.012 85);
-  --input: oklch(0.89 0.012 85);
-  --ring: oklch(0.70 0.18 55);
+  --border: oklch(0.82 0.018 75);                /* clearer card borders */
+  --input: oklch(0.86 0.014 80);
+  --ring: oklch(0.68 0.19 50);
 }
 
 @layer base {
@@ -126,6 +126,13 @@
     letter-spacing: -0.01em;
   }
   .display-skew { font-style: italic; }
+
+  /* Light-mode card lift — premium feel without flatness */
+  .light .rounded-2xl,
+  .light .rounded-3xl {
+    box-shadow: 0 1px 0 oklch(1 0 0 / 0.6) inset,
+                0 8px 24px -16px oklch(0.20 0.04 60 / 0.18);
+  }
 }
 
 @layer utilities {
@@ -134,9 +141,12 @@
                       radial-gradient(50% 40% at 0% 100%, oklch(0.78 0.17 65 / 0.10), transparent 60%);
   }
   .light .bg-glow-orange {
-    background-image: radial-gradient(60% 50% at 80% 20%, oklch(0.78 0.17 65 / 0.10), transparent 70%),
-                      radial-gradient(50% 40% at 0% 100%, oklch(0.78 0.17 65 / 0.06), transparent 60%);
+    background-image:
+      radial-gradient(70% 55% at 85% 15%, oklch(0.78 0.17 65 / 0.18), transparent 70%),
+      radial-gradient(55% 45% at 0% 100%, oklch(0.78 0.17 65 / 0.10), transparent 60%),
+      linear-gradient(180deg, oklch(0.98 0.014 80) 0%, oklch(0.965 0.018 78) 100%);
   }
   .text-balance { text-wrap: balance; }
 }
+
 
