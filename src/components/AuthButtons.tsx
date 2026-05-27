@@ -19,17 +19,19 @@ export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
   const [loading, setLoading] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
 
+  const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
+
   const oauth = async (provider: "google" | "apple") => {
     setLoading(provider); setMsg(null);
-    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
+    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: callbackUrl });
     if (result.error) {
       setMsg({ kind: "error", text: `Klarte ikke logge inn med ${provider}. Prøv igjen.` });
       setLoading(null);
       return;
     }
     if (result.redirected) return; // browser will navigate
-    // tokens already set
-    navigate({ to: redirectTo });
+    // tokens already set — go via callback so onboarding gate runs
+    window.location.assign(callbackUrl);
   };
 
   const submitEmail = async (e: React.FormEvent) => {
