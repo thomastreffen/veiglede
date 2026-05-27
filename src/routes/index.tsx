@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Plus, Sparkles, Map, BookOpen, MapPin, Mountain, Compass, Share2, Car, Route } from "lucide-react";
+import { ArrowRight, Plus, Sparkles, BookOpen, MapPin, Mountain, Compass, Share2, Car, Route as RouteIcon } from "lucide-react";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { useAuth } from "@/lib/auth";
 import heroFjord from "@/assets/hero-fjord.jpg";
@@ -39,7 +39,7 @@ const features = [
 
 const steps = [
   { Icon: Car, title: "Velg kjøretøy og kjørestil", body: "Fortell oss hvordan du liker å kjøre — bil, MC eller bobil." },
-  { Icon: Route, title: "Få rute og stoppforslag", body: "AI bygger en rute med stopp som faktisk passer deg." },
+  { Icon: RouteIcon, title: "Få rute og stoppforslag", body: "AI bygger en rute med stopp som faktisk passer deg." },
   { Icon: Share2, title: "Åpne roadbook og del turen", body: "Ta med roadbooken på veien, eller del den med reisefølget." },
 ];
 
