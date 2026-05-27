@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta, COVERS, type CoverKey } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
-import { Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon, Camera, Sparkles, Share2 } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon, Camera, Sparkles, Share2, ChevronUp, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
   head: () => ({ meta: [{ title: "Tur — Veiglede" }] }),
@@ -118,11 +118,11 @@ function TripPlanner() {
                 </div>
 
                 <ul className="divide-y divide-border/60">
-                  {dayStops.map((stop) => {
+                  {dayStops.map((stop, idx) => {
                     const meta = stopMeta(stop.type);
                     return (
-                      <li key={stop.id}>
-                        <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex items-center gap-4 p-4 hover:bg-surface-2/60 transition-colors">
+                      <li key={stop.id} className="flex items-stretch">
+                        <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-center gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
                           <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold truncate">{stop.name}</p>
@@ -133,6 +133,16 @@ function TripPlanner() {
                             </p>
                           </div>
                         </Link>
+                        <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
+                          <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
+                            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt opp">
+                            <ChevronUp className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
+                            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
+                            <ChevronDown className="h-4 w-4" />
+                          </button>
+                        </div>
                       </li>
                     );
                   })}
@@ -140,6 +150,7 @@ function TripPlanner() {
                     <li className="px-5 py-6 text-sm text-muted-foreground italic">Ingen stopp på denne dagen enda.</li>
                   )}
                 </ul>
+
 
                 <div className="p-3 bg-background/40 border-t border-border/60 flex gap-2 overflow-x-auto">
                   {STOP_TYPES.slice(0, 6).map((t) => (

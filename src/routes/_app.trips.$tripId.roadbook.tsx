@@ -78,11 +78,14 @@ function Roadbook() {
         <section className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
           <p className="font-display uppercase text-foreground text-base">Praktisk info</p>
           <ul className="mt-3 space-y-1.5">
-            <li>· Drivstoff: planlegg fylling ved Geilo og Eidfjord</li>
-            <li>· Mobildekning: variabel over vidda</li>
-            <li>· Anbefalt sesong: juni–september</li>
+            <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
+            <li>· Anslått kjøretid: {trip.drivingTime}</li>
+            <li>· Kjøretøy: {v.label} · stil: {s.label}</li>
+            {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</li>}
+            <li>· Husk: kart offline, kontanter til bomvei, lader</li>
           </ul>
         </section>
+
       </div>
 
       <div className="mt-12 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">— slutt på roadbook —</div>
