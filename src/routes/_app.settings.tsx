@@ -23,7 +23,7 @@ function Settings() {
     <div className="py-5 md:py-8 max-w-2xl mx-auto space-y-6">
       <header>
         <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Din profil</p>
-        <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Sjåføren</h1>
+        <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Førerprofil</h1>
         <p className="mt-2 text-sm text-muted-foreground">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre.</p>
       </header>
 
