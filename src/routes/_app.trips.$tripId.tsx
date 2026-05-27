@@ -234,7 +234,7 @@ function TripPlanner() {
       </section>
 
       {/* Photo memories concept */}
-      <section className="mt-10">
+      <section id="photos" className="mt-10 scroll-mt-24">
         <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foto</p>
         <h2 className="mt-1 font-display text-2xl uppercase">Bilder fra ruta</h2>
         <p className="mt-1 text-xs text-muted-foreground">Senere kan bilder du tar underveis kobles automatisk til turen basert på tid og posisjon.</p>
