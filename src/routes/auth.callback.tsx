@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { getOnboardingStatus } from "@/lib/account";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -16,7 +17,6 @@ function AuthCallback() {
     let cancelled = false;
     const params = new URLSearchParams(window.location.search);
     const rawNext = params.get("next") || "/trips";
-    // Only allow internal paths
     const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/trips";
 
     const decide = async () => {
@@ -24,13 +24,11 @@ function AuthCallback() {
       if (cancelled) return false;
       if (error) { setError(error.message); return true; }
       if (!data.session) return false;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarded_at")
-        .eq("id", data.session.user.id)
-        .maybeSingle();
+      const status = await getOnboardingStatus(data.session.user.id);
       if (cancelled) return true;
-      if (!profile?.onboarded_at) {
+      // Default to sending the user into the app. Only divert to onboarding
+      // when we are CERTAIN this user has never onboarded.
+      if (status.kind === "new") {
         navigate({ to: "/onboarding", search: { next }, replace: true } as never);
       } else {
         window.location.replace(next);
@@ -40,7 +38,6 @@ function AuthCallback() {
 
     (async () => {
       if (await decide()) return;
-      // Wait briefly for onAuthStateChange (OAuth hash exchange)
       const sub = supabase.auth.onAuthStateChange(async () => { await decide(); });
       setTimeout(() => {
         if (!cancelled) {
@@ -61,3 +58,4 @@ function AuthCallback() {
     </div>
   );
 }
+

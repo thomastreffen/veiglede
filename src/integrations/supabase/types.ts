@@ -41,6 +41,7 @@ export type Database = {
           onboarded_at: string | null
           theme: string
           updated_at: string
+          welcome_email_sent_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -50,6 +51,7 @@ export type Database = {
           onboarded_at?: string | null
           theme?: string
           updated_at?: string
+          welcome_email_sent_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -59,6 +61,7 @@ export type Database = {
           onboarded_at?: string | null
           theme?: string
           updated_at?: string
+          welcome_email_sent_at?: string | null
         }
         Relationships: []
       }
@@ -109,7 +112,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_my_account: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

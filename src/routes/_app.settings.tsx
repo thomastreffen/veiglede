@@ -2,7 +2,83 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useAuth, signOut } from "@/lib/auth";
-import { LogOut, LogIn } from "lucide-react";
+import { deleteMyAccount } from "@/lib/account";
+import { LogOut, LogIn, Trash2, AlertTriangle } from "lucide-react";
+
+function DangerZone() {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!user) return null;
+  const canDelete = confirmText.trim().toUpperCase() === "SLETT";
+  const onDelete = async () => {
+    if (!canDelete || busy) return;
+    setBusy(true); setErr(null);
+    try {
+      await deleteMyAccount();
+      window.location.assign("/");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Klarte ikke slette kontoen.");
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5 md:p-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-xl uppercase">Konto og data</h2>
+        <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Permanent</span>
+      </div>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Sletter profil, kjøretøy, turer, preferanser og delte turlenker fra kontoen din. Kan ikke angres.
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">30 dagers gjenoppretting kan komme senere.</p>
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-destructive/60 bg-background px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" /> Slett konto
+        </button>
+      ) : (
+        <div className="mt-4 rounded-xl border border-destructive/50 bg-background p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <p className="text-sm">
+              Skriv <span className="font-mono font-bold">SLETT</span> for å bekrefte. Alle dine data fjernes permanent.
+            </p>
+          </div>
+          <input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="SLETT"
+            className="mt-3 w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm font-mono outline-none focus:border-destructive"
+          />
+          {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={onDelete}
+              disabled={!canDelete || busy}
+              className="inline-flex items-center gap-2 rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:brightness-110 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" /> {busy ? "Sletter…" : "Slett kontoen min for alltid"}
+            </button>
+            <button
+              onClick={() => { setOpen(false); setConfirmText(""); setErr(null); }}
+              disabled={busy}
+              className="rounded-xl border border-border px-4 py-2 text-sm hover:bg-surface-2"
+            >
+              Avbryt
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+
 
 function AccountCard() {
   const { user, loading } = useAuth();
@@ -276,9 +352,12 @@ function Settings() {
           Tilbakestill demo-data
         </button>
       </section>
+
+      <DangerZone />
     </div>
   );
 }
+
 
 /* ---------- helpers ---------- */
 

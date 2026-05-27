@@ -3,7 +3,9 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import { Home, Map, BookOpen, User, Plus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { getOnboardingStatus } from "@/lib/account";
+
+
 
 
 
@@ -37,19 +39,18 @@ export function AppShell() {
     if (pathname === "/onboarding") return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("onboarded_at")
-        .eq("id", user.id)
-        .maybeSingle();
+      const status = await getOnboardingStatus(user.id);
       if (cancelled) return;
-      if (!data?.onboarded_at) {
+      // Only redirect when we are CERTAIN the user is new. On unknown/error
+      // (transient RLS / network), leave the returning user where they are.
+      if (status.kind === "new") {
         const next = pathname && pathname !== "/" ? pathname : "/trips";
         navigate({ to: "/onboarding", search: { next }, replace: true } as never);
       }
     })();
     return () => { cancelled = true; };
   }, [user, pathname, navigate]);
+
 
 
   return (
