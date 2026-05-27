@@ -9,7 +9,7 @@ import { mapConfig } from "./config";
 import { orsGeocoding, orsRouting } from "./providers/openrouteservice";
 import { noopGeocoding, noopPlaces, noopRouting } from "./providers/fallback";
 
-export { mapConfig, getMaptilerStyleUrl } from "./config";
+export { mapConfig } from "./config";
 export type { LatLng } from "@/lib/geo";
 export type {
   GeocodeResult,
@@ -37,7 +37,7 @@ export function getPlacesService(): PlacesService {
 
 export function getCapabilities(): MapRendererCapabilities {
   return {
-    realMap: mapConfig.hasRealMap,
+    realMap: false, // determined at runtime via /api/public-map-config
     routing: mapConfig.hasRouting,
     geocoding: mapConfig.hasGeocoding,
   };

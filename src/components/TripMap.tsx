@@ -1,18 +1,20 @@
+import * as React from "react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
 import { stopMeta } from "@/lib/trips-store";
-import { mapConfig } from "@/lib/map";
+import { useRuntimeMapConfig } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 
 // Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
 // for when MapTiler is actually configured.
+type RealMapProps = Props & { maptilerKey: string; onError?: () => void };
 const MapLibreTripMap = lazy(() =>
   import("./map/MapLibreTripMap")
-    .then((m) => ({ default: m.MapLibreTripMap }))
+    .then((m) => ({ default: m.MapLibreTripMap as React.ComponentType<RealMapProps> }))
     // If the chunk fails to load (e.g. network), fall back to SVG silently.
-    .catch(() => ({ default: (props: Props) => <SvgTripMap {...props} /> })),
+    .catch(() => ({ default: (props: RealMapProps) => <SvgTripMap {...props} /> })),
 );
 
 
@@ -77,10 +79,11 @@ const DAY_COLORS = [
  */
 export function TripMap(props: Props) {
   const [errored, setErrored] = useState(false);
-  if (mapConfig.hasRealMap && !errored) {
+  const cfg = useRuntimeMapConfig();
+  if (cfg?.hasRealMap && cfg.maptilerKey && !errored) {
     return (
       <Suspense fallback={<SvgTripMap {...props} />}>
-        <MapLibreTripMap {...props} onError={() => setErrored(true)} />
+        <MapLibreTripMap {...props} maptilerKey={cfg.maptilerKey} onError={() => setErrored(true)} />
       </Suspense>
     );
   }
