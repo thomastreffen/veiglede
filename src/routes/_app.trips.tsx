@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useTripsStore, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, type CoverKey } from "@/lib/trips-store";
+import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips")({
@@ -8,10 +9,25 @@ export const Route = createFileRoute("/_app/trips")({
 });
 
 function TripsDashboard() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips } = useTripsStore();
+
+  if (pathname !== "/trips") {
+    return <Outlet />;
+  }
 
   return (
     <div className="py-5 md:py-8">
+      <DemoDebugPanel
+        title="Flow start"
+        items={[
+          { label: "Current route", value: "/trips" },
+          { label: "Primary CTA", value: "Ny tur" },
+          { label: "Trips", value: trips.length },
+        ]}
+        className="mb-4"
+      />
+
       {/* Stats strip */}
       <section className="grid grid-cols-4 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
         {[

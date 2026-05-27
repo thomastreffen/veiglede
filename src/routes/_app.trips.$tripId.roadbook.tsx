@@ -5,6 +5,7 @@ import {
   getPartnerTips, getPhotoMemories,
 } from "@/lib/trips-store";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
@@ -30,6 +31,16 @@ function Roadbook() {
 
   return (
     <div className="py-4">
+      <DemoDebugPanel
+        title="Roadbook debug"
+        items={[
+          { label: "Route", value: `/trips/${tripId}/roadbook` },
+          { label: "Trip", value: trip.id },
+          { label: "Days", value: tripDays.length },
+          { label: "Stops", value: tripStops.length },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Planlegger

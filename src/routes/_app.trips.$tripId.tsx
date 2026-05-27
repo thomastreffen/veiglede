@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
   COVERS, type CoverKey, getRouteSuggestions, getPartnerTips, getPhotoMemories,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
@@ -19,10 +20,15 @@ export const Route = createFileRoute("/_app/trips/$tripId")({
 
 function TripPlanner() {
   const { tripId } = Route.useParams();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips, days, stops } = useTripsStore();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
+
+  if (pathname !== `/trips/${tripId}`) {
+    return <Outlet />;
+  }
 
   if (!trip) {
     return (
@@ -45,6 +51,16 @@ function TripPlanner() {
 
   return (
     <div className="py-4">
+      <DemoDebugPanel
+        title="Planner debug"
+        items={[
+          { label: "Route", value: `/trips/${tripId}` },
+          { label: "Trip", value: trip.id },
+          { label: "Days", value: tripDays.length },
+          { label: "Stops", value: totalStops },
+        ]}
+      />
+
       <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Mine turer
       </Link>
