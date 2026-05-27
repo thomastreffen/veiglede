@@ -261,8 +261,14 @@ function TripPlanner() {
                   {dayStops.map((stop, idx) => {
                     const meta = stopMeta(stop.type);
                     return (
-                      <li key={stop.id} className="flex items-stretch">
+                      <li
+                        key={stop.id}
+                        id={`stop-${stop.id}`}
+                        className={`flex items-stretch transition-colors ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
+                        onMouseEnter={() => setSelectedStopId(stop.id)}
+                      >
                         <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
+
                           <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
