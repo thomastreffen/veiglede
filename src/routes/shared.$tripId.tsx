@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useTripsStore, stopMeta, vehicleMeta, styleMeta, COVERS, type CoverKey,
 } from "@/lib/trips-store";
+import { VeigledeLogo } from "@/components/VeigledeLogo";
 import {
   ArrowLeft, MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock,
   Radio, Camera, Users, BookOpen,
