@@ -9,6 +9,7 @@ import { energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
+import { TripMap } from "@/components/TripMap";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
