@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, type Trip } from "@/lib/trips-store";
+import { useState } from "react";
+import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
