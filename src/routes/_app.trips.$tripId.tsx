@@ -11,6 +11,8 @@ import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { SaveTripPrompt } from "@/components/SaveTripPrompt";
+import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
 import { TripMemories } from "@/components/TripMemories";
 import {
