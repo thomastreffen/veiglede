@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
 function Roadbook() {
   const { tripId } = Route.useParams();
   const { trips, days, stops } = useTripsStore();
+  const prefs = useDriverPrefs();
   const tracking = useTripTracking(tripId);
   const trackMeta = statusMeta(tracking.status);
   const [shareOpen, setShareOpen] = useState(false);
