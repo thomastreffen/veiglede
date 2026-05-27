@@ -49,9 +49,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Roadbook — plan your road trip" },
-      { name: "description", content: "A calm, visual roadbook for planning road trips day by day." },
-      { name: "theme-color", content: "#faf8f5" },
+      { title: "Veiglede — AI-drevet roadtrip-planlegger" },
+      { name: "description", content: "Veiglede er en moderne AI-drevet roadtrip-planlegger for folk som elsker veien — ikke bare målet." },
+      { name: "theme-color", content: "#13131c" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -63,7 +63,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="nb">
       <head><HeadContent /></head>
       <body>{children}<Scripts /></body>
     </html>

@@ -1,82 +1,184 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { tripsApi } from "@/lib/trips-store";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey } from "@/lib/trips-store";
+import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips/new")({
-  head: () => ({ meta: [{ title: "New trip — Roadbook" }] }),
-  component: NewTrip,
+  head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
+  component: NewTripWizard,
 });
 
-const COVERS = [
-  { id: "sand", label: "Sand", class: "from-[oklch(0.85_0.04_85)] to-[oklch(0.6_0.05_70)]" },
-  { id: "fjord", label: "Fjord", class: "from-[oklch(0.78_0.05_220)] to-[oklch(0.55_0.06_240)]" },
-  { id: "tuscan", label: "Tuscan", class: "from-[oklch(0.82_0.08_60)] to-[oklch(0.55_0.09_45)]" },
-];
-
-function NewTrip() {
+function NewTripWizard() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title: "", subtitle: "", origin: "", destination: "", startDate: "", endDate: "", cover: "sand" });
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [vehicle, setVehicle] = useState<VehicleType>("motorcycle");
+  const [style, setStyle] = useState<RouteStyle>("curvy");
+  const [origin, setOrigin] = useState("Drammen");
+  const [destination, setDestination] = useState("Hardangervidda");
+  const [date, setDate] = useState("2026-06-07");
+  const [aiPrompt, setAiPrompt] = useState("");
 
-  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const next = () => setStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s));
+  const prev = () => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.title || !form.origin || !form.destination) return;
-    const trip = tripsApi.createTrip(form);
+  const create = () => {
+    if (!origin || !destination) return;
+    const v = vehicleMeta(vehicle);
+    const s = styleMeta(style);
+    const distanceKm = 120 + Math.floor(Math.random() * 400);
+    const hours = Math.floor(distanceKm / 60);
+    const mins = Math.round(((distanceKm / 60) - hours) * 60);
+    const ai = aiPrompt
+      ? `Basert på «${aiPrompt}» foreslår AI-ko-piloten en rute med fokus på ${s.label.toLowerCase()} for ${v.label.toLowerCase()}.`
+      : `Foreslått ${s.label.toLowerCase()} for ${v.label.toLowerCase()} fra ${origin} til ${destination}.`;
+    const trip = tripsApi.createTrip({
+      title: `${origin} → ${destination}`,
+      subtitle: `${s.label} på ${v.label.toLowerCase()}`,
+      region: "Norge",
+      origin, destination, startDate: date,
+      vehicle, style,
+      distanceKm, drivingTime: `${hours}t ${mins}min`,
+      stopsCount: 4, cover: pickCover(style),
+      aiSummary: ai,
+    });
     navigate({ to: "/trips/$tripId", params: { tripId: trip.id } });
   };
 
   return (
-    <div className="py-6 max-w-2xl">
-      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">A fresh page</p>
-      <h1 className="mt-2 font-serif text-4xl md:text-5xl">New road trip</h1>
-      <p className="mt-3 text-muted-foreground">Just the basics for now. You can refine the route and stops next.</p>
+    <div className="py-4 md:py-8 max-w-2xl mx-auto">
+      <div className="flex items-center justify-between">
+        {step > 1 ? (
+          <button onClick={prev} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Tilbake
+          </button>
+        ) : (
+          <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Avbryt
+          </Link>
+        )}
+        <div className="flex gap-1.5">
+          {[1, 2, 3].map((i) => (
+            <span key={i} className={cn("h-1.5 w-10 rounded-full transition-colors", i <= step ? "bg-primary" : "bg-border")} />
+          ))}
+        </div>
+      </div>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-5">
-        <div>
-          <Label htmlFor="title">Trip name</Label>
-          <Input id="title" required value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Norwegian Fjords" className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="subtitle">Subtitle</Label>
-          <Textarea id="subtitle" value={form.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Slow coastal drive through western Norway" className="mt-1.5" rows={2} />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="origin">From</Label>
-            <Input id="origin" required value={form.origin} onChange={(e) => set("origin", e.target.value)} placeholder="Bergen" className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="destination">To</Label>
-            <Input id="destination" required value={form.destination} onChange={(e) => set("destination", e.target.value)} placeholder="Trondheim" className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="start">Start</Label>
-            <Input id="start" type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="end">End</Label>
-            <Input id="end" type="date" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} className="mt-1.5" />
-          </div>
-        </div>
-        <div>
-          <Label>Cover</Label>
-          <div className="mt-2 grid grid-cols-3 gap-3">
-            {COVERS.map((c) => (
-              <button type="button" key={c.id} onClick={() => set("cover", c.id)} className={`h-20 rounded-xl bg-gradient-to-br ${c.class} ring-2 transition-all ${form.cover === c.id ? "ring-primary" : "ring-transparent"}`}>
-                <span className="sr-only">{c.label}</span>
+      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 3</p>
+
+      {step === 1 && (
+        <>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg kjøretøy</h1>
+          <p className="mt-3 text-muted-foreground">Vi tilpasser ruten etter hva du kjører.</p>
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {VEHICLES.map((v) => (
+              <button key={v.value} onClick={() => setVehicle(v.value)}
+                className={cn(
+                  "rounded-2xl border-2 bg-surface p-5 text-left transition-all",
+                  vehicle === v.value
+                    ? "border-primary bg-gradient-to-b from-primary/10 to-transparent"
+                    : "border-border hover:border-border/80"
+                )}>
+                <div className="text-5xl">{v.emoji}</div>
+                <p className="mt-4 font-display text-xl uppercase">{v.label}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{v.sub}</p>
+                {vehicle === v.value && <p className="mt-3 text-xs font-semibold text-primary">✓ Valgt</p>}
               </button>
             ))}
           </div>
-        </div>
-        <div className="pt-2 flex gap-3">
-          <button type="submit" className="rounded-full bg-primary px-6 py-2.5 text-sm text-primary-foreground">Create trip</button>
-          <button type="button" onClick={() => navigate({ to: "/trips" })} className="rounded-full border border-input px-6 py-2.5 text-sm">Cancel</button>
-        </div>
-      </form>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg kjørestil</h1>
+          <p className="mt-3 text-muted-foreground">Hva slags opplevelse ønsker du?</p>
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            {ROUTE_STYLES.map((s) => (
+              <button key={s.value} onClick={() => setStyle(s.value)}
+                className={cn(
+                  "rounded-2xl border-2 bg-surface p-4 text-left transition-all",
+                  style === s.value
+                    ? "border-primary bg-gradient-to-b from-primary/10 to-transparent"
+                    : "border-border"
+                )}>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{s.emoji}</span>
+                  <span className="font-display uppercase text-base">{s.label}</span>
+                  {style === s.value && <span className="ml-auto text-primary">✓</span>}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{s.sub}</p>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg rute</h1>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Chip>{vehicleMeta(vehicle).emoji} {vehicleMeta(vehicle).label}</Chip>
+            <Chip>{styleMeta(style).emoji} {styleMeta(style).label}</Chip>
+          </div>
+
+          <div className="mt-6 space-y-5">
+            <Field label="Fra">
+              <input value={origin} onChange={(e) => setOrigin(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
+            </Field>
+            <Field label="Til">
+              <input value={destination} onChange={(e) => setDestination(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
+            </Field>
+            <Field label="Dato">
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
+            </Field>
+
+            <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
+              <div className="flex items-center justify-between">
+                <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
+                  <Sparkles className="h-4 w-4" /> Planlegg med AI
+                </p>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">valgfritt</span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">Beskriv turen, så hjelper AI-ko-piloten med stopp og rute.</p>
+              <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="F.eks: MC-tur fra Drammen, 5 timer, svingete veier"
+                className="mt-3 w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground/60" />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="mt-10 sticky bottom-24 md:bottom-0 md:static">
+        <button
+          onClick={step === 3 ? create : next}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20"
+        >
+          {step === 3 ? "Generer rute" : "Fortsett"} <ArrowRight className="h-5 w-5" strokeWidth={3} />
+        </button>
+      </div>
     </div>
   );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+function Chip({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">{children}</span>;
+}
+function pickCover(s: RouteStyle): CoverKey {
+  switch (s) {
+    case "scenic": return "fjord";
+    case "curvy": return "mountain";
+    case "photo": return "lofoten";
+    case "tourist": return "coast";
+    case "cruise": return "valley";
+    default: return "forest";
+  }
 }
