@@ -17,7 +17,7 @@ interface Props {
   onSaved?: (vehicle: Vehicle) => void;
 }
 
-export function VehicleEditor({ open, onOpenChange, vehicle }: Props) {
+export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
   const isEdit = !!vehicle;
   const [name, setName] = useState("");
   const [type, setType] = useState<VehicleType>("motorcycle");
