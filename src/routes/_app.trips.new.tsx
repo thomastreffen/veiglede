@@ -211,8 +211,8 @@ function PreviewStep({
     return (
       <div className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-10 text-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-        <p className="mt-5 font-display text-2xl uppercase">AI tegner ruta</p>
-        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">Vi analyserer landskap, stil og pauser for å foreslå et godt utgangspunkt.</p>
+        <p className="mt-5 font-display text-2xl uppercase">AI tegner ruta di</p>
+        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">Vurderer landskap, lys og naturlige pauser. Bare et øyeblikk.</p>
         <div className="mt-6 flex justify-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: "150ms" }} />
@@ -228,9 +228,10 @@ function PreviewStep({
   return (
     <div className="mt-6 space-y-5">
       <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary">
-        <Check className="h-3.5 w-3.5" /> AI-rute klar
+        <Check className="h-3.5 w-3.5" /> Ruta er klar
       </div>
       <h1 className="font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
+      <p className="text-sm text-muted-foreground">Et utgangspunkt — finpuss stopp og dager i planleggeren.</p>
 
       <MapPlaceholder height="h-48" labels={[trip.origin, trip.destination]} distance={`${trip.distanceKm} km`} time={trip.drivingTime} />
 
