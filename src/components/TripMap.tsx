@@ -76,10 +76,11 @@ const DAY_COLORS = [
  * vendor SDK directly.
  */
 export function TripMap(props: Props) {
-  if (mapConfig.hasRealMap) {
+  const [errored, setErrored] = useState(false);
+  if (mapConfig.hasRealMap && !errored) {
     return (
       <Suspense fallback={<SvgTripMap {...props} />}>
-        <MapLibreTripMap {...props} />
+        <MapLibreTripMap {...props} onError={() => setErrored(true)} />
       </Suspense>
     );
   }
