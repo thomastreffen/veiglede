@@ -7,7 +7,6 @@ import { LogOut, LogIn, Trash2, AlertTriangle } from "lucide-react";
 
 function DangerZone() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [busy, setBusy] = useState(false);
