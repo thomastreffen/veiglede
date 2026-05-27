@@ -53,6 +53,9 @@ export interface Trip {
   startDate?: string;
   endDate?: string;
   vehicle: VehicleType;
+  vehicleId?: string;
+  vehicleName?: string;
+  energy?: EnergySource;
   style: RouteStyle;
   distanceKm: number;
   drivingTime: string;
