@@ -62,8 +62,19 @@ function Onboarding() {
 
       {step === 1 && (
         <Card>
+          {freshAfterDelete && (
+            <div className="mb-5 flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
+              <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+              <div>
+                <p className="font-semibold text-foreground">Velkommen tilbake til Veiglede</p>
+                <p className="mt-1 text-muted-foreground">
+                  Google-kontoen din ble gjenkjent, men Veiglede-profilen din finnes ikke lenger. Vi setter derfor opp en ny profil for deg nå.
+                </p>
+              </div>
+            </div>
+          )}
           <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Steg 1 av 4</p>
-          <h1 className="mt-2 font-display text-4xl uppercase">Velkommen til Veiglede</h1>
+          <h1 className="mt-2 font-display text-4xl uppercase">{freshAfterDelete ? "La oss sette opp profilen din på nytt" : "Velkommen til Veiglede"}</h1>
           <p className="mt-3 text-muted-foreground">
             Veiglede planlegger roadtrips tilpasset deg — kjørestil, kjøretøy og hvilke stopp du faktisk har lyst på. Vi setter opp profilen din på under et minutt.
           </p>
