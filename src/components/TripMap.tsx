@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 type RealMapProps = Props & { maptilerKey: string; onError?: () => void };
 const MapLibreTripMap = lazy(() =>
   import("./map/MapLibreTripMap")
-    .then((m) => ({ default: m.MapLibreTripMap as (p: RealMapProps) => JSX.Element }))
+    .then((m) => ({ default: m.MapLibreTripMap as React.ComponentType<RealMapProps> }))
     // If the chunk fails to load (e.g. network), fall back to SVG silently.
     .catch(() => ({ default: (props: RealMapProps) => <SvgTripMap {...props} /> })),
 );
