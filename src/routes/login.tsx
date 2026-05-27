@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AuthButtons } from "@/components/AuthButtons";
 import { useAuth } from "@/lib/auth";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { consumePendingInvite } from "@/lib/trip-invites";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Logg inn — Veiglede" }] }),
@@ -13,7 +14,13 @@ function LoginPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (user) navigate({ to: "/trips", replace: true });
+    if (!user) return;
+    const pending = consumePendingInvite();
+    if (pending) {
+      navigate({ to: "/invite/$token", params: { token: pending }, replace: true });
+    } else {
+      navigate({ to: "/trips", replace: true });
+    }
   }, [user, navigate]);
 
   return (

@@ -65,6 +65,45 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invite_token: string
+          invited_email: string | null
+          joined_at: string | null
+          joined_user_id: string | null
+          opened_at: string | null
+          owner_user_id: string
+          status: string
+          trip_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_token: string
+          invited_email?: string | null
+          joined_at?: string | null
+          joined_user_id?: string | null
+          opened_at?: string | null
+          owner_user_id: string
+          status?: string
+          trip_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_token?: string
+          invited_email?: string | null
+          joined_at?: string | null
+          joined_user_id?: string | null
+          opened_at?: string | null
+          owner_user_id?: string
+          status?: string
+          trip_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           data: Json
@@ -113,6 +152,8 @@ export type Database = {
     }
     Functions: {
       delete_my_account: { Args: never; Returns: undefined }
+      get_shared_trip: { Args: { p_token: string }; Returns: Json }
+      join_trip_with_token: { Args: { p_token: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

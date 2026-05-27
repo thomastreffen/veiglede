@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -6,9 +6,15 @@ import {
 import { Switch } from "@/components/ui/switch";
 import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
-  Radio, MapPin, Camera, Users, Eye,
+  Radio, MapPin, Camera, Users, Eye, Trash2,
 } from "lucide-react";
 import type { Trip } from "@/lib/trips-store";
+import { useAuth } from "@/lib/auth";
+import { useT } from "@/i18n/provider";
+import {
+  createInvite, listInvitesForTrip, deleteInvite, inviteUrl,
+  type TripInvite,
+} from "@/lib/trip-invites";
 
 interface Props {
   trip: Trip;
@@ -17,14 +23,22 @@ interface Props {
 }
 
 export function ShareTripModal({ trip, open, onOpenChange }: Props) {
+  const t = useT();
+  const { user } = useAuth();
   const [copied, setCopied] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(false);
-  const [companion, setCompanion] = useState("");
-  const [invited, setInvited] = useState<string[]>([]);
+  const [email, setEmail] = useState("");
+  const [invites, setInvites] = useState<TripInvite[]>([]);
+  const [creating, setCreating] = useState(false);
 
-  const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.app";
+  const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
   const tripLink = `${base}/shared/${trip.id}`;
   const roadbookLink = `${base}/shared/${trip.id}?view=roadbook`;
+
+  useEffect(() => {
+    if (!open || !user) return;
+    listInvitesForTrip(trip.id).then(setInvites).catch(() => setInvites([]));
+  }, [open, user, trip.id]);
 
   const copy = async (label: string, text: string) => {
     try { await navigator.clipboard.writeText(text); } catch { /* noop */ }
@@ -32,12 +46,31 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
     setTimeout(() => setCopied(null), 1600);
   };
 
-  const invite = () => {
-    const v = companion.trim();
-    if (!v) return;
-    setInvited((p) => [...p, v]);
-    setCompanion("");
+  const handleCreateInvite = async () => {
+    if (!user) return;
+    setCreating(true);
+    try {
+      const inv = await createInvite(trip.id, email || null);
+      setInvites((p) => [inv, ...p]);
+      setEmail("");
+      await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
+    } finally {
+      setCreating(false);
+    }
   };
+
+  const handleRemove = async (id: string) => {
+    try {
+      await deleteInvite(id);
+      setInvites((p) => p.filter((i) => i.id !== id));
+    } catch { /* noop */ }
+  };
+
+  const statusLabel = (s: TripInvite["status"]) =>
+    s === "invited" ? t.invite.statusInvited
+    : s === "opened" ? t.invite.statusOpened
+    : s === "joined" ? t.invite.statusJoined
+    : t.invite.statusRevoked;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,34 +132,77 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           </Link>
         </div>
 
-        {/* Invite companion */}
+        {/* Invite companions (Fellestur v1) */}
         <div className="space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Reisefølge</p>
-          <div className="flex items-center gap-2">
-            <input
-              value={companion}
-              onChange={(e) => setCompanion(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), invite())}
-              placeholder="E-post eller navn…"
-              className="flex-1 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
-            />
-            <button
-              onClick={invite}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary"
-            >
-              <UserPlus className="h-3.5 w-3.5" /> Inviter
-            </button>
-          </div>
-          {invited.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {invited.map((p, i) => (
-                <span key={i} className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/30 px-2.5 py-1 text-xs">
-                  <Users className="h-3 w-3 text-primary" /> {p}
-                </span>
-              ))}
-            </div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            {t.invite.companions}
+          </p>
+          {!user ? (
+            <p className="text-xs text-muted-foreground">
+              {t.invite.loginToJoin}
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t.invite.modalBody}
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t.invite.emailOptional}
+                  className="flex-1 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+                <button
+                  onClick={handleCreateInvite}
+                  disabled={creating}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-60"
+                >
+                  <UserPlus className="h-3.5 w-3.5" /> {creating ? t.invite.creating : t.invite.create}
+                </button>
+              </div>
+
+              {invites.length === 0 ? (
+                <p className="pt-1 text-xs text-muted-foreground">{t.invite.noInvites}</p>
+              ) : (
+                <ul className="space-y-1.5 pt-2">
+                  {invites.map((inv) => {
+                    const url = inviteUrl(inv.invite_token);
+                    return (
+                      <li key={inv.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/40 p-2 pl-3 text-xs">
+                        <Users className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-mono">{url}</p>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            {inv.invited_email ? `${inv.invited_email} · ` : ""}{statusLabel(inv.status)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => copy(`inv-${inv.id}`, url)}
+                          className="inline-flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-1 hover:border-primary"
+                          aria-label={t.invite.copy}
+                        >
+                          {copied === `inv-${inv.id}` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        </button>
+                        <button
+                          onClick={() => handleRemove(inv.id)}
+                          className="inline-flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-1 hover:border-destructive text-muted-foreground hover:text-destructive"
+                          aria-label={t.invite.remove}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="pt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                {t.invite.liveLater}
+              </p>
+            </>
           )}
         </div>
+
 
         {/* Live sharing teaser */}
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
