@@ -1,0 +1,99 @@
+import type { Dict } from "./nb";
+
+// Deutsch — Norwegen-Roadtrip-Positionierung für veiglede.com.
+// Norwegische Ortsnamen bleiben unübersetzt.
+export const de: Dict = {
+  meta: {
+    title: "Veiglede — Plane deine perfekte Norwegen-Rundreise",
+    description:
+      "Panoramastraßen, versteckte Stopps und Roadbooks mit KI-Unterstützung für unvergessliche Roadtrips in Norwegen — allein oder mit der Gruppe.",
+    ogTitle: "Veiglede — Finde die Straße, die zählt",
+    ogDescription:
+      "Panoramastraßen, versteckte Stopps und KI-gestützte Roadbooks für unvergessliche Roadtrips in Norwegen.",
+  },
+  nav: {
+    login: "Anmelden",
+    startTrip: "Tour planen",
+    myTrips: "Meine Touren",
+    newTrip: "Neue Tour",
+  },
+  hero: {
+    eyebrow: "KI-gestützter Norwegen-Roadtrip-Planer",
+    titleLine1: "Finde die Straße,",
+    titleLine2Prefix: "die ",
+    titleAccent: "zählt",
+    body: "Plane deine perfekte Norwegen-Rundreise — Panoramastraßen, versteckte Stopps und Roadbooks, abgestimmt auf dein Fahrzeug, deinen Stil und deine Reisebegleitung.",
+    ctaPrimary: "Tour planen",
+    ctaSecondary: "Routen entdecken",
+    note: "Kostenlos testen. Konto erstellen, wenn du speichern, teilen oder später weitermachen willst.",
+    panel: {
+      label: "Deine nächste Tour",
+      vehicle: { k: "Fahrzeug", v: "Motorrad / Auto / Wohnmobil" },
+      style: { k: "Fahrstil", v: "Kurvige Straßen / Fototour / Gemütliche Cruise" },
+      stops: { k: "Stopps", v: "Aussichten, Essen, Tankstellen, lokale Tipps" },
+      share: { k: "Teilen", v: "Roadbook-Link und Gruppen­tour" },
+      distance: "120 km",
+    },
+  },
+  features: [
+    { title: "Panoramastraßen", body: "Erlebe mehr von Norwegen\nunterwegs." },
+    { title: "Unvergessliche Stopps", body: "Aussichten, Essen, Tankstellen\nund lokale Schätze." },
+    { title: "KI-Vorschläge", body: "Smarte Vorschläge basierend\nauf deinen Vorlieben." },
+    { title: "Roadbook", body: "Übersichtlicher Guide zum\nFolgen und Teilen." },
+    { title: "Gemeinsam planen", body: "Erstelle eine Gruppentour\nund halte alle auf Kurs." },
+  ],
+  what: {
+    eyebrow: "Was ist Veiglede?",
+    cards: [
+      { title: "Für dich selbst", body: "Eine persönliche Route mit Stopps, die zu deinem Fahrstil passen." },
+      { title: "Für deine Gruppe", body: "Teile die Tour mit Freunden, damit alle dem gleichen Plan folgen." },
+      { title: "Für das Erlebnis", body: "Entdecke Aussichtspunkte, Essensstopps, lokale Tipps und lohnende Umwege." },
+    ],
+  },
+  how: {
+    eyebrow: "So funktioniert es",
+    title: "Plane deine Reise in wenigen Schritten",
+    steps: [
+      { title: "Fahrzeug und Stil wählen", body: "Sag uns, was du fährst und wie du gern unterwegs bist." },
+      { title: "Route und Stopps erhalten", body: "Unsere KI baut eine Route mit Panoramastraßen und guten Stopps." },
+      { title: "Roadbook öffnen und teilen", body: "Folge dem Roadbook, navigiere sicher und teile mit der Gruppe." },
+    ],
+  },
+  together: {
+    title: "Gemeinsam planen",
+    body: "Erstelle eine gemeinsame Tour, teile das Roadbook mit Freunden und halte die Gruppe auf demselben Plan — perfekt für Motorradtouren, Wochenendtrips und Roadtrips zu mehreren.",
+    mini: [
+      { title: "Teilbares Roadbook", body: "Ein Link — alle haben denselben Plan." },
+      { title: "Gruppe einladen", body: "Lade Freunde mit einer einzigen Einladung ein." },
+      { title: "Live-Sharing kommt bald", body: "Verfolgt euch gegenseitig und erhaltet Updates unterwegs." },
+    ],
+  },
+  routes: {
+    title: "Starte mit einer Klassiker-Route — mache sie zu deiner",
+    days: (n: number) => (n === 1 ? "1 Tag" : `${n} Tage`),
+    styles: {
+      svingete: "Kurvige Straße",
+      fototur: "Fototour",
+      cruise: "Gemütliche Cruise",
+    },
+  },
+  cta: {
+    title1: "Plane deine erste Tour ",
+    titleAccent: "kostenlos",
+    title2: " — kein Konto nötig.",
+    body: "Teste Veiglede direkt im Browser. Erstelle ein Konto, wenn du Touren speichern, geräteübergreifend synchronisieren oder dein Roadbook teilen willst.",
+    primary: "Tour planen",
+    secondary: "Anmelden",
+  },
+  footer: {
+    myTrips: "Meine Touren",
+    newTrip: "Neue Tour",
+    login: "Anmelden",
+  },
+  language: {
+    label: "Sprache",
+    nb: "Norsk",
+    en: "English",
+    de: "Deutsch",
+  },
+};
