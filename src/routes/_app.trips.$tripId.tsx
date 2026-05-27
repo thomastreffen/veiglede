@@ -202,7 +202,7 @@ function TripPlanner() {
       </section>
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
-      <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title="Lagre og del turen din" description="Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter." />
+      <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title="Lagre og del turen din" description="Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter." redirectTo={`/trips/${tripId}`} />
 
       {/* Trip tracking */}
       <section id="track" className="mt-4 scroll-mt-24">
