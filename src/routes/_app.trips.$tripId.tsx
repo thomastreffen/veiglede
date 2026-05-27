@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
   COVERS, type CoverKey, getRouteSuggestions, getPartnerTips, getPhotoMemories,
@@ -20,10 +20,15 @@ export const Route = createFileRoute("/_app/trips/$tripId")({
 
 function TripPlanner() {
   const { tripId } = Route.useParams();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips, days, stops } = useTripsStore();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
+
+  if (pathname !== `/trips/${tripId}`) {
+    return <Outlet />;
+  }
 
   if (!trip) {
     return (
