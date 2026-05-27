@@ -1,7 +1,10 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Home, Map, BookOpen, User, Plus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+
 
 
 const nav = [
@@ -25,6 +28,26 @@ export function VeigledeMark({ className }: { className?: string }) {
 export function AppShell() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Onboarding gate: send freshly-logged-in users who haven't onboarded
+  // to /onboarding once.
+  useEffect(() => {
+    if (!user) return;
+    if (pathname === "/onboarding") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("onboarded_at")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!data?.onboarded_at) navigate({ to: "/onboarding", replace: true });
+    })();
+    return () => { cancelled = true; };
+  }, [user, pathname, navigate]);
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
@@ -52,10 +75,19 @@ export function AppShell() {
                 {(user.email ?? "?").charAt(0).toUpperCase()}
               </Link>
             ) : (
-              <Link to="/login" className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-surface-2">
-                <LogIn className="h-4 w-4" /> Logg inn
-              </Link>
+              <>
+                <span
+                  title="Du utforsker i demo-modus — data lagres bare på denne enheten"
+                  className="ml-1 hidden lg:inline-flex items-center rounded-full border border-border bg-surface-2/60 px-2.5 py-1 text-[10px] uppercase tracking-wider text-muted-foreground"
+                >
+                  Demo
+                </span>
+                <Link to="/login" className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-surface-2">
+                  <LogIn className="h-4 w-4" /> Logg inn
+                </Link>
+              </>
             )}
+
           </nav>
         </div>
       </header>
