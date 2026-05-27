@@ -32,6 +32,15 @@ export interface Stop {
   distanceFromPrevKm?: number;
   photoOp?: boolean;
   promoted?: boolean;
+  // Map foundation v1 — provider-agnostic geo + classification.
+  // All optional so older cached trips keep working.
+  lat?: number;
+  lng?: number;
+  title?: string;
+  day?: number;
+  isSuggestion?: boolean;
+  isPartner?: boolean;
+  isPhotoStop?: boolean;
 }
 
 export interface TripDay {
