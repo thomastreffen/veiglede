@@ -13,7 +13,10 @@ function SignupPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (user) navigate({ to: "/onboarding", replace: true });
+    // Don't force onboarding here — the AppShell gate + auth callback
+    // decide based on profiles.onboarded_at, so existing Google users
+    // who click "Opprett konto" land in /trips, not onboarding.
+    if (user) navigate({ to: "/trips", replace: true });
   }, [user, navigate]);
 
   return (
