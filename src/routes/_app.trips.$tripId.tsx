@@ -101,8 +101,24 @@ function TripPlanner() {
         </button>
       </section>
 
+      {/* Quick-jump pills */}
+      <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
+        {[
+          { href: "#days", label: "Dag for dag" },
+          { href: "#along", label: "Langs ruta" },
+          { href: "#photos", label: "Bilder" },
+          { href: "#tips", label: "Lokale tips" },
+          { href: "#practical", label: "Praktisk" },
+        ].map((p) => (
+          <a key={p.href} href={p.href}
+            className="shrink-0 inline-flex items-center rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary">
+            {p.label}
+          </a>
+        ))}
+      </nav>
+
       {/* Days */}
-      <section className="mt-8">
+      <section id="days" className="mt-8 scroll-mt-24">
         <div className="flex items-end justify-between">
           <h2 className="font-display text-2xl uppercase">Dag for dag</h2>
           <button onClick={() => tripsApi.addDay(tripId)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-xs uppercase tracking-wider hover:border-primary">
@@ -167,6 +183,10 @@ function TripPlanner() {
                             className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
                             <ChevronDown className="h-4 w-4" />
                           </button>
+                          <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
+                            className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </li>
                     );
@@ -196,7 +216,7 @@ function TripPlanner() {
       </section>
 
       {/* Suggested along the route */}
-      <section className="mt-10">
+      <section id="along" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foreslått</p>
@@ -214,7 +234,7 @@ function TripPlanner() {
       </section>
 
       {/* Photo memories concept */}
-      <section className="mt-10">
+      <section id="photos" className="mt-10 scroll-mt-24">
         <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foto</p>
         <h2 className="mt-1 font-display text-2xl uppercase">Bilder fra ruta</h2>
         <p className="mt-1 text-xs text-muted-foreground">Senere kan bilder du tar underveis kobles automatisk til turen basert på tid og posisjon.</p>
@@ -238,7 +258,7 @@ function TripPlanner() {
       </section>
 
       {/* Partner tips */}
-      <section className="mt-10">
+      <section id="tips" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Partnertips</p>
@@ -253,7 +273,7 @@ function TripPlanner() {
       </section>
 
       {/* Practical info */}
-      <section className="mt-10 rounded-2xl border border-border bg-surface p-5">
+      <section id="practical" className="mt-10 rounded-2xl border border-border bg-surface p-5 scroll-mt-24">
         <h2 className="font-display text-xl uppercase">Praktisk info</h2>
         <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
           <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
@@ -262,6 +282,10 @@ function TripPlanner() {
           {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })}</li>}
           <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
         </ul>
+        <Link to="/trips/$tripId/roadbook" params={{ tripId }}
+          className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
+          <BookOpen className="h-4 w-4" /> Åpne roadbook
+        </Link>
       </section>
 
       <button onClick={() => { if (confirm("Slette hele turen?")) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
