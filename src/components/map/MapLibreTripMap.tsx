@@ -52,6 +52,7 @@ export function MapLibreTripMap({
   compact = false,
   variant = "dark",
   onError,
+  maptilerKey,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -64,7 +65,7 @@ export function MapLibreTripMap({
   // Initialize map once.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const style = getMaptilerStyleUrl(variant);
+    const style = buildMaptilerStyleUrl(maptilerKey, variant);
     if (!style) return;
     let map: MlMap;
     try {
