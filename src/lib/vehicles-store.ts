@@ -68,38 +68,37 @@ function uid() { return Math.random().toString(36).slice(2, 10); }
 function seed(): State {
   const v: Vehicle[] = [
     {
-      id: "v-bmw-gs",
-      name: "BMW R 1250 GS",
+      id: "v-demo-mc",
+      name: "Motorsykkel",
       type: "motorcycle",
       energy: "petrol",
+      isDemo: true,
+      hint: "For svingete veier, utsikt og fotostopp",
       ...defaultsFor("motorcycle", "petrol"),
     },
     {
-      id: "v-q6",
-      name: "Audi Q6 e-tron",
-      type: "car",
-      energy: "electric",
-      ...defaultsFor("car", "electric"),
-    },
-    {
-      id: "v-mustang",
-      name: "Ford Mustang Fastback",
+      id: "v-demo-car",
+      name: "Bil",
       type: "car",
       energy: "petrol",
+      isDemo: true,
+      hint: "For vanlige bilturer, elbil eller langturer",
       ...defaultsFor("car", "petrol"),
     },
     {
-      id: "v-camper",
-      name: "Camper / RV",
+      id: "v-demo-rv",
+      name: "Bobil / Camper",
       type: "rv",
       energy: "diesel",
+      isDemo: true,
+      hint: "For rolige etapper, camping og overnatting",
       ...defaultsFor("rv", "diesel"),
     },
   ];
   return { vehicles: v, defaultId: v[0].id };
 }
 
-const KEY = "veiglede.vehicles.v1";
+const KEY = "veiglede.vehicles.v2";
 const listeners = new Set<() => void>();
 let cache: State | null = null;
 
