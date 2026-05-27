@@ -4,9 +4,10 @@ import {
   useTripsStore, stopMeta, vehicleMeta, styleMeta,
   getPartnerTips, getPhotoMemories,
 } from "@/lib/trips-store";
+import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
-import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag } from "lucide-react";
+import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
   head: () => ({ meta: [{ title: "Roadbook — Veiglede" }] }),
