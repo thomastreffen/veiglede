@@ -55,22 +55,29 @@ function NewTripWizard() {
     setStep(4);
     setTimeout(() => {
       const s = styleMeta(style);
-      const v = vehicleMeta(vehicle);
+      const vt = selectedVehicle.type;
+      const energy = selectedVehicle.energy;
       const distanceKm = 140 + Math.floor(Math.random() * 520);
       const hours = Math.floor(distanceKm / 60);
       const mins = Math.round(((distanceKm / 60) - hours) * 60);
-      const ai = buildAiSummary({ origin, destination, vehicle, style, userPrompt: aiPrompt || undefined, prefs: {
-        drivingFlags: prefs.drivingFlags,
-        stopInterests: prefs.stopInterests,
-        maxDrivingHours: prefs.maxDrivingHours,
-        pauseEveryMin: prefs.pauseEveryMin,
-      } });
+      const ai = buildAiSummary({
+        origin, destination, vehicle: vt, style,
+        energy, vehicleName: selectedVehicle.name,
+        userPrompt: aiPrompt || undefined,
+        prefs: {
+          drivingFlags: selectedVehicle.drivingFlags,
+          stopInterests: selectedVehicle.stopInterests,
+          maxDrivingHours: prefs.maxDrivingHours,
+          pauseEveryMin: prefs.pauseEveryMin,
+        },
+      });
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
-        subtitle: `${s.label} på ${v.label.toLowerCase()}`,
+        subtitle: `${s.label} med ${selectedVehicle.name}`,
         region: "Norge",
         origin, destination, startDate: date,
-        vehicle, style,
+        vehicle: vt, vehicleId: selectedVehicle.id, vehicleName: selectedVehicle.name, energy,
+        style,
         distanceKm, drivingTime: `${hours}t ${mins}min`,
         cover: pickCover(style),
         aiSummary: ai,
