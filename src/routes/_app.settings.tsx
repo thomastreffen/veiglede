@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useTheme, setTheme, type Theme } from "@/lib/theme";
-import { VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta, type VehicleType } from "@/lib/trips-store";
+import { ROUTE_STYLES, stopMeta, vehicleMeta, styleMeta } from "@/lib/trips-store";
 import {
   useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInterest,
   DRIVING_FLAGS, STOP_INTERESTS,
 } from "@/lib/driver-prefs";
-import { Moon, Sun, Check, Lock, Link as LinkIcon, Image as ImageIcon, Radio } from "lucide-react";
+import {
+  useVehicles, vehiclesApi, energyMeta, type Vehicle,
+} from "@/lib/vehicles-store";
+import { VehicleEditor } from "@/components/VehicleEditor";
+import { Moon, Sun, Check, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
