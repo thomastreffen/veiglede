@@ -150,7 +150,7 @@ function TripPlanner() {
 
       {/* Trip tracking */}
       <section id="track" className="mt-4 scroll-mt-24">
-        <TripTracker tripId={tripId} tripStops={tripStops} vehicleLabel={`${v.emoji} ${v.label}`} />
+        <TripTracker tripId={tripId} tripStops={tripStops} vehicleLabel={`${v.emoji} ${vehicleDisplay}`} />
       </section>
 
       {/* Memories (after completion) */}
