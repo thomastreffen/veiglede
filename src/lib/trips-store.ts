@@ -482,8 +482,16 @@ export function getPhotoMemories(trip: Trip, tripStops: Stop[]): PhotoMemory[] {
 
 // ----- AI summary builder -----
 
+export interface AiPrefsInput {
+  drivingFlags?: Record<string, boolean>;
+  stopInterests?: StopType[];
+  maxDrivingHours?: number;
+  pauseEveryMin?: number;
+}
+
 export function buildAiSummary(input: {
-  origin: string; destination: string; vehicle: VehicleType; style: RouteStyle; userPrompt?: string;
+  origin: string; destination: string; vehicle: VehicleType; style: RouteStyle;
+  userPrompt?: string; prefs?: AiPrefsInput;
 }): string {
   const v = vehicleMeta(input.vehicle);
   const s = styleMeta(input.style);
@@ -511,6 +519,29 @@ export function buildAiSummary(input: {
   }
   if (input.vehicle === "motorcycle") parts.push("Stoppene tar hensyn til at det er behagelig å stige av sykkelen.");
   if (input.vehicle === "rv") parts.push("Stoppene er valgt med plass og høyde for bobil i tankene.");
+
+  const p = input.prefs;
+  if (p) {
+    const flags = p.drivingFlags ?? {};
+    const wants: string[] = [];
+    if (flags["views"]) wants.push("fine utsikter");
+    if (flags["photo"] || p.stopInterests?.includes("photo")) wants.push("fotostopp");
+    if (flags["tourist"]) wants.push("nasjonale turistveier");
+    if (flags["food"] || p.stopInterests?.includes("food")) wants.push("matpauser");
+    if (flags["charging"] || p.stopInterests?.includes("fuel")) wants.push("drivstoff/lading");
+    if (p.stopInterests?.includes("lodging")) wants.push("overnattingsforslag");
+    if (wants.length) parts.push(`Profilen din vektlegger ${wants.join(", ")} — det er bakt inn i forslagene.`);
+
+    const avoid: string[] = [];
+    if (flags["no-highway"]) avoid.push("motorvei");
+    if (flags["no-ferry"]) avoid.push("ferger");
+    if (avoid.length) parts.push(`Vi unngår ${avoid.join(" og ")} der ruta tillater det.`);
+
+    if (p.maxDrivingHours && p.pauseEveryMin) {
+      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent hver ${p.pauseEveryMin}. minutt.`);
+    }
+  }
+
   parts.push("Lokale tips og partnerstopp dukker bare opp når de faktisk passer ruten.");
   if (input.userPrompt) parts.push(`Ekstra hensyn: «${input.userPrompt}».`);
   return parts.join(" ");
