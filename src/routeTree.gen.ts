@@ -16,11 +16,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public-map-config'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
+import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
 import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
@@ -60,11 +60,6 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
-  id: '/api/public-map-config',
-  path: '/api/public-map-config',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppTripsRoute = AppTripsRouteImport.update({
   id: '/trips',
   path: '/trips',
@@ -84,6 +79,11 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
+  id: '/api/public/map-config',
+  path: '/api/public/map-config',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppTripsNewRoute = AppTripsNewRouteImport.update({
   id: '/new',
@@ -115,12 +115,12 @@ export interface FileRoutesByFullPath {
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
-  '/api/public-map-config': typeof ApiPublicMapConfigRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
+  '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
@@ -132,12 +132,12 @@ export interface FileRoutesByTo {
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
-  '/api/public-map-config': typeof ApiPublicMapConfigRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
+  '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
@@ -151,12 +151,12 @@ export interface FileRoutesById {
   '/_app/roadbook': typeof AppRoadbookRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/trips': typeof AppTripsRouteWithChildren
-  '/api/public-map-config': typeof ApiPublicMapConfigRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
+  '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
@@ -170,12 +170,12 @@ export interface FileRouteTypes {
     | '/roadbook'
     | '/settings'
     | '/trips'
-    | '/api/public-map-config'
     | '/auth/callback'
     | '/invite/$token'
     | '/shared/$tripId'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/api/public/map-config'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
   fileRoutesByTo: FileRoutesByTo
@@ -187,12 +187,12 @@ export interface FileRouteTypes {
     | '/roadbook'
     | '/settings'
     | '/trips'
-    | '/api/public-map-config'
     | '/auth/callback'
     | '/invite/$token'
     | '/shared/$tripId'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/api/public/map-config'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
   id:
@@ -205,12 +205,12 @@ export interface FileRouteTypes {
     | '/_app/roadbook'
     | '/_app/settings'
     | '/_app/trips'
-    | '/api/public-map-config'
     | '/auth/callback'
     | '/invite/$token'
     | '/shared/$tripId'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
+    | '/api/public/map-config'
     | '/_app/trips/$tripId/roadbook'
     | '/_app/trips/$tripId/stops/$stopId'
   fileRoutesById: FileRoutesById
@@ -220,10 +220,10 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
-  ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   InviteTokenRoute: typeof InviteTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
+  ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -277,13 +277,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public-map-config': {
-      id: '/api/public-map-config'
-      path: '/api/public-map-config'
-      fullPath: '/api/public-map-config'
-      preLoaderRoute: typeof ApiPublicMapConfigRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app/trips': {
       id: '/_app/trips'
       path: '/trips'
@@ -311,6 +304,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof AppOnboardingRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/public/map-config': {
+      id: '/api/public/map-config'
+      path: '/api/public/map-config'
+      fullPath: '/api/public/map-config'
+      preLoaderRoute: typeof ApiPublicMapConfigRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/trips/new': {
       id: '/_app/trips/new'
@@ -392,10 +392,10 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
-  ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   InviteTokenRoute: InviteTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
+  ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

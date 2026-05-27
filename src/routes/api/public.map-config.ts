@@ -13,7 +13,7 @@ const CORS_HEADERS = {
   "Content-Type": "application/json",
 } as const;
 
-export const Route = createFileRoute("/api/public-map-config")({
+export const Route = createFileRoute("/api/public/map-config")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: CORS_HEADERS }),
