@@ -278,7 +278,7 @@ function PreviewStep({
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <PreviewStat label="Kjøretøy" value={vehicleMeta(trip.vehicle).label} />
+        <PreviewStat label="Kjøretøy" value={trip.vehicleName ?? vehicleMeta(trip.vehicle).label} />
         <PreviewStat label="Rutestil" value={styleMeta(trip.style).label} />
         <PreviewStat label="Stopp" value={String(tripStops.length)} />
       </div>
