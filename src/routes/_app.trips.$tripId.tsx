@@ -216,7 +216,7 @@ function TripPlanner() {
       </section>
 
       {/* Suggested along the route */}
-      <section className="mt-10">
+      <section id="along" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foreslått</p>
