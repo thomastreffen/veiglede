@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey } from "@/lib/trips-store";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, type Trip } from "@/lib/trips-store";
+import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips/new")({
@@ -9,44 +10,68 @@ export const Route = createFileRoute("/_app/trips/new")({
   component: NewTripWizard,
 });
 
+type Step = 1 | 2 | 3 | 4;
+
 function NewTripWizard() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<Step>(1);
   const [vehicle, setVehicle] = useState<VehicleType>("motorcycle");
   const [style, setStyle] = useState<RouteStyle>("curvy");
   const [origin, setOrigin] = useState("Drammen");
   const [destination, setDestination] = useState("Hardangervidda");
   const [date, setDate] = useState("2026-06-07");
   const [aiPrompt, setAiPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [tripId, setTripId] = useState<string | null>(null);
 
-  const next = () => setStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s));
-  const prev = () => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
+  const next = () => setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
+  const prev = () => {
+    if (step === 4) {
+      // discard preview
+      if (tripId) tripsApi.deleteTrip(tripId);
+      setTripId(null);
+      setStep(3);
+      return;
+    }
+    setStep((s) => (s > 1 ? ((s - 1) as Step) : s));
+  };
 
-  const create = () => {
+  const generate = () => {
     if (!origin || !destination) return;
-    const v = vehicleMeta(vehicle);
-    const s = styleMeta(style);
-    const distanceKm = 120 + Math.floor(Math.random() * 400);
-    const hours = Math.floor(distanceKm / 60);
-    const mins = Math.round(((distanceKm / 60) - hours) * 60);
-    const ai = aiPrompt
-      ? `Basert på «${aiPrompt}» foreslår AI-ko-piloten en rute med fokus på ${s.label.toLowerCase()} for ${v.label.toLowerCase()}.`
-      : `Foreslått ${s.label.toLowerCase()} for ${v.label.toLowerCase()} fra ${origin} til ${destination}.`;
-    const trip = tripsApi.createTrip({
-      title: `${origin} → ${destination}`,
-      subtitle: `${s.label} på ${v.label.toLowerCase()}`,
-      region: "Norge",
-      origin, destination, startDate: date,
-      vehicle, style,
-      distanceKm, drivingTime: `${hours}t ${mins}min`,
-      stopsCount: 4, cover: pickCover(style),
-      aiSummary: ai,
-    });
-    navigate({ to: "/trips/$tripId", params: { tripId: trip.id } });
+    setGenerating(true);
+    setStep(4);
+    setTimeout(() => {
+      const v = vehicleMeta(vehicle);
+      const s = styleMeta(style);
+      const distanceKm = 140 + Math.floor(Math.random() * 520);
+      const hours = Math.floor(distanceKm / 60);
+      const mins = Math.round(((distanceKm / 60) - hours) * 60);
+      const ai = aiPrompt
+        ? `Basert på «${aiPrompt}» har AI-ko-piloten satt opp en ${s.label.toLowerCase()} for ${v.label.toLowerCase()} fra ${origin} til ${destination}, med stopp tilpasset stil og tempo.`
+        : `${s.label} fra ${origin} til ${destination}, optimalisert for ${v.label.toLowerCase()}. Stopp er foreslått basert på utsikt, mat og pauser underveis.`;
+      const trip = tripsApi.createTrip({
+        title: `${origin} → ${destination}`,
+        subtitle: `${s.label} på ${v.label.toLowerCase()}`,
+        region: "Norge",
+        origin, destination, startDate: date,
+        vehicle, style,
+        distanceKm, drivingTime: `${hours}t ${mins}min`,
+        cover: pickCover(style),
+        aiSummary: ai,
+      });
+      setTripId(trip.id);
+      setGenerating(false);
+    }, 1400);
+  };
+
+  const regenerate = () => {
+    if (tripId) tripsApi.deleteTrip(tripId);
+    setTripId(null);
+    generate();
   };
 
   return (
-    <div className="py-4 md:py-8 max-w-2xl mx-auto">
+    <div className="py-4 md:py-8 max-w-2xl mx-auto pb-32 md:pb-12">
       <div className="flex items-center justify-between">
         {step > 1 ? (
           <button onClick={prev} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -58,13 +83,13 @@ function NewTripWizard() {
           </Link>
         )}
         <div className="flex gap-1.5">
-          {[1, 2, 3].map((i) => (
-            <span key={i} className={cn("h-1.5 w-10 rounded-full transition-colors", i <= step ? "bg-primary" : "bg-border")} />
+          {[1, 2, 3, 4].map((i) => (
+            <span key={i} className={cn("h-1.5 w-8 rounded-full transition-colors", i <= step ? "bg-primary" : "bg-border")} />
           ))}
         </div>
       </div>
 
-      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 3</p>
+      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 4</p>
 
       {step === 1 && (
         <>
@@ -142,25 +167,117 @@ function NewTripWizard() {
               </div>
               <p className="mt-2 text-sm text-muted-foreground">Beskriv turen, så hjelper AI-ko-piloten med stopp og rute.</p>
               <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="F.eks: MC-tur fra Drammen, 5 timer, svingete veier"
+                placeholder="F.eks: MC-tur, 5 timer, svingete veier"
                 className="mt-3 w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground/60" />
             </div>
           </div>
         </>
       )}
 
-      <div className="mt-10 sticky bottom-24 md:bottom-0 md:static">
-        <button
-          onClick={step === 3 ? create : next}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20"
-        >
-          {step === 3 ? "Generer rute" : "Fortsett"} <ArrowRight className="h-5 w-5" strokeWidth={3} />
+      {step === 4 && (
+        <PreviewStep generating={generating} tripId={tripId} onRegenerate={regenerate} onOpen={() => tripId && navigate({ to: "/trips/$tripId", params: { tripId } })} />
+      )}
+
+      {step !== 4 && (
+        <div className="mt-10 sticky bottom-24 md:bottom-0 md:static">
+          <button
+            onClick={step === 3 ? generate : next}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20"
+          >
+            {step === 3 ? (<><Sparkles className="h-5 w-5" /> Generer rute</>) : (<>Fortsett <ArrowRight className="h-5 w-5" strokeWidth={3} /></>)}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PreviewStep({
+  generating, tripId, onRegenerate, onOpen,
+}: { generating: boolean; tripId: string | null; onRegenerate: () => void; onOpen: () => void }) {
+  const { trips, days, stops } = useTripsStore();
+  const trip = tripId ? trips.find((t) => t.id === tripId) : null;
+
+  if (generating || !trip) {
+    return (
+      <div className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-10 text-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+        <p className="mt-5 font-display text-2xl uppercase">AI tegner ruta</p>
+        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">Vi analyserer landskap, stil og pauser for å foreslå et godt utgangspunkt.</p>
+        <div className="mt-6 flex justify-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: "150ms" }} />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: "300ms" }} />
+        </div>
+      </div>
+    );
+  }
+
+  const tripDays = days.filter((d) => d.tripId === trip.id).sort((a, b) => a.dayNumber - b.dayNumber);
+  const tripStops = stops.filter((s) => tripDays.some((d) => d.id === s.dayId));
+
+  return (
+    <div className="mt-6 space-y-5">
+      <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary">
+        <Check className="h-3.5 w-3.5" /> AI-rute klar
+      </div>
+      <h1 className="font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
+
+      <MapPlaceholder height="h-48" labels={[trip.origin, trip.destination]} distance={`${trip.distanceKm} km`} time={trip.drivingTime} />
+
+      <div className="grid grid-cols-3 gap-3">
+        <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
+        <PreviewStat label="Kjøretid" value={trip.drivingTime} />
+        <PreviewStat label="Dager" value={String(tripDays.length)} />
+      </div>
+
+      {trip.aiSummary && (
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
+            <Sparkles className="h-4 w-4" /> AI ko-pilot
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-foreground/90">{trip.aiSummary}</p>
+        </div>
+      )}
+
+      <div>
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Foreslåtte stopp · {tripStops.length}</p>
+        <ul className="space-y-2">
+          {tripStops.slice(0, 8).map((s) => {
+            const m = stopMeta(s.type);
+            return (
+              <li key={s.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+                <span className="h-8 w-8 rounded-lg bg-surface-2 grid place-items-center text-base">{m.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{s.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{m.label}{s.estimatedTime ? ` · ${s.estimatedTime}` : ""}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <div className="sticky bottom-24 md:bottom-0 md:static flex gap-3 pt-2">
+        <button onClick={onRegenerate} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-4 text-sm font-medium hover:border-primary">
+          <RotateCcw className="h-4 w-4" /> Ny variant
+        </button>
+        <button onClick={onOpen} className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20">
+          <BookOpen className="h-5 w-5" /> Åpne planlegger
         </button>
       </div>
     </div>
   );
 }
 
+function PreviewStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-xl">{value}</p>
+    </div>
+  );
+}
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
