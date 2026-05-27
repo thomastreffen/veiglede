@@ -62,9 +62,26 @@ function Roadbook() {
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{v.emoji} {v.label}</span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{s.emoji} {s.label}</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{trip.distanceKm} km · {trip.drivingTime}</span>
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
+        </div>
+
+        <div className="mt-5 flex justify-center gap-2 flex-wrap">
+          {tracking.status === "idle" && (
+            <button onClick={() => trackingApi.start(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
+              <Play className="h-4 w-4" /> Start tur
+            </button>
+          )}
+          {tracking.status === "active" && (
+            <button onClick={() => trackingApi.complete(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
+              <Flag className="h-4 w-4" /> Fullfør tur
+            </button>
+          )}
+          <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-5 py-2.5 text-xs uppercase tracking-wider hover:border-primary">
+            Tilbake til planlegger
+          </Link>
         </div>
       </header>
+
 
       {trip.aiSummary && (
         <section className="mt-8 mx-auto max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 p-5">
