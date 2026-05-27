@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
@@ -26,6 +27,14 @@ function Settings() {
           <Row label="Standardkjøretøy" value="Motorsykkel" />
           <Row label="Tema" value="Mørk" />
         </div>
+
+        <DemoDebugPanel
+          title="Demo"
+          items={[
+            { label: "Storage key", value: "veiglede.v3" },
+            { label: "Reset", value: "Sletter lokale demo-turer" },
+          ]}
+        />
 
         <button
           onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); location.reload(); } }}
