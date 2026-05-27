@@ -38,16 +38,31 @@ export async function getOnboardingStatus(userId: string): Promise<OnboardingSta
   }
 }
 
-/** Permanently deletes the current user's account and all owned cloud data. */
+/**
+ * Permanently deletes the current user's account and ALL local Veiglede data
+ * from this browser. After this returns, the next sign-in (even with the
+ * same Google account) must start fresh — no old vehicles, trips or prefs
+ * should be re-migrated up to the cloud.
+ */
 export async function deleteMyAccount(): Promise<void> {
   const { error } = await supabase.rpc("delete_my_account");
   if (error) throw error;
-  // End the local session and wipe local demo data so the device resets.
-  await supabase.auth.signOut();
+  // End the local session FIRST so cloud-sync drops its currentUserId and
+  // any pending debounced pushes won't write the about-to-be-cleared local
+  // data back into a fresh login.
+  try { await supabase.auth.signOut(); } catch { /* ignore */ }
   try {
-    localStorage.removeItem("veiglede.v4");
-    localStorage.removeItem("veiglede.vehicles.v1");
-    localStorage.removeItem("veiglede.vehicles.seed.v2");
-    localStorage.removeItem("veiglede.profile.v1");
+    // Nuke every veiglede.* key except the visual theme preference.
+    const toRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("veiglede.") && k !== "veiglede.theme") toRemove.push(k);
+    }
+    toRemove.forEach((k) => localStorage.removeItem(k));
+    // Also wipe sessionStorage just in case.
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const k = sessionStorage.key(i);
+      if (k && k.startsWith("veiglede.")) sessionStorage.removeItem(k);
+    }
   } catch { /* ignore */ }
 }
