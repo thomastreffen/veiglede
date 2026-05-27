@@ -1,6 +1,17 @@
 import { useSyncExternalStore } from "react";
 
-export type StopType = "viewpoint" | "photo" | "food" | "lodging" | "fuel" | "attraction" | "rest" | "city";
+export type StopType =
+  | "viewpoint"
+  | "photo"
+  | "food"
+  | "lodging"
+  | "fuel"
+  | "attraction"
+  | "rest"
+  | "city"
+  | "experience"
+  | "detour";
+
 export type VehicleType = "motorcycle" | "car" | "rv";
 export type RouteStyle = "fastest" | "scenic" | "curvy" | "photo" | "tourist" | "cruise";
 
@@ -13,6 +24,13 @@ export interface Stop {
   estimatedTime?: string;
   location?: string;
   order: number;
+  // richer fields (all optional so legacy data stays valid)
+  description?: string;
+  reason?: string;
+  durationMin?: number;
+  distanceFromPrevKm?: number;
+  photoOp?: boolean;
+  promoted?: boolean;
 }
 
 export interface TripDay {
@@ -36,7 +54,7 @@ export interface Trip {
   vehicle: VehicleType;
   style: RouteStyle;
   distanceKm: number;
-  drivingTime: string;        // e.g. "5t 30min"
+  drivingTime: string;
   stopsCount: number;
   cover: CoverKey;
   aiSummary?: string;
@@ -45,76 +63,102 @@ export interface Trip {
 
 export type CoverKey = "fjord" | "mountain" | "coast" | "valley" | "lofoten" | "forest";
 
+export interface SuggestedStop {
+  id: string;
+  name: string;
+  type: StopType;
+  location?: string;
+  description: string;
+  reason: string;
+  durationMin?: number;
+  photoOp?: boolean;
+  promoted?: boolean;
+  badge?: "partner" | "local" | "promoted";
+}
+
+export interface PartnerTip {
+  id: string;
+  name: string;
+  category: string; // "Kafé", "Overnatting" etc
+  emoji: string;
+  location: string;
+  blurb: string;
+  badge: "partner" | "local" | "promoted";
+}
+
+export interface PhotoMemory {
+  id: string;
+  caption: string;
+  location: string;
+  emoji: string;
+  stopId?: string;
+}
+
 interface State { trips: Trip[]; days: TripDay[]; stops: Stop[] }
 
-const KEY = "veiglede.v2";
+const KEY = "veiglede.v3";
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
 function seed(): State {
   const trips: Trip[] = [
-    { id: "t-hardanger", title: "Hardangervidda MC", subtitle: "Svingete fjellvei over vidda", region: "Vestlandet", origin: "Drammen", destination: "Hardangervidda", startDate: "2026-06-07", vehicle: "motorcycle", style: "curvy", distanceKm: 287, drivingTime: "5t 30min", stopsCount: 4, cover: "mountain", aiSummary: "Vi har valgt Rv7 over vidda for åpne svinger, høyfjellsutsikt og lite trafikk i juni. To pauser er lagt inn der landskapet endrer karakter.", createdAt: Date.now() - 86400000 * 2 },
-    { id: "t-fjords", title: "Norwegian Fjords", subtitle: "Kystperler fra Bergen til Trondheim", region: "Vestlandet", origin: "Bergen", destination: "Trondheim", startDate: "2026-06-12", endDate: "2026-06-18", vehicle: "car", style: "scenic", distanceKm: 712, drivingTime: "13t 45min", stopsCount: 9, cover: "fjord", aiSummary: "Ruta følger Kystriksveien for maksimal fjordutsikt. Vi unngår E39-tunnelene der vi kan.", createdAt: Date.now() - 86400000 * 6 },
-    { id: "t-lofoten", title: "Lofoten Photo Trip", subtitle: "Lys, fjell og fiskevær", region: "Nord-Norge", origin: "Svolvær", destination: "Å", startDate: "2026-07-20", endDate: "2026-07-24", vehicle: "car", style: "photo", distanceKm: 134, drivingTime: "3t 10min", stopsCount: 7, cover: "lofoten", aiSummary: "Korte etapper med lange opphold ved fotostopp. Tidsvindu satt etter midnattssolen.", createdAt: Date.now() - 86400000 * 9 },
-    { id: "t-jotun", title: "Jotunheimen helg", subtitle: "Fjellpass og panoramavei", region: "Fjell-Norge", origin: "Oslo", destination: "Lom", startDate: "2026-08-14", endDate: "2026-08-16", vehicle: "motorcycle", style: "tourist", distanceKm: 412, drivingTime: "7t 20min", stopsCount: 6, cover: "valley", aiSummary: "Sognefjellet og Valdresflye gir to nasjonale turistveier i samme tur.", createdAt: Date.now() - 86400000 * 12 },
+    { id: "t-hardanger", title: "Hardangervidda MC", subtitle: "Svingete fjellvei over vidda", region: "Vestlandet", origin: "Drammen", destination: "Hardangervidda", startDate: "2026-06-07", vehicle: "motorcycle", style: "curvy", distanceKm: 287, drivingTime: "5t 30min", stopsCount: 4, cover: "mountain", aiSummary: "Vi har valgt Rv7 over vidda for åpne svinger, høyfjellsutsikt og lite trafikk i juni. To pauser er lagt inn der landskapet endrer karakter — og to fotostopp på partier med best lys ettermiddag.", createdAt: Date.now() - 86400000 * 2 },
+    { id: "t-fjords", title: "Norwegian Fjords", subtitle: "Kystperler fra Bergen til Trondheim", region: "Vestlandet", origin: "Bergen", destination: "Trondheim", startDate: "2026-06-12", endDate: "2026-06-18", vehicle: "car", style: "scenic", distanceKm: 712, drivingTime: "13t 45min", stopsCount: 9, cover: "fjord", aiSummary: "Ruta følger Kystriksveien for maksimal fjordutsikt. Vi unngår E39-tunnelene der vi kan, og legger inn matpauser ved naturlige stopp.", createdAt: Date.now() - 86400000 * 6 },
+    { id: "t-lofoten", title: "Lofoten Photo Trip", subtitle: "Lys, fjell og fiskevær", region: "Nord-Norge", origin: "Svolvær", destination: "Å", startDate: "2026-07-20", endDate: "2026-07-24", vehicle: "car", style: "photo", distanceKm: 134, drivingTime: "3t 10min", stopsCount: 7, cover: "lofoten", aiSummary: "Korte etapper med lange opphold ved fotostopp. Tidsvindu satt etter midnattssolen, og lokale tips lagt inn der det er verdt en omvei.", createdAt: Date.now() - 86400000 * 9 },
+    { id: "t-jotun", title: "Jotunheimen helg", subtitle: "Fjellpass og panoramavei", region: "Fjell-Norge", origin: "Oslo", destination: "Lom", startDate: "2026-08-14", endDate: "2026-08-16", vehicle: "motorcycle", style: "tourist", distanceKm: 412, drivingTime: "7t 20min", stopsCount: 6, cover: "valley", aiSummary: "Sognefjellet og Valdresflye gir to nasjonale turistveier i samme tur, med jevne pauser og en god overnatting.", createdAt: Date.now() - 86400000 * 12 },
     { id: "t-numedal", title: "Numedal via Uvdal", subtitle: "Rolig dagstur i grønne daler", region: "Østlandet", origin: "Drammen", destination: "Geilo", startDate: "2026-05-30", vehicle: "car", style: "cruise", distanceKm: 198, drivingTime: "3t 45min", stopsCount: 3, cover: "valley", aiSummary: "Lav puls. Stavkirker, småbruk og en kaffepause ved Uvdal.", createdAt: Date.now() - 86400000 * 18 },
   ];
 
   const days: TripDay[] = [];
   const stops: Stop[] = [];
 
-  // Hardangervidda — single day
   const d1 = { id: uid(), tripId: "t-hardanger", dayNumber: 1, title: "Drammen → Hardangervidda", date: "2026-06-07", summary: "Inn på Rv7, opp gjennom Numedal og videre over vidda." };
   days.push(d1);
   stops.push(
-    { id: uid(), dayId: d1.id, name: "Kongsberg sentrum", type: "rest", estimatedTime: "09:15", location: "Kongsberg", notes: "Kaffe og strekk før Numedal.", order: 0 },
-    { id: uid(), dayId: d1.id, name: "Uvdal stavkirke", type: "attraction", estimatedTime: "10:45", location: "Uvdal", notes: "Liten omvei verdt det. 15 min foto.", order: 1 },
-    { id: uid(), dayId: d1.id, name: "Dyranut fjellstove", type: "food", estimatedTime: "13:00", location: "Hardangervidda", notes: "Lunsj med utsikt over vidda.", order: 2 },
-    { id: uid(), dayId: d1.id, name: "Vøringsfossen platform", type: "viewpoint", estimatedTime: "15:30", location: "Eidfjord", notes: "Nye gangbroer over fossen.", order: 3 },
+    { id: uid(), dayId: d1.id, name: "Kongsberg sentrum", type: "rest", estimatedTime: "09:15", location: "Kongsberg", description: "Liten kaffepause før Numedal åpner seg.", reason: "Naturlig første pause etter ca 80 km motorvei.", durationMin: 20, distanceFromPrevKm: 84, notes: "Kaffe og strekk før Numedal.", order: 0 },
+    { id: uid(), dayId: d1.id, name: "Uvdal stavkirke", type: "attraction", estimatedTime: "10:45", location: "Uvdal", description: "Stavkirke fra 1100-tallet, tre minutter fra Rv40.", reason: "Kort kulturstopp passer godt midtveis opp Numedal.", durationMin: 25, distanceFromPrevKm: 95, photoOp: true, order: 1 },
+    { id: uid(), dayId: d1.id, name: "Dyranut fjellstove", type: "food", estimatedTime: "13:00", location: "Hardangervidda", description: "Klassisk fjellstove med varmrett og hjemmelagde kaker.", reason: "Eneste skikkelige matstopp før Eidfjord — lagt inn for å unngå sulten kjøring over vidda.", durationMin: 50, distanceFromPrevKm: 73, order: 2 },
+    { id: uid(), dayId: d1.id, name: "Vøringsfossen platform", type: "viewpoint", estimatedTime: "15:30", location: "Eidfjord", description: "Nye gangbroer over Norges mest kjente foss.", reason: "Dramatisk avslutning på dagen — godt ettermiddagslys.", durationMin: 45, distanceFromPrevKm: 35, photoOp: true, order: 3 },
   );
 
-  // Fjords — 3 days
   const f1 = { id: uid(), tripId: "t-fjords", dayNumber: 1, title: "Bergen → Flåm", date: "2026-06-12", summary: "Første smak av fjordene." };
   const f2 = { id: uid(), tripId: "t-fjords", dayNumber: 2, title: "Flåm → Geiranger", date: "2026-06-13", summary: "Trollstigen og 11 hårnålssvinger." };
   const f3 = { id: uid(), tripId: "t-fjords", dayNumber: 3, title: "Geiranger → Ålesund", date: "2026-06-14", summary: "Jugendbyen ved havet." };
   days.push(f1, f2, f3);
   stops.push(
-    { id: uid(), dayId: f1.id, name: "Fisketorget Bergen", type: "food", estimatedTime: "08:30", location: "Bergen", order: 0 },
-    { id: uid(), dayId: f1.id, name: "Stalheim utsikt", type: "viewpoint", estimatedTime: "12:00", location: "Stalheim", order: 1 },
-    { id: uid(), dayId: f1.id, name: "Fretheim Hotel", type: "lodging", estimatedTime: "18:00", location: "Flåm", order: 2 },
-    { id: uid(), dayId: f2.id, name: "Stegastein lookout", type: "viewpoint", estimatedTime: "09:30", location: "Aurland", order: 0 },
-    { id: uid(), dayId: f2.id, name: "Trollstigen", type: "attraction", estimatedTime: "14:00", location: "Romsdalen", order: 1 },
-    { id: uid(), dayId: f3.id, name: "Ørnesvingen", type: "viewpoint", estimatedTime: "10:00", location: "Geiranger", order: 0 },
+    { id: uid(), dayId: f1.id, name: "Fisketorget Bergen", type: "food", estimatedTime: "08:30", location: "Bergen", description: "Frokost på torget før utfart.", reason: "God start på dagen — kort vei til E16.", durationMin: 40, order: 0 },
+    { id: uid(), dayId: f1.id, name: "Stalheim utsikt", type: "viewpoint", estimatedTime: "12:00", location: "Stalheim", description: "Det berømte utsynet ned Nærøydalen.", reason: "Klassisk panorama — passer perfekt etter Vossevangen.", durationMin: 30, distanceFromPrevKm: 132, photoOp: true, order: 1 },
+    { id: uid(), dayId: f1.id, name: "Fretheim Hotel", type: "lodging", estimatedTime: "18:00", location: "Flåm", description: "Historisk hotell ved Flåmsbana.", reason: "Naturlig overnatting før neste fjordetappe.", durationMin: 720, distanceFromPrevKm: 48, order: 2 },
+    { id: uid(), dayId: f2.id, name: "Stegastein lookout", type: "viewpoint", estimatedTime: "09:30", location: "Aurland", description: "Utsiktsplattform 650 m over Aurlandsfjorden.", reason: "Beste utsikten på hele turen — uten omvei.", durationMin: 35, distanceFromPrevKm: 12, photoOp: true, order: 0 },
+    { id: uid(), dayId: f2.id, name: "Trollstigen", type: "attraction", estimatedTime: "14:00", location: "Romsdalen", description: "11 hårnålssvinger opp fjellsida.", reason: "Hovedopplevelsen midt på dagen.", durationMin: 60, distanceFromPrevKm: 198, photoOp: true, order: 1 },
+    { id: uid(), dayId: f3.id, name: "Ørnesvingen", type: "viewpoint", estimatedTime: "10:00", location: "Geiranger", description: "Utsikt over Geirangerfjorden fra svingen.", reason: "Siste fjordutsikt før vi går mot kysten.", durationMin: 25, photoOp: true, order: 0 },
   );
 
-  // Lofoten — 2 days
   const l1 = { id: uid(), tripId: "t-lofoten", dayNumber: 1, title: "Svolvær → Reine", date: "2026-07-20", summary: "Klassiske fotostopp langs E10." };
   const l2 = { id: uid(), tripId: "t-lofoten", dayNumber: 2, title: "Reine → Å", date: "2026-07-21", summary: "Stranddag og fiskevær." };
   days.push(l1, l2);
   stops.push(
-    { id: uid(), dayId: l1.id, name: "Henningsvær fotballbane", type: "photo", estimatedTime: "10:00", location: "Henningsvær", order: 0 },
-    { id: uid(), dayId: l1.id, name: "Hamnøy bryggene", type: "photo", estimatedTime: "14:00", location: "Hamnøy", order: 1 },
-    { id: uid(), dayId: l1.id, name: "Reine Rorbuer", type: "lodging", estimatedTime: "18:00", location: "Reine", order: 2 },
-    { id: uid(), dayId: l2.id, name: "Kvalvika strand", type: "viewpoint", estimatedTime: "10:00", location: "Fredvang", order: 0 },
-    { id: uid(), dayId: l2.id, name: "Å i Lofoten", type: "city", estimatedTime: "15:00", location: "Å", order: 1 },
+    { id: uid(), dayId: l1.id, name: "Henningsvær fotballbane", type: "photo", estimatedTime: "10:00", location: "Henningsvær", description: "Ikonisk bane mellom skjær og hav.", reason: "Best morgenlys fra øst.", durationMin: 40, photoOp: true, order: 0 },
+    { id: uid(), dayId: l1.id, name: "Hamnøy bryggene", type: "photo", estimatedTime: "14:00", location: "Hamnøy", description: "Røde rorbuer mot Festheltinden.", reason: "Det mest fotograferte motivet i Lofoten.", durationMin: 30, photoOp: true, order: 1 },
+    { id: uid(), dayId: l1.id, name: "Reine Rorbuer", type: "lodging", estimatedTime: "18:00", location: "Reine", description: "Tradisjonelle rorbuer ved fjorden.", reason: "Sentralt for kveldslys og morgenfoto.", durationMin: 720, order: 2 },
+    { id: uid(), dayId: l2.id, name: "Kvalvika strand", type: "viewpoint", estimatedTime: "10:00", location: "Fredvang", description: "Skjult strand med 45 min vandring.", reason: "Lett detour for en uforglemmelig opplevelse.", durationMin: 180, photoOp: true, order: 0 },
+    { id: uid(), dayId: l2.id, name: "Å i Lofoten", type: "city", estimatedTime: "15:00", location: "Å", description: "Veiens ende — tørrfisk og fiskeværmuseum.", reason: "Symbolsk avslutning på reisen.", durationMin: 90, order: 1 },
   );
 
-  // Jotun — 2 days
   const j1 = { id: uid(), tripId: "t-jotun", dayNumber: 1, title: "Oslo → Beitostølen", date: "2026-08-14" };
   const j2 = { id: uid(), tripId: "t-jotun", dayNumber: 2, title: "Beitostølen → Lom", date: "2026-08-15", summary: "Sognefjellet — Nord-Europas høyeste fjellovergang." };
   days.push(j1, j2);
   stops.push(
-    { id: uid(), dayId: j1.id, name: "Valdresflye utsikt", type: "viewpoint", estimatedTime: "13:30", location: "Valdresflye", order: 0 },
-    { id: uid(), dayId: j2.id, name: "Sognefjellshytta", type: "food", estimatedTime: "12:00", location: "Sognefjellet", order: 0 },
-    { id: uid(), dayId: j2.id, name: "Lom stavkirke", type: "attraction", estimatedTime: "16:00", location: "Lom", order: 1 },
+    { id: uid(), dayId: j1.id, name: "Valdresflye utsikt", type: "viewpoint", estimatedTime: "13:30", location: "Valdresflye", description: "Åpne høyfjellsvidder på 1389 moh.", reason: "Beste utsikten på dag 1.", durationMin: 25, photoOp: true, order: 0 },
+    { id: uid(), dayId: j2.id, name: "Sognefjellshytta", type: "food", estimatedTime: "12:00", location: "Sognefjellet", description: "Tradisjonsrik fjellstove på toppen.", reason: "Naturlig lunsj midt i fjellovergangen.", durationMin: 50, order: 0 },
+    { id: uid(), dayId: j2.id, name: "Lom stavkirke", type: "attraction", estimatedTime: "16:00", location: "Lom", description: "En av Norges største stavkirker.", reason: "Kulturstopp før kvelden.", durationMin: 40, photoOp: true, order: 1 },
   );
 
-  // Numedal — 1 day
   const n1 = { id: uid(), tripId: "t-numedal", dayNumber: 1, title: "Drammen → Geilo", date: "2026-05-30" };
   days.push(n1);
   stops.push(
-    { id: uid(), dayId: n1.id, name: "Nore stavkirke", type: "attraction", estimatedTime: "10:30", location: "Nore", order: 0 },
-    { id: uid(), dayId: n1.id, name: "Uvdal kafé", type: "food", estimatedTime: "12:30", location: "Uvdal", order: 1 },
-    { id: uid(), dayId: n1.id, name: "Geilo sentrum", type: "city", estimatedTime: "15:00", location: "Geilo", order: 2 },
+    { id: uid(), dayId: n1.id, name: "Nore stavkirke", type: "attraction", estimatedTime: "10:30", location: "Nore", description: "Stavkirke fra 1100-tallet.", reason: "Liten kulturstopp underveis.", durationMin: 25, order: 0 },
+    { id: uid(), dayId: n1.id, name: "Uvdal kafé", type: "food", estimatedTime: "12:30", location: "Uvdal", description: "Hjemmebakst og lett lunsj.", reason: "Eneste matsted midtveis.", durationMin: 45, order: 1 },
+    { id: uid(), dayId: n1.id, name: "Geilo sentrum", type: "city", estimatedTime: "15:00", location: "Geilo", description: "Fjellbygd og veis ende for denne turen.", reason: "Ankomst.", durationMin: 60, order: 2 },
   );
 
   return { trips, days, stops };
@@ -178,6 +222,11 @@ export const tripsApi = {
         location: sug.location,
         estimatedTime: sug.time,
         notes: sug.notes,
+        description: sug.description,
+        reason: sug.reason,
+        durationMin: sug.durationMin,
+        distanceFromPrevKm: sug.distanceFromPrevKm,
+        photoOp: sug.photoOp,
         order: newStops.filter((s) => s.dayId === day.id).length,
       });
     });
@@ -222,7 +271,22 @@ export const tripsApi = {
   addStop(dayId: string, input: Partial<Stop> = {}): Stop {
     ensureInit();
     const order = state.stops.filter((s) => s.dayId === dayId).length;
-    const stop: Stop = { id: uid(), dayId, name: input.name ?? "Nytt stopp", type: input.type ?? "attraction", notes: input.notes, estimatedTime: input.estimatedTime, location: input.location, order };
+    const stop: Stop = {
+      id: uid(),
+      dayId,
+      name: input.name ?? "Nytt stopp",
+      type: input.type ?? "attraction",
+      notes: input.notes,
+      estimatedTime: input.estimatedTime,
+      location: input.location,
+      description: input.description,
+      reason: input.reason,
+      durationMin: input.durationMin,
+      distanceFromPrevKm: input.distanceFromPrevKm,
+      photoOp: input.photoOp,
+      promoted: input.promoted,
+      order,
+    };
     state = { ...state, stops: [...state.stops, stop] };
     persist();
     return stop;
@@ -256,6 +320,24 @@ export const tripsApi = {
     };
     persist();
   },
+  addSuggestion(tripId: string, sug: SuggestedStop): Stop | null {
+    ensureInit();
+    const tripDays = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+    if (tripDays.length === 0) return null;
+    // add to day with fewest stops
+    const counts = tripDays.map((d) => state.stops.filter((s) => s.dayId === d.id).length);
+    const targetDay = tripDays[counts.indexOf(Math.min(...counts))];
+    return this.addStop(targetDay.id, {
+      name: sug.name,
+      type: sug.type,
+      location: sug.location,
+      description: sug.description,
+      reason: sug.reason,
+      durationMin: sug.durationMin,
+      photoOp: sug.photoOp,
+      promoted: sug.promoted,
+    });
+  },
 };
 
 function shiftDate(start: string | undefined, days: number): string | undefined {
@@ -266,60 +348,168 @@ function shiftDate(start: string | undefined, days: number): string | undefined 
   return d.toISOString().slice(0, 10);
 }
 
-function suggestStops(trip: Trip): { name: string; type: StopType; location?: string; time?: string; notes?: string }[] {
-  const base: { name: string; type: StopType; location?: string; time?: string; notes?: string }[] = [
-    { name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin, time: "08:30", notes: "Sjekk dekktrykk og fyll tanken." },
+interface SuggestedSeed {
+  name: string;
+  type: StopType;
+  location?: string;
+  time?: string;
+  notes?: string;
+  description?: string;
+  reason?: string;
+  durationMin?: number;
+  distanceFromPrevKm?: number;
+  photoOp?: boolean;
+}
+
+function suggestStops(trip: Trip): SuggestedSeed[] {
+  const base: SuggestedSeed[] = [
+    { name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin, time: "08:30", description: "Sjekk dekktrykk, fyll tanken, klar for tur.", reason: "Felles start gjør resten av dagen lettere å planlegge.", durationMin: 15 },
   ];
   switch (trip.style) {
     case "scenic":
       base.push(
-        { name: "Panoramautsikt", type: "viewpoint", time: "10:30", notes: "Klassisk fotostopp med vidt utsyn." },
-        { name: "Lokal kafé", type: "food", time: "12:30", notes: "Anbefalt for hjemmebakst." },
-        { name: "Fjordutsikt", type: "viewpoint", time: "15:00" },
+        { name: "Panoramautsikt", type: "viewpoint", time: "10:30", description: "Åpent utsyn over landskapet.", reason: "Lagt inn der ruten har sitt første store panorama.", durationMin: 25, distanceFromPrevKm: 75, photoOp: true },
+        { name: "Lokal kafé", type: "food", time: "12:30", description: "Hjemmebakst og enkel lunsj.", reason: "Naturlig matpause halvveis.", durationMin: 45, distanceFromPrevKm: 60 },
+        { name: "Fjordutsikt", type: "viewpoint", time: "15:00", description: "Klassisk fjordmotiv fra veien.", reason: "Ettermiddagslys gir best foto her.", durationMin: 20, distanceFromPrevKm: 80, photoOp: true },
       );
       break;
     case "curvy":
       base.push(
-        { name: "Hårnålspass", type: "viewpoint", time: "10:30", notes: "Tekniske svinger — kjør med margin." },
-        { name: "Drivstoff", type: "fuel", time: "12:00" },
-        { name: "Fjellovergang", type: "viewpoint", time: "14:00" },
+        { name: "Hårnålspass", type: "viewpoint", time: "10:30", description: "Tekniske svinger med rolig trafikk.", reason: "Valgt for kjøreglede — start når veien er tørr.", durationMin: 20, distanceFromPrevKm: 70, photoOp: true },
+        { name: "Drivstoff", type: "fuel", time: "12:00", description: "Siste bensinstasjon før fjellet.", reason: "Lagt inn for å unngå tom tank i fjellet.", durationMin: 10, distanceFromPrevKm: 55 },
+        { name: "Fjellovergang", type: "viewpoint", time: "14:00", description: "Høyt fjellpass med vidt utsyn.", reason: "Hovedopplevelsen på en svingete tur.", durationMin: 30, distanceFromPrevKm: 65, photoOp: true },
       );
       break;
     case "photo":
       base.push(
-        { name: "Morgenlys fotostopp", type: "photo", time: "09:30" },
-        { name: "Ikonisk landskap", type: "photo", time: "11:30", notes: "Husk stativ for HDR." },
-        { name: "Lunch med utsikt", type: "food", time: "13:30" },
-        { name: "Gylden time", type: "photo", time: "18:00" },
+        { name: "Morgenlys fotostopp", type: "photo", time: "09:30", description: "Lavt sidelys på fjellsiden.", reason: "Best lys 30 min etter soloppgang.", durationMin: 30, distanceFromPrevKm: 40, photoOp: true },
+        { name: "Ikonisk landskap", type: "photo", time: "11:30", description: "Klassisk motiv mange tar.", reason: "Veivalget her er bedre enn alternativene.", durationMin: 40, distanceFromPrevKm: 60, photoOp: true, notes: "Husk stativ for HDR." },
+        { name: "Lunch med utsikt", type: "food", time: "13:30", description: "Enkel mat, vid utsikt.", reason: "Pause før ettermiddagslyset.", durationMin: 45, distanceFromPrevKm: 50 },
+        { name: "Gylden time", type: "photo", time: "18:00", description: "Beste lyset på dagen.", reason: "Plassert der ruten peker mot vest.", durationMin: 40, distanceFromPrevKm: 70, photoOp: true },
       );
       break;
     case "tourist":
       base.push(
-        { name: "Nasjonal turistvei", type: "attraction", time: "11:00", notes: "Offisiell rasteplass." },
-        { name: "Lokal severdighet", type: "attraction", time: "13:30" },
-        { name: "Utkikkspunkt", type: "viewpoint", time: "15:30" },
+        { name: "Nasjonal turistvei", type: "attraction", time: "11:00", description: "Offisiell rasteplass med arkitektur.", reason: "Lagt inn fordi ruten krysser en turistvei.", durationMin: 30, distanceFromPrevKm: 80 },
+        { name: "Lokal severdighet", type: "attraction", time: "13:30", description: "Stavkirke eller museum nær veien.", reason: "Kort omvei — passer godt etter lunsj.", durationMin: 35, distanceFromPrevKm: 55, photoOp: true },
+        { name: "Utkikkspunkt", type: "viewpoint", time: "15:30", description: "Klassisk utsiktspunkt.", reason: "Avslutter dagen med god utsikt.", durationMin: 25, distanceFromPrevKm: 70, photoOp: true },
       );
       break;
     case "cruise":
       base.push(
-        { name: "Rolig kaffepause", type: "rest", time: "10:30" },
-        { name: "Lunsj på bryggekanten", type: "food", time: "13:00" },
+        { name: "Rolig kaffepause", type: "rest", time: "10:30", description: "Liten kafé ved veien.", reason: "Lav puls — første pause kommer tidlig.", durationMin: 25, distanceFromPrevKm: 60 },
+        { name: "Lunsj på bryggekanten", type: "food", time: "13:00", description: "Lett lunsj nær vannet.", reason: "Naturlig matpause uten stress.", durationMin: 60, distanceFromPrevKm: 70 },
       );
       break;
     case "fastest":
       base.push(
-        { name: "Drivstoff", type: "fuel", time: "10:30" },
-        { name: "Rask matpause", type: "food", time: "13:00" },
+        { name: "Drivstoff", type: "fuel", time: "10:30", description: "Rask stopp ved E-vei.", reason: "Optimalisert for tid — tank og strekk.", durationMin: 10, distanceFromPrevKm: 120 },
+        { name: "Rask matpause", type: "food", time: "13:00", description: "Take-away eller veikro.", reason: "Holder farten oppe.", durationMin: 25, distanceFromPrevKm: 130 },
       );
       break;
   }
   if (trip.distanceKm > 300) {
-    base.push({ name: "Overnatting", type: "lodging", time: "19:00", notes: "Anbefalt stoppested for natten." });
+    base.push({ name: "Overnatting", type: "lodging", time: "19:00", description: "Anbefalt stoppested for natten.", reason: "Turen er for lang for én dag — naturlig deling her.", durationMin: 720 });
   }
-  base.push({ name: `Ankomst ${trip.destination}`, type: "city", location: trip.destination, time: "17:30" });
+  base.push({ name: `Ankomst ${trip.destination}`, type: "city", location: trip.destination, time: "17:30", description: "Veis ende.", reason: "Ankomst." });
   return base;
 }
 
+// ----- Suggestions along the route (NOT yet added) -----
+
+const ALONG_THE_ROUTE: SuggestedStop[] = [
+  { id: "sr1", name: "Fjellkafé Bjorli", type: "food", location: "Bjorli", description: "Vedfyrt kafé med utsikt mot Romsdalen.", reason: "Ligger 5 min fra hovedruta — populært stopp.", durationMin: 35, badge: "local" },
+  { id: "sr2", name: "Trollveggen utsikt", type: "viewpoint", location: "Romsdalen", description: "Europas høyeste loddrette fjellvegg.", reason: "Like ved veien — ingen ekstra kjøretid.", durationMin: 20, photoOp: true, badge: "local" },
+  { id: "sr3", name: "Geitost-bakeriet", type: "experience", location: "Undredal", description: "Smaksprøver av brunost rett fra produsenten.", reason: "Lite, lokalt og passer en kort pause.", durationMin: 30, badge: "partner", promoted: true },
+  { id: "sr4", name: "Aurland charging hub", type: "fuel", location: "Aurland", description: "8x 150 kW ladere med utsikt.", reason: "Eneste hurtiglader i området.", durationMin: 25, badge: "partner", promoted: true },
+  { id: "sr5", name: "Stranddetour Ersfjord", type: "detour", location: "Senja", description: "20 km detour til hvit sandstrand.", reason: "Anbefales hvis du har en time ekstra.", durationMin: 60, photoOp: true, badge: "local" },
+  { id: "sr6", name: "Cabin Lodge Vågåmo", type: "lodging", location: "Vågåmo", description: "Tømmerhytter ved elva, frokost inkludert.", reason: "Godt overnattingsalternativ midtveis.", durationMin: 720, badge: "partner", promoted: true },
+  { id: "sr7", name: "Fjellguide-tur", type: "experience", location: "Lofoten", description: "2t guidet tur til lokal topp.", reason: "Perfekt for de som vil ut av bilen.", durationMin: 120, badge: "local" },
+  { id: "sr8", name: "Solnedgang Stadlandet", type: "photo", location: "Stadlandet", description: "Vestligste punkt — åpent hav.", reason: "Lagt inn fordi ruten passerer på rett tid for solnedgang.", durationMin: 40, photoOp: true, badge: "local" },
+];
+
+export function getRouteSuggestions(trip: Trip): SuggestedStop[] {
+  const pool = [...ALONG_THE_ROUTE];
+  // bias by style
+  const score = (s: SuggestedStop) => {
+    let n = 0;
+    if (trip.style === "photo" && s.photoOp) n += 3;
+    if (trip.style === "scenic" && (s.type === "viewpoint" || s.type === "detour")) n += 2;
+    if (trip.style === "cruise" && (s.type === "food" || s.type === "experience")) n += 2;
+    if (trip.style === "tourist" && (s.type === "attraction" || s.type === "experience")) n += 2;
+    if (trip.vehicle === "rv" && s.type === "lodging") n += 2;
+    if (trip.vehicle === "car" && s.type === "fuel") n += 1;
+    return n + Math.random();
+  };
+  return pool.sort((a, b) => score(b) - score(a)).slice(0, 5);
+}
+
+// ----- Partner / local tips -----
+
+const PARTNER_TIPS: PartnerTip[] = [
+  { id: "p1", name: "Hardanger Bakery", category: "Bakeri", emoji: "🥐", location: "Eidfjord", blurb: "Surdeigsbrød og kanelsnurrer rett fra ovnen.", badge: "partner" },
+  { id: "p2", name: "Fjordview Cabins", category: "Overnatting", emoji: "🛖", location: "Aurland", blurb: "Små hytter med utsikt, 10% for Veiglede-brukere.", badge: "promoted" },
+  { id: "p3", name: "Trollstigen Café", category: "Kafé", emoji: "☕", location: "Romsdalen", blurb: "Anbefalt av lokale MC-klubber.", badge: "local" },
+  { id: "p4", name: "Lofoten Fish & Co", category: "Restaurant", emoji: "🐟", location: "Reine", blurb: "Fersk fisk, åpent til 22:00 hele sommeren.", badge: "local" },
+  { id: "p5", name: "Mountain Charge", category: "Lading", emoji: "🔌", location: "Geilo", blurb: "Hurtiglader med varmestue og kaffeautomat.", badge: "partner" },
+  { id: "p6", name: "Numedal Local Museum", category: "Museum", emoji: "🏛️", location: "Uvdal", blurb: "Lite museum med inngangsbillett 80 kr.", badge: "local" },
+];
+
+export function getPartnerTips(trip: Trip): PartnerTip[] {
+  // mix 3 — bias scenic/tourist to museum/cafe; photo to scenic spots
+  const pool = [...PARTNER_TIPS].sort(() => Math.random() - 0.5);
+  return pool.slice(0, 3 + (trip.distanceKm > 400 ? 1 : 0));
+}
+
+// ----- Photo memories (placeholder concept) -----
+
+export function getPhotoMemories(trip: Trip, tripStops: Stop[]): PhotoMemory[] {
+  const photoStops = tripStops.filter((s) => s.type === "photo" || s.type === "viewpoint" || s.photoOp);
+  const palette = ["📷", "🌅", "🏔️", "🌊", "🌄", "🌌"];
+  return photoStops.slice(0, 6).map((s, i) => ({
+    id: `pm-${s.id}`,
+    caption: s.name,
+    location: s.location ?? trip.region ?? "",
+    emoji: palette[i % palette.length],
+    stopId: s.id,
+  }));
+}
+
+// ----- AI summary builder -----
+
+export function buildAiSummary(input: {
+  origin: string; destination: string; vehicle: VehicleType; style: RouteStyle; userPrompt?: string;
+}): string {
+  const v = vehicleMeta(input.vehicle);
+  const s = styleMeta(input.style);
+  const parts: string[] = [];
+  parts.push(`Ruten fra ${input.origin} til ${input.destination} er bygget for ${v.label.toLowerCase()} med ${s.label.toLowerCase()}.`);
+  switch (input.style) {
+    case "curvy":
+      parts.push("Vi prioriterer svingete strekninger og unngår motorvei der det er praktisk.");
+      break;
+    case "scenic":
+      parts.push("Vi prioriterer veier med åpne fjord- og fjellutsikter, og legger inn utsiktspunkter underveis.");
+      break;
+    case "photo":
+      parts.push("Fotostopp er plassert der lyset er best og hvor landskapet endrer karakter.");
+      break;
+    case "tourist":
+      parts.push("Ruten krysser nasjonale turistveier der det gir mening, med rasteplasser og lokal arkitektur.");
+      break;
+    case "cruise":
+      parts.push("Tempoet er rolig — pauser legges naturlig inn ca hver andre time.");
+      break;
+    case "fastest":
+      parts.push("Vi har valgt mest effektive vei og kun lagt inn nødvendige pauser.");
+      break;
+  }
+  if (input.vehicle === "motorcycle") parts.push("Stoppene tar hensyn til at det er behagelig å stige av sykkelen.");
+  if (input.vehicle === "rv") parts.push("Stoppene er valgt med plass og høyde for bobil i tankene.");
+  parts.push("Lokale tips og partnerstopp dukker bare opp når de faktisk passer ruten.");
+  if (input.userPrompt) parts.push(`Ekstra hensyn: «${input.userPrompt}».`);
+  return parts.join(" ");
+}
 
 export const STOP_TYPES: { value: StopType; label: string; emoji: string }[] = [
   { value: "viewpoint", label: "Utsikt", emoji: "🏔️" },
@@ -330,6 +520,8 @@ export const STOP_TYPES: { value: StopType; label: string; emoji: string }[] = [
   { value: "attraction", label: "Attraksjon", emoji: "✨" },
   { value: "rest", label: "Pause", emoji: "☕" },
   { value: "city", label: "By", emoji: "🏘️" },
+  { value: "experience", label: "Opplevelse", emoji: "🎒" },
+  { value: "detour", label: "Detour", emoji: "↪️" },
 ];
 export function stopMeta(t: StopType) {
   return STOP_TYPES.find((s) => s.value === t) ?? STOP_TYPES[STOP_TYPES.length - 1];
