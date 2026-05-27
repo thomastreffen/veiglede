@@ -9,6 +9,7 @@ import { energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
+import { TripMap } from "@/components/TripMap";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
@@ -88,6 +89,15 @@ function Roadbook() {
         </div>
       </header>
 
+      <section className="mt-8 mx-auto max-w-2xl">
+        <TripMap
+          trip={trip}
+          days={tripDays}
+          stops={tripStops}
+          compact
+          height="h-56"
+        />
+      </section>
 
       {trip.aiSummary && (
         <section className="mt-8 mx-auto max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 p-5">
