@@ -160,8 +160,18 @@ function TripPlanner() {
 
       {/* Map */}
       <section className="mt-4">
-        <MapPlaceholder height="h-44 md:h-64" labels={[trip.origin, trip.destination]} distance={`${trip.distanceKm} km`} time={trip.drivingTime} />
+        <TripMap
+          trip={trip}
+          days={tripDays}
+          stops={tripStops}
+          selectedStopId={selectedStopId}
+          onSelectStop={handleSelectStop}
+          suggestionPins={suggestionPins}
+          hoveredSuggestionId={hoveredSuggestionId}
+          height="h-56 md:h-72"
+        />
       </section>
+
 
       {/* AI explanation */}
       {trip.aiSummary && (
