@@ -6,6 +6,7 @@ import {
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
@@ -45,6 +46,16 @@ function TripPlanner() {
 
   return (
     <div className="py-4">
+      <DemoDebugPanel
+        title="Planner debug"
+        items={[
+          { label: "Route", value: `/trips/${tripId}` },
+          { label: "Trip", value: trip.id },
+          { label: "Days", value: tripDays.length },
+          { label: "Stops", value: totalStops },
+        ]}
+      />
+
       <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Mine turer
       </Link>
