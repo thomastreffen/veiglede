@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -6,9 +6,15 @@ import {
 import { Switch } from "@/components/ui/switch";
 import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
-  Radio, MapPin, Camera, Users, Eye,
+  Radio, MapPin, Camera, Users, Eye, Trash2,
 } from "lucide-react";
 import type { Trip } from "@/lib/trips-store";
+import { useAuth } from "@/lib/auth";
+import { useT } from "@/i18n/provider";
+import {
+  createInvite, listInvitesForTrip, deleteInvite, inviteUrl,
+  type TripInvite,
+} from "@/lib/trip-invites";
 
 interface Props {
   trip: Trip;
@@ -17,14 +23,22 @@ interface Props {
 }
 
 export function ShareTripModal({ trip, open, onOpenChange }: Props) {
+  const t = useT();
+  const { user } = useAuth();
   const [copied, setCopied] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(false);
-  const [companion, setCompanion] = useState("");
-  const [invited, setInvited] = useState<string[]>([]);
+  const [email, setEmail] = useState("");
+  const [invites, setInvites] = useState<TripInvite[]>([]);
+  const [creating, setCreating] = useState(false);
 
-  const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.app";
+  const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
   const tripLink = `${base}/shared/${trip.id}`;
   const roadbookLink = `${base}/shared/${trip.id}?view=roadbook`;
+
+  useEffect(() => {
+    if (!open || !user) return;
+    listInvitesForTrip(trip.id).then(setInvites).catch(() => setInvites([]));
+  }, [open, user, trip.id]);
 
   const copy = async (label: string, text: string) => {
     try { await navigator.clipboard.writeText(text); } catch { /* noop */ }
@@ -32,12 +46,31 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
     setTimeout(() => setCopied(null), 1600);
   };
 
-  const invite = () => {
-    const v = companion.trim();
-    if (!v) return;
-    setInvited((p) => [...p, v]);
-    setCompanion("");
+  const handleCreateInvite = async () => {
+    if (!user) return;
+    setCreating(true);
+    try {
+      const inv = await createInvite(trip.id, email || null);
+      setInvites((p) => [inv, ...p]);
+      setEmail("");
+      await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
+    } finally {
+      setCreating(false);
+    }
   };
+
+  const handleRemove = async (id: string) => {
+    try {
+      await deleteInvite(id);
+      setInvites((p) => p.filter((i) => i.id !== id));
+    } catch { /* noop */ }
+  };
+
+  const statusLabel = (s: TripInvite["status"]) =>
+    s === "invited" ? t.invite.statusInvited
+    : s === "opened" ? t.invite.statusOpened
+    : s === "joined" ? t.invite.statusJoined
+    : t.invite.statusRevoked;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
