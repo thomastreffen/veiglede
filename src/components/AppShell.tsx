@@ -75,10 +75,19 @@ export function AppShell() {
                 {(user.email ?? "?").charAt(0).toUpperCase()}
               </Link>
             ) : (
-              <Link to="/login" className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-surface-2">
-                <LogIn className="h-4 w-4" /> Logg inn
-              </Link>
+              <>
+                <span
+                  title="Du utforsker i demo-modus — data lagres bare på denne enheten"
+                  className="ml-1 hidden lg:inline-flex items-center rounded-full border border-border bg-surface-2/60 px-2.5 py-1 text-[10px] uppercase tracking-wider text-muted-foreground"
+                >
+                  Demo
+                </span>
+                <Link to="/login" className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-surface-2">
+                  <LogIn className="h-4 w-4" /> Logg inn
+                </Link>
+              </>
             )}
+
           </nav>
         </div>
       </header>
