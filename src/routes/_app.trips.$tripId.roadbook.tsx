@@ -5,6 +5,7 @@ import {
   getPartnerTips, getPhotoMemories,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
+import { energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
@@ -29,6 +30,8 @@ function Roadbook() {
   const tripStops = stops.filter((s) => tripDays.some((d) => d.id === s.dayId));
   const v = vehicleMeta(trip.vehicle);
   const s = styleMeta(trip.style);
+  const em = trip.energy ? energyMeta(trip.energy) : undefined;
+  const vehicleDisplay = trip.vehicleName ?? v.label;
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
@@ -62,7 +65,8 @@ function Roadbook() {
         <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
         <p className="mt-3 text-muted-foreground">{trip.origin} → {trip.destination}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{v.emoji} {v.label}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{v.emoji} {vehicleDisplay}</span>
+          {em && <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{em.emoji} {em.label}</span>}
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{s.emoji} {s.label}</span>
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
         </div>
@@ -218,7 +222,11 @@ function Roadbook() {
           <ul className="mt-3 space-y-1.5">
             <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
             <li>· Anslått kjøretid: {trip.drivingTime}</li>
-            <li>· Kjøretøy: {v.label} · stil: {s.label}</li>
+            <li>· Kjøretøy: {vehicleDisplay} ({v.label}{em ? ` · ${em.label}` : ""}) · stil: {s.label}</li>
+            {trip.energy === "electric" && <li>· Ladestrategi: hurtigladere prioriteres — bensinstasjoner filtreres bort.</li>}
+            {trip.energy === "hybrid" && <li>· Hybrid: både lading og bensinstopp foreslås der det passer.</li>}
+            {trip.vehicle === "rv" && <li>· Camper/bobil: stopp med plass, høyde, camping og overnatting prioriteres.</li>}
+            {trip.vehicle === "motorcycle" && <li>· MC: korte, trygge pauser og svingete strekk foretrekkes.</li>}
             {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</li>}
             <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
             <li>· Veiglede er gratis for deg som planlegger turen.</li>

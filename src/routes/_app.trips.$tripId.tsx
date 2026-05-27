@@ -6,6 +6,7 @@ import {
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
+import { getVehicleById, energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
@@ -50,9 +51,14 @@ function TripPlanner() {
   const tripStops = stops.filter((st) => tripDays.some((d) => d.id === st.dayId));
   const v = vehicleMeta(trip.vehicle);
   const s = styleMeta(trip.style);
+  const vehicle = getVehicleById(trip.vehicleId);
+  const em = trip.energy ? energyMeta(trip.energy) : undefined;
+  const vehicleDisplay = trip.vehicleName ?? v.label;
   const totalStops = tripStops.length;
 
-  const suggestions = getRouteSuggestions(trip, prefs.stopInterests);
+  // merge driver interests with this trip's vehicle interests
+  const mergedInterests = Array.from(new Set([...(vehicle?.stopInterests ?? []), ...prefs.stopInterests]));
+  const suggestions = getRouteSuggestions(trip, mergedInterests);
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
@@ -81,8 +87,13 @@ function TripPlanner() {
         <div className="relative">
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">
-              {v.emoji} {v.label}
+              {v.emoji} {vehicleDisplay}
             </span>
+            {em && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">
+                {em.emoji} {em.label}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">
               {s.emoji} {s.label}
             </span>
@@ -139,7 +150,7 @@ function TripPlanner() {
 
       {/* Trip tracking */}
       <section id="track" className="mt-4 scroll-mt-24">
-        <TripTracker tripId={tripId} tripStops={tripStops} vehicleLabel={`${v.emoji} ${v.label}`} />
+        <TripTracker tripId={tripId} tripStops={tripStops} vehicleLabel={`${v.emoji} ${vehicleDisplay}`} />
       </section>
 
       {/* Memories (after completion) */}
@@ -269,7 +280,7 @@ function TripPlanner() {
           </div>
           <p className="text-[11px] text-muted-foreground">Trykk for å legge til</p>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Steder vi tror passer ruten — basert på {s.label.toLowerCase()}, {v.label.toLowerCase()} og dine interesser i profilen.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Tilpasset {vehicleDisplay}{em ? ` (${em.label.toLowerCase()})` : ""} · {s.label.toLowerCase()} · interesser fra profil og kjøretøy.</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {suggestions.map((sug) => (
@@ -323,7 +334,11 @@ function TripPlanner() {
         <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
           <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
           <li>· Anslått kjøretid: {trip.drivingTime}</li>
-          <li>· Kjøretøy: {v.label} · stil: {s.label}</li>
+          <li>· Kjøretøy: {vehicleDisplay} ({v.label}{em ? ` · ${em.label}` : ""}) · stil: {s.label}</li>
+          {trip.energy === "electric" && <li>· Ladestrategi: prioriter hurtigladere langs ruta — bensinstasjoner filtreres bort.</li>}
+          {trip.energy === "hybrid" && <li>· Hybrid: både lading og bensinstopp foreslås der det passer.</li>}
+          {trip.vehicle === "rv" && <li>· Camper/bobil: stopp med plass, høyde, camping og overnatting prioriteres.</li>}
+          {trip.vehicle === "motorcycle" && <li>· MC: korte, trygge pauser og svingete strekk foretrekkes.</li>}
           {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })}</li>}
           <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
         </ul>

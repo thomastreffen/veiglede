@@ -187,7 +187,8 @@ function NewTripWizard() {
           <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hvor skal du?</h1>
           <p className="mt-3 text-muted-foreground">Fra, til og dato — vi tar oss av resten.</p>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Chip>{vehicleMeta(vehicle).emoji} {vehicleMeta(vehicle).label}</Chip>
+            <Chip>{vehicleMeta(selectedVehicle.type).emoji} {selectedVehicle.name}</Chip>
+            <Chip>{energyMeta(selectedVehicle.energy).emoji} {energyMeta(selectedVehicle.energy).label}</Chip>
             <Chip>{styleMeta(style).emoji} {styleMeta(style).label}</Chip>
           </div>
 
@@ -277,7 +278,7 @@ function PreviewStep({
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <PreviewStat label="Kjøretøy" value={vehicleMeta(trip.vehicle).label} />
+        <PreviewStat label="Kjøretøy" value={trip.vehicleName ?? vehicleMeta(trip.vehicle).label} />
         <PreviewStat label="Rutestil" value={styleMeta(trip.style).label} />
         <PreviewStat label="Stopp" value={String(tripStops.length)} />
       </div>
