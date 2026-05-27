@@ -327,9 +327,14 @@ function TripPlanner() {
           <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
           <p className="mt-1.5 text-sm text-foreground/90">
             Stoppene er plassert slik at dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
-            med pause omtrent hvert <span className="font-semibold">{prefs.pauseEveryMin}. minutt</span>.
+            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Endre i Profil → Kjørepreferanser.</p>
+          {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
+            <p className="mt-1.5 text-sm text-foreground/90">
+              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+            </p>
+          )}
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Endre i Profil → Kjørepreferanser.</p>
         </div>
 
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
