@@ -523,14 +523,19 @@ export function buildAiSummary(input: {
       parts.push("Ruten krysser nasjonale turistveier der det gir mening, med rasteplasser og lokal arkitektur.");
       break;
     case "cruise":
-      parts.push("Tempoet er rolig — pauser legges naturlig inn ca hver andre time.");
+      parts.push("Tempoet er rolig — pauser legges naturlig inn, og dagene deles opp så du aldri føler at du må skynde deg.");
       break;
     case "fastest":
       parts.push("Vi har valgt mest effektive vei og kun lagt inn nødvendige pauser.");
       break;
   }
-  if (input.vehicle === "motorcycle") parts.push("Stoppene tar hensyn til at det er behagelig å stige av sykkelen.");
-  if (input.vehicle === "rv") parts.push("Stoppene er valgt med plass og høyde for bobil i tankene.");
+  if (input.vehicle === "motorcycle") {
+    parts.push("På MC vekter vi kjøreglede — pausene er korte og lagt der det er trygt å stige av sykkelen.");
+  } else if (input.vehicle === "rv") {
+    parts.push("For bobil holder vi etappene rolige og prioriterer stopp med plass, høyde og overnatting/camping.");
+  } else if (input.vehicle === "car") {
+    parts.push("På bil bygger vi inn behagelige matpauser og attraksjoner langs ruta — uten å miste rytmen.");
+  }
 
   const p = input.prefs;
   if (p) {
@@ -542,15 +547,17 @@ export function buildAiSummary(input: {
     if (flags["food"] || p.stopInterests?.includes("food")) wants.push("matpauser");
     if (flags["charging"] || p.stopInterests?.includes("fuel")) wants.push("drivstoff/lading");
     if (p.stopInterests?.includes("lodging")) wants.push("overnattingsforslag");
+    if (p.stopInterests?.includes("detour")) wants.push("camping- og bobilstopp");
+    if (p.stopInterests?.includes("attraction")) wants.push("attraksjoner");
     if (wants.length) parts.push(`Profilen din vektlegger ${wants.join(", ")} — det er bakt inn i forslagene.`);
 
     const avoid: string[] = [];
     if (flags["no-highway"]) avoid.push("motorvei");
     if (flags["no-ferry"]) avoid.push("ferger");
-    if (avoid.length) parts.push(`Vi unngår ${avoid.join(" og ")} der ruta tillater det.`);
+    if (avoid.length) parts.push(`Vi unngår ${avoid.join(" og ")} der ruta tillater det, selv om det betyr noen ekstra kilometer.`);
 
     if (p.maxDrivingHours && p.pauseEveryMin) {
-      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent hvert ${p.pauseEveryMin}. minutt.`);
+      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent ${formatPause(p.pauseEveryMin)}.`);
     } else if (p.maxDrivingHours) {
       parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring.`);
     }
