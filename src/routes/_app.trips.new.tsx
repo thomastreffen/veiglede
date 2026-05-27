@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +71,15 @@ function NewTripWizard() {
 
   return (
     <div className="py-4 md:py-8 max-w-2xl mx-auto pb-32 md:pb-12">
+      <DemoDebugPanel
+        title="Wizard debug"
+        items={[
+          { label: "Route", value: "/trips/new" },
+          { label: "Step", value: `${step}/4` },
+          { label: "Trip id", value: tripId ?? "ikke opprettet" },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         {step > 1 ? (
           <button onClick={prev} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -227,6 +237,12 @@ function PreviewStep({
         <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
         <PreviewStat label="Kjøretid" value={trip.drivingTime} />
         <PreviewStat label="Dager" value={String(tripDays.length)} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <PreviewStat label="Kjøretøy" value={vehicleMeta(trip.vehicle).label} />
+        <PreviewStat label="Rutestil" value={styleMeta(trip.style).label} />
+        <PreviewStat label="Stopp" value={String(tripStops.length)} />
       </div>
 
       {trip.aiSummary && (
