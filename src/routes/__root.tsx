@@ -69,10 +69,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const themeInit = `(function(){try{var t=localStorage.getItem('veiglede.theme');if(t==='light'){document.documentElement.classList.add('light');}}catch(e){}})();`;
+
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nb">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body>{children}<Scripts /></body>
     </html>
   );

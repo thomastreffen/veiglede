@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
+import { useTheme, setTheme, type Theme } from "@/lib/theme";
+import { Moon, Sun } from "lucide-react";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
@@ -8,6 +10,7 @@ export const Route = createFileRoute("/_app/settings")({
 
 function Settings() {
   const debug = useDebugMode();
+  const theme = useTheme();
   return (
     <div className="py-6 max-w-xl">
       <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Du</p>
@@ -26,7 +29,17 @@ function Settings() {
         <div className="pt-4 border-t border-border space-y-3 text-sm">
           <Row label="Enheter" value="Kilometer" />
           <Row label="Standardkjøretøy" value="Motorsykkel" />
-          <Row label="Tema" value="Mørk" />
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-border bg-surface p-6">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Utseende</p>
+        <h2 className="mt-1 font-display text-xl uppercase">Tema</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Mørk modus er standard. Bytt til lys for kjøring i dagslys.</p>
+
+        <div className="mt-4 inline-flex rounded-2xl border border-border bg-background p-1">
+          <ThemeOption current={theme} value="dark" label="Mørk" icon={<Moon className="h-4 w-4" />} />
+          <ThemeOption current={theme} value="light" label="Lys" icon={<Sun className="h-4 w-4" />} />
         </div>
       </div>
 
@@ -66,3 +79,16 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function ThemeOption({ current, value, label, icon }: { current: Theme; value: Theme; label: string; icon: React.ReactNode }) {
+  const active = current === value;
+  return (
+    <button
+      onClick={() => setTheme(value)}
+      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
