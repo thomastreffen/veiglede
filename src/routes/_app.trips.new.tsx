@@ -3,7 +3,7 @@ import { useState } from "react";
 import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
 import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
-import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { TripMap } from "@/components/TripMap";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
