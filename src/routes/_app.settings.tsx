@@ -31,7 +31,10 @@ function DangerZone() {
         <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Permanent</span>
       </div>
       <p className="mt-3 text-sm text-muted-foreground">
-        Dette sletter kontoen din og fjerner lokale Veiglede-data fra denne nettleseren. Profil, kjøretøy, turer, preferanser og delte turlenker fjernes permanent.
+        Dette sletter Veiglede-kontoen din og fjerner lokale Veiglede-data fra denne nettleseren. Profil, kjøretøy, turer, preferanser og delte turlenker fjernes permanent.
+      </p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Hvis du logger inn igjen med samme Google-konto senere, opprettes en helt ny Veiglede-profil — gamle data hentes ikke tilbake.
       </p>
       <p className="mt-1 text-xs text-muted-foreground">Kan ikke angres. 30 dagers gjenoppretting kan komme senere.</p>
       {!open ? (

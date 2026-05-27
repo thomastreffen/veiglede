@@ -4,10 +4,7 @@ import { Home, Map, BookOpen, User, Plus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { getOnboardingStatus } from "@/lib/account";
-
-
-
-
+import { VeigledeLogo } from "@/components/VeigledeLogo";
 
 const nav = [
   { to: "/", label: "Hjem", icon: Home, exact: true },
@@ -16,15 +13,9 @@ const nav = [
   { to: "/settings", label: "Profil", icon: User },
 ];
 
+/** Back-compat alias. New code should import VeigledeLogo directly. */
 export function VeigledeMark({ className }: { className?: string }) {
-  return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <svg viewBox="0 0 32 32" className="h-6 w-6">
-        <path d="M16 4 L29 28 L22 28 L16 16 L10 28 L3 28 Z" fill="oklch(0.78 0.17 65)" />
-      </svg>
-      <span className="font-display text-lg tracking-[0.08em]">VEIGLEDE</span>
-    </span>
-  );
+  return <VeigledeLogo className={className} />;
 }
 
 export function AppShell() {

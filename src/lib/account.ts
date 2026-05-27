@@ -52,17 +52,36 @@ export async function deleteMyAccount(): Promise<void> {
   // data back into a fresh login.
   try { await supabase.auth.signOut(); } catch { /* ignore */ }
   try {
-    // Nuke every veiglede.* key except the visual theme preference.
+    // Nuke every veiglede.* key except the visual theme preference and
+    // any cross-session notice flags (e.g. so the next sign-in can show
+    // "Vi har satt opp en ny profil" instead of a silent re-onboarding).
+    const PRESERVE = new Set(["veiglede.theme"]);
+    const isPreserved = (k: string) =>
+      PRESERVE.has(k) || k.startsWith("veiglede.notice.");
     const toRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith("veiglede.") && k !== "veiglede.theme") toRemove.push(k);
+      if (k && k.startsWith("veiglede.") && !isPreserved(k)) toRemove.push(k);
     }
     toRemove.forEach((k) => localStorage.removeItem(k));
-    // Also wipe sessionStorage just in case.
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const k = sessionStorage.key(i);
-      if (k && k.startsWith("veiglede.")) sessionStorage.removeItem(k);
+      if (k && k.startsWith("veiglede.") && !isPreserved(k)) sessionStorage.removeItem(k);
     }
+    // Mark the browser so the next onboarding can explain what's happening.
+    localStorage.setItem("veiglede.notice.profileDeleted", "1");
   } catch { /* ignore */ }
+}
+
+/**
+ * Returns true (and clears the flag) if the previous action on this browser
+ * was an account deletion. Used by onboarding to show a reassuring banner
+ * when the user signs back in with the same Google account.
+ */
+export function consumeProfileDeletedNotice(): boolean {
+  try {
+    const v = localStorage.getItem("veiglede.notice.profileDeleted");
+    if (v) localStorage.removeItem("veiglede.notice.profileDeleted");
+    return v === "1";
+  } catch { return false; }
 }

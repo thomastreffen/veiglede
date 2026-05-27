@@ -61,7 +61,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        // Veiglede chevron favicon — keep visually in sync with
+        // <LogoGlyph /> in src/components/VeigledeLogo.tsx.
+        href:
+          'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%2313131c"/><path d="M16 5 L29 28 L22 28 L16 16 L10 28 L3 28 Z" fill="%23f0a35a"/></svg>',
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useTripsStore, stopMeta, vehicleMeta, styleMeta, COVERS, type CoverKey,
 } from "@/lib/trips-store";
+import { VeigledeLogo } from "@/components/VeigledeLogo";
 import {
   ArrowLeft, MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock,
   Radio, Camera, Users, BookOpen,
@@ -39,7 +40,7 @@ function SharedTrip() {
       {/* Public top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto max-w-2xl flex items-center justify-between px-4 py-3">
-          <Link to="/" className="font-display text-lg uppercase tracking-wider">Veiglede</Link>
+          <Link to="/" aria-label="Veiglede"><VeigledeLogo size="md" /></Link>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
             <Eye className="h-3 w-3" /> Delt visning
           </span>

@@ -10,6 +10,7 @@ import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { TripMap } from "@/components/TripMap";
+import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
@@ -62,6 +63,7 @@ function Roadbook() {
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
       <header className="mt-6 text-center max-w-2xl mx-auto">
+        <div className="flex justify-center mb-3"><VeigledeLogo size="sm" /></div>
         <p className="text-[11px] uppercase tracking-[0.3em] text-primary">Roadbook</p>
         <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
         <p className="mt-3 text-muted-foreground">{trip.origin} → {trip.destination}</p>
