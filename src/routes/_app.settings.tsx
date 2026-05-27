@@ -37,7 +37,7 @@ function Settings() {
         />
 
         <button
-          onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); location.reload(); } }}
+          onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); localStorage.removeItem("veiglede.v3"); location.reload(); } }}
           className="mt-4 w-full rounded-2xl border border-border bg-background py-3 text-sm hover:border-primary"
         >
           Tilbakestill demo-data
