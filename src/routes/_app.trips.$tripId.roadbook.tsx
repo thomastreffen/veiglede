@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useTripsStore, stopMeta, vehicleMeta, styleMeta,
   getPartnerTips, getPhotoMemories,
 } from "@/lib/trips-store";
+import { ShareTripModal } from "@/components/ShareTripModal";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
 function Roadbook() {
   const { tripId } = Route.useParams();
   const { trips, days, stops } = useTripsStore();
+  const [shareOpen, setShareOpen] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
   if (!trip) return <div className="py-10">Tur ikke funnet.</div>;
 
@@ -32,10 +35,11 @@ function Roadbook() {
           <ArrowLeft className="h-4 w-4" /> Planlegger
         </Link>
         <div className="flex gap-2">
-          <button className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary"><Share2 className="h-3.5 w-3.5" /> Del</button>
+          <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> Del</button>
           <button className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary"><Download className="h-3.5 w-3.5" /> Eksport</button>
         </div>
       </div>
+      <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
       <header className="mt-6 text-center max-w-2xl mx-auto">
         <p className="text-[11px] uppercase tracking-[0.3em] text-primary">Roadbook</p>
