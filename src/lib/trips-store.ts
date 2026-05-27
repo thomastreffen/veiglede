@@ -539,6 +539,8 @@ export function buildAiSummary(input: {
 
     if (p.maxDrivingHours && p.pauseEveryMin) {
       parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent hver ${p.pauseEveryMin}. minutt.`);
+    } else if (p.maxDrivingHours) {
+      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring.`);
     }
   }
 
