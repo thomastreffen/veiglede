@@ -65,7 +65,8 @@ function Roadbook() {
         <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
         <p className="mt-3 text-muted-foreground">{trip.origin} → {trip.destination}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{v.emoji} {v.label}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{v.emoji} {vehicleDisplay}</span>
+          {em && <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{em.emoji} {em.label}</span>}
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{s.emoji} {s.label}</span>
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
         </div>
