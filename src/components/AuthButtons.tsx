@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
-  const navigate = useNavigate();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [magic, setMagic] = useState(false);
