@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta } from "@/lib/trips-store";
+import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,14 +41,12 @@ function NewTripWizard() {
     setGenerating(true);
     setStep(4);
     setTimeout(() => {
-      const v = vehicleMeta(vehicle);
       const s = styleMeta(style);
+      const v = vehicleMeta(vehicle);
       const distanceKm = 140 + Math.floor(Math.random() * 520);
       const hours = Math.floor(distanceKm / 60);
       const mins = Math.round(((distanceKm / 60) - hours) * 60);
-      const ai = aiPrompt
-        ? `Basert på «${aiPrompt}» har AI-ko-piloten satt opp en ${s.label.toLowerCase()} for ${v.label.toLowerCase()} fra ${origin} til ${destination}, med stopp tilpasset stil og tempo.`
-        : `${s.label} fra ${origin} til ${destination}, optimalisert for ${v.label.toLowerCase()}. Stopp er foreslått basert på utsikt, mat og pauser underveis.`;
+      const ai = buildAiSummary({ origin, destination, vehicle, style, userPrompt: aiPrompt || undefined });
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
         subtitle: `${s.label} på ${v.label.toLowerCase()}`,

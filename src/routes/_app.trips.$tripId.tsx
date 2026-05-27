@@ -1,7 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta, COVERS, type CoverKey } from "@/lib/trips-store";
+import {
+  useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
+  COVERS, type CoverKey, getRouteSuggestions, getPartnerTips, getPhotoMemories,
+  type SuggestedStop, type PartnerTip,
+} from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
-import { Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon, Camera, Sparkles, Share2, ChevronUp, ChevronDown } from "lucide-react";
+import {
+  Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
+  Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
   head: () => ({ meta: [{ title: "Tur — Veiglede" }] }),
@@ -24,9 +31,14 @@ function TripPlanner() {
   }
 
   const tripDays = days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+  const tripStops = stops.filter((st) => tripDays.some((d) => d.id === st.dayId));
   const v = vehicleMeta(trip.vehicle);
   const s = styleMeta(trip.style);
-  const totalStops = stops.filter((st) => tripDays.some((d) => d.id === st.dayId)).length;
+  const totalStops = tripStops.length;
+
+  const suggestions = getRouteSuggestions(trip);
+  const partnerTips = getPartnerTips(trip);
+  const memories = getPhotoMemories(trip, tripStops);
 
   return (
     <div className="py-4">
@@ -122,15 +134,28 @@ function TripPlanner() {
                     const meta = stopMeta(stop.type);
                     return (
                       <li key={stop.id} className="flex items-stretch">
-                        <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-center gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
+                        <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
                           <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold truncate">{stop.name}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap mt-0.5">
-                              <span>{meta.label}</span>
-                              {stop.estimatedTime && <><span>·</span><span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span></>}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold truncate">{stop.name}</p>
+                              <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
+                              {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
+                              {stop.promoted && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
+                            </div>
+                            {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
+                            <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                              {stop.estimatedTime && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span>}
+                              {stop.durationMin && <><span>·</span><span>{formatDuration(stop.durationMin)}</span></>}
+                              {stop.distanceFromPrevKm !== undefined && idx > 0 && <><span>·</span><span>+{stop.distanceFromPrevKm} km</span></>}
                               {stop.location && <><span>·</span><span>{stop.location}</span></>}
                             </p>
+                            {stop.reason && (
+                              <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
+                                <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                                <span>{stop.reason}</span>
+                              </p>
+                            )}
                           </div>
                         </Link>
                         <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
@@ -153,7 +178,7 @@ function TripPlanner() {
 
 
                 <div className="p-3 bg-background/40 border-t border-border/60 flex gap-2 overflow-x-auto">
-                  {STOP_TYPES.slice(0, 6).map((t) => (
+                  {STOP_TYPES.slice(0, 8).map((t) => (
                     <button key={t.value}
                       onClick={() => {
                         const stop = tripsApi.addStop(day.id, { type: t.value, name: `Nytt ${t.label.toLowerCase()}` });
@@ -168,13 +193,140 @@ function TripPlanner() {
             );
           })}
         </ol>
-
-        <button onClick={() => { if (confirm("Slette hele turen?")) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
-          className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm text-muted-foreground hover:text-destructive hover:border-destructive">
-          <Trash2 className="h-4 w-4" /> Slett tur
-        </button>
       </section>
+
+      {/* Suggested along the route */}
+      <section className="mt-10">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foreslått</p>
+            <h2 className="mt-1 font-display text-2xl uppercase">Langs ruta</h2>
+          </div>
+          <p className="text-[11px] text-muted-foreground">Trykk for å legge til</p>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Steder vi tror passer ruten — basert på {s.label.toLowerCase()} og {v.label.toLowerCase()}.</p>
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {suggestions.map((sug) => (
+            <SuggestionCard key={sug.id} sug={sug} onAdd={() => tripsApi.addSuggestion(tripId, sug)} />
+          ))}
+        </div>
+      </section>
+
+      {/* Photo memories concept */}
+      <section className="mt-10">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foto</p>
+        <h2 className="mt-1 font-display text-2xl uppercase">Bilder fra ruta</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Senere kan bilder du tar underveis kobles automatisk til turen basert på tid og posisjon.</p>
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {memories.length === 0 && (
+            <div className="col-span-3 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              Legg til fotostopp så dukker plassholdere opp her.
+            </div>
+          )}
+          {memories.map((m) => (
+            <div key={m.id} className="aspect-square rounded-xl border border-border bg-gradient-to-br from-surface to-surface-2 grid place-items-center relative overflow-hidden">
+              <span className="text-3xl">{m.emoji}</span>
+              <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-background/90 to-transparent">
+                <p className="text-[10px] uppercase tracking-wider truncate">{m.caption}</p>
+                <p className="text-[9px] text-muted-foreground truncate">{m.location}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Partner tips */}
+      <section className="mt-10">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Partnertips</p>
+            <h2 className="mt-1 font-display text-2xl uppercase">Lokalt langs ruta</h2>
+          </div>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Veiglede er gratis. Lokale tips og partnere vises bare når de passer ruten din.</p>
+
+        <div className="mt-4 space-y-3">
+          {partnerTips.map((tip) => <PartnerCard key={tip.id} tip={tip} />)}
+        </div>
+      </section>
+
+      {/* Practical info */}
+      <section className="mt-10 rounded-2xl border border-border bg-surface p-5">
+        <h2 className="font-display text-xl uppercase">Praktisk info</h2>
+        <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+          <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
+          <li>· Anslått kjøretid: {trip.drivingTime}</li>
+          <li>· Kjøretøy: {v.label} · stil: {s.label}</li>
+          {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })}</li>}
+          <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
+        </ul>
+      </section>
+
+      <button onClick={() => { if (confirm("Slette hele turen?")) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
+        className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm text-muted-foreground hover:text-destructive hover:border-destructive">
+        <Trash2 className="h-4 w-4" /> Slett tur
+      </button>
     </div>
+  );
+}
+
+function SuggestionCard({ sug, onAdd }: { sug: SuggestedStop; onAdd: () => void }) {
+  const meta = stopMeta(sug.type);
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 flex flex-col">
+      <div className="flex items-start gap-3">
+        <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold truncate">{sug.name}</p>
+            {sug.badge && <BadgeChip kind={sug.badge} />}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{meta.label}{sug.location ? ` · ${sug.location}` : ""}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-sm text-foreground/85">{sug.description}</p>
+      <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
+        <Info className="h-3 w-3 mt-0.5 shrink-0" /><span>{sug.reason}</span>
+      </p>
+      <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+        <p className="text-[11px] text-muted-foreground">{sug.durationMin ? formatDuration(sug.durationMin) : "—"}{sug.photoOp ? " · 📸" : ""}</p>
+        <button onClick={onAdd} className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider hover:bg-primary/25">
+          <Plus className="h-3 w-3" /> Legg til
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PartnerCard({ tip }: { tip: PartnerTip }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+      <span className="h-11 w-11 rounded-xl bg-surface-2 grid place-items-center text-xl shrink-0">{tip.emoji}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold truncate">{tip.name}</p>
+          <BadgeChip kind={tip.badge} />
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{tip.category} · {tip.location}</p>
+        <p className="mt-2 text-sm text-foreground/85">{tip.blurb}</p>
+      </div>
+    </div>
+  );
+}
+
+function BadgeChip({ kind }: { kind: "partner" | "promoted" | "local" }) {
+  const map = {
+    partner:  { label: "Partner",   className: "border-primary/40 text-primary",                 icon: <Tag className="h-2.5 w-2.5" /> },
+    promoted: { label: "Promotert", className: "border-primary/40 text-primary bg-primary/10",   icon: <Star className="h-2.5 w-2.5" /> },
+    local:    { label: "Lokalt tips", className: "border-border text-muted-foreground",          icon: <MapPin className="h-2.5 w-2.5" /> },
+  } as const;
+  const m = map[kind];
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${m.className}`}>
+      {m.icon} {m.label}
+    </span>
   );
 }
 
@@ -187,4 +339,12 @@ function BigStat({ icon, label, value }: { icon: React.ReactNode; label: string;
       <p className="mt-1 font-display text-lg md:text-2xl">{value}</p>
     </div>
   );
+}
+
+function formatDuration(min: number): string {
+  if (min >= 60) {
+    const h = Math.floor(min / 60); const m = min % 60;
+    return m ? `${h}t ${m}min` : `${h}t`;
+  }
+  return `${min} min`;
 }

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useTripsStore, tripsApi, STOP_TYPES, type StopType } from "@/lib/trips-store";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips/$tripId/stops/$stopId")({
@@ -55,13 +55,39 @@ function StopEdit() {
           </div>
         </Field>
 
+        <Field label="Kort beskrivelse">
+          <input value={stop.description ?? ""} placeholder="Hva er dette stoppet?" onChange={(e) => tripsApi.updateStop(stop.id, { description: e.target.value })} className={input} />
+        </Field>
+
+        <Field label="Hvorfor passer dette ruten?">
+          <textarea rows={2} value={stop.reason ?? ""} placeholder="F.eks: Naturlig pause etter 90 km, eller best lys på dette tidspunktet." onChange={(e) => tripsApi.updateStop(stop.id, { reason: e.target.value })} className={input} />
+        </Field>
+
         <div className="grid grid-cols-2 gap-4">
           <Field label="Tidspunkt"><input value={stop.estimatedTime ?? ""} placeholder="09:30" onChange={(e) => tripsApi.updateStop(stop.id, { estimatedTime: e.target.value })} className={input} /></Field>
           <Field label="Sted"><input value={stop.location ?? ""} placeholder="Bergen" onChange={(e) => tripsApi.updateStop(stop.id, { location: e.target.value })} className={input} /></Field>
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Tid på stoppet (min)">
+            <input type="number" min={0} value={stop.durationMin ?? ""} placeholder="30" onChange={(e) => tripsApi.updateStop(stop.id, { durationMin: e.target.value ? Number(e.target.value) : undefined })} className={input} />
+          </Field>
+          <Field label="Avstand fra forrige (km)">
+            <input type="number" min={0} value={stop.distanceFromPrevKm ?? ""} placeholder="45" onChange={(e) => tripsApi.updateStop(stop.id, { distanceFromPrevKm: e.target.value ? Number(e.target.value) : undefined })} className={input} />
+          </Field>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Toggle active={!!stop.photoOp} onClick={() => tripsApi.updateStop(stop.id, { photoOp: !stop.photoOp })} icon={<Camera className="h-3.5 w-3.5" />}>
+            Fotomulighet
+          </Toggle>
+          <Toggle active={!!stop.promoted} onClick={() => tripsApi.updateStop(stop.id, { promoted: !stop.promoted })}>
+            Partner / promotert
+          </Toggle>
+        </div>
+
         <Field label="Notater">
-          <textarea rows={5} value={stop.notes ?? ""} placeholder="Hva er verdt å huske…" onChange={(e) => tripsApi.updateStop(stop.id, { notes: e.target.value })} className={input} />
+          <textarea rows={4} value={stop.notes ?? ""} placeholder="Hva er verdt å huske…" onChange={(e) => tripsApi.updateStop(stop.id, { notes: e.target.value })} className={input} />
         </Field>
 
         <div className="pt-2 flex justify-between gap-3">
@@ -73,6 +99,17 @@ function StopEdit() {
         </div>
       </div>
     </div>
+  );
+}
+
+function Toggle({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} className={cn(
+      "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs transition-colors",
+      active ? "border-primary bg-primary/15 text-primary font-semibold" : "border-border bg-surface hover:border-foreground/30"
+    )}>
+      {icon} {children}{active ? " ✓" : ""}
+    </button>
   );
 }
 
