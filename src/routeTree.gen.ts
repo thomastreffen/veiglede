@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public-map-config'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
@@ -57,6 +58,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
+  id: '/api/public-map-config',
+  path: '/api/public-map-config',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppTripsRoute = AppTripsRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
+  '/api/public-map-config': typeof ApiPublicMapConfigRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
+  '/api/public-map-config': typeof ApiPublicMapConfigRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/_app/roadbook': typeof AppRoadbookRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/trips': typeof AppTripsRouteWithChildren
+  '/api/public-map-config': typeof ApiPublicMapConfigRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/roadbook'
     | '/settings'
     | '/trips'
+    | '/api/public-map-config'
     | '/auth/callback'
     | '/invite/$token'
     | '/shared/$tripId'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/roadbook'
     | '/settings'
     | '/trips'
+    | '/api/public-map-config'
     | '/auth/callback'
     | '/invite/$token'
     | '/shared/$tripId'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/_app/roadbook'
     | '/_app/settings'
     | '/_app/trips'
+    | '/api/public-map-config'
     | '/auth/callback'
     | '/invite/$token'
     | '/shared/$tripId'
@@ -208,6 +220,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   InviteTokenRoute: typeof InviteTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
@@ -262,6 +275,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public-map-config': {
+      id: '/api/public-map-config'
+      path: '/api/public-map-config'
+      fullPath: '/api/public-map-config'
+      preLoaderRoute: typeof ApiPublicMapConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/trips': {
@@ -372,6 +392,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   InviteTokenRoute: InviteTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
