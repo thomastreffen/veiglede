@@ -1,9 +1,17 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
 import { stopMeta } from "@/lib/trips-store";
+import { mapConfig } from "@/lib/map";
 import { cn } from "@/lib/utils";
+
+// Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
+// for when MapTiler is actually configured.
+const MapLibreTripMap = lazy(() =>
+  import("./map/MapLibreTripMap").then((m) => ({ default: m.MapLibreTripMap })),
+);
+
 
 interface Props {
   trip: Trip;
