@@ -6,9 +6,12 @@ import {
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
+import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { TripTracker } from "@/components/TripTracker";
+import { TripMemories } from "@/components/TripMemories";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
