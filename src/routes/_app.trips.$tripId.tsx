@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
@@ -5,6 +6,7 @@ import {
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { ShareTripModal } from "@/components/ShareTripModal";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
@@ -19,6 +21,7 @@ function TripPlanner() {
   const { tripId } = Route.useParams();
   const { trips, days, stops } = useTripsStore();
   const navigate = useNavigate();
+  const [shareOpen, setShareOpen] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
 
   if (!trip) {
