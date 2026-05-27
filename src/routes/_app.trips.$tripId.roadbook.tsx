@@ -87,9 +87,14 @@ function Roadbook() {
 
       {trip.aiSummary && (
         <section className="mt-8 mx-auto max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-            <Sparkles className="h-4 w-4" /> Hvorfor denne ruta
-          </p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
+              <Sparkles className="h-4 w-4" /> Hvorfor denne ruta
+            </p>
+            <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-primary">
+              Tilpasset profilen din · {prefs.stopInterests.length} interesser
+            </span>
+          </div>
           <p className="mt-2 text-sm leading-relaxed">{trip.aiSummary}</p>
         </section>
       )}
