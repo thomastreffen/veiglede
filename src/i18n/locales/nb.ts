@@ -124,6 +124,16 @@ export const nb = {
     backHome: "Tilbake til Veiglede",
     ownerOpening: "Du er eieren av denne turen.",
   },
+  map: {
+    origin: "Start",
+    destination: "Mål",
+    stop: "Stopp",
+    suggestion: "Forslag",
+    approximated: "Omtrentlig plassering",
+    routeFallback: "Foreløpig rute — viser luftlinje mellom stopp",
+    realRoute: "Faktisk kjørerute",
+    noKeys: "Demo-kart (ingen kart-nøkkel konfigurert)",
+  },
 };
 
 export type Dict = typeof nb;
