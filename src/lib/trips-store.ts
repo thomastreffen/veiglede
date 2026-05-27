@@ -531,12 +531,14 @@ export interface AiPrefsInput {
 
 export function buildAiSummary(input: {
   origin: string; destination: string; vehicle: VehicleType; style: RouteStyle;
+  energy?: EnergySource; vehicleName?: string;
   userPrompt?: string; prefs?: AiPrefsInput;
 }): string {
   const v = vehicleMeta(input.vehicle);
   const s = styleMeta(input.style);
   const parts: string[] = [];
-  parts.push(`Ruten fra ${input.origin} til ${input.destination} er bygget for ${v.label.toLowerCase()} med ${s.label.toLowerCase()}.`);
+  const vehicleLabel = input.vehicleName ?? v.label.toLowerCase();
+  parts.push(`Ruten fra ${input.origin} til ${input.destination} er bygget for ${vehicleLabel} med ${s.label.toLowerCase()}.`);
   switch (input.style) {
     case "curvy":
       parts.push("Vi prioriterer svingete strekninger og unngår motorvei der det er praktisk.");
@@ -563,6 +565,15 @@ export function buildAiSummary(input: {
     parts.push("For bobil holder vi etappene rolige og prioriterer stopp med plass, høyde og overnatting/camping.");
   } else if (input.vehicle === "car") {
     parts.push("På bil bygger vi inn behagelige matpauser og attraksjoner langs ruta — uten å miste rytmen.");
+  }
+  if (input.energy === "electric") {
+    parts.push("Siden bilen er elektrisk, planlegger vi ladestopp ved hurtigladere — ikke bensinstasjoner.");
+  } else if (input.energy === "hybrid") {
+    parts.push("Som hybrid kan du både lade og tanke — vi tar med begge typer stopp.");
+  } else if (input.energy === "diesel") {
+    parts.push("Diesel er rikelig på ruta, så vi prioriterer komfort og pauser fremfor å jakte stasjoner.");
+  } else if (input.energy === "petrol") {
+    parts.push("Vi unngår elektriske ladestopp og holder oss til bensinstasjoner langs ruta.");
   }
 
   const p = input.prefs;
