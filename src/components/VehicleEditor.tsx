@@ -14,6 +14,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicle?: Vehicle; // edit mode if present
+  onSaved?: (vehicle: Vehicle) => void;
 }
 
 export function VehicleEditor({ open, onOpenChange, vehicle }: Props) {
