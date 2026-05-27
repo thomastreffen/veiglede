@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
@@ -8,7 +8,8 @@ import {
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { getVehicleById, energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
-import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { TripMap } from "@/components/TripMap";
+import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
@@ -18,7 +19,9 @@ import { TripMemories } from "@/components/TripMemories";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
+  Navigation, CornerDownRight,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
   head: () => ({ meta: [{ title: "Tur — Veiglede" }] }),
@@ -33,15 +36,19 @@ function TripPlanner() {
   const tracking = useTripTracking(tripId);
   const trackMeta = statusMeta(tracking.status);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [shareOpen, setShareOpenRaw] = useState(false);
   const [savePromptOpen, setSavePromptOpen] = useState(false);
-  const { user } = useAuth();
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const setShareOpen = (v: boolean) => { if (v && !user) { setSavePromptOpen(true); return; } setShareOpenRaw(v); };
+
   const trip = trips.find((t) => t.id === tripId);
 
   if (pathname !== `/trips/${tripId}`) {
     return <Outlet />;
   }
+
 
   if (!trip) {
     return (
@@ -66,6 +73,39 @@ function TripPlanner() {
   const suggestions = getRouteSuggestions(trip, mergedInterests);
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
+
+  // Project the trip so suggestions can be measured against the route polyline.
+  const projection = useMemo(() => projectTrip(trip, tripDays, tripStops), [trip, tripDays, tripStops]);
+  const routePoints = useMemo(
+    () => [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination],
+    [projection],
+  );
+  const enrichedSuggestions = useMemo(
+    () => suggestions.map((sug) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
+    [suggestions, routePoints],
+  );
+  const suggestionPins = useMemo(
+    () =>
+      enrichedSuggestions
+        .filter((e) => e.info.loc)
+        .map((e) => ({
+          id: e.sug.id,
+          name: e.sug.name,
+          loc: e.info.loc!,
+          emoji: stopMeta(e.sug.type).emoji,
+        })),
+    [enrichedSuggestions],
+  );
+
+  const handleSelectStop = (id: string | null) => {
+    setSelectedStopId(id);
+    if (id && typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        document.getElementById(`stop-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  };
+
 
   return (
     <div className="py-4">
@@ -120,8 +160,18 @@ function TripPlanner() {
 
       {/* Map */}
       <section className="mt-4">
-        <MapPlaceholder height="h-44 md:h-64" labels={[trip.origin, trip.destination]} distance={`${trip.distanceKm} km`} time={trip.drivingTime} />
+        <TripMap
+          trip={trip}
+          days={tripDays}
+          stops={tripStops}
+          selectedStopId={selectedStopId}
+          onSelectStop={handleSelectStop}
+          suggestionPins={suggestionPins}
+          hoveredSuggestionId={hoveredSuggestionId}
+          height="h-56 md:h-72"
+        />
       </section>
+
 
       {/* AI explanation */}
       {trip.aiSummary && (
@@ -211,8 +261,14 @@ function TripPlanner() {
                   {dayStops.map((stop, idx) => {
                     const meta = stopMeta(stop.type);
                     return (
-                      <li key={stop.id} className="flex items-stretch">
+                      <li
+                        key={stop.id}
+                        id={`stop-${stop.id}`}
+                        className={`flex items-stretch transition-colors ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
+                        onMouseEnter={() => setSelectedStopId(stop.id)}
+                      >
                         <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
+
                           <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -289,11 +345,22 @@ function TripPlanner() {
         <p className="mt-1 text-xs text-muted-foreground">Tilpasset {vehicleDisplay}{em ? ` (${em.label.toLowerCase()})` : ""} · {s.label.toLowerCase()} · interesser fra profil og kjøretøy.</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {suggestions.map((sug) => (
-            <SuggestionCard key={sug.id} sug={sug} onAdd={() => tripsApi.addSuggestion(tripId, sug)} />
+          {enrichedSuggestions.map(({ sug, info }) => (
+            <SuggestionCard
+              key={sug.id}
+              sug={sug}
+              detourMin={info.detourMin}
+              distanceFromRouteKm={info.distanceFromRouteKm}
+              off={info.off}
+              vehicleDisplay={vehicleDisplay}
+              styleLabel={s.label}
+              onAdd={() => tripsApi.addSuggestion(tripId, sug)}
+              onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
+            />
           ))}
         </div>
       </section>
+
 
       {/* Photo memories concept */}
       <section id="photos" className="mt-10 scroll-mt-24">
@@ -377,10 +444,20 @@ function TripPlanner() {
   );
 }
 
-function SuggestionCard({ sug, onAdd }: { sug: SuggestedStop; onAdd: () => void }) {
+function SuggestionCard({
+  sug, onAdd, onHover, detourMin, distanceFromRouteKm, off, vehicleDisplay, styleLabel,
+}: {
+  sug: SuggestedStop; onAdd: () => void; onHover: (h: boolean) => void;
+  detourMin: number; distanceFromRouteKm: number; off: boolean;
+  vehicleDisplay: string; styleLabel: string;
+}) {
   const meta = stopMeta(sug.type);
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 flex flex-col">
+    <div
+      className="rounded-2xl border border-border bg-surface p-4 flex flex-col hover:border-primary/50 transition-colors"
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+    >
       <div className="flex items-start gap-3">
         <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
         <div className="flex-1 min-w-0">
@@ -392,11 +469,27 @@ function SuggestionCard({ sug, onAdd }: { sug: SuggestedStop; onAdd: () => void 
         </div>
       </div>
       <p className="mt-3 text-sm text-foreground/85">{sug.description}</p>
+      <div className="mt-2 flex items-center gap-2 flex-wrap text-[11px]">
+        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${off ? "border-amber-500/40 text-amber-300" : "border-border text-muted-foreground"}`}>
+          <CornerDownRight className="h-3 w-3" />
+          {off ? `+${detourMin} min detour` : "På ruta"}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground">
+          <Navigation className="h-3 w-3" />
+          {distanceFromRouteKm < 1 ? "<1 km" : `${distanceFromRouteKm} km`} fra ruta
+        </span>
+        {sug.durationMin && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground">
+            <Clock className="h-3 w-3" /> {formatDuration(sug.durationMin)}
+          </span>
+        )}
+      </div>
       <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
-        <Info className="h-3 w-3 mt-0.5 shrink-0" /><span>{sug.reason}</span>
+        <Info className="h-3 w-3 mt-0.5 shrink-0" />
+        <span>{sug.reason} <span className="text-muted-foreground">Passer {vehicleDisplay.toLowerCase()} · {styleLabel.toLowerCase()}.</span></span>
       </p>
       <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-border/50">
-        <p className="text-[11px] text-muted-foreground">{sug.durationMin ? formatDuration(sug.durationMin) : "—"}{sug.photoOp ? " · 📸" : ""}</p>
+        <p className="text-[11px] text-muted-foreground">{sug.photoOp ? "📸 fotomulighet" : ""}</p>
         <button onClick={onAdd} className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider hover:bg-primary/25">
           <Plus className="h-3 w-3" /> Legg til
         </button>
@@ -404,6 +497,7 @@ function SuggestionCard({ sug, onAdd }: { sug: SuggestedStop; onAdd: () => void 
     </div>
   );
 }
+
 
 function PartnerCard({ tip }: { tip: PartnerTip }) {
   return (
