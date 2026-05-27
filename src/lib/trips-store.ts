@@ -98,7 +98,7 @@ interface State { trips: Trip[]; days: TripDay[]; stops: Stop[] }
 
 const EMPTY_STATE: State = { trips: [], days: [], stops: [] };
 
-const KEY = "veiglede.v3";
+const KEY = "veiglede.v4";
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
 function seed(): State {
