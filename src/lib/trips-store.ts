@@ -14,6 +14,7 @@ export type StopType =
 
 export type VehicleType = "motorcycle" | "car" | "rv";
 export type RouteStyle = "fastest" | "scenic" | "curvy" | "photo" | "tourist" | "cruise";
+export type EnergySource = "petrol" | "diesel" | "electric" | "hybrid";
 
 export interface Stop {
   id: string;
