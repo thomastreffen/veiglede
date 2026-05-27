@@ -17,7 +17,7 @@ function Landing() {
     <div className="min-h-screen bg-background bg-glow-orange">
       <header className="mx-auto max-w-5xl flex items-center justify-between px-4 md:px-6 py-4">
         <VeigledeMark />
-        <Link to="/trips" className="text-sm text-muted-foreground hover:text-foreground">Åpne app →</Link>
+        <Link to="/trips" className="text-sm text-muted-foreground hover:text-foreground">Start planlegging →</Link>
       </header>
 
       <section className="mx-auto max-w-5xl px-4 md:px-6 pt-8 md:pt-14 pb-12">
