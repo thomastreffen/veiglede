@@ -273,7 +273,7 @@ function TripPlanner() {
       </section>
 
       {/* Practical info */}
-      <section className="mt-10 rounded-2xl border border-border bg-surface p-5">
+      <section id="practical" className="mt-10 rounded-2xl border border-border bg-surface p-5 scroll-mt-24">
         <h2 className="font-display text-xl uppercase">Praktisk info</h2>
         <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
           <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
@@ -282,6 +282,10 @@ function TripPlanner() {
           {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })}</li>}
           <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
         </ul>
+        <Link to="/trips/$tripId/roadbook" params={{ tripId }}
+          className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
+          <BookOpen className="h-4 w-4" /> Åpne roadbook
+        </Link>
       </section>
 
       <button onClick={() => { if (confirm("Slette hele turen?")) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
