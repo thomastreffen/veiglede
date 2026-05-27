@@ -25,6 +25,7 @@ interface Props {
   hoveredSuggestionId?: string | null;
   compact?: boolean;
   variant?: "dark" | "light";
+  onError?: () => void;
 }
 
 const DAY_COLORS = [
