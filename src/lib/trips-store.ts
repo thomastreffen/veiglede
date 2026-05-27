@@ -152,11 +152,44 @@ export const tripsApi = {
   createTrip(input: Omit<Trip, "id" | "createdAt" | "stopsCount"> & { stopsCount?: number }): Trip {
     ensureInit();
     const trip: Trip = { ...input, id: uid(), stopsCount: input.stopsCount ?? 0, createdAt: Date.now() };
-    state = { ...state, trips: [trip, ...state.trips] };
-    const day: TripDay = { id: uid(), tripId: trip.id, dayNumber: 1, title: `${trip.origin} → ${trip.destination}`, date: trip.startDate, summary: trip.aiSummary };
-    state = { ...state, days: [...state.days, day] };
+
+    const numDays = Math.max(1, Math.min(5, Math.round(trip.distanceKm / 250)));
+    const newDays: TripDay[] = [];
+    const newStops: Stop[] = [];
+    for (let i = 0; i < numDays; i++) {
+      newDays.push({
+        id: uid(),
+        tripId: trip.id,
+        dayNumber: i + 1,
+        title: numDays === 1 ? `${trip.origin} → ${trip.destination}` : `Dag ${i + 1}`,
+        date: shiftDate(trip.startDate, i),
+        summary: i === 0 ? trip.aiSummary : undefined,
+      });
+    }
+    const suggestions = suggestStops(trip);
+    suggestions.forEach((sug, idx) => {
+      const dayIdx = Math.min(numDays - 1, Math.floor((idx / suggestions.length) * numDays));
+      const day = newDays[dayIdx];
+      newStops.push({
+        id: uid(),
+        dayId: day.id,
+        name: sug.name,
+        type: sug.type,
+        location: sug.location,
+        estimatedTime: sug.time,
+        notes: sug.notes,
+        order: newStops.filter((s) => s.dayId === day.id).length,
+      });
+    });
+
+    const finalTrip = { ...trip, stopsCount: newStops.length };
+    state = {
+      trips: [finalTrip, ...state.trips],
+      days: [...state.days, ...newDays],
+      stops: [...state.stops, ...newStops],
+    };
     persist();
-    return trip;
+    return finalTrip;
   },
   deleteTrip(id: string) {
     ensureInit();
@@ -204,7 +237,89 @@ export const tripsApi = {
     state = { ...state, stops: state.stops.filter((s) => s.id !== id) };
     persist();
   },
+  moveStop(id: string, direction: -1 | 1) {
+    ensureInit();
+    const stop = state.stops.find((s) => s.id === id);
+    if (!stop) return;
+    const siblings = state.stops.filter((s) => s.dayId === stop.dayId).sort((a, b) => a.order - b.order);
+    const idx = siblings.findIndex((s) => s.id === id);
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return;
+    const a = siblings[idx], b = siblings[swapIdx];
+    state = {
+      ...state,
+      stops: state.stops.map((s) => {
+        if (s.id === a.id) return { ...s, order: b.order };
+        if (s.id === b.id) return { ...s, order: a.order };
+        return s;
+      }),
+    };
+    persist();
+  },
 };
+
+function shiftDate(start: string | undefined, days: number): string | undefined {
+  if (!start) return undefined;
+  const d = new Date(start);
+  if (isNaN(d.getTime())) return start;
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function suggestStops(trip: Trip): { name: string; type: StopType; location?: string; time?: string; notes?: string }[] {
+  const base: { name: string; type: StopType; location?: string; time?: string; notes?: string }[] = [
+    { name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin, time: "08:30", notes: "Sjekk dekktrykk og fyll tanken." },
+  ];
+  switch (trip.style) {
+    case "scenic":
+      base.push(
+        { name: "Panoramautsikt", type: "viewpoint", time: "10:30", notes: "Klassisk fotostopp med vidt utsyn." },
+        { name: "Lokal kafé", type: "food", time: "12:30", notes: "Anbefalt for hjemmebakst." },
+        { name: "Fjordutsikt", type: "viewpoint", time: "15:00" },
+      );
+      break;
+    case "curvy":
+      base.push(
+        { name: "Hårnålspass", type: "viewpoint", time: "10:30", notes: "Tekniske svinger — kjør med margin." },
+        { name: "Drivstoff", type: "fuel", time: "12:00" },
+        { name: "Fjellovergang", type: "viewpoint", time: "14:00" },
+      );
+      break;
+    case "photo":
+      base.push(
+        { name: "Morgenlys fotostopp", type: "photo", time: "09:30" },
+        { name: "Ikonisk landskap", type: "photo", time: "11:30", notes: "Husk stativ for HDR." },
+        { name: "Lunch med utsikt", type: "food", time: "13:30" },
+        { name: "Gylden time", type: "photo", time: "18:00" },
+      );
+      break;
+    case "tourist":
+      base.push(
+        { name: "Nasjonal turistvei", type: "attraction", time: "11:00", notes: "Offisiell rasteplass." },
+        { name: "Lokal severdighet", type: "attraction", time: "13:30" },
+        { name: "Utkikkspunkt", type: "viewpoint", time: "15:30" },
+      );
+      break;
+    case "cruise":
+      base.push(
+        { name: "Rolig kaffepause", type: "rest", time: "10:30" },
+        { name: "Lunsj på bryggekanten", type: "food", time: "13:00" },
+      );
+      break;
+    case "fastest":
+      base.push(
+        { name: "Drivstoff", type: "fuel", time: "10:30" },
+        { name: "Rask matpause", type: "food", time: "13:00" },
+      );
+      break;
+  }
+  if (trip.distanceKm > 300) {
+    base.push({ name: "Overnatting", type: "lodging", time: "19:00", notes: "Anbefalt stoppested for natten." });
+  }
+  base.push({ name: `Ankomst ${trip.destination}`, type: "city", location: trip.destination, time: "17:30" });
+  return base;
+}
+
 
 export const STOP_TYPES: { value: StopType; label: string; emoji: string }[] = [
   { value: "viewpoint", label: "Utsikt", emoji: "🏔️" },
