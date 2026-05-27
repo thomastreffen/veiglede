@@ -74,6 +74,39 @@ function TripPlanner() {
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
+  // Project the trip so suggestions can be measured against the route polyline.
+  const projection = useMemo(() => projectTrip(trip, tripDays, tripStops), [trip, tripDays, tripStops]);
+  const routePoints = useMemo(
+    () => [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination],
+    [projection],
+  );
+  const enrichedSuggestions = useMemo(
+    () => suggestions.map((sug) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
+    [suggestions, routePoints],
+  );
+  const suggestionPins = useMemo(
+    () =>
+      enrichedSuggestions
+        .filter((e) => e.info.loc)
+        .map((e) => ({
+          id: e.sug.id,
+          name: e.sug.name,
+          loc: e.info.loc!,
+          emoji: stopMeta(e.sug.type).emoji,
+        })),
+    [enrichedSuggestions],
+  );
+
+  const handleSelectStop = (id: string | null) => {
+    setSelectedStopId(id);
+    if (id && typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        document.getElementById(`stop-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  };
+
+
   return (
     <div className="py-4">
       <DemoDebugPanel
