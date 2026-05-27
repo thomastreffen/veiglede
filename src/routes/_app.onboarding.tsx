@@ -18,7 +18,7 @@ function Onboarding() {
   const [step, setStep] = useState(1);
   const [editorOpen, setEditorOpen] = useState(false);
   const prefs = useDriverPrefs();
-  const { vehicles } = useVehicles();
+  const { vehicles, defaultId } = useVehicles();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login", replace: true });
