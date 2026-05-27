@@ -42,21 +42,21 @@ export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
       if (magic) {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: { emailRedirectTo: callbackUrl },
         });
         if (error) throw error;
         setMsg({ kind: "info", text: "Sjekk e-posten din — vi har sendt en magisk lenke." });
       } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: { emailRedirectTo: callbackUrl },
         });
         if (error) throw error;
         setMsg({ kind: "info", text: "Bekreft e-posten din for å fullføre registreringen." });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: redirectTo });
+        window.location.assign(callbackUrl);
       }
     } catch (err) {
       setMsg({ kind: "error", text: err instanceof Error ? err.message : "Noe gikk galt." });
