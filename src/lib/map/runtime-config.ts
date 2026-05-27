@@ -19,7 +19,7 @@ let resolved: RuntimeMapConfig | null = null;
 export function getRuntimeMapConfig(): Promise<RuntimeMapConfig> {
   if (cached) return cached;
   if (typeof fetch === "undefined") return Promise.resolve(FALLBACK);
-  cached = fetch("/api/public-map-config", { headers: { Accept: "application/json" } })
+  cached = fetch("/api/public/map-config", { headers: { Accept: "application/json" } })
     .then(async (r) => {
       if (!r.ok) return FALLBACK;
       const data = (await r.json()) as Partial<RuntimeMapConfig>;
