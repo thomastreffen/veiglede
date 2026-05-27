@@ -98,7 +98,7 @@ export async function getSharedTrip(token: string): Promise<SharedTripPayload | 
   const { data, error } = await supabase.rpc("get_shared_trip", { p_token: token });
   if (error) throw error;
   if (!data) return null;
-  return data as SharedTripPayload;
+  return data as unknown as SharedTripPayload;
 }
 
 export async function joinTripWithToken(token: string): Promise<TripInvite> {
@@ -106,7 +106,7 @@ export async function joinTripWithToken(token: string): Promise<TripInvite> {
     p_token: token,
   });
   if (error) throw error;
-  return data as TripInvite;
+  return data as unknown as TripInvite;
 }
 
 // --- pending invite handoff (for the post-login resume) ---
