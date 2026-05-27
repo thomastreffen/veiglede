@@ -15,6 +15,7 @@ export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
 function Roadbook() {
   const { tripId } = Route.useParams();
   const { trips, days, stops } = useTripsStore();
+  const [shareOpen, setShareOpen] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
   if (!trip) return <div className="py-10">Tur ikke funnet.</div>;
 
