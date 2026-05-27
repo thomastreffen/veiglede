@@ -24,7 +24,13 @@ function Onboarding() {
     if (!loading && !user) navigate({ to: "/login", replace: true });
   }, [user, loading, navigate]);
 
-  const finish = async () => {
+  const getNext = (fallback: string) => {
+    if (typeof window === "undefined") return fallback;
+    const raw = new URLSearchParams(window.location.search).get("next");
+    return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : fallback;
+  };
+
+  const finish = async (fallback = "/trips/new") => {
     if (user) {
       await supabase.from("profiles").upsert({
         id: user.id,
@@ -32,10 +38,11 @@ function Onboarding() {
         display_name: prefs.displayName,
       });
     }
-    navigate({ to: "/trips/new" });
+    const next = getNext(fallback);
+    window.location.assign(next);
   };
 
-  const skip = async () => { await finish(); };
+  const skip = async () => { await finish("/trips"); };
 
   return (
     <div className="py-8 max-w-2xl mx-auto">
