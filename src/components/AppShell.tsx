@@ -1,6 +1,8 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Home, Map, BookOpen, User, Plus } from "lucide-react";
+import { Home, Map, BookOpen, User, Plus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+
 
 const nav = [
   { to: "/", label: "Hjem", icon: Home, exact: true },
@@ -22,6 +24,7 @@ export function VeigledeMark({ className }: { className?: string }) {
 
 export function AppShell() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
@@ -44,6 +47,15 @@ export function AppShell() {
             <Link to="/trips/new" className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Plus className="h-4 w-4" /> Ny tur
             </Link>
+            {user ? (
+              <Link to="/settings" className="ml-1 grid place-items-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-sm font-semibold" title={user.email ?? ""}>
+                {(user.email ?? "?").charAt(0).toUpperCase()}
+              </Link>
+            ) : (
+              <Link to="/login" className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-surface-2">
+                <LogIn className="h-4 w-4" /> Logg inn
+              </Link>
+            )}
           </nav>
         </div>
       </header>
