@@ -95,6 +95,6 @@ export const nb = {
     en: "English",
     de: "Deutsch",
   },
-} as const;
+};
 
 export type Dict = typeof nb;
