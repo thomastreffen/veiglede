@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Plus, Sparkles, Map, BookOpen } from "lucide-react";
 import { VeigledeMark } from "@/components/AppShell";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
