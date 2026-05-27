@@ -1,7 +1,10 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Home, Map, BookOpen, User, Plus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+
 
 
 const nav = [
