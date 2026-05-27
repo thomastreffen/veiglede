@@ -126,6 +126,8 @@ function TripsDashboard() {
 function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] }) {
   const v = vehicleMeta(t.vehicle);
   const s = styleMeta(t.style);
+  const tracking = useTripTracking(t.id);
+  const tm = statusMeta(tracking.status);
   return (
     <li>
       <Link to="/trips/$tripId" params={{ tripId: t.id }} className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
@@ -138,6 +140,11 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
             <span>{s.emoji}</span> {s.label}
           </span>
           <span className="absolute top-3 right-3 text-xl">{v.emoji}</span>
+          {tracking.status !== "idle" && (
+            <span className={`absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full backdrop-blur px-2.5 py-1 text-[10px] font-semibold border ${tm.cls}`}>
+              {tm.emoji} {tm.label}
+            </span>
+          )}
         </div>
         <div className="p-4 md:p-5">
           <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}</p>
