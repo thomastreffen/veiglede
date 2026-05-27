@@ -8,6 +8,7 @@ import { useDriverPrefs } from "@/lib/driver-prefs";
 import { energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { TripCompanions } from "@/components/TripCompanions";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { TripMap } from "@/components/TripMap";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
