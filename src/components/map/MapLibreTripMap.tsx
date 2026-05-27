@@ -10,7 +10,8 @@ import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import { stopMeta } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip } from "@/lib/geo";
-import { getCachedRoute, getMaptilerStyleUrl, mapConfig } from "@/lib/map";
+import { getCachedRoute, mapConfig } from "@/lib/map";
+import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -26,6 +27,8 @@ interface Props {
   compact?: boolean;
   variant?: "dark" | "light";
   onError?: () => void;
+  /** MapTiler browser key fetched at runtime via /api/public-map-config. */
+  maptilerKey: string;
 }
 
 const DAY_COLORS = [
