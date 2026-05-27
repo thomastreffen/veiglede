@@ -16,9 +16,10 @@ type Step = 1 | 2 | 3 | 4;
 
 function NewTripWizard() {
   const navigate = useNavigate();
+  const prefs = useDriverPrefs();
   const [step, setStep] = useState<Step>(1);
-  const [vehicle, setVehicle] = useState<VehicleType>("motorcycle");
-  const [style, setStyle] = useState<RouteStyle>("curvy");
+  const [vehicle, setVehicle] = useState<VehicleType>(prefs.defaultVehicle);
+  const [style, setStyle] = useState<RouteStyle>(prefs.defaultStyle);
   const [origin, setOrigin] = useState("Drammen");
   const [destination, setDestination] = useState("Hardangervidda");
   const [date, setDate] = useState("2026-06-07");
