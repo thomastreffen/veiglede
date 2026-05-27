@@ -444,10 +444,20 @@ function TripPlanner() {
   );
 }
 
-function SuggestionCard({ sug, onAdd }: { sug: SuggestedStop; onAdd: () => void }) {
+function SuggestionCard({
+  sug, onAdd, onHover, detourMin, distanceFromRouteKm, off, vehicleDisplay, styleLabel,
+}: {
+  sug: SuggestedStop; onAdd: () => void; onHover: (h: boolean) => void;
+  detourMin: number; distanceFromRouteKm: number; off: boolean;
+  vehicleDisplay: string; styleLabel: string;
+}) {
   const meta = stopMeta(sug.type);
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 flex flex-col">
+    <div
+      className="rounded-2xl border border-border bg-surface p-4 flex flex-col hover:border-primary/50 transition-colors"
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+    >
       <div className="flex items-start gap-3">
         <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
         <div className="flex-1 min-w-0">
@@ -459,11 +469,27 @@ function SuggestionCard({ sug, onAdd }: { sug: SuggestedStop; onAdd: () => void 
         </div>
       </div>
       <p className="mt-3 text-sm text-foreground/85">{sug.description}</p>
+      <div className="mt-2 flex items-center gap-2 flex-wrap text-[11px]">
+        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${off ? "border-amber-500/40 text-amber-300" : "border-border text-muted-foreground"}`}>
+          <CornerDownRight className="h-3 w-3" />
+          {off ? `+${detourMin} min detour` : "På ruta"}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground">
+          <Navigation className="h-3 w-3" />
+          {distanceFromRouteKm < 1 ? "<1 km" : `${distanceFromRouteKm} km`} fra ruta
+        </span>
+        {sug.durationMin && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground">
+            <Clock className="h-3 w-3" /> {formatDuration(sug.durationMin)}
+          </span>
+        )}
+      </div>
       <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
-        <Info className="h-3 w-3 mt-0.5 shrink-0" /><span>{sug.reason}</span>
+        <Info className="h-3 w-3 mt-0.5 shrink-0" />
+        <span>{sug.reason} <span className="text-muted-foreground">Passer {vehicleDisplay.toLowerCase()} · {styleLabel.toLowerCase()}.</span></span>
       </p>
       <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-border/50">
-        <p className="text-[11px] text-muted-foreground">{sug.durationMin ? formatDuration(sug.durationMin) : "—"}{sug.photoOp ? " · 📸" : ""}</p>
+        <p className="text-[11px] text-muted-foreground">{sug.photoOp ? "📸 fotomulighet" : ""}</p>
         <button onClick={onAdd} className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider hover:bg-primary/25">
           <Plus className="h-3 w-3" /> Legg til
         </button>
@@ -471,6 +497,7 @@ function SuggestionCard({ sug, onAdd }: { sug: SuggestedStop; onAdd: () => void 
     </div>
   );
 }
+
 
 function PartnerCard({ tip }: { tip: PartnerTip }) {
   return (
