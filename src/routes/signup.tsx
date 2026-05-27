@@ -13,7 +13,10 @@ function SignupPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (user) navigate({ to: "/onboarding", replace: true });
+    // Don't force onboarding here — the AppShell gate + auth callback
+    // decide based on profiles.onboarded_at, so existing Google users
+    // who click "Opprett konto" land in /trips, not onboarding.
+    if (user) navigate({ to: "/trips", replace: true });
   }, [user, navigate]);
 
   return (
@@ -23,7 +26,7 @@ function SignupPage() {
         <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Bli med</p>
         <h1 className="mt-2 font-display text-2xl uppercase">Opprett din konto</h1>
         <p className="mt-1 text-sm text-muted-foreground">Gratis. Lagre turer, kjøretøy og kjørestil på tvers av enheter.</p>
-        <div className="mt-6"><AuthButtons mode="signup" redirectTo="/onboarding" /></div>
+        <div className="mt-6"><AuthButtons mode="signup" redirectTo="/trips" /></div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Har du konto? <Link to="/login" className="text-foreground underline">Logg inn</Link>
         </p>
