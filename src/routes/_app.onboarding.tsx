@@ -175,10 +175,10 @@ function Onboarding() {
             Profilen din er satt opp. Vi har lagret alt på kontoen din — du kan endre når som helst i <Link to="/settings" className="underline text-foreground">profilen</Link>.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <button onClick={finish} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
+            <button onClick={() => finish()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Sparkles className="h-4 w-4" /> Planlegg min første tur
             </button>
-            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); navigate({ to: "/trips" }); }}
+            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext("/trips")); }}
               className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm hover:bg-surface-2">
               Til mine turer
             </button>
