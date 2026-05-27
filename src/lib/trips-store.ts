@@ -72,6 +72,15 @@ export interface Trip {
   cover: CoverKey;
   aiSummary?: string;
   createdAt: number;
+  // Map foundation v1 — cached routing result so we don't re-bill ORS
+  // every time the planner / roadbook mounts. All optional.
+  originLoc?: { lat: number; lng: number };
+  destinationLoc?: { lat: number; lng: number };
+  routeGeometry?: { lat: number; lng: number }[];
+  routeDistanceKm?: number;
+  routeDurationMin?: number;
+  routeProvider?: string;
+  routeWaypointsHash?: string;
 }
 
 export type CoverKey = "fjord" | "mountain" | "coast" | "valley" | "lofoten" | "forest";
