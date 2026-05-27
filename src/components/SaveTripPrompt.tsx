@@ -9,9 +9,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   title?: string;
   description?: string;
+  redirectTo?: string;
 }
 
-export function SaveTripPrompt({ open, onOpenChange, title, description }: Props) {
+export function SaveTripPrompt({ open, onOpenChange, title, description, redirectTo = "/trips" }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -24,7 +25,7 @@ export function SaveTripPrompt({ open, onOpenChange, title, description }: Props
           </DialogDescription>
         </DialogHeader>
         <div className="mt-2">
-          <AuthButtons mode="signup" redirectTo="/trips" />
+          <AuthButtons mode="signup" redirectTo={redirectTo} />
         </div>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           Har du allerede konto? <Link to="/login" className="text-foreground underline" onClick={() => onOpenChange(false)}>Logg inn</Link>

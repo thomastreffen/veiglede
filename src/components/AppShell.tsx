@@ -43,7 +43,10 @@ export function AppShell() {
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      if (!data?.onboarded_at) navigate({ to: "/onboarding", replace: true });
+      if (!data?.onboarded_at) {
+        const next = pathname && pathname !== "/" ? pathname : "/trips";
+        navigate({ to: "/onboarding", search: { next }, replace: true } as never);
+      }
     })();
     return () => { cancelled = true; };
   }, [user, pathname, navigate]);

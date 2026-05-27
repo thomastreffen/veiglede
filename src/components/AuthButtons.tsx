@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Mail, Loader2 } from "lucide-react";
@@ -12,24 +12,26 @@ interface Props {
 }
 
 export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
-  const navigate = useNavigate();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [magic, setMagic] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
 
+  const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
+
   const oauth = async (provider: "google" | "apple") => {
     setLoading(provider); setMsg(null);
-    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
+    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: callbackUrl });
     if (result.error) {
       setMsg({ kind: "error", text: `Klarte ikke logge inn med ${provider}. Prøv igjen.` });
       setLoading(null);
       return;
     }
     if (result.redirected) return; // browser will navigate
-    // tokens already set
-    navigate({ to: redirectTo });
+    // tokens already set — go via callback so onboarding gate runs
+    window.location.assign(callbackUrl);
   };
 
   const submitEmail = async (e: React.FormEvent) => {
@@ -40,21 +42,21 @@ export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
       if (magic) {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: { emailRedirectTo: callbackUrl },
         });
         if (error) throw error;
         setMsg({ kind: "info", text: "Sjekk e-posten din — vi har sendt en magisk lenke." });
       } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: { emailRedirectTo: callbackUrl },
         });
         if (error) throw error;
         setMsg({ kind: "info", text: "Bekreft e-posten din for å fullføre registreringen." });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: redirectTo });
+        window.location.assign(callbackUrl);
       }
     } catch (err) {
       setMsg({ kind: "error", text: err instanceof Error ? err.message : "Noe gikk galt." });

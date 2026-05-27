@@ -14,28 +14,40 @@ function AuthCallback() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      // Supabase auto-detects session from URL (magic link, email confirm, OAuth).
+    const params = new URLSearchParams(window.location.search);
+    const rawNext = params.get("next") || "/trips";
+    // Only allow internal paths
+    const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/trips";
+
+    const decide = async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      if (data.session) {
-        // Decide where to send the user — onboarding if they haven't completed it.
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("onboarded_at")
-          .eq("id", data.session.user.id)
-          .maybeSingle();
-        navigate({ to: profile?.onboarded_at ? "/trips" : "/onboarding", replace: true });
+      if (cancelled) return false;
+      if (error) { setError(error.message); return true; }
+      if (!data.session) return false;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarded_at")
+        .eq("id", data.session.user.id)
+        .maybeSingle();
+      if (cancelled) return true;
+      if (!profile?.onboarded_at) {
+        navigate({ to: "/onboarding", search: { next }, replace: true } as never);
       } else {
-        // No session yet — wait briefly for onAuthStateChange to fire.
-        setTimeout(() => {
-          if (!cancelled) navigate({ to: "/login", replace: true });
-        }, 1500);
+        window.location.replace(next);
       }
+      return true;
+    };
+
+    (async () => {
+      if (await decide()) return;
+      // Wait briefly for onAuthStateChange (OAuth hash exchange)
+      const sub = supabase.auth.onAuthStateChange(async () => { await decide(); });
+      setTimeout(() => {
+        if (!cancelled) {
+          sub.data.subscription.unsubscribe();
+          navigate({ to: "/login", replace: true });
+        }
+      }, 3000);
     })();
     return () => { cancelled = true; };
   }, [navigate]);
