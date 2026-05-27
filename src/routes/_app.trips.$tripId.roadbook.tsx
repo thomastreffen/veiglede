@@ -193,6 +193,25 @@ function Roadbook() {
           </div>
         </section>
 
+        {/* Personalized driving style */}
+        <section className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
+          <p className="mt-1.5 text-sm text-foreground/90">
+            Dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
+            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
+          </p>
+          {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
+            <p className="mt-1.5 text-sm text-foreground/90">
+              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+            </p>
+          )}
+          {prefs.stopInterests.length > 0 && (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Interesser fra profilen: {prefs.stopInterests.map((t) => stopMeta(t).label).join(" · ")}
+            </p>
+          )}
+        </section>
+
         {/* Practical info */}
         <section className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
           <p className="font-display uppercase text-foreground text-base">Praktisk info</p>
@@ -205,6 +224,7 @@ function Roadbook() {
             <li>· Veiglede er gratis for deg som planlegger turen.</li>
           </ul>
         </section>
+
 
       </div>
 
