@@ -77,10 +77,11 @@ const DAY_COLORS = [
  */
 export function TripMap(props: Props) {
   const [errored, setErrored] = useState(false);
-  if (mapConfig.hasRealMap && !errored) {
+  const cfg = useRuntimeMapConfig();
+  if (cfg?.hasRealMap && cfg.maptilerKey && !errored) {
     return (
       <Suspense fallback={<SvgTripMap {...props} />}>
-        <MapLibreTripMap {...props} onError={() => setErrored(true)} />
+        <MapLibreTripMap {...props} maptilerKey={cfg.maptilerKey} onError={() => setErrored(true)} />
       </Suspense>
     );
   }
