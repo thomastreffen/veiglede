@@ -5,6 +5,7 @@ import {
   getPartnerTips, getPhotoMemories,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
+import { energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
