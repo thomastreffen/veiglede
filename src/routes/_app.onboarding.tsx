@@ -85,7 +85,7 @@ function Onboarding() {
 
           <div className="mt-4 grid gap-2">
             {vehicles.map((v) => {
-              const isDefault = v.id === useVehicles().defaultId;
+              const isDefault = v.id === defaultId;
               return (
                 <button
                   key={v.id}
