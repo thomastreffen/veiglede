@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useTripsStore, stopMeta, vehicleMeta, styleMeta,
   getPartnerTips, getPhotoMemories,
 } from "@/lib/trips-store";
+import { ShareTripModal } from "@/components/ShareTripModal";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
