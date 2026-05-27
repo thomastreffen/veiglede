@@ -118,7 +118,7 @@ function TripPlanner() {
       </nav>
 
       {/* Days */}
-      <section className="mt-8">
+      <section id="days" className="mt-8 scroll-mt-24">
         <div className="flex items-end justify-between">
           <h2 className="font-display text-2xl uppercase">Dag for dag</h2>
           <button onClick={() => tripsApi.addDay(tripId)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-xs uppercase tracking-wider hover:border-primary">
