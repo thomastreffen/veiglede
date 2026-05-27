@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const KEYS = {
   prefs: "veiglede.profile.v1",
-  vehicles: "veiglede.vehicles.v1",
+  vehicles: "veiglede.vehicles.v2",
   trips: "veiglede.v4",
 } as const;
 
