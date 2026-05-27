@@ -101,6 +101,22 @@ function TripPlanner() {
         </button>
       </section>
 
+      {/* Quick-jump pills */}
+      <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
+        {[
+          { href: "#days", label: "Dag for dag" },
+          { href: "#along", label: "Langs ruta" },
+          { href: "#photos", label: "Bilder" },
+          { href: "#tips", label: "Lokale tips" },
+          { href: "#practical", label: "Praktisk" },
+        ].map((p) => (
+          <a key={p.href} href={p.href}
+            className="shrink-0 inline-flex items-center rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary">
+            {p.label}
+          </a>
+        ))}
+      </nav>
+
       {/* Days */}
       <section className="mt-8">
         <div className="flex items-end justify-between">
