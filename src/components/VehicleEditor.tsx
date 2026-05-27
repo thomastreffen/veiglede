@@ -14,9 +14,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicle?: Vehicle; // edit mode if present
+  onSaved?: (vehicle: Vehicle) => void;
 }
 
-export function VehicleEditor({ open, onOpenChange, vehicle }: Props) {
+export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
   const isEdit = !!vehicle;
   const [name, setName] = useState("");
   const [type, setType] = useState<VehicleType>("motorcycle");
@@ -82,8 +83,14 @@ export function VehicleEditor({ open, onOpenChange, vehicle }: Props) {
       drivingFlags: flags,
       stopInterests: interests,
     };
-    if (vehicle) vehiclesApi.update(vehicle.id, payload);
-    else vehiclesApi.add(payload);
+    let saved: Vehicle;
+    if (vehicle) {
+      vehiclesApi.update(vehicle.id, payload);
+      saved = { ...vehicle, ...payload };
+    } else {
+      saved = vehiclesApi.add(payload);
+    }
+    onSaved?.(saved);
     onOpenChange(false);
   };
 
