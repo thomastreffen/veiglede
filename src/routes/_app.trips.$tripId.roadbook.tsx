@@ -89,6 +89,15 @@ function Roadbook() {
         </div>
       </header>
 
+      <section className="mt-8 mx-auto max-w-2xl">
+        <TripMap
+          trip={trip}
+          days={tripDays}
+          stops={tripStops}
+          compact
+          height="h-56"
+        />
+      </section>
 
       {trip.aiSummary && (
         <section className="mt-8 mx-auto max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 p-5">
