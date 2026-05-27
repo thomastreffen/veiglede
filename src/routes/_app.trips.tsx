@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useTripsStore, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, type CoverKey } from "@/lib/trips-store";
+import { useTripsStore, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, VEHICLES, type CoverKey } from "@/lib/trips-store";
+import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight } from "lucide-react";
 
@@ -61,6 +62,40 @@ function TripsDashboard() {
         </ul>
       )}
 
+      {/* Vehicle summary */}
+      {trips.length > 0 && (
+        <section className="mt-10">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Mine kjøretøy</h2>
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Totalt per kjøretøy</span>
+          </div>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+            {VEHICLES.map((vh) => {
+              const list = trips.filter((t) => t.vehicle === vh.value);
+              const km = list.reduce((a, t) => a + t.distanceKm, 0);
+              return (
+                <li key={vh.value} className="rounded-2xl border border-border bg-surface p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{vh.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display text-lg uppercase">{vh.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{list.length} {list.length === 1 ? "tur" : "turer"}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between">
+                    <div>
+                      <p className="font-display text-2xl">{km.toLocaleString("nb-NO")} km</p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">planlagt totalt</p>
+                    </div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground italic max-w-[120px] text-right">Senere: faktisk kjørt km logges per tur</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {/* Featured routes */}
       <section className="mt-12">
         <div className="flex items-baseline justify-between">
@@ -91,6 +126,8 @@ function TripsDashboard() {
 function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] }) {
   const v = vehicleMeta(t.vehicle);
   const s = styleMeta(t.style);
+  const tracking = useTripTracking(t.id);
+  const tm = statusMeta(tracking.status);
   return (
     <li>
       <Link to="/trips/$tripId" params={{ tripId: t.id }} className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
@@ -103,6 +140,11 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
             <span>{s.emoji}</span> {s.label}
           </span>
           <span className="absolute top-3 right-3 text-xl">{v.emoji}</span>
+          {tracking.status !== "idle" && (
+            <span className={`absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full backdrop-blur px-2.5 py-1 text-[10px] font-semibold border ${tm.cls}`}>
+              {tm.emoji} {tm.label}
+            </span>
+          )}
         </div>
         <div className="p-4 md:p-5">
           <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}</p>

@@ -6,9 +6,12 @@ import {
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
+import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { TripTracker } from "@/components/TripTracker";
+import { TripMemories } from "@/components/TripMemories";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
@@ -24,6 +27,8 @@ function TripPlanner() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips, days, stops } = useTripsStore();
   const prefs = useDriverPrefs();
+  const tracking = useTripTracking(tripId);
+  const trackMeta = statusMeta(tracking.status);
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
@@ -82,6 +87,7 @@ function TripPlanner() {
               {s.emoji} {s.label}
             </span>
             {trip.region && <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{trip.region}</span>}
+            <span className={`inline-flex items-center gap-1.5 rounded-full backdrop-blur border px-3 py-1 text-xs font-semibold bg-background/60 ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
           </div>
           <h1 className="mt-5 font-display text-4xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
           {trip.subtitle && <p className="mt-2 text-sm md:text-base text-foreground/80">{trip.subtitle}</p>}
@@ -126,9 +132,18 @@ function TripPlanner() {
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
+      {/* Trip tracking */}
+      <section id="track" className="mt-4 scroll-mt-24">
+        <TripTracker tripId={tripId} tripStops={tripStops} vehicleLabel={`${v.emoji} ${v.label}`} />
+      </section>
+
+      {/* Memories (after completion) */}
+      <TripMemories trip={trip} tripStops={tripStops} onShare={() => setShareOpen(true)} />
+
       {/* Quick-jump pills */}
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
         {[
+          { href: "#track", label: "Live tur" },
           { href: "#days", label: "Dag for dag" },
           { href: "#along", label: "Langs ruta" },
           { href: "#photos", label: "Bilder" },
