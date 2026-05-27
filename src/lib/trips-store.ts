@@ -428,23 +428,35 @@ const ALONG_THE_ROUTE: SuggestedStop[] = [
   { id: "sr6", name: "Cabin Lodge Vågåmo", type: "lodging", location: "Vågåmo", description: "Tømmerhytter ved elva, frokost inkludert.", reason: "Godt overnattingsalternativ midtveis.", durationMin: 720, badge: "partner", promoted: true },
   { id: "sr7", name: "Fjellguide-tur", type: "experience", location: "Lofoten", description: "2t guidet tur til lokal topp.", reason: "Perfekt for de som vil ut av bilen.", durationMin: 120, badge: "local" },
   { id: "sr8", name: "Solnedgang Stadlandet", type: "photo", location: "Stadlandet", description: "Vestligste punkt — åpent hav.", reason: "Lagt inn fordi ruten passerer på rett tid for solnedgang.", durationMin: 40, photoOp: true, badge: "local" },
+  { id: "sr9", name: "MC-svingene over Gaularfjellet", type: "viewpoint", location: "Gaularfjellet", description: "Tette hårnålssvinger med rolig sommertrafikk.", reason: "Klassiker for tur-MC — passer svingete kjørestil.", durationMin: 30, photoOp: true, badge: "local" },
+  { id: "sr10", name: "Bobilparkering Geirangerfjord", type: "detour", location: "Geiranger", description: "Stor plass med tømming, strøm og fjordutsikt.", reason: "Sjekket høyde og lengde — passer bobil/camper.", durationMin: 720, badge: "local" },
+  { id: "sr11", name: "Camping Jostedal", type: "lodging", location: "Jostedalen", description: "Familievennlig camping ved breen, hytter og teltplass.", reason: "Naturlig overnatting for rolig cruise med bobil eller bil.", durationMin: 720, badge: "partner", promoted: true },
+  { id: "sr12", name: "Bryggekafé Balestrand", type: "food", location: "Balestrand", description: "Lett lunsj på brygga med Sognefjorden utenfor.", reason: "Mat-pause med utsikt — perfekt for en scenic biltur.", durationMin: 50, badge: "local" },
+  { id: "sr13", name: "Museum Norsk Vegmuseum", type: "attraction", location: "Lillehammer", description: "Norges veihistorie, gratis inngang.", reason: "Hyggelig kulturstopp under en rolig biltur.", durationMin: 60, badge: "local" },
+  { id: "sr14", name: "Pause Hjerkinn", type: "rest", location: "Dovrefjell", description: "Rasteplass med benker, do og turstier.", reason: "God plass for å strekke beina ca. midtveis.", durationMin: 20, badge: "local" },
 ];
 
 export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): SuggestedStop[] {
   const pool = [...ALONG_THE_ROUTE];
   const interests = new Set(stopInterests ?? []);
-  // bias by style + driver interests
   const score = (s: SuggestedStop) => {
     let n = 0;
+    // style weights
     if (trip.style === "photo" && s.photoOp) n += 3;
-    if (trip.style === "scenic" && (s.type === "viewpoint" || s.type === "detour")) n += 2;
-    if (trip.style === "cruise" && (s.type === "food" || s.type === "experience")) n += 2;
+    if (trip.style === "scenic" && (s.type === "viewpoint" || s.type === "detour" || s.type === "food")) n += 2;
+    if (trip.style === "cruise" && (s.type === "food" || s.type === "experience" || s.type === "rest" || s.type === "lodging")) n += 2;
     if (trip.style === "tourist" && (s.type === "attraction" || s.type === "experience")) n += 2;
-    if (trip.vehicle === "rv" && s.type === "lodging") n += 2;
-    if (trip.vehicle === "car" && s.type === "fuel") n += 1;
+    if (trip.style === "curvy" && (s.type === "viewpoint" || s.photoOp)) n += 2;
+    // vehicle weights
+    if (trip.vehicle === "motorcycle" && (s.type === "viewpoint" || s.photoOp || s.type === "rest")) n += 2;
+    if (trip.vehicle === "motorcycle" && s.type === "lodging") n -= 1;
+    if (trip.vehicle === "car" && (s.type === "food" || s.type === "attraction")) n += 1;
+    if (trip.vehicle === "rv" && (s.type === "lodging" || s.type === "detour" || s.type === "rest")) n += 3;
+    if (trip.vehicle === "rv" && s.type === "fuel") n += 1;
+    // driver interests (highest weight)
     if (interests.has(s.type)) n += 4;
     if (interests.has("photo") && s.photoOp) n += 2;
-    return n + Math.random();
+    return n + Math.random() * 0.5;
   };
   return pool.sort((a, b) => score(b) - score(a)).slice(0, 5);
 }
