@@ -126,23 +126,34 @@ function NewTripWizard() {
       {step === 1 && (
         <>
           <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hva kjører du?</h1>
-          <p className="mt-3 text-muted-foreground">Vi tilpasser veier, stopp og tempo etter kjøretøyet ditt.</p>
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {VEHICLES.map((v) => (
-              <button key={v.value} onClick={() => setVehicle(v.value)}
-                className={cn(
-                  "rounded-2xl border-2 bg-surface p-5 text-left transition-all",
-                  vehicle === v.value
-                    ? "border-primary bg-gradient-to-b from-primary/10 to-transparent"
-                    : "border-border hover:border-border/80"
-                )}>
-                <div className="text-5xl">{v.emoji}</div>
-                <p className="mt-4 font-display text-xl uppercase">{v.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{v.sub}</p>
-                {vehicle === v.value && <p className="mt-3 text-xs font-semibold text-primary">✓ Valgt</p>}
-              </button>
-            ))}
+          <p className="mt-3 text-muted-foreground">Velg kjøretøyet for denne turen. Stoppene tilpasses bil, drivstoff og dine preferanser.</p>
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {vehicles.map((v) => {
+              const tm = vehicleMeta(v.type);
+              const em = energyMeta(v.energy);
+              const active = v.id === vehicleId;
+              return (
+                <button key={v.id} onClick={() => pickVehicle(v)}
+                  className={cn(
+                    "rounded-2xl border-2 bg-surface p-4 text-left transition-all flex gap-3 items-start",
+                    active ? "border-primary bg-gradient-to-b from-primary/10 to-transparent" : "border-border hover:border-border/80"
+                  )}>
+                  <div className="h-14 w-14 rounded-xl border border-border bg-surface-2 overflow-hidden grid place-items-center text-2xl shrink-0">
+                    {v.photo ? <img src={v.photo} alt={v.name} className="h-full w-full object-cover" /> : <span>{tm.emoji}</span>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-base uppercase leading-tight">{v.name}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{tm.label} · {em.emoji} {em.label}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-primary">{styleMeta(v.defaultStyle).label}</p>
+                  </div>
+                  {active && <Check className="h-4 w-4 text-primary shrink-0 mt-1" />}
+                </button>
+              );
+            })}
           </div>
+          <Link to="/settings" className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
+            <span className="underline">Administrer kjøretøy i Profil</span>
+          </Link>
         </>
       )}
 
