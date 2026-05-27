@@ -353,9 +353,12 @@ function Settings() {
           Tilbakestill demo-data
         </button>
       </section>
+
+      <DangerZone />
     </div>
   );
 }
+
 
 /* ---------- helpers ---------- */
 
