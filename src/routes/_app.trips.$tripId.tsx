@@ -249,7 +249,7 @@ function TripPlanner() {
           </div>
           <p className="text-[11px] text-muted-foreground">Trykk for å legge til</p>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Steder vi tror passer ruten — basert på {s.label.toLowerCase()} og {v.label.toLowerCase()}.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Steder vi tror passer ruten — basert på {s.label.toLowerCase()}, {v.label.toLowerCase()} og dine interesser i profilen.</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {suggestions.map((sug) => (
