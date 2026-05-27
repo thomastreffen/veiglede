@@ -49,7 +49,12 @@ function NewTripWizard() {
       const distanceKm = 140 + Math.floor(Math.random() * 520);
       const hours = Math.floor(distanceKm / 60);
       const mins = Math.round(((distanceKm / 60) - hours) * 60);
-      const ai = buildAiSummary({ origin, destination, vehicle, style, userPrompt: aiPrompt || undefined });
+      const ai = buildAiSummary({ origin, destination, vehicle, style, userPrompt: aiPrompt || undefined, prefs: {
+        drivingFlags: prefs.drivingFlags,
+        stopInterests: prefs.stopInterests,
+        maxDrivingHours: prefs.maxDrivingHours,
+        pauseEveryMin: prefs.pauseEveryMin,
+      } });
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
         subtitle: `${s.label} på ${v.label.toLowerCase()}`,
