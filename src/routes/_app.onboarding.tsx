@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { consumeProfileDeletedNotice } from "@/lib/account";
 import { useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInterest, DRIVING_FLAGS, STOP_INTERESTS } from "@/lib/driver-prefs";
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
-import { Check, ArrowRight, Sparkles } from "lucide-react";
+import { Check, ArrowRight, Sparkles, Info } from "lucide-react";
 
 export const Route = createFileRoute("/_app/onboarding")({
   head: () => ({ meta: [{ title: "Velkommen — Veiglede" }] }),
