@@ -53,14 +53,17 @@ function TripsDashboard() {
         </div>
         <ul className="mt-4 grid gap-3 sm:grid-cols-3">
           {FEATURED_ROUTES.map((r) => (
-            <li key={r.id} className={`rounded-2xl border border-border bg-gradient-to-br ${COVERS[r.cover]} p-5 relative overflow-hidden`}>
-              <div className="absolute inset-0 bg-background/30" />
-              <div className="relative">
-                <span className="text-2xl">{r.emoji}</span>
-                <p className="mt-3 text-[11px] uppercase tracking-wider text-foreground/80">{r.region}</p>
-                <h3 className="mt-1 font-display text-xl uppercase">{r.title}</h3>
-                <p className="mt-2 text-xs text-foreground/80">{r.km} km · {styleMeta(r.style).label}</p>
-              </div>
+            <li key={r.id}>
+              <Link to="/trips/new" className={`block rounded-2xl border border-border bg-gradient-to-br ${COVERS[r.cover]} p-5 relative overflow-hidden hover:border-primary/60 transition-colors`}>
+                <div className="absolute inset-0 bg-background/30" />
+                <div className="relative">
+                  <span className="text-2xl">{r.emoji}</span>
+                  <p className="mt-3 text-[11px] uppercase tracking-wider text-foreground/80">{r.region}</p>
+                  <h3 className="mt-1 font-display text-xl uppercase">{r.title}</h3>
+                  <p className="mt-2 text-xs text-foreground/80">{r.km} km · {styleMeta(r.style).label}</p>
+                  <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary">Planlegg <ArrowRight className="h-3 w-3" /></p>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>
