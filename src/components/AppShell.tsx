@@ -15,7 +15,7 @@ const nav = [
 
 /** Back-compat alias. New code should import VeigledeLogo directly. */
 export function VeigledeMark({ className }: { className?: string }) {
-  return <VeigledeLogo className={className} />;
+  return <VeigledeLogo size="md" className={className} />;
 }
 
 export function AppShell() {
