@@ -12,6 +12,8 @@ export interface Vehicle {
   defaultStyle: RouteStyle;
   drivingFlags: Record<string, boolean>;
   stopInterests: StopType[];
+  isDemo?: boolean;
+  hint?: string;
 }
 
 export const ENERGIES: { value: EnergyType; label: string; emoji: string }[] = [
