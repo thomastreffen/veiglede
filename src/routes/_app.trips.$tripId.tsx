@@ -5,6 +5,7 @@ import {
   COVERS, type CoverKey, getRouteSuggestions, getPartnerTips, getPhotoMemories,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
+import { useDriverPrefs } from "@/lib/driver-prefs";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
