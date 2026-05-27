@@ -28,6 +28,26 @@ export function VeigledeMark({ className }: { className?: string }) {
 export function AppShell() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Onboarding gate: send freshly-logged-in users who haven't onboarded
+  // to /onboarding once.
+  useEffect(() => {
+    if (!user) return;
+    if (pathname === "/onboarding") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("onboarded_at")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!data?.onboarded_at) navigate({ to: "/onboarding", replace: true });
+    })();
+    return () => { cancelled = true; };
+  }, [user, pathname, navigate]);
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
