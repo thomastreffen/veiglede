@@ -8,6 +8,7 @@ import { useDriverPrefs } from "@/lib/driver-prefs";
 import { energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { TripCompanions } from "@/components/TripCompanions";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { TripMap } from "@/components/TripMap";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
@@ -61,6 +62,10 @@ function Roadbook() {
         </div>
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
+
+      <section className="mt-4 max-w-2xl mx-auto">
+        <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
+      </section>
 
       <header className="mt-6 text-center max-w-2xl mx-auto">
         <div className="flex justify-center mb-3"><VeigledeLogo size="sm" /></div>

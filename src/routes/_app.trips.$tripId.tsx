@@ -12,6 +12,7 @@ import { TripMap } from "@/components/TripMap";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { TripCompanions } from "@/components/TripCompanions";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
@@ -203,6 +204,10 @@ function TripPlanner() {
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
       <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title="Lagre og del turen din" description="Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter." redirectTo={`/trips/${tripId}`} />
+
+      <section className="mt-4">
+        <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
+      </section>
 
       {/* Trip tracking */}
       <section id="track" className="mt-4 scroll-mt-24">
