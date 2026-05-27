@@ -66,12 +66,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "icon",
         type: "image/svg+xml",
-        // Veiglede chevron — keep in sync with <LogoGlyph /> in src/components/VeigledeLogo.tsx
+        // Veiglede chevron favicon — keep visually in sync with
+        // <LogoGlyph /> in src/components/VeigledeLogo.tsx.
         href:
-          "data:image/svg+xml;utf8," +
-          encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%2313131c"/><path d="M16 5 L29 28 L22 28 L16 16 L10 28 L3 28 Z" fill="%23f0a35a"/></svg>'
-          ),
+          'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%2313131c"/><path d="M16 5 L29 28 L22 28 L16 16 L10 28 L3 28 Z" fill="%23f0a35a"/></svg>',
       },
     ],
   }),
