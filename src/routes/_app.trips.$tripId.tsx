@@ -6,6 +6,7 @@ import {
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
+import { getVehicleById, energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
