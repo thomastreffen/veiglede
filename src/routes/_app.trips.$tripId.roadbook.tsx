@@ -30,6 +30,8 @@ function Roadbook() {
   const tripStops = stops.filter((s) => tripDays.some((d) => d.id === s.dayId));
   const v = vehicleMeta(trip.vehicle);
   const s = styleMeta(trip.style);
+  const em = trip.energy ? energyMeta(trip.energy) : undefined;
+  const vehicleDisplay = trip.vehicleName ?? v.label;
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
