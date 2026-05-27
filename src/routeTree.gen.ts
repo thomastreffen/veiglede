@@ -9,38 +9,142 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppTripsRouteImport } from './routes/_app.trips'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
+import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
+import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
+import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
+import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.trips.$tripId.stops.$stopId'
 
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppTripsRoute = AppTripsRouteImport.update({
+  id: '/trips',
+  path: '/trips',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRoadbookRoute = AppRoadbookRouteImport.update({
+  id: '/roadbook',
+  path: '/roadbook',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTripsNewRoute = AppTripsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppTripsRoute,
+} as any)
+const AppTripsTripIdRoute = AppTripsTripIdRouteImport.update({
+  id: '/$tripId',
+  path: '/$tripId',
+  getParentRoute: () => AppTripsRoute,
+} as any)
+const AppTripsTripIdRoadbookRoute = AppTripsTripIdRoadbookRouteImport.update({
+  id: '/roadbook',
+  path: '/roadbook',
+  getParentRoute: () => AppTripsTripIdRoute,
+} as any)
+const AppTripsTripIdStopsStopIdRoute =
+  AppTripsTripIdStopsStopIdRouteImport.update({
+    id: '/stops/$stopId',
+    path: '/stops/$stopId',
+    getParentRoute: () => AppTripsTripIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/roadbook': typeof AppRoadbookRoute
+  '/settings': typeof AppSettingsRoute
+  '/trips': typeof AppTripsRouteWithChildren
+  '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
+  '/trips/new': typeof AppTripsNewRoute
+  '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/roadbook': typeof AppRoadbookRoute
+  '/settings': typeof AppSettingsRoute
+  '/trips': typeof AppTripsRouteWithChildren
+  '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
+  '/trips/new': typeof AppTripsNewRoute
+  '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/roadbook': typeof AppRoadbookRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/trips': typeof AppTripsRouteWithChildren
+  '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
+  '/_app/trips/new': typeof AppTripsNewRoute
+  '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/roadbook'
+    | '/settings'
+    | '/trips'
+    | '/trips/$tripId'
+    | '/trips/new'
+    | '/trips/$tripId/roadbook'
+    | '/trips/$tripId/stops/$stopId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/roadbook'
+    | '/settings'
+    | '/trips'
+    | '/trips/$tripId'
+    | '/trips/new'
+    | '/trips/$tripId/roadbook'
+    | '/trips/$tripId/stops/$stopId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_app/roadbook'
+    | '/_app/settings'
+    | '/_app/trips'
+    | '/_app/trips/$tripId'
+    | '/_app/trips/new'
+    | '/_app/trips/$tripId/roadbook'
+    | '/_app/trips/$tripId/stops/$stopId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +152,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/trips': {
+      id: '/_app/trips'
+      path: '/trips'
+      fullPath: '/trips'
+      preLoaderRoute: typeof AppTripsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/roadbook': {
+      id: '/_app/roadbook'
+      path: '/roadbook'
+      fullPath: '/roadbook'
+      preLoaderRoute: typeof AppRoadbookRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/trips/new': {
+      id: '/_app/trips/new'
+      path: '/new'
+      fullPath: '/trips/new'
+      preLoaderRoute: typeof AppTripsNewRouteImport
+      parentRoute: typeof AppTripsRoute
+    }
+    '/_app/trips/$tripId': {
+      id: '/_app/trips/$tripId'
+      path: '/$tripId'
+      fullPath: '/trips/$tripId'
+      preLoaderRoute: typeof AppTripsTripIdRouteImport
+      parentRoute: typeof AppTripsRoute
+    }
+    '/_app/trips/$tripId/roadbook': {
+      id: '/_app/trips/$tripId/roadbook'
+      path: '/roadbook'
+      fullPath: '/trips/$tripId/roadbook'
+      preLoaderRoute: typeof AppTripsTripIdRoadbookRouteImport
+      parentRoute: typeof AppTripsTripIdRoute
+    }
+    '/_app/trips/$tripId/stops/$stopId': {
+      id: '/_app/trips/$tripId/stops/$stopId'
+      path: '/stops/$stopId'
+      fullPath: '/trips/$tripId/stops/$stopId'
+      preLoaderRoute: typeof AppTripsTripIdStopsStopIdRouteImport
+      parentRoute: typeof AppTripsTripIdRoute
+    }
   }
 }
 
+interface AppTripsTripIdRouteChildren {
+  AppTripsTripIdRoadbookRoute: typeof AppTripsTripIdRoadbookRoute
+  AppTripsTripIdStopsStopIdRoute: typeof AppTripsTripIdStopsStopIdRoute
+}
+
+const AppTripsTripIdRouteChildren: AppTripsTripIdRouteChildren = {
+  AppTripsTripIdRoadbookRoute: AppTripsTripIdRoadbookRoute,
+  AppTripsTripIdStopsStopIdRoute: AppTripsTripIdStopsStopIdRoute,
+}
+
+const AppTripsTripIdRouteWithChildren = AppTripsTripIdRoute._addFileChildren(
+  AppTripsTripIdRouteChildren,
+)
+
+interface AppTripsRouteChildren {
+  AppTripsTripIdRoute: typeof AppTripsTripIdRouteWithChildren
+  AppTripsNewRoute: typeof AppTripsNewRoute
+}
+
+const AppTripsRouteChildren: AppTripsRouteChildren = {
+  AppTripsTripIdRoute: AppTripsTripIdRouteWithChildren,
+  AppTripsNewRoute: AppTripsNewRoute,
+}
+
+const AppTripsRouteWithChildren = AppTripsRoute._addFileChildren(
+  AppTripsRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppRoadbookRoute: typeof AppRoadbookRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTripsRoute: typeof AppTripsRouteWithChildren
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppRoadbookRoute: AppRoadbookRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTripsRoute: AppTripsRouteWithChildren,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
