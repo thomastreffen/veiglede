@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DemoDebugPanel } from "@/components/DemoDebugPanel";
+import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
@@ -7,6 +7,7 @@ export const Route = createFileRoute("/_app/settings")({
 });
 
 function Settings() {
+  const debug = useDebugMode();
   return (
     <div className="py-6 max-w-xl">
       <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Du</p>
@@ -27,18 +28,28 @@ function Settings() {
           <Row label="Standardkjøretøy" value="Motorsykkel" />
           <Row label="Tema" value="Mørk" />
         </div>
+      </div>
 
-        <DemoDebugPanel
-          title="Demo"
-          items={[
-            { label: "Storage key", value: "veiglede.v4" },
-            { label: "Reset", value: "Sletter lokale demo-turer" },
-          ]}
-        />
+      <div className="mt-6 rounded-2xl border border-border bg-surface p-6">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Demo</p>
+        <h2 className="mt-1 font-display text-xl uppercase">Utvikler</h2>
+
+        <label className="mt-4 flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p className="text-sm font-medium">Vis debug-paneler</p>
+            <p className="text-xs text-muted-foreground">Skjult i normal demo. Slå på for å se rute- og data-status.</p>
+          </div>
+          <span
+            onClick={() => setDebugMode(!debug)}
+            className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${debug ? "bg-primary" : "bg-border"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-background shadow transition-transform ${debug ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+          </span>
+        </label>
 
         <button
           onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); localStorage.removeItem("veiglede.v3"); localStorage.removeItem("veiglede.v4"); location.reload(); } }}
-          className="mt-4 w-full rounded-2xl border border-border bg-background py-3 text-sm hover:border-primary"
+          className="mt-5 w-full rounded-2xl border border-border bg-background py-3 text-sm hover:border-primary"
         >
           Tilbakestill demo-data
         </button>
