@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthButtons } from "@/components/AuthButtons";
 import { useAuth } from "@/lib/auth";
-import { VeigledeMark } from "@/components/AppShell";
+import { VeigledeLogo } from "@/components/VeigledeLogo";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Opprett konto — Veiglede" }] }),
@@ -21,7 +21,7 @@ function SignupPage() {
 
   return (
     <div className="min-h-screen bg-background bg-glow-orange flex flex-col items-center justify-center px-4 py-10">
-      <Link to="/" className="mb-8"><VeigledeMark /></Link>
+      <Link to="/" className="mb-10"><VeigledeLogo size="lg" withTagline /></Link>
       <div className="w-full max-w-sm rounded-3xl border border-border bg-surface-1/70 backdrop-blur p-6 md:p-8 shadow-xl">
         <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Bli med</p>
         <h1 className="mt-2 font-display text-2xl uppercase">Opprett din konto</h1>
