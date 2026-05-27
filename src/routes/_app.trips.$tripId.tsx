@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
@@ -8,7 +8,8 @@ import {
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { getVehicleById, energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
-import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { TripMap } from "@/components/TripMap";
+import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
@@ -18,7 +19,9 @@ import { TripMemories } from "@/components/TripMemories";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
+  Navigation, CornerDownRight,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
   head: () => ({ meta: [{ title: "Tur — Veiglede" }] }),
