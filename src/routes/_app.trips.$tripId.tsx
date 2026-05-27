@@ -51,9 +51,14 @@ function TripPlanner() {
   const tripStops = stops.filter((st) => tripDays.some((d) => d.id === st.dayId));
   const v = vehicleMeta(trip.vehicle);
   const s = styleMeta(trip.style);
+  const vehicle = getVehicleById(trip.vehicleId);
+  const em = trip.energy ? energyMeta(trip.energy) : undefined;
+  const vehicleDisplay = trip.vehicleName ?? v.label;
   const totalStops = tripStops.length;
 
-  const suggestions = getRouteSuggestions(trip, prefs.stopInterests);
+  // merge driver interests with this trip's vehicle interests
+  const mergedInterests = Array.from(new Set([...(vehicle?.stopInterests ?? []), ...prefs.stopInterests]));
+  const suggestions = getRouteSuggestions(trip, mergedInterests);
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
