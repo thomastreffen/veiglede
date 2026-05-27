@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useTheme, setTheme, type Theme } from "@/lib/theme";
-import { VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta, type VehicleType } from "@/lib/trips-store";
+import { ROUTE_STYLES, stopMeta, vehicleMeta, styleMeta } from "@/lib/trips-store";
 import {
   useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInterest,
   DRIVING_FLAGS, STOP_INTERESTS,
 } from "@/lib/driver-prefs";
-import { Moon, Sun, Check, Lock, Link as LinkIcon, Image as ImageIcon, Radio } from "lucide-react";
+import {
+  useVehicles, vehiclesApi, energyMeta, type Vehicle,
+} from "@/lib/vehicles-store";
+import { VehicleEditor } from "@/components/VehicleEditor";
+import { Moon, Sun, Check, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
@@ -17,14 +22,20 @@ function Settings() {
   const debug = useDebugMode();
   const theme = useTheme();
   const prefs = useDriverPrefs();
-  const v = vehicleMeta(prefs.defaultVehicle);
+  const { vehicles, defaultId } = useVehicles();
+  const defaultVehicle = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<Vehicle | undefined>(undefined);
+
+  const openNew = () => { setEditing(undefined); setEditorOpen(true); };
+  const openEdit = (v: Vehicle) => { setEditing(v); setEditorOpen(true); };
 
   return (
     <div className="py-5 md:py-8 max-w-2xl mx-auto space-y-6">
       <header>
         <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Din profil</p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Førerprofil</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre — og hvilket kjøretøy du tar med.</p>
       </header>
 
       {/* 1 — Driver profile */}
@@ -57,38 +68,46 @@ function Settings() {
             options={[{ value: "nb", label: "Norsk" }, { value: "en", label: "English" }]}
           />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Standardkjøretøy: <span className="text-foreground font-medium">{v.emoji} {v.label}</span></p>
+        {defaultVehicle && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Standardkjøretøy: <span className="text-foreground font-medium">{vehicleMeta(defaultVehicle.type).emoji} {defaultVehicle.name}</span>
+          </p>
+        )}
       </Section>
 
       {/* 2 — My vehicles */}
-      <Section title="Mine kjøretøy" caption="Velg standard">
+      <Section
+        title="Mine kjøretøy"
+        caption={`${vehicles.length} ${vehicles.length === 1 ? "kjøretøy" : "kjøretøy"}`}
+        action={
+          <button onClick={openNew} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
+            <Plus className="h-3.5 w-3.5" /> Legg til
+          </button>
+        }
+      >
+        <p className="text-xs text-muted-foreground mb-3">Hvert kjøretøy har sin egen rutestil og foretrukne stopp. Velg standard ved å trykke «Sett som standard».</p>
         <div className="grid grid-cols-1 gap-3">
-          {VEHICLES.map((vh) => {
-            const active = prefs.defaultVehicle === vh.value;
-            return (
-              <button
-                key={vh.value}
-                onClick={() => updateDriverPrefs({ defaultVehicle: vh.value as VehicleType })}
-                className={`text-left rounded-2xl border-2 p-4 transition-colors ${active ? "border-primary bg-primary/5" : "border-border bg-surface hover:border-border/80"}`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-3xl">{vh.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display text-lg uppercase">{vh.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{vh.sub}</p>
-                    <p className="mt-2 text-[11px] text-primary uppercase tracking-wider">Stil: {styleMeta(defaultStyleFor(vh.value)).label}</p>
-                  </div>
-                  {active && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-                      <Check className="h-3 w-3" /> Standard
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+          {vehicles.map((vh) => (
+            <VehicleCard
+              key={vh.id}
+              vehicle={vh}
+              isDefault={vh.id === defaultId}
+              onEdit={() => openEdit(vh)}
+              onSetDefault={() => vehiclesApi.setDefault(vh.id)}
+            />
+          ))}
+          <button
+            onClick={openNew}
+            className="rounded-2xl border-2 border-dashed border-border bg-surface/40 p-4 text-sm text-muted-foreground hover:border-primary hover:text-primary flex items-center justify-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> Legg til kjøretøy
+          </button>
         </div>
       </Section>
+
+      <VehicleEditor open={editorOpen} onOpenChange={setEditorOpen} vehicle={editing} />
+
+
 
       {/* 3 — Driving preferences */}
       <Section title="Kjørepreferanser" caption="Hva slags kjøring liker du?">
@@ -223,23 +242,63 @@ function Settings() {
 
 /* ---------- helpers ---------- */
 
-function defaultStyleFor(v: VehicleType) {
-  if (v === "motorcycle") return "curvy" as const;
-  if (v === "rv") return "cruise" as const;
-  return "scenic" as const;
-}
-
-function Section({ title, caption, children }: { title: string; caption?: string; children: React.ReactNode }) {
+function Section({ title, caption, action, children }: { title: string; caption?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-xl uppercase">{title}</h2>
-        {caption && <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{caption}</span>}
+        <div className="flex items-center gap-3">
+          {caption && <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{caption}</span>}
+          {action}
+        </div>
       </div>
       <div className="mt-4">{children}</div>
     </section>
   );
 }
+
+function VehicleCard({ vehicle, isDefault, onEdit, onSetDefault }: {
+  vehicle: Vehicle; isDefault: boolean; onEdit: () => void; onSetDefault: () => void;
+}) {
+  const tm = vehicleMeta(vehicle.type);
+  const em = energyMeta(vehicle.energy);
+  const sm = styleMeta(vehicle.defaultStyle);
+  return (
+    <div className={`rounded-2xl border-2 p-4 transition-colors ${isDefault ? "border-primary bg-primary/5" : "border-border bg-surface"}`}>
+      <div className="flex items-start gap-3">
+        <div className="h-16 w-16 rounded-xl border border-border bg-surface-2 overflow-hidden grid place-items-center text-2xl shrink-0">
+          {vehicle.photo ? <img src={vehicle.photo} alt={vehicle.name} className="h-full w-full object-cover" /> : <span>{tm.emoji}</span>}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-2 flex-wrap">
+            <p className="font-display text-lg uppercase leading-tight">{vehicle.name}</p>
+            {isDefault && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                <Check className="h-3 w-3" /> Standard
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{tm.emoji} {tm.label} · {em.emoji} {em.label}</p>
+          <p className="mt-1.5 text-[11px] text-primary uppercase tracking-wider">{sm.emoji} {sm.label}</p>
+          {vehicle.stopInterests.length > 0 && (
+            <p className="mt-1.5 text-[11px] text-muted-foreground truncate">
+              {vehicle.stopInterests.slice(0, 6).map((t) => stopMeta(t).emoji).join(" ")}
+            </p>
+          )}
+        </div>
+        <button onClick={onEdit} className="text-muted-foreground hover:text-primary p-1.5" aria-label="Rediger">
+          <Pencil className="h-4 w-4" />
+        </button>
+      </div>
+      {!isDefault && (
+        <button onClick={onSetDefault} className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary">
+          Sett som standard
+        </button>
+      )}
+    </div>
+  );
+}
+
 
 function MiniSelect({ label, value, onChange, options }: {
   label: string; value: string; onChange: (v: string) => void;

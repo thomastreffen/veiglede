@@ -14,6 +14,7 @@ export type StopType =
 
 export type VehicleType = "motorcycle" | "car" | "rv";
 export type RouteStyle = "fastest" | "scenic" | "curvy" | "photo" | "tourist" | "cruise";
+export type EnergySource = "petrol" | "diesel" | "electric" | "hybrid";
 
 export interface Stop {
   id: string;
@@ -52,6 +53,9 @@ export interface Trip {
   startDate?: string;
   endDate?: string;
   vehicle: VehicleType;
+  vehicleId?: string;
+  vehicleName?: string;
+  energy?: EnergySource;
   style: RouteStyle;
   distanceKm: number;
   drivingTime: string;
@@ -74,6 +78,7 @@ export interface SuggestedStop {
   photoOp?: boolean;
   promoted?: boolean;
   badge?: "partner" | "local" | "promoted";
+  energy?: EnergySource; // for fuel/charging stops only
 }
 
 export interface PartnerTip {
@@ -436,7 +441,7 @@ const ALONG_THE_ROUTE: SuggestedStop[] = [
   { id: "sr1", name: "Fjellkafé Bjorli", type: "food", location: "Bjorli", description: "Vedfyrt kafé med utsikt mot Romsdalen.", reason: "Ligger 5 min fra hovedruta — populært stopp.", durationMin: 35, badge: "local" },
   { id: "sr2", name: "Trollveggen utsikt", type: "viewpoint", location: "Romsdalen", description: "Europas høyeste loddrette fjellvegg.", reason: "Like ved veien — ingen ekstra kjøretid.", durationMin: 20, photoOp: true, badge: "local" },
   { id: "sr3", name: "Geitost-bakeriet", type: "experience", location: "Undredal", description: "Smaksprøver av brunost rett fra produsenten.", reason: "Lite, lokalt og passer en kort pause.", durationMin: 30, badge: "partner", promoted: true },
-  { id: "sr4", name: "Aurland charging hub", type: "fuel", location: "Aurland", description: "8x 150 kW ladere med utsikt.", reason: "Eneste hurtiglader i området.", durationMin: 25, badge: "partner", promoted: true },
+  { id: "sr4", name: "Aurland charging hub", type: "fuel", location: "Aurland", description: "8x 150 kW ladere med utsikt.", reason: "Eneste hurtiglader i området.", durationMin: 25, badge: "partner", promoted: true, energy: "electric" },
   { id: "sr5", name: "Stranddetour Ersfjord", type: "detour", location: "Senja", description: "20 km detour til hvit sandstrand.", reason: "Anbefales hvis du har en time ekstra.", durationMin: 60, photoOp: true, badge: "local" },
   { id: "sr6", name: "Cabin Lodge Vågåmo", type: "lodging", location: "Vågåmo", description: "Tømmerhytter ved elva, frokost inkludert.", reason: "Godt overnattingsalternativ midtveis.", durationMin: 720, badge: "partner", promoted: true },
   { id: "sr7", name: "Fjellguide-tur", type: "experience", location: "Lofoten", description: "2t guidet tur til lokal topp.", reason: "Perfekt for de som vil ut av bilen.", durationMin: 120, badge: "local" },
@@ -447,11 +452,14 @@ const ALONG_THE_ROUTE: SuggestedStop[] = [
   { id: "sr12", name: "Bryggekafé Balestrand", type: "food", location: "Balestrand", description: "Lett lunsj på brygga med Sognefjorden utenfor.", reason: "Mat-pause med utsikt — perfekt for en scenic biltur.", durationMin: 50, badge: "local" },
   { id: "sr13", name: "Museum Norsk Vegmuseum", type: "attraction", location: "Lillehammer", description: "Norges veihistorie, gratis inngang.", reason: "Hyggelig kulturstopp under en rolig biltur.", durationMin: 60, badge: "local" },
   { id: "sr14", name: "Pause Hjerkinn", type: "rest", location: "Dovrefjell", description: "Rasteplass med benker, do og turstier.", reason: "God plass for å strekke beina ca. midtveis.", durationMin: 20, badge: "local" },
+  { id: "sr15", name: "Circle K Lom", type: "fuel", location: "Lom", description: "Døgnåpen bensinstasjon før Sognefjellet.", reason: "Siste fyllestasjon før fjellovergangen.", durationMin: 10, badge: "local", energy: "petrol" },
+  { id: "sr16", name: "Recharge Dombås", type: "fuel", location: "Dombås", description: "12x 300 kW lynladere med kafé.", reason: "Beste ladepunkt før Dovrefjell.", durationMin: 30, badge: "partner", promoted: true, energy: "electric" },
 ];
 
 export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): SuggestedStop[] {
   const pool = [...ALONG_THE_ROUTE];
   const interests = new Set(stopInterests ?? []);
+  const energy = trip.energy;
   const score = (s: SuggestedStop) => {
     let n = 0;
     // style weights
@@ -466,6 +474,13 @@ export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): Sug
     if (trip.vehicle === "car" && (s.type === "food" || s.type === "attraction")) n += 1;
     if (trip.vehicle === "rv" && (s.type === "lodging" || s.type === "detour" || s.type === "rest")) n += 3;
     if (trip.vehicle === "rv" && s.type === "fuel") n += 1;
+    // energy: filter fuel/charging to vehicle's energy type
+    if (s.type === "fuel" && s.energy && energy) {
+      if (s.energy === energy) n += 3;
+      else if (s.energy === "electric" && energy === "hybrid") n += 1;
+      else if (s.energy === "petrol" && energy === "hybrid") n += 1;
+      else n -= 5; // hide a charging hub from a petrol car etc.
+    }
     // driver interests (highest weight)
     if (interests.has(s.type)) n += 4;
     if (interests.has("photo") && s.photoOp) n += 2;
@@ -516,12 +531,14 @@ export interface AiPrefsInput {
 
 export function buildAiSummary(input: {
   origin: string; destination: string; vehicle: VehicleType; style: RouteStyle;
+  energy?: EnergySource; vehicleName?: string;
   userPrompt?: string; prefs?: AiPrefsInput;
 }): string {
   const v = vehicleMeta(input.vehicle);
   const s = styleMeta(input.style);
   const parts: string[] = [];
-  parts.push(`Ruten fra ${input.origin} til ${input.destination} er bygget for ${v.label.toLowerCase()} med ${s.label.toLowerCase()}.`);
+  const vehicleLabel = input.vehicleName ?? v.label.toLowerCase();
+  parts.push(`Ruten fra ${input.origin} til ${input.destination} er bygget for ${vehicleLabel} med ${s.label.toLowerCase()}.`);
   switch (input.style) {
     case "curvy":
       parts.push("Vi prioriterer svingete strekninger og unngår motorvei der det er praktisk.");
@@ -548,6 +565,15 @@ export function buildAiSummary(input: {
     parts.push("For bobil holder vi etappene rolige og prioriterer stopp med plass, høyde og overnatting/camping.");
   } else if (input.vehicle === "car") {
     parts.push("På bil bygger vi inn behagelige matpauser og attraksjoner langs ruta — uten å miste rytmen.");
+  }
+  if (input.energy === "electric") {
+    parts.push("Siden bilen er elektrisk, planlegger vi ladestopp ved hurtigladere — ikke bensinstasjoner.");
+  } else if (input.energy === "hybrid") {
+    parts.push("Som hybrid kan du både lade og tanke — vi tar med begge typer stopp.");
+  } else if (input.energy === "diesel") {
+    parts.push("Diesel er rikelig på ruta, så vi prioriterer komfort og pauser fremfor å jakte stasjoner.");
+  } else if (input.energy === "petrol") {
+    parts.push("Vi unngår elektriske ladestopp og holder oss til bensinstasjoner langs ruta.");
   }
 
   const p = input.prefs;

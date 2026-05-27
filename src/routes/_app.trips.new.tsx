@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
+import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
+import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
@@ -17,15 +18,24 @@ type Step = 1 | 2 | 3 | 4;
 function NewTripWizard() {
   const navigate = useNavigate();
   const prefs = useDriverPrefs();
+  const { vehicles, defaultId } = useVehicles();
+  const initialVehicle: Vehicle = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
   const [step, setStep] = useState<Step>(1);
-  const [vehicle, setVehicle] = useState<VehicleType>(prefs.defaultVehicle);
-  const [style, setStyle] = useState<RouteStyle>(prefs.defaultStyle);
+  const [vehicleId, setVehicleId] = useState<string>(initialVehicle.id);
+  const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
+  const [style, setStyle] = useState<RouteStyle>(selectedVehicle.defaultStyle);
   const [origin, setOrigin] = useState("Drammen");
   const [destination, setDestination] = useState("Hardangervidda");
   const [date, setDate] = useState("2026-06-07");
   const [aiPrompt, setAiPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [tripId, setTripId] = useState<string | null>(null);
+
+  const pickVehicle = (v: Vehicle) => {
+    setVehicleId(v.id);
+    setStyle(v.defaultStyle);
+  };
+
 
   const next = () => setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
   const prev = () => {
@@ -45,22 +55,29 @@ function NewTripWizard() {
     setStep(4);
     setTimeout(() => {
       const s = styleMeta(style);
-      const v = vehicleMeta(vehicle);
+      const vt = selectedVehicle.type;
+      const energy = selectedVehicle.energy;
       const distanceKm = 140 + Math.floor(Math.random() * 520);
       const hours = Math.floor(distanceKm / 60);
       const mins = Math.round(((distanceKm / 60) - hours) * 60);
-      const ai = buildAiSummary({ origin, destination, vehicle, style, userPrompt: aiPrompt || undefined, prefs: {
-        drivingFlags: prefs.drivingFlags,
-        stopInterests: prefs.stopInterests,
-        maxDrivingHours: prefs.maxDrivingHours,
-        pauseEveryMin: prefs.pauseEveryMin,
-      } });
+      const ai = buildAiSummary({
+        origin, destination, vehicle: vt, style,
+        energy, vehicleName: selectedVehicle.name,
+        userPrompt: aiPrompt || undefined,
+        prefs: {
+          drivingFlags: selectedVehicle.drivingFlags,
+          stopInterests: selectedVehicle.stopInterests,
+          maxDrivingHours: prefs.maxDrivingHours,
+          pauseEveryMin: prefs.pauseEveryMin,
+        },
+      });
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
-        subtitle: `${s.label} på ${v.label.toLowerCase()}`,
+        subtitle: `${s.label} med ${selectedVehicle.name}`,
         region: "Norge",
         origin, destination, startDate: date,
-        vehicle, style,
+        vehicle: vt, vehicleId: selectedVehicle.id, vehicleName: selectedVehicle.name, energy,
+        style,
         distanceKm, drivingTime: `${hours}t ${mins}min`,
         cover: pickCover(style),
         aiSummary: ai,
@@ -109,23 +126,34 @@ function NewTripWizard() {
       {step === 1 && (
         <>
           <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hva kjører du?</h1>
-          <p className="mt-3 text-muted-foreground">Vi tilpasser veier, stopp og tempo etter kjøretøyet ditt.</p>
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {VEHICLES.map((v) => (
-              <button key={v.value} onClick={() => setVehicle(v.value)}
-                className={cn(
-                  "rounded-2xl border-2 bg-surface p-5 text-left transition-all",
-                  vehicle === v.value
-                    ? "border-primary bg-gradient-to-b from-primary/10 to-transparent"
-                    : "border-border hover:border-border/80"
-                )}>
-                <div className="text-5xl">{v.emoji}</div>
-                <p className="mt-4 font-display text-xl uppercase">{v.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{v.sub}</p>
-                {vehicle === v.value && <p className="mt-3 text-xs font-semibold text-primary">✓ Valgt</p>}
-              </button>
-            ))}
+          <p className="mt-3 text-muted-foreground">Velg kjøretøyet for denne turen. Stoppene tilpasses bil, drivstoff og dine preferanser.</p>
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {vehicles.map((v) => {
+              const tm = vehicleMeta(v.type);
+              const em = energyMeta(v.energy);
+              const active = v.id === vehicleId;
+              return (
+                <button key={v.id} onClick={() => pickVehicle(v)}
+                  className={cn(
+                    "rounded-2xl border-2 bg-surface p-4 text-left transition-all flex gap-3 items-start",
+                    active ? "border-primary bg-gradient-to-b from-primary/10 to-transparent" : "border-border hover:border-border/80"
+                  )}>
+                  <div className="h-14 w-14 rounded-xl border border-border bg-surface-2 overflow-hidden grid place-items-center text-2xl shrink-0">
+                    {v.photo ? <img src={v.photo} alt={v.name} className="h-full w-full object-cover" /> : <span>{tm.emoji}</span>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-base uppercase leading-tight">{v.name}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{tm.label} · {em.emoji} {em.label}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-primary">{styleMeta(v.defaultStyle).label}</p>
+                  </div>
+                  {active && <Check className="h-4 w-4 text-primary shrink-0 mt-1" />}
+                </button>
+              );
+            })}
           </div>
+          <Link to="/settings" className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
+            <span className="underline">Administrer kjøretøy i Profil</span>
+          </Link>
         </>
       )}
 
