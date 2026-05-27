@@ -23,6 +23,7 @@ function TripPlanner() {
   const { tripId } = Route.useParams();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips, days, stops } = useTripsStore();
+  const prefs = useDriverPrefs();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
