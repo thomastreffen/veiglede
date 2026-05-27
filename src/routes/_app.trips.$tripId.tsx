@@ -33,7 +33,10 @@ function TripPlanner() {
   const tracking = useTripTracking(tripId);
   const trackMeta = statusMeta(tracking.status);
   const navigate = useNavigate();
-  const [shareOpen, setShareOpen] = useState(false);
+  const [shareOpen, setShareOpenRaw] = useState(false);
+  const [savePromptOpen, setSavePromptOpen] = useState(false);
+  const { user } = useAuth();
+  const setShareOpen = (v: boolean) => { if (v && !user) { setSavePromptOpen(true); return; } setShareOpenRaw(v); };
   const trip = trips.find((t) => t.id === tripId);
 
   if (pathname !== `/trips/${tripId}`) {
@@ -148,7 +151,8 @@ function TripPlanner() {
         </button>
       </section>
 
-      <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
+      <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
+      <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title="Lagre og del turen din" description="Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter." />
 
       {/* Trip tracking */}
       <section id="track" className="mt-4 scroll-mt-24">
