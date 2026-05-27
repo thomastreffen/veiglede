@@ -39,10 +39,13 @@ function TripPlanner() {
   const [shareOpen, setShareOpenRaw] = useState(false);
   const [savePromptOpen, setSavePromptOpen] = useState(false);
   const { user } = useAuth();
+  const [shareOpen, setShareOpenRaw] = useState(false);
+  const [savePromptOpen, setSavePromptOpen] = useState(false);
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const setShareOpen = (v: boolean) => { if (v && !user) { setSavePromptOpen(true); return; } setShareOpenRaw(v); };
   const trip = trips.find((t) => t.id === tripId);
 
-  if (pathname !== `/trips/${tripId}`) {
     return <Outlet />;
   }
 
