@@ -14,11 +14,18 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-background bg-glow-orange">
       <header className="mx-auto max-w-5xl flex items-center justify-between px-4 md:px-6 py-4">
         <VeigledeMark />
-        <Link to="/trips" className="text-sm text-muted-foreground hover:text-foreground">Start planlegging →</Link>
+        {user ? (
+          <Link to="/trips" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
+            Gå til mine turer <ArrowRight className="h-4 w-4" />
+          </Link>
+        ) : (
+          <Link to="/trips" className="text-sm text-muted-foreground hover:text-foreground">Start planlegging →</Link>
+        )}
       </header>
 
       <section className="mx-auto max-w-5xl px-4 md:px-6 pt-8 md:pt-14 pb-12">
