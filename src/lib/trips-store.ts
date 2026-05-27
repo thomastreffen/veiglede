@@ -350,6 +350,19 @@ function shiftDate(start: string | undefined, days: number): string | undefined 
   return d.toISOString().slice(0, 10);
 }
 
+function formatPause(min: number): string {
+  if (min >= 60 && min % 60 === 0) {
+    const h = min / 60;
+    return h === 1 ? "hver time" : h === 2 ? "annenhver time" : `hver ${h}. time`;
+  }
+  if (min >= 60) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `hver ${h}t ${m}min`;
+  }
+  return `hvert ${min}. minutt`;
+}
+
 interface SuggestedSeed {
   name: string;
   type: StopType;
@@ -428,23 +441,35 @@ const ALONG_THE_ROUTE: SuggestedStop[] = [
   { id: "sr6", name: "Cabin Lodge Vågåmo", type: "lodging", location: "Vågåmo", description: "Tømmerhytter ved elva, frokost inkludert.", reason: "Godt overnattingsalternativ midtveis.", durationMin: 720, badge: "partner", promoted: true },
   { id: "sr7", name: "Fjellguide-tur", type: "experience", location: "Lofoten", description: "2t guidet tur til lokal topp.", reason: "Perfekt for de som vil ut av bilen.", durationMin: 120, badge: "local" },
   { id: "sr8", name: "Solnedgang Stadlandet", type: "photo", location: "Stadlandet", description: "Vestligste punkt — åpent hav.", reason: "Lagt inn fordi ruten passerer på rett tid for solnedgang.", durationMin: 40, photoOp: true, badge: "local" },
+  { id: "sr9", name: "MC-svingene over Gaularfjellet", type: "viewpoint", location: "Gaularfjellet", description: "Tette hårnålssvinger med rolig sommertrafikk.", reason: "Klassiker for tur-MC — passer svingete kjørestil.", durationMin: 30, photoOp: true, badge: "local" },
+  { id: "sr10", name: "Bobilparkering Geirangerfjord", type: "detour", location: "Geiranger", description: "Stor plass med tømming, strøm og fjordutsikt.", reason: "Sjekket høyde og lengde — passer bobil/camper.", durationMin: 720, badge: "local" },
+  { id: "sr11", name: "Camping Jostedal", type: "lodging", location: "Jostedalen", description: "Familievennlig camping ved breen, hytter og teltplass.", reason: "Naturlig overnatting for rolig cruise med bobil eller bil.", durationMin: 720, badge: "partner", promoted: true },
+  { id: "sr12", name: "Bryggekafé Balestrand", type: "food", location: "Balestrand", description: "Lett lunsj på brygga med Sognefjorden utenfor.", reason: "Mat-pause med utsikt — perfekt for en scenic biltur.", durationMin: 50, badge: "local" },
+  { id: "sr13", name: "Museum Norsk Vegmuseum", type: "attraction", location: "Lillehammer", description: "Norges veihistorie, gratis inngang.", reason: "Hyggelig kulturstopp under en rolig biltur.", durationMin: 60, badge: "local" },
+  { id: "sr14", name: "Pause Hjerkinn", type: "rest", location: "Dovrefjell", description: "Rasteplass med benker, do og turstier.", reason: "God plass for å strekke beina ca. midtveis.", durationMin: 20, badge: "local" },
 ];
 
 export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): SuggestedStop[] {
   const pool = [...ALONG_THE_ROUTE];
   const interests = new Set(stopInterests ?? []);
-  // bias by style + driver interests
   const score = (s: SuggestedStop) => {
     let n = 0;
+    // style weights
     if (trip.style === "photo" && s.photoOp) n += 3;
-    if (trip.style === "scenic" && (s.type === "viewpoint" || s.type === "detour")) n += 2;
-    if (trip.style === "cruise" && (s.type === "food" || s.type === "experience")) n += 2;
+    if (trip.style === "scenic" && (s.type === "viewpoint" || s.type === "detour" || s.type === "food")) n += 2;
+    if (trip.style === "cruise" && (s.type === "food" || s.type === "experience" || s.type === "rest" || s.type === "lodging")) n += 2;
     if (trip.style === "tourist" && (s.type === "attraction" || s.type === "experience")) n += 2;
-    if (trip.vehicle === "rv" && s.type === "lodging") n += 2;
-    if (trip.vehicle === "car" && s.type === "fuel") n += 1;
+    if (trip.style === "curvy" && (s.type === "viewpoint" || s.photoOp)) n += 2;
+    // vehicle weights
+    if (trip.vehicle === "motorcycle" && (s.type === "viewpoint" || s.photoOp || s.type === "rest")) n += 2;
+    if (trip.vehicle === "motorcycle" && s.type === "lodging") n -= 1;
+    if (trip.vehicle === "car" && (s.type === "food" || s.type === "attraction")) n += 1;
+    if (trip.vehicle === "rv" && (s.type === "lodging" || s.type === "detour" || s.type === "rest")) n += 3;
+    if (trip.vehicle === "rv" && s.type === "fuel") n += 1;
+    // driver interests (highest weight)
     if (interests.has(s.type)) n += 4;
     if (interests.has("photo") && s.photoOp) n += 2;
-    return n + Math.random();
+    return n + Math.random() * 0.5;
   };
   return pool.sort((a, b) => score(b) - score(a)).slice(0, 5);
 }
@@ -511,14 +536,19 @@ export function buildAiSummary(input: {
       parts.push("Ruten krysser nasjonale turistveier der det gir mening, med rasteplasser og lokal arkitektur.");
       break;
     case "cruise":
-      parts.push("Tempoet er rolig — pauser legges naturlig inn ca hver andre time.");
+      parts.push("Tempoet er rolig — pauser legges naturlig inn, og dagene deles opp så du aldri føler at du må skynde deg.");
       break;
     case "fastest":
       parts.push("Vi har valgt mest effektive vei og kun lagt inn nødvendige pauser.");
       break;
   }
-  if (input.vehicle === "motorcycle") parts.push("Stoppene tar hensyn til at det er behagelig å stige av sykkelen.");
-  if (input.vehicle === "rv") parts.push("Stoppene er valgt med plass og høyde for bobil i tankene.");
+  if (input.vehicle === "motorcycle") {
+    parts.push("På MC vekter vi kjøreglede — pausene er korte og lagt der det er trygt å stige av sykkelen.");
+  } else if (input.vehicle === "rv") {
+    parts.push("For bobil holder vi etappene rolige og prioriterer stopp med plass, høyde og overnatting/camping.");
+  } else if (input.vehicle === "car") {
+    parts.push("På bil bygger vi inn behagelige matpauser og attraksjoner langs ruta — uten å miste rytmen.");
+  }
 
   const p = input.prefs;
   if (p) {
@@ -530,15 +560,17 @@ export function buildAiSummary(input: {
     if (flags["food"] || p.stopInterests?.includes("food")) wants.push("matpauser");
     if (flags["charging"] || p.stopInterests?.includes("fuel")) wants.push("drivstoff/lading");
     if (p.stopInterests?.includes("lodging")) wants.push("overnattingsforslag");
+    if (p.stopInterests?.includes("detour")) wants.push("camping- og bobilstopp");
+    if (p.stopInterests?.includes("attraction")) wants.push("attraksjoner");
     if (wants.length) parts.push(`Profilen din vektlegger ${wants.join(", ")} — det er bakt inn i forslagene.`);
 
     const avoid: string[] = [];
     if (flags["no-highway"]) avoid.push("motorvei");
     if (flags["no-ferry"]) avoid.push("ferger");
-    if (avoid.length) parts.push(`Vi unngår ${avoid.join(" og ")} der ruta tillater det.`);
+    if (avoid.length) parts.push(`Vi unngår ${avoid.join(" og ")} der ruta tillater det, selv om det betyr noen ekstra kilometer.`);
 
     if (p.maxDrivingHours && p.pauseEveryMin) {
-      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent hvert ${p.pauseEveryMin}. minutt.`);
+      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent ${formatPause(p.pauseEveryMin)}.`);
     } else if (p.maxDrivingHours) {
       parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring.`);
     }

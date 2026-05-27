@@ -110,9 +110,14 @@ function TripPlanner() {
       {/* AI explanation */}
       {trip.aiSummary && (
         <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-            <Sparkles className="h-4 w-4" /> AI ko-pilot
-          </p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
+              <Sparkles className="h-4 w-4" /> AI ko-pilot
+            </p>
+            <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-primary">
+              Tilpasset profilen din · {prefs.stopInterests.length} interesser
+            </span>
+          </div>
           <p className="mt-2 text-sm leading-relaxed text-foreground/90">{trip.aiSummary}</p>
         </section>
       )}
@@ -327,9 +332,14 @@ function TripPlanner() {
           <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
           <p className="mt-1.5 text-sm text-foreground/90">
             Stoppene er plassert slik at dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
-            med pause omtrent hvert <span className="font-semibold">{prefs.pauseEveryMin}. minutt</span>.
+            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Endre i Profil → Kjørepreferanser.</p>
+          {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
+            <p className="mt-1.5 text-sm text-foreground/90">
+              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+            </p>
+          )}
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Endre i Profil → Kjørepreferanser.</p>
         </div>
 
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
@@ -421,4 +431,12 @@ function formatDuration(min: number): string {
     return m ? `${h}t ${m}min` : `${h}t`;
   }
   return `${min} min`;
+}
+
+function formatPauseLabel(min: number): string {
+  if (min >= 60 && min % 60 === 0) {
+    const h = min / 60;
+    return h === 1 ? "hver time" : h === 2 ? "annenhver time" : `hver ${h}. time`;
+  }
+  return `hvert ${min}. minutt`;
 }

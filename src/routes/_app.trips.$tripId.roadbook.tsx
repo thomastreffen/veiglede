@@ -4,6 +4,7 @@ import {
   useTripsStore, stopMeta, vehicleMeta, styleMeta,
   getPartnerTips, getPhotoMemories,
 } from "@/lib/trips-store";
+import { useDriverPrefs } from "@/lib/driver-prefs";
 import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
 function Roadbook() {
   const { tripId } = Route.useParams();
   const { trips, days, stops } = useTripsStore();
+  const prefs = useDriverPrefs();
   const tracking = useTripTracking(tripId);
   const trackMeta = statusMeta(tracking.status);
   const [shareOpen, setShareOpen] = useState(false);
@@ -85,9 +87,14 @@ function Roadbook() {
 
       {trip.aiSummary && (
         <section className="mt-8 mx-auto max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-            <Sparkles className="h-4 w-4" /> Hvorfor denne ruta
-          </p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
+              <Sparkles className="h-4 w-4" /> Hvorfor denne ruta
+            </p>
+            <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-primary">
+              Tilpasset profilen din · {prefs.stopInterests.length} interesser
+            </span>
+          </div>
           <p className="mt-2 text-sm leading-relaxed">{trip.aiSummary}</p>
         </section>
       )}
@@ -186,6 +193,25 @@ function Roadbook() {
           </div>
         </section>
 
+        {/* Personalized driving style */}
+        <section className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
+          <p className="mt-1.5 text-sm text-foreground/90">
+            Dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
+            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
+          </p>
+          {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
+            <p className="mt-1.5 text-sm text-foreground/90">
+              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+            </p>
+          )}
+          {prefs.stopInterests.length > 0 && (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Interesser fra profilen: {prefs.stopInterests.map((t) => stopMeta(t).label).join(" · ")}
+            </p>
+          )}
+        </section>
+
         {/* Practical info */}
         <section className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
           <p className="font-display uppercase text-foreground text-base">Praktisk info</p>
@@ -199,9 +225,18 @@ function Roadbook() {
           </ul>
         </section>
 
+
       </div>
 
       <div className="mt-12 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">— slutt på roadbook —</div>
     </div>
   );
+}
+
+function formatPauseLabel(min: number): string {
+  if (min >= 60 && min % 60 === 0) {
+    const h = min / 60;
+    return h === 1 ? "hver time" : h === 2 ? "annenhver time" : `hver ${h}. time`;
+  }
+  return `hvert ${min}. minutt`;
 }
