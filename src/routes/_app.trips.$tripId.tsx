@@ -307,6 +307,16 @@ function TripPlanner() {
           {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })}</li>}
           <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
         </ul>
+
+        <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
+          <p className="mt-1.5 text-sm text-foreground/90">
+            Stoppene er plassert slik at dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
+            med pause omtrent hvert <span className="font-semibold">{prefs.pauseEveryMin}. minutt</span>.
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground">Endre i Profil → Kjørepreferanser.</p>
+        </div>
+
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
           className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
           <BookOpen className="h-4 w-4" /> Åpne roadbook
