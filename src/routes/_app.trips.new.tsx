@@ -149,7 +149,8 @@ function NewTripWizard() {
 
       {step === 3 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg rute</h1>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hvor skal du?</h1>
+          <p className="mt-3 text-muted-foreground">Fra, til og dato — vi tar oss av resten.</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Chip>{vehicleMeta(vehicle).emoji} {vehicleMeta(vehicle).label}</Chip>
             <Chip>{styleMeta(style).emoji} {styleMeta(style).label}</Chip>
