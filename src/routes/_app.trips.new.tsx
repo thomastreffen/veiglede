@@ -269,7 +269,7 @@ function PreviewStep({
       <h1 className="font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
       <p className="text-sm text-muted-foreground">Et utgangspunkt — finpuss stopp og dager i planleggeren.</p>
 
-      <MapPlaceholder height="h-48" labels={[trip.origin, trip.destination]} distance={`${trip.distanceKm} km`} time={trip.drivingTime} />
+      <TripMap trip={trip} days={tripDays} stops={tripStops} compact height="h-48" />
 
       <div className="grid grid-cols-3 gap-3">
         <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
