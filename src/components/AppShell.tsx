@@ -3,7 +3,9 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import { Home, Map, BookOpen, User, Plus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { getOnboardingStatus } from "@/lib/account";
+
+
 
 
 
