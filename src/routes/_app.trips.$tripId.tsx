@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta, COVERS, type CoverKey } from "@/lib/trips-store";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
-import { Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon, Camera, Sparkles, Share2 } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon, Camera, Sparkles, Share2, ChevronUp, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
   head: () => ({ meta: [{ title: "Tur — Veiglede" }] }),
