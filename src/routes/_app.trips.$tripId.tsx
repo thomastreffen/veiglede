@@ -183,6 +183,10 @@ function TripPlanner() {
                             className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
                             <ChevronDown className="h-4 w-4" />
                           </button>
+                          <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
+                            className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </li>
                     );
