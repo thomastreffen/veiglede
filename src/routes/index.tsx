@@ -122,41 +122,51 @@ function Landing() {
 
       {/* Feature strip */}
       <section className="border-y border-border bg-surface/60">
-        <div className="mx-auto max-w-6xl px-4 md:px-6 py-10 md:py-14 grid gap-8 md:gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mx-auto max-w-6xl px-4 md:px-6 py-12 md:py-16 grid gap-10 md:gap-0 sm:grid-cols-2 lg:grid-cols-5 lg:divide-x lg:divide-border/70">
           {features.map(({ Icon, title, body }) => (
-            <div key={title} className="flex flex-col">
-              <span className="inline-grid place-items-center h-10 w-10 rounded-xl bg-primary/15 text-primary">
+            <div
+              key={title}
+              className="group flex flex-col lg:px-7 first:lg:pl-0 last:lg:pr-0 transition-colors"
+            >
+              <span className="inline-grid place-items-center h-11 w-11 rounded-xl bg-primary/15 text-primary ring-1 ring-primary/10 transition-all group-hover:bg-primary/25 group-hover:ring-primary/30 group-hover:-translate-y-0.5">
                 <Icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 font-display text-base uppercase tracking-wide">{title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{body}</p>
+              <h3 className="mt-5 font-display text-base uppercase tracking-wide">{title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Steps */}
-      <section className="mx-auto max-w-6xl px-4 md:px-6 py-20 md:py-28">
-        <div className="max-w-2xl">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Slik fungerer det</p>
-          <h2 className="mt-3 font-display text-4xl md:text-5xl uppercase leading-[1.02]">
-            Planlegg reisen din i noen få enkle steg
-          </h2>
+      <section className="mx-auto max-w-6xl px-4 md:px-6 py-24 md:py-32">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-primary">
+              <span className="inline-block h-px w-10 bg-primary" /> Slik fungerer det
+            </p>
+            <h2 className="mt-4 font-display text-4xl md:text-6xl uppercase leading-[0.98]">
+              Planlegg reisen din i <span className="text-primary">noen få enkle steg</span>
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground md:max-w-xs">
+            Fra første idé til ferdig roadbook på under et minutt — bygget for folk som faktisk skal ut og kjøre.
+          </p>
         </div>
-        <ol className="mt-12 grid gap-5 md:grid-cols-3">
+        <ol className="mt-14 grid gap-5 md:grid-cols-3">
           {steps.map(({ Icon, title, body }, i) => (
             <li
               key={title}
-              className="relative rounded-3xl border border-border bg-surface p-6 md:p-7"
+              className="group relative rounded-3xl border border-border bg-surface p-7 md:p-8 transition-all hover:border-primary/40 hover:-translate-y-1 hover:bg-surface-2/60"
             >
-              <span className="absolute top-6 right-6 font-display text-2xl text-primary/40">
+              <span className="absolute top-6 right-7 font-display text-3xl text-primary/30 group-hover:text-primary/60 transition-colors">
                 0{i + 1}
               </span>
-              <span className="inline-grid place-items-center h-11 w-11 rounded-2xl bg-primary text-primary-foreground">
+              <span className="inline-grid place-items-center h-12 w-12 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
                 <Icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-5 font-display text-xl uppercase tracking-wide">{title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{body}</p>
+              <h3 className="mt-6 font-display text-xl uppercase tracking-wide">{title}</h3>
+              <p className="mt-2.5 text-sm text-muted-foreground leading-relaxed">{body}</p>
             </li>
           ))}
         </ol>
@@ -164,25 +174,27 @@ function Landing() {
 
       {/* Suggested routes */}
       <section className="border-t border-border bg-surface/40">
-        <div className="mx-auto max-w-6xl px-4 md:px-6 py-20 md:py-24">
+        <div className="mx-auto max-w-6xl px-4 md:px-6 py-24 md:py-28">
           <div className="flex items-end justify-between flex-wrap gap-4">
             <div className="max-w-xl">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Forslag til ruter</p>
-              <h2 className="mt-3 font-display text-4xl md:text-5xl uppercase leading-[1.02]">
+              <p className="inline-flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-primary">
+                <span className="inline-block h-px w-10 bg-primary" /> Forslag til ruter
+              </p>
+              <h2 className="mt-4 font-display text-4xl md:text-6xl uppercase leading-[0.98]">
                 Klassiske norske<br />kjøreopplevelser
               </h2>
             </div>
-            <Link to="/trips" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+            <Link to="/trips" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
               Se alle ruter <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {routes.map((r) => (
               <Link
                 key={r.name}
                 to="/trips/new"
-                className="group overflow-hidden rounded-3xl border border-border bg-surface relative"
+                className="group overflow-hidden rounded-3xl border border-border bg-surface relative transition-all hover:border-primary/40 hover:-translate-y-1"
               >
                 <div className="aspect-[4/5] overflow-hidden">
                   <img
@@ -191,10 +203,10 @@ function Landing() {
                     width={1024}
                     height={768}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 <div className="absolute bottom-0 inset-x-0 p-5 text-white">
                   <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-primary">
                     <MapPin className="h-3 w-3" /> Norge
@@ -209,26 +221,31 @@ function Landing() {
       </section>
 
       {/* CTA band */}
-      <section className="mx-auto max-w-6xl px-4 md:px-6 py-20 md:py-24">
-        <div className="rounded-3xl border border-border bg-surface p-8 md:p-14 bg-glow-orange relative overflow-hidden">
+      <section className="mx-auto max-w-6xl px-4 md:px-6 py-24 md:py-28">
+        <div className="rounded-3xl border border-border bg-surface p-8 md:p-16 bg-glow-orange relative overflow-hidden">
           <div className="max-w-2xl relative">
-            <h2 className="font-display text-3xl md:text-5xl uppercase leading-[1.05]">
-              Klar for <span className="text-primary">den gode veien?</span>
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              Start å planlegge med en gang — ingen konto påkrevd. Lag konto når du vil ta turen videre.
+            <p className="inline-flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-primary">
+              <span className="inline-block h-px w-10 bg-primary" /> Kom i gang
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/trips/new" className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
+            <h2 className="mt-4 font-display text-3xl md:text-5xl uppercase leading-[1.02]">
+              Planlegg første tur <span className="text-primary">gratis</span> — ingen konto nødvendig.
+            </h2>
+            <p className="mt-5 text-muted-foreground text-base leading-relaxed">
+              Test Veiglede direkte i nettleseren. Lag konto når du vil lagre turer, synkronisere mellom enheter eller dele roadbooken din.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <Link to="/trips/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 transition-all hover:-translate-y-0.5 shadow-lg shadow-primary/20">
                 <Plus className="h-4 w-4" strokeWidth={3} /> Start ny tur
               </Link>
-              <Link to="/login" className="inline-flex items-center gap-2 rounded-2xl border border-border px-6 py-3.5 text-sm font-medium hover:bg-surface-2">
+              <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface-2/40 px-6 py-4 text-sm font-medium hover:bg-surface-2 transition-colors">
                 Logg inn
               </Link>
             </div>
           </div>
         </div>
       </section>
+
+
 
       {/* Footer */}
       <footer className="border-t border-border">
