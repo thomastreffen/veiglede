@@ -46,8 +46,10 @@ function TripPlanner() {
   const setShareOpen = (v: boolean) => { if (v && !user) { setSavePromptOpen(true); return; } setShareOpenRaw(v); };
   const trip = trips.find((t) => t.id === tripId);
 
+  if (pathname !== `/trips/${tripId}`) {
     return <Outlet />;
   }
+
 
   if (!trip) {
     return (
