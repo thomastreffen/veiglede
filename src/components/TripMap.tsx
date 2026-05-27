@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
@@ -9,7 +9,10 @@ import { cn } from "@/lib/utils";
 // Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
 // for when MapTiler is actually configured.
 const MapLibreTripMap = lazy(() =>
-  import("./map/MapLibreTripMap").then((m) => ({ default: m.MapLibreTripMap })),
+  import("./map/MapLibreTripMap")
+    .then((m) => ({ default: m.MapLibreTripMap }))
+    // If the chunk fails to load (e.g. network), fall back to SVG silently.
+    .catch(() => ({ default: (props: Props) => <SvgTripMap {...props} /> })),
 );
 
 
@@ -73,10 +76,11 @@ const DAY_COLORS = [
  * vendor SDK directly.
  */
 export function TripMap(props: Props) {
-  if (mapConfig.hasRealMap) {
+  const [errored, setErrored] = useState(false);
+  if (mapConfig.hasRealMap && !errored) {
     return (
       <Suspense fallback={<SvgTripMap {...props} />}>
-        <MapLibreTripMap {...props} />
+        <MapLibreTripMap {...props} onError={() => setErrored(true)} />
       </Suspense>
     );
   }

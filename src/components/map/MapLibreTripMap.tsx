@@ -25,6 +25,7 @@ interface Props {
   hoveredSuggestionId?: string | null;
   compact?: boolean;
   variant?: "dark" | "light";
+  onError?: () => void;
 }
 
 const DAY_COLORS = [
@@ -47,6 +48,7 @@ export function MapLibreTripMap({
   hoveredSuggestionId,
   compact = false,
   variant = "dark",
+  onError,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -61,16 +63,27 @@ export function MapLibreTripMap({
     if (!containerRef.current || mapRef.current) return;
     const style = getMaptilerStyleUrl(variant);
     if (!style) return;
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style,
-      center: [projected.origin.lng, projected.origin.lat],
-      zoom: 5,
-      attributionControl: { compact: true },
-      cooperativeGestures: compact,
-    });
+    let map: MlMap;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style,
+        center: [projected.origin.lng, projected.origin.lat],
+        zoom: 5,
+        attributionControl: { compact: true },
+        cooperativeGestures: compact,
+      });
+    } catch {
+      onError?.();
+      return;
+    }
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.on("load", () => setReady(true));
+    // Tile/style auth failures (bad key, network) → fall back to SVG.
+    map.on("error", (e) => {
+      const status = (e as { error?: { status?: number } }).error?.status;
+      if (status === 401 || status === 403 || status === 404) onError?.();
+    });
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
