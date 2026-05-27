@@ -430,9 +430,10 @@ const ALONG_THE_ROUTE: SuggestedStop[] = [
   { id: "sr8", name: "Solnedgang Stadlandet", type: "photo", location: "Stadlandet", description: "Vestligste punkt — åpent hav.", reason: "Lagt inn fordi ruten passerer på rett tid for solnedgang.", durationMin: 40, photoOp: true, badge: "local" },
 ];
 
-export function getRouteSuggestions(trip: Trip): SuggestedStop[] {
+export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): SuggestedStop[] {
   const pool = [...ALONG_THE_ROUTE];
-  // bias by style
+  const interests = new Set(stopInterests ?? []);
+  // bias by style + driver interests
   const score = (s: SuggestedStop) => {
     let n = 0;
     if (trip.style === "photo" && s.photoOp) n += 3;
@@ -441,6 +442,8 @@ export function getRouteSuggestions(trip: Trip): SuggestedStop[] {
     if (trip.style === "tourist" && (s.type === "attraction" || s.type === "experience")) n += 2;
     if (trip.vehicle === "rv" && s.type === "lodging") n += 2;
     if (trip.vehicle === "car" && s.type === "fuel") n += 1;
+    if (interests.has(s.type)) n += 4;
+    if (interests.has("photo") && s.photoOp) n += 2;
     return n + Math.random();
   };
   return pool.sort((a, b) => score(b) - score(a)).slice(0, 5);
