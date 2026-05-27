@@ -78,6 +78,7 @@ export interface SuggestedStop {
   photoOp?: boolean;
   promoted?: boolean;
   badge?: "partner" | "local" | "promoted";
+  energy?: EnergySource; // for fuel/charging stops only
 }
 
 export interface PartnerTip {
