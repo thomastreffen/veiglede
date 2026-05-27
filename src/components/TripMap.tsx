@@ -3,7 +3,7 @@ import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
 import { stopMeta } from "@/lib/trips-store";
-import { mapConfig } from "@/lib/map";
+import { useRuntimeMapConfig } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 
 // Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
@@ -12,7 +12,7 @@ const MapLibreTripMap = lazy(() =>
   import("./map/MapLibreTripMap")
     .then((m) => ({ default: m.MapLibreTripMap }))
     // If the chunk fails to load (e.g. network), fall back to SVG silently.
-    .catch(() => ({ default: (props: Props) => <SvgTripMap {...props} /> })),
+    .catch(() => ({ default: (props: Props & { maptilerKey: string }) => <SvgTripMap {...props} /> })),
 );
 
 
