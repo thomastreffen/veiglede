@@ -345,11 +345,22 @@ function TripPlanner() {
         <p className="mt-1 text-xs text-muted-foreground">Tilpasset {vehicleDisplay}{em ? ` (${em.label.toLowerCase()})` : ""} · {s.label.toLowerCase()} · interesser fra profil og kjøretøy.</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {suggestions.map((sug) => (
-            <SuggestionCard key={sug.id} sug={sug} onAdd={() => tripsApi.addSuggestion(tripId, sug)} />
+          {enrichedSuggestions.map(({ sug, info }) => (
+            <SuggestionCard
+              key={sug.id}
+              sug={sug}
+              detourMin={info.detourMin}
+              distanceFromRouteKm={info.distanceFromRouteKm}
+              off={info.off}
+              vehicleDisplay={vehicleDisplay}
+              styleLabel={s.label}
+              onAdd={() => tripsApi.addSuggestion(tripId, sug)}
+              onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
+            />
           ))}
         </div>
       </section>
+
 
       {/* Photo memories concept */}
       <section id="photos" className="mt-10 scroll-mt-24">
