@@ -97,12 +97,12 @@ function NewTripWizard() {
         </div>
       </div>
 
-      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 4</p>
+      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 4 · {["Kjøretøy", "Stil", "Rute", "Forslag"][step - 1]}</p>
 
       {step === 1 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg kjøretøy</h1>
-          <p className="mt-3 text-muted-foreground">Vi tilpasser ruten etter hva du kjører.</p>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hva kjører du?</h1>
+          <p className="mt-3 text-muted-foreground">Vi tilpasser veier, stopp og tempo etter kjøretøyet ditt.</p>
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
             {VEHICLES.map((v) => (
               <button key={v.value} onClick={() => setVehicle(v.value)}
@@ -124,8 +124,8 @@ function NewTripWizard() {
 
       {step === 2 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg kjørestil</h1>
-          <p className="mt-3 text-muted-foreground">Hva slags opplevelse ønsker du?</p>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hvordan vil du kjøre?</h1>
+          <p className="mt-3 text-muted-foreground">Velg en stil — vi bygger ruta rundt opplevelsen, ikke bare avstanden.</p>
           <div className="mt-8 grid grid-cols-2 gap-3">
             {ROUTE_STYLES.map((s) => (
               <button key={s.value} onClick={() => setStyle(s.value)}
@@ -149,7 +149,8 @@ function NewTripWizard() {
 
       {step === 3 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Velg rute</h1>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hvor skal du?</h1>
+          <p className="mt-3 text-muted-foreground">Fra, til og dato — vi tar oss av resten.</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Chip>{vehicleMeta(vehicle).emoji} {vehicleMeta(vehicle).label}</Chip>
             <Chip>{styleMeta(style).emoji} {styleMeta(style).label}</Chip>
@@ -210,8 +211,8 @@ function PreviewStep({
     return (
       <div className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-10 text-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-        <p className="mt-5 font-display text-2xl uppercase">AI tegner ruta</p>
-        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">Vi analyserer landskap, stil og pauser for å foreslå et godt utgangspunkt.</p>
+        <p className="mt-5 font-display text-2xl uppercase">AI tegner ruta di</p>
+        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">Vurderer landskap, lys og naturlige pauser. Bare et øyeblikk.</p>
         <div className="mt-6 flex justify-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: "150ms" }} />
@@ -227,9 +228,10 @@ function PreviewStep({
   return (
     <div className="mt-6 space-y-5">
       <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary">
-        <Check className="h-3.5 w-3.5" /> AI-rute klar
+        <Check className="h-3.5 w-3.5" /> Ruta er klar
       </div>
       <h1 className="font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
+      <p className="text-sm text-muted-foreground">Et utgangspunkt — finpuss stopp og dager i planleggeren.</p>
 
       <MapPlaceholder height="h-48" labels={[trip.origin, trip.destination]} distance={`${trip.distanceKm} km`} time={trip.drivingTime} />
 
