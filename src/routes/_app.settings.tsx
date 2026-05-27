@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useAuth, signOut } from "@/lib/auth";
 import { deleteMyAccount } from "@/lib/account";
