@@ -18,8 +18,15 @@ function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [freshAfterDelete, setFreshAfterDelete] = useState(false);
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
+
+  // Read the post-deletion notice exactly once, before any other effect can
+  // clear localStorage.
+  useEffect(() => {
+    if (consumeProfileDeletedNotice()) setFreshAfterDelete(true);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login", replace: true });
