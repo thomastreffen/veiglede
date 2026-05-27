@@ -64,7 +64,26 @@ const DAY_COLORS = [
   "oklch(0.78 0.14 90)",   // yellow
 ];
 
-export function TripMap({
+/**
+ * TripMap — provider-agnostic trip map.
+ *
+ * Renders a real tile-based map (MapLibre + MapTiler) when API keys are
+ * configured, otherwise falls back to the SVG renderer. Consumers (planner,
+ * roadbook, shared view) use this single component — they never reach for a
+ * vendor SDK directly.
+ */
+export function TripMap(props: Props) {
+  if (mapConfig.hasRealMap) {
+    return (
+      <Suspense fallback={<SvgTripMap {...props} />}>
+        <MapLibreTripMap {...props} />
+      </Suspense>
+    );
+  }
+  return <SvgTripMap {...props} />;
+}
+
+function SvgTripMap({
   trip,
   days,
   stops,
