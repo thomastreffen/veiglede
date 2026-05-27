@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
+import { useDriverPrefs } from "@/lib/driver-prefs";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
@@ -15,9 +16,10 @@ type Step = 1 | 2 | 3 | 4;
 
 function NewTripWizard() {
   const navigate = useNavigate();
+  const prefs = useDriverPrefs();
   const [step, setStep] = useState<Step>(1);
-  const [vehicle, setVehicle] = useState<VehicleType>("motorcycle");
-  const [style, setStyle] = useState<RouteStyle>("curvy");
+  const [vehicle, setVehicle] = useState<VehicleType>(prefs.defaultVehicle);
+  const [style, setStyle] = useState<RouteStyle>(prefs.defaultStyle);
   const [origin, setOrigin] = useState("Drammen");
   const [destination, setDestination] = useState("Hardangervidda");
   const [date, setDate] = useState("2026-06-07");
@@ -47,7 +49,12 @@ function NewTripWizard() {
       const distanceKm = 140 + Math.floor(Math.random() * 520);
       const hours = Math.floor(distanceKm / 60);
       const mins = Math.round(((distanceKm / 60) - hours) * 60);
-      const ai = buildAiSummary({ origin, destination, vehicle, style, userPrompt: aiPrompt || undefined });
+      const ai = buildAiSummary({ origin, destination, vehicle, style, userPrompt: aiPrompt || undefined, prefs: {
+        drivingFlags: prefs.drivingFlags,
+        stopInterests: prefs.stopInterests,
+        maxDrivingHours: prefs.maxDrivingHours,
+        pauseEveryMin: prefs.pauseEveryMin,
+      } });
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
         subtitle: `${s.label} på ${v.label.toLowerCase()}`,

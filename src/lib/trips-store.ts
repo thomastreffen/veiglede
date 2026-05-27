@@ -430,9 +430,10 @@ const ALONG_THE_ROUTE: SuggestedStop[] = [
   { id: "sr8", name: "Solnedgang Stadlandet", type: "photo", location: "Stadlandet", description: "Vestligste punkt — åpent hav.", reason: "Lagt inn fordi ruten passerer på rett tid for solnedgang.", durationMin: 40, photoOp: true, badge: "local" },
 ];
 
-export function getRouteSuggestions(trip: Trip): SuggestedStop[] {
+export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): SuggestedStop[] {
   const pool = [...ALONG_THE_ROUTE];
-  // bias by style
+  const interests = new Set(stopInterests ?? []);
+  // bias by style + driver interests
   const score = (s: SuggestedStop) => {
     let n = 0;
     if (trip.style === "photo" && s.photoOp) n += 3;
@@ -441,6 +442,8 @@ export function getRouteSuggestions(trip: Trip): SuggestedStop[] {
     if (trip.style === "tourist" && (s.type === "attraction" || s.type === "experience")) n += 2;
     if (trip.vehicle === "rv" && s.type === "lodging") n += 2;
     if (trip.vehicle === "car" && s.type === "fuel") n += 1;
+    if (interests.has(s.type)) n += 4;
+    if (interests.has("photo") && s.photoOp) n += 2;
     return n + Math.random();
   };
   return pool.sort((a, b) => score(b) - score(a)).slice(0, 5);
@@ -479,8 +482,16 @@ export function getPhotoMemories(trip: Trip, tripStops: Stop[]): PhotoMemory[] {
 
 // ----- AI summary builder -----
 
+export interface AiPrefsInput {
+  drivingFlags?: Record<string, boolean>;
+  stopInterests?: StopType[];
+  maxDrivingHours?: number;
+  pauseEveryMin?: number;
+}
+
 export function buildAiSummary(input: {
-  origin: string; destination: string; vehicle: VehicleType; style: RouteStyle; userPrompt?: string;
+  origin: string; destination: string; vehicle: VehicleType; style: RouteStyle;
+  userPrompt?: string; prefs?: AiPrefsInput;
 }): string {
   const v = vehicleMeta(input.vehicle);
   const s = styleMeta(input.style);
@@ -508,6 +519,31 @@ export function buildAiSummary(input: {
   }
   if (input.vehicle === "motorcycle") parts.push("Stoppene tar hensyn til at det er behagelig å stige av sykkelen.");
   if (input.vehicle === "rv") parts.push("Stoppene er valgt med plass og høyde for bobil i tankene.");
+
+  const p = input.prefs;
+  if (p) {
+    const flags = p.drivingFlags ?? {};
+    const wants: string[] = [];
+    if (flags["views"]) wants.push("fine utsikter");
+    if (flags["photo"] || p.stopInterests?.includes("photo")) wants.push("fotostopp");
+    if (flags["tourist"]) wants.push("nasjonale turistveier");
+    if (flags["food"] || p.stopInterests?.includes("food")) wants.push("matpauser");
+    if (flags["charging"] || p.stopInterests?.includes("fuel")) wants.push("drivstoff/lading");
+    if (p.stopInterests?.includes("lodging")) wants.push("overnattingsforslag");
+    if (wants.length) parts.push(`Profilen din vektlegger ${wants.join(", ")} — det er bakt inn i forslagene.`);
+
+    const avoid: string[] = [];
+    if (flags["no-highway"]) avoid.push("motorvei");
+    if (flags["no-ferry"]) avoid.push("ferger");
+    if (avoid.length) parts.push(`Vi unngår ${avoid.join(" og ")} der ruta tillater det.`);
+
+    if (p.maxDrivingHours && p.pauseEveryMin) {
+      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent hvert ${p.pauseEveryMin}. minutt.`);
+    } else if (p.maxDrivingHours) {
+      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring.`);
+    }
+  }
+
   parts.push("Lokale tips og partnerstopp dukker bare opp når de faktisk passer ruten.");
   if (input.userPrompt) parts.push(`Ekstra hensyn: «${input.userPrompt}».`);
   return parts.join(" ");
