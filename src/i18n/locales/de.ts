@@ -125,4 +125,14 @@ export const de: Dict = {
     backHome: "Zurück zu Veiglede",
     ownerOpening: "Du bist der Eigentümer dieser Reise.",
   },
+  map: {
+    origin: "Start",
+    destination: "Ziel",
+    stop: "Stopp",
+    suggestion: "Vorschlag",
+    approximated: "Ungefähre Position",
+    routeFallback: "Vorschau — gerade Linien zwischen Stopps",
+    realRoute: "Tatsächliche Fahrtroute",
+    noKeys: "Demo-Karte (kein Karten-Schlüssel konfiguriert)",
+  },
 };

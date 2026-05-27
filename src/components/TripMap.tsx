@@ -1,9 +1,17 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
 import { stopMeta } from "@/lib/trips-store";
+import { mapConfig } from "@/lib/map";
 import { cn } from "@/lib/utils";
+
+// Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
+// for when MapTiler is actually configured.
+const MapLibreTripMap = lazy(() =>
+  import("./map/MapLibreTripMap").then((m) => ({ default: m.MapLibreTripMap })),
+);
+
 
 interface Props {
   trip: Trip;
@@ -56,7 +64,26 @@ const DAY_COLORS = [
   "oklch(0.78 0.14 90)",   // yellow
 ];
 
-export function TripMap({
+/**
+ * TripMap — provider-agnostic trip map.
+ *
+ * Renders a real tile-based map (MapLibre + MapTiler) when API keys are
+ * configured, otherwise falls back to the SVG renderer. Consumers (planner,
+ * roadbook, shared view) use this single component — they never reach for a
+ * vendor SDK directly.
+ */
+export function TripMap(props: Props) {
+  if (mapConfig.hasRealMap) {
+    return (
+      <Suspense fallback={<SvgTripMap {...props} />}>
+        <MapLibreTripMap {...props} />
+      </Suspense>
+    );
+  }
+  return <SvgTripMap {...props} />;
+}
+
+function SvgTripMap({
   trip,
   days,
   stops,

@@ -32,6 +32,15 @@ export interface Stop {
   distanceFromPrevKm?: number;
   photoOp?: boolean;
   promoted?: boolean;
+  // Map foundation v1 — provider-agnostic geo + classification.
+  // All optional so older cached trips keep working.
+  lat?: number;
+  lng?: number;
+  title?: string;
+  day?: number;
+  isSuggestion?: boolean;
+  isPartner?: boolean;
+  isPhotoStop?: boolean;
 }
 
 export interface TripDay {
@@ -63,6 +72,15 @@ export interface Trip {
   cover: CoverKey;
   aiSummary?: string;
   createdAt: number;
+  // Map foundation v1 — cached routing result so we don't re-bill ORS
+  // every time the planner / roadbook mounts. All optional.
+  originLoc?: { lat: number; lng: number };
+  destinationLoc?: { lat: number; lng: number };
+  routeGeometry?: { lat: number; lng: number }[];
+  routeDistanceKm?: number;
+  routeDurationMin?: number;
+  routeProvider?: string;
+  routeWaypointsHash?: string;
 }
 
 export type CoverKey = "fjord" | "mountain" | "coast" | "valley" | "lofoten" | "forest";
