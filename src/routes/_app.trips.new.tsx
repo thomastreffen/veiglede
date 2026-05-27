@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { tripsApi, VEHICLES, ROUTE_STYLES, type VehicleType, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
+import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
+import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
@@ -17,15 +18,24 @@ type Step = 1 | 2 | 3 | 4;
 function NewTripWizard() {
   const navigate = useNavigate();
   const prefs = useDriverPrefs();
+  const { vehicles, defaultId } = useVehicles();
+  const initialVehicle: Vehicle = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
   const [step, setStep] = useState<Step>(1);
-  const [vehicle, setVehicle] = useState<VehicleType>(prefs.defaultVehicle);
-  const [style, setStyle] = useState<RouteStyle>(prefs.defaultStyle);
+  const [vehicleId, setVehicleId] = useState<string>(initialVehicle.id);
+  const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
+  const [style, setStyle] = useState<RouteStyle>(selectedVehicle.defaultStyle);
   const [origin, setOrigin] = useState("Drammen");
   const [destination, setDestination] = useState("Hardangervidda");
   const [date, setDate] = useState("2026-06-07");
   const [aiPrompt, setAiPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [tripId, setTripId] = useState<string | null>(null);
+
+  const pickVehicle = (v: Vehicle) => {
+    setVehicleId(v.id);
+    setStyle(v.defaultStyle);
+  };
+
 
   const next = () => setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
   const prev = () => {
