@@ -77,13 +77,15 @@ export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => oauth("apple")}
-          disabled={loading !== null}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-1 px-4 py-2.5 text-sm font-medium hover:bg-surface-2 disabled:opacity-60"
+          disabled
+          title="Apple-innlogging krever Apple Developer-oppsett — kommer snart"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-1/60 px-4 py-2.5 text-sm font-medium opacity-60 cursor-not-allowed"
         >
-          {loading === "apple" ? <Loader2 className="h-4 w-4 animate-spin" /> : <AppleIcon />}
+          <AppleIcon />
           Fortsett med Apple
+          <span className="ml-1 rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Krever oppsett</span>
         </button>
+
       </div>
 
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
