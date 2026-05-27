@@ -83,8 +83,14 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
       drivingFlags: flags,
       stopInterests: interests,
     };
-    if (vehicle) vehiclesApi.update(vehicle.id, payload);
-    else vehiclesApi.add(payload);
+    let saved: Vehicle;
+    if (vehicle) {
+      vehiclesApi.update(vehicle.id, payload);
+      saved = { ...vehicle, ...payload };
+    } else {
+      saved = vehiclesApi.add(payload);
+    }
+    onSaved?.(saved);
     onOpenChange(false);
   };
 
