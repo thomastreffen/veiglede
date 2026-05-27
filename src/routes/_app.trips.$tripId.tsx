@@ -427,3 +427,11 @@ function formatDuration(min: number): string {
   }
   return `${min} min`;
 }
+
+function formatPauseLabel(min: number): string {
+  if (min >= 60 && min % 60 === 0) {
+    const h = min / 60;
+    return h === 1 ? "hver time" : h === 2 ? "annenhver time" : `hver ${h}. time`;
+  }
+  return `hvert ${min}. minutt`;
+}
