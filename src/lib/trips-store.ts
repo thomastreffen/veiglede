@@ -538,7 +538,7 @@ export function buildAiSummary(input: {
     if (avoid.length) parts.push(`Vi unngår ${avoid.join(" og ")} der ruta tillater det.`);
 
     if (p.maxDrivingHours && p.pauseEveryMin) {
-      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent hver ${p.pauseEveryMin}. minutt.`);
+      parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring, med pause omtrent hvert ${p.pauseEveryMin}. minutt.`);
     } else if (p.maxDrivingHours) {
       parts.push(`Dagsetapper holdes innenfor ca ${p.maxDrivingHours} timer kjøring.`);
     }
