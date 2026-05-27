@@ -56,9 +56,9 @@ function Landing() {
     <div className="min-h-screen bg-background">
       {/* Top nav */}
       <header className="absolute top-0 inset-x-0 z-30">
-        <div className="mx-auto max-w-6xl flex items-center justify-between px-4 md:px-6 py-5">
-          <Link to="/" aria-label="Veiglede">
-            <VeigledeLogo size="md" tone="light" />
+        <div className="mx-auto max-w-6xl flex items-center justify-between px-4 md:px-6 py-5 md:py-6">
+          <Link to="/" aria-label="Veiglede" className="transition-opacity hover:opacity-90">
+            <VeigledeLogo size="lg" tone="light" />
           </Link>
           <div className="flex items-center gap-2">
             {user ? (
@@ -70,7 +70,7 @@ function Landing() {
                 <Link to="/login" className="hidden sm:inline-flex items-center text-sm font-medium text-white/85 hover:text-white px-3 py-2">
                   Logg inn
                 </Link>
-                <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
+                <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
                   Start ny tur <ArrowRight className="h-4 w-4" />
                 </Link>
               </>
@@ -80,43 +80,45 @@ function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="relative isolate min-h-[88vh] flex items-end overflow-hidden">
+      <section className="relative isolate min-h-[92vh] flex items-end overflow-hidden">
         <img
           src={heroFjord}
           alt="Svingete vei langs en norsk fjord i gyllen kveldssol"
           width={1920}
           height={1080}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0F1620]/85 via-[#0F1620]/40 to-[#0F1620]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0F1620]/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0F1620]/90 via-[#0F1620]/45 to-[#0F1620]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0F1620]/85 via-[#0F1620]/20 to-transparent" />
 
-        <div className="relative mx-auto max-w-6xl w-full px-4 md:px-6 pb-16 md:pb-24 pt-32 text-white">
-          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-primary">
-            <span className="inline-block h-px w-8 bg-primary" /> AI-drevet roadtrip-planlegger
+        <div className="relative mx-auto max-w-6xl w-full px-4 md:px-6 pb-20 md:pb-28 pt-36 md:pt-40 text-white">
+          <p className="inline-flex items-center gap-3 text-[11px] uppercase tracking-[0.3em] text-primary">
+            <span className="inline-block h-px w-10 bg-primary" /> AI-drevet roadtrip-planlegger
           </p>
-          <h1 className="mt-6 font-display uppercase text-balance leading-[0.92] text-[14vw] sm:text-7xl md:text-[6.5rem] max-w-4xl">
+          <h1 className="mt-7 font-display uppercase text-balance leading-[0.92] text-[13vw] sm:text-7xl md:text-[6.75rem] max-w-4xl">
             Finn veien <br />
             <span className="text-primary">som betyr noe</span>
           </h1>
-          <p className="mt-6 max-w-xl text-base md:text-lg text-white/80 leading-relaxed">
+          <p className="mt-7 max-w-xl text-base md:text-lg text-white/80 leading-relaxed">
             AI-drevet veiplanlegging for naturopplevelser, minneverdige stopp og den gode veien.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/trips/new" className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
+          <div className="mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+            <Link to="/trips/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 transition-all hover:-translate-y-0.5 shadow-lg shadow-primary/25">
               <Plus className="h-4 w-4" strokeWidth={3} /> Start ny tur
             </Link>
-            <Link to="/trips" className="inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/5 backdrop-blur px-6 py-3.5 text-sm font-medium text-white hover:bg-white/10">
+            <Link to="/trips" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/5 backdrop-blur px-6 py-4 text-sm font-medium text-white hover:bg-white/10 transition-colors">
               Utforsk ruter <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <p className="mt-5 text-xs md:text-sm text-white/65 max-w-md">
-            Prøv uten konto. Logg inn når du vil lagre, dele eller fortsette senere.
+          <p className="mt-6 text-xs md:text-sm text-white/70 max-w-md leading-relaxed">
+            <span className="text-primary">●</span> Prøv uten konto. Logg inn når du vil lagre, dele eller fortsette senere.
           </p>
         </div>
       </section>
+
+
 
       {/* Feature strip */}
       <section className="border-y border-border bg-surface/60">
