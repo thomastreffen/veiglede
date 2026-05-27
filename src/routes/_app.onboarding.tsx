@@ -73,37 +73,57 @@ function Onboarding() {
           <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Steg 2 av 4</p>
           <h1 className="mt-2 font-display text-3xl uppercase">Ditt første kjøretøy</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Vi har lagt inn noen eksempler — eller legg til ditt eget. Du kan endre dette når som helst.
+            Legg til ditt eget kjøretøy — eller bruk et eksempel under for å komme i gang. Du kan endre dette når som helst.
           </p>
-
-          <div className="mt-5 grid gap-2">
-            {vehicles.slice(0, 4).map((v) => (
-              <div key={v.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface-1 p-3">
-                <div className="h-10 w-10 grid place-items-center rounded-lg bg-surface-2 text-lg">
-                  {v.type === "motorcycle" ? "🏍️" : v.type === "rv" ? "🚐" : "🚗"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{v.name}</p>
-                  <p className="text-xs text-muted-foreground">{v.energy}</p>
-                </div>
-                <button
-                  onClick={() => vehiclesApi.setDefault(v.id)}
-                  className="text-xs px-2 py-1 rounded-md hover:bg-surface-2"
-                >
-                  Bruk som standard
-                </button>
-              </div>
-            ))}
-          </div>
 
           <button
             onClick={() => setEditorOpen(true)}
-            className="mt-3 w-full rounded-xl border border-dashed border-border bg-transparent px-4 py-3 text-sm hover:bg-surface-2"
+            className="mt-5 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:brightness-110"
           >
             + Legg til ditt eget kjøretøy
           </button>
 
-          <VehicleEditor open={editorOpen} onOpenChange={setEditorOpen} vehicle={undefined} />
+          <div className="mt-4 grid gap-2">
+            {vehicles.map((v) => {
+              const isDefault = v.id === useVehicles().defaultId;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => vehiclesApi.setDefault(v.id)}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${isDefault ? "border-primary bg-primary/10" : "border-border bg-surface-1 hover:border-border/80"}`}
+                >
+                  <div className="h-10 w-10 grid place-items-center rounded-lg bg-surface-2 text-lg shrink-0">
+                    {v.type === "motorcycle" ? "🏍️" : v.type === "rv" ? "🚐" : "🚗"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium truncate">{v.name}</p>
+                      {v.isDemo && (
+                        <span className="text-[10px] uppercase tracking-wider rounded-full border border-border px-1.5 py-0.5 text-muted-foreground">Eksempel</span>
+                      )}
+                      {!v.isDemo && (
+                        <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-primary">Lagret</span>
+                      )}
+                      {isDefault && (
+                        <span className="text-[10px] uppercase tracking-wider rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground">Standard</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {v.hint ?? `${v.energy}`}
+                    </p>
+                  </div>
+                  {isDefault && <Check className="h-4 w-4 text-primary shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+
+          <VehicleEditor
+            open={editorOpen}
+            onOpenChange={setEditorOpen}
+            vehicle={undefined}
+            onSaved={(v) => vehiclesApi.setDefault(v.id)}
+          />
           <NavRow onBack={() => setStep(1)} onNext={() => setStep(3)} onSkip={skip} />
         </Card>
       )}
