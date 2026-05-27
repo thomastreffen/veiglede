@@ -96,6 +96,8 @@ export interface PhotoMemory {
 
 interface State { trips: Trip[]; days: TripDay[]; stops: Stop[] }
 
+const EMPTY_STATE: State = { trips: [], days: [], stops: [] };
+
 const KEY = "veiglede.v3";
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -165,7 +167,7 @@ function seed(): State {
 }
 
 function load(): State {
-  if (typeof window === "undefined") return { trips: [], days: [], stops: [] };
+  if (typeof window === "undefined") return EMPTY_STATE;
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) { const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s; }
@@ -173,7 +175,7 @@ function load(): State {
   } catch { return seed(); }
 }
 
-let state: State = { trips: [], days: [], stops: [] };
+let state: State = EMPTY_STATE;
 let initialized = false;
 const listeners = new Set<() => void>();
 
@@ -186,7 +188,7 @@ function persist() {
 }
 function subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); }
 function getSnapshot() { ensureInit(); return state; }
-function getServerSnapshot(): State { return { trips: [], days: [], stops: [] }; }
+function getServerSnapshot(): State { return EMPTY_STATE; }
 
 export function useTripsStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
