@@ -132,9 +132,18 @@ function TripPlanner() {
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
+      {/* Trip tracking */}
+      <section id="track" className="mt-4 scroll-mt-24">
+        <TripTracker tripId={tripId} tripStops={tripStops} vehicleLabel={`${v.emoji} ${v.label}`} />
+      </section>
+
+      {/* Memories (after completion) */}
+      <TripMemories trip={trip} tripStops={tripStops} onShare={() => setShareOpen(true)} />
+
       {/* Quick-jump pills */}
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
         {[
+          { href: "#track", label: "Live tur" },
           { href: "#days", label: "Dag for dag" },
           { href: "#along", label: "Langs ruta" },
           { href: "#photos", label: "Bilder" },
