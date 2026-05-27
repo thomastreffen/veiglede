@@ -47,7 +47,7 @@ function TripPlanner() {
   const s = styleMeta(trip.style);
   const totalStops = tripStops.length;
 
-  const suggestions = getRouteSuggestions(trip);
+  const suggestions = getRouteSuggestions(trip, prefs.stopInterests);
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
