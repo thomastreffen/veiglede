@@ -258,7 +258,7 @@ function TripPlanner() {
       </section>
 
       {/* Partner tips */}
-      <section className="mt-10">
+      <section id="tips" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Partnertips</p>
