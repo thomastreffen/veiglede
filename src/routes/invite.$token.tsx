@@ -101,7 +101,7 @@ function InvitePage() {
           </div>
         )}
 
-        {payload && typeof payload !== "string" && payload.trip && (
+        {payload && typeof payload !== "string" && !!payload.trip && (
           <SharedView
             payload={payload}
             joined={joined}
