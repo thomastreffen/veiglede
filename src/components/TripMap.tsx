@@ -79,6 +79,7 @@ export function TripMap(props: Props) {
   const [maplibreReady, setMaplibreReady] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [forced, setForced] = useState(false);
+  const [hideSvg, setHideSvg] = useState(false);
   const [stages, setStages] = useState<{
     mounted: boolean; mapCreated: boolean; styleLoaded: boolean;
     firstRender: boolean; routeLayerAdded: boolean;
@@ -102,7 +103,38 @@ export function TripMap(props: Props) {
     return () => window.clearTimeout(t);
   }, [canTryMapLibre, maplibreReady, forced]);
 
-  const mapLibreVisible = canTryMapLibre && (maplibreReady || forced);
+  // Verify MapLibre canvas is actually painted (non-zero size, has GL context).
+  const mlContainerRef = useRef<HTMLDivElement | null>(null);
+  const [canvasInfo, setCanvasInfo] = useState<{ cw: number; ch: number; mw: number; mh: number; hasCanvas: boolean }>(
+    { cw: 0, ch: 0, mw: 0, mh: 0, hasCanvas: false },
+  );
+  React.useEffect(() => {
+    if (!maplibreReady) return;
+    let raf = 0;
+    const measure = () => {
+      const root = mlContainerRef.current;
+      if (!root) return;
+      const canvas = root.querySelector("canvas") as HTMLCanvasElement | null;
+      const r = root.getBoundingClientRect();
+      const c = canvas?.getBoundingClientRect();
+      setCanvasInfo({
+        cw: c ? Math.round(c.width) : 0,
+        ch: c ? Math.round(c.height) : 0,
+        mw: Math.round(r.width),
+        mh: Math.round(r.height),
+        hasCanvas: !!canvas,
+      });
+    };
+    measure();
+    raf = window.setTimeout(measure, 500) as unknown as number;
+    return () => window.clearTimeout(raf);
+  }, [maplibreReady]);
+
+  // Honest "visible" check: ready AND the canvas has actually been painted
+  // with non-zero size. Otherwise we'd lie about maplibre-visible while the
+  // user stares at the SVG underneath.
+  const canvasPainted = canvasInfo.hasCanvas && canvasInfo.cw > 0 && canvasInfo.ch > 0;
+  const mapLibreVisible = canTryMapLibre && (forced || (maplibreReady && canvasPainted));
   const fallbackReason = !hasUsableCoords
     ? "no-coords"
     : !cfg
@@ -115,8 +147,14 @@ export function TripMap(props: Props) {
             ? "maplibre-timeout (no firstRender within 6s)"
             : !maplibreReady
               ? "loading-maplibre"
-              : null;
-  const mode = mapLibreVisible ? "maplibre-visible" : `svg-fallback (${fallbackReason ?? "unknown"})`;
+              : !canvasPainted
+                ? "maplibre-canvas-not-painted"
+                : null;
+  const mode = mapLibreVisible
+    ? "maplibre-visible"
+    : maplibreReady && !canvasPainted
+      ? "maplibre-not-visible"
+      : `svg-fallback (${fallbackReason ?? "unknown"})`;
 
   const routePointCount = props.days.length + 2;
   const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
@@ -141,7 +179,7 @@ export function TripMap(props: Props) {
       hasRealMap: cfg?.hasRealMap ?? false,
       keyLen: cfg?.maptilerKey?.length ?? 0,
       mode, maplibreReady, errored, timedOut, errorMsg,
-      stages,
+      stages, canvasInfo,
       hasOrigin, hasDestination,
       routeProvider: props.trip.routeProvider,
       geometryLen: geom.length, geomMode,
@@ -152,18 +190,31 @@ export function TripMap(props: Props) {
   const originLoc = props.trip.originLoc ?? lookupPlace(props.trip.origin);
   const destLoc = props.trip.destinationLoc ?? lookupPlace(props.trip.destination);
 
+  // When MapLibre is truly visible we hide the SVG entirely so it can't
+  // dominate visually. SVG only stays painted while we're still waiting on
+  // MapLibre or have fallen back.
+  const svgHidden = (mapLibreVisible && !forced && !debug) || hideSvg;
+  const visibleLayer = mapLibreVisible ? "maplibre" : "svg";
+
   return (
     <div className={cn("relative", heightClass, props.className)}>
-      {/* SVG base — ALWAYS rendered so the container is never blank. */}
-      <div className="absolute inset-0">
+      {/* SVG base — rendered behind MapLibre; hidden once MapLibre is visible. */}
+      <div
+        className={cn(
+          "absolute inset-0 z-0 transition-opacity duration-300",
+          svgHidden ? "opacity-0 pointer-events-none" : "opacity-100",
+        )}
+        aria-hidden={svgHidden}
+      >
         <SvgTripMap {...props} height="h-full" className={undefined} />
       </div>
 
       {/* MapLibre — primary renderer when MapTiler is configured. */}
       {canTryMapLibre && cfg?.maptilerKey && (
         <div
+          ref={mlContainerRef}
           className={cn(
-            "absolute inset-0 rounded-2xl overflow-hidden transition-opacity duration-300",
+            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300",
             mapLibreVisible ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           aria-hidden={!mapLibreVisible}
@@ -185,24 +236,37 @@ export function TripMap(props: Props) {
       {debug && (
         <div className="absolute left-2 top-2 z-20 rounded-md border border-primary/40 bg-background/90 backdrop-blur px-2 py-1.5 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[360px] pointer-events-auto">
           <div>mode: <span className="text-primary font-semibold normal-case">{mode}</span></div>
+          <div>visible layer: <span className="text-primary font-semibold normal-case">{visibleLayer}</span></div>
           <div>cfg.hasRealMap: {String(Boolean(cfg?.hasRealMap))} · keyLen: {cfg?.maptilerKey?.length ?? 0}</div>
           <div>origin: {originLoc ? `${originLoc.lat.toFixed(2)},${originLoc.lng.toFixed(2)}` : "—"} · dest: {destLoc ? `${destLoc.lat.toFixed(2)},${destLoc.lng.toFixed(2)}` : "—"}</div>
           <div>
             stages: m{stages.mounted ? "✓" : "·"} c{stages.mapCreated ? "✓" : "·"} s{stages.styleLoaded ? "✓" : "·"} r{stages.firstRender ? "✓" : "·"} l{stages.routeLayerAdded ? "✓" : "·"} · ready: {String(maplibreReady)}
           </div>
+          <div>ml-box: {canvasInfo.mw}×{canvasInfo.mh} · canvas: {canvasInfo.hasCanvas ? `${canvasInfo.cw}×${canvasInfo.ch}` : "missing"}</div>
+          <div>z: svg=0 ml=10 · svg opacity: {svgHidden ? "0" : "1"} · ml opacity: {mapLibreVisible ? "1" : "0"}</div>
           <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} · stops: {stopsWithCoords}/{props.stops.length} (d+2={routePointCount})</div>
           {fallbackReason && <div className="normal-case text-yellow-400">reason: {fallbackReason}</div>}
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
-          {!mapLibreVisible && cfg?.hasRealMap && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {!mapLibreVisible && cfg?.hasRealMap && (
+              <button
+                type="button"
+                onClick={() => { setForced(true); setErrored(false); setTimedOut(false); }}
+                className="rounded border border-primary/60 bg-primary/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/30"
+              >
+                Force MapLibre
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => { setForced(true); setErrored(false); setTimedOut(false); }}
-              className="mt-1 rounded border border-primary/60 bg-primary/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/30"
+              onClick={() => setHideSvg((v) => !v)}
+              className="rounded border border-primary/60 bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20"
             >
-              Force MapLibre
+              {hideSvg ? "Show SVG" : "Hide SVG"}
             </button>
-          )}
+          </div>
         </div>
+
       )}
     </div>
   );
