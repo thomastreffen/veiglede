@@ -2,7 +2,7 @@
 // This file is only imported when mapConfig.hasRealMap is true, so the
 // SVG fallback path stays free of MapLibre's runtime cost.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -21,6 +21,20 @@ export type MapLibreStage =
   | "firstRender"
   | "routeLayerAdded";
 
+export interface MapLibreDiagnostics {
+  styleId: string;
+  styleHost: string;
+  styleLoaded: boolean;
+  tilesLoaded: boolean;
+  sourceCount: number;
+  layerCount: number;
+  routeSourceAdded: boolean;
+  routeLayerAdded: boolean;
+  lastError: string | null;
+  lastErrorHost: string | null;
+  lastErrorStatus: number | null;
+}
+
 interface Props {
   trip: Trip;
   days: TripDay[];
@@ -36,6 +50,7 @@ interface Props {
   onError?: (msg?: string) => void;
   onReady?: () => void;
   onStage?: (stage: MapLibreStage) => void;
+  onDiagnostics?: (d: MapLibreDiagnostics) => void;
   /** MapTiler browser key fetched at runtime via /api/public-map-config. */
   maptilerKey: string;
 }
@@ -63,6 +78,7 @@ export function MapLibreTripMap({
   onError,
   onReady,
   onStage,
+  onDiagnostics,
   maptilerKey,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -70,22 +86,55 @@ export function MapLibreTripMap({
   const markersRef = useRef<Marker[]>([]);
   const [ready, setReady] = useState(false);
   const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
+  const lastErrorRef = useRef<{ msg: string | null; host: string | null; status: number | null }>(
+    { msg: null, host: null, status: null },
+  );
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
+  const styleUrl = useMemo(() => buildMaptilerStyleUrl(maptilerKey, variant), [maptilerKey, variant]);
+  const styleId = variant === "light" ? "streets-v2" : "streets-v2-dark";
 
   // Signal mount immediately so the parent's diagnostic badge shows progress.
   useEffect(() => { onStage?.("mounted"); }, [onStage]);
 
+  const emitDiagnostics = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !onDiagnostics) return;
+    let sourceCount = 0;
+    let layerCount = 0;
+    let routeSourceAdded = false;
+    let routeLayerAdded = false;
+    try {
+      const s = map.getStyle();
+      sourceCount = s?.sources ? Object.keys(s.sources).length : 0;
+      layerCount = s?.layers?.length ?? 0;
+      routeSourceAdded = !!map.getSource("vg-route");
+      routeLayerAdded = !!map.getLayer("vg-route-line");
+    } catch { /* style not ready */ }
+    onDiagnostics({
+      styleId,
+      styleHost: "api.maptiler.com",
+      styleLoaded: !!map.isStyleLoaded?.(),
+      tilesLoaded: !!map.areTilesLoaded?.(),
+      sourceCount,
+      layerCount,
+      routeSourceAdded,
+      routeLayerAdded,
+      lastError: lastErrorRef.current.msg,
+      lastErrorHost: lastErrorRef.current.host,
+      lastErrorStatus: lastErrorRef.current.status,
+    });
+  }, [onDiagnostics, styleId]);
+
   // Initialize map once.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const style = buildMaptilerStyleUrl(maptilerKey, variant);
-    if (!style) { onError?.("no-style-url"); return; }
+    if (!styleUrl) { onError?.("no-style-url"); return; }
     let map: MlMap;
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style,
+        style: styleUrl,
         center: [projected.origin.lng, projected.origin.lat],
         zoom: 5,
         attributionControl: { compact: true },
@@ -101,22 +150,29 @@ export function MapLibreTripMap({
     let signaled = false;
     const signalReady = () => {
       if (signaled) return;
-      // Require the style to actually be loaded — otherwise we may flip the
-      // overlay opaque before any tiles have been requested and the SVG
-      // beneath stays visually dominant.
       if (!map.isStyleLoaded?.()) return;
       signaled = true;
       setReady(true);
       onReady?.();
+      // Container may have settled to its final size after layout — force a
+      // resize so the canvas matches and tiles cover the full viewport.
+      try { map.resize(); } catch { /* ignore */ }
     };
-    map.on("load", () => { onStage?.("styleLoaded"); signalReady(); });
-    map.on("styledata", () => { onStage?.("styleLoaded"); signalReady(); });
+    map.on("load", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
+    map.on("styledata", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
+    map.on("sourcedata", () => emitDiagnostics());
     map.on("render", () => { onStage?.("firstRender"); signalReady(); });
-    map.on("idle", () => signalReady());
+    map.on("idle", () => { signalReady(); emitDiagnostics(); });
     map.on("error", (e) => {
-      const status = (e as { error?: { status?: number; message?: string } }).error?.status;
-      const msg = (e as { error?: { message?: string } }).error?.message;
-      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, signaled, err: e });
+      const errAny = e as { error?: { status?: number; message?: string; url?: string } };
+      const status = errAny.error?.status ?? null;
+      const msg = errAny.error?.message ?? null;
+      const url = errAny.error?.url ?? null;
+      let host: string | null = null;
+      try { if (url) host = new URL(url).host; } catch { /* ignore */ }
+      lastErrorRef.current = { msg, host, status };
+      emitDiagnostics();
+      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, host, msg, signaled });
       // Only treat as fatal before first frame, or on hard auth failures.
       if (!signaled || status === 401 || status === 403) {
         onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
@@ -132,6 +188,18 @@ export function MapLibreTripMap({
     return () => { map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Hot-swap style when the variant prop changes (e.g. debug "Use streets style").
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    try {
+      map.setStyle(styleUrl);
+      // Style swap drops sources/layers — re-add route on next styledata.
+    } catch (err) {
+      if (import.meta.env.DEV) console.debug("[TripMap] setStyle failed", err);
+    }
+  }, [styleUrl, ready]);
 
   // Fit to bounds when projection changes.
   useEffect(() => {
@@ -171,8 +239,10 @@ export function MapLibreTripMap({
     return () => { cancelled = true; };
   }, [projected, trip.routeGeometry]);
 
-  // Render route line as a GeoJSON source/layer.
-  useEffect(() => {
+  // Render route line as a GeoJSON source/layer. Re-runs after setStyle()
+  // because the styledata listener bumps `ready` indirectly via diagnostics,
+  // but to be safe we also listen for styledata here and re-add.
+  const addRouteLayer = useCallback(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     const geom: LatLng[] = routeGeom ?? [
@@ -191,11 +261,13 @@ export function MapLibreTripMap({
         src.setData(data);
       } else {
         map.addSource("vg-route", { type: "geojson", data });
+        // Add as last layers — they'll sit on top of every base style layer,
+        // so even if base tiles are blank the route is still visible.
         map.addLayer({
           id: "vg-route-glow",
           type: "line",
           source: "vg-route",
-          paint: { "line-color": DAY_COLORS[0], "line-width": 10, "line-opacity": 0.18, "line-blur": 6 },
+          paint: { "line-color": DAY_COLORS[0], "line-width": 14, "line-opacity": 0.22, "line-blur": 8 },
           layout: { "line-cap": "round", "line-join": "round" },
         });
         map.addLayer({
@@ -204,18 +276,34 @@ export function MapLibreTripMap({
           source: "vg-route",
           paint: {
             "line-color": DAY_COLORS[0],
-            "line-width": compact ? 3 : 4,
+            "line-width": compact ? 5 : 7,
             "line-dasharray": routeGeom ? [1, 0] : [2, 2],
           },
           layout: { "line-cap": "round", "line-join": "round" },
         });
       }
       onStage?.("routeLayerAdded");
+      emitDiagnostics();
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] route layer add failed", err);
-      // Non-fatal: base map should still be visible.
+      lastErrorRef.current = { ...lastErrorRef.current, msg: `route-layer: ${(err as Error)?.message ?? "unknown"}` };
+      emitDiagnostics();
     }
-  }, [routeGeom, projected, ready, compact, onStage]);
+  }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics]);
+
+  useEffect(() => { addRouteLayer(); }, [addRouteLayer]);
+
+  // After a style swap (variant change) MapLibre drops our source/layer.
+  // Re-add once the new style finishes loading.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const handler = () => {
+      if (!map.getSource("vg-route")) addRouteLayer();
+    };
+    map.on("styledata", handler);
+    return () => { map.off("styledata", handler); };
+  }, [addRouteLayer]);
 
   // Render markers (origin, destination, stops, suggestions).
   useEffect(() => {

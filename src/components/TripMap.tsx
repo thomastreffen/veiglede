@@ -10,7 +10,14 @@ import { cn } from "@/lib/utils";
 
 // Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
 // for when MapTiler is actually configured.
-type RealMapProps = Props & { maptilerKey: string; onError?: (msg?: string) => void; onReady?: () => void; onStage?: (stage: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => void };
+type RealMapProps = Props & {
+  maptilerKey: string;
+  variant?: "dark" | "light";
+  onError?: (msg?: string) => void;
+  onReady?: () => void;
+  onStage?: (stage: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => void;
+  onDiagnostics?: (d: import("./map/MapLibreTripMap").MapLibreDiagnostics) => void;
+};
 const MapLibreTripMap = lazy(() =>
   import("./map/MapLibreTripMap")
     .then((m) => ({ default: m.MapLibreTripMap as React.ComponentType<RealMapProps> }))
@@ -80,6 +87,8 @@ export function TripMap(props: Props) {
   const [timedOut, setTimedOut] = useState(false);
   const [forced, setForced] = useState(false);
   const [hideSvg, setHideSvg] = useState(false);
+  const [styleVariant, setStyleVariant] = useState<"dark" | "light">("dark");
+  const [diag, setDiag] = useState<import("./map/MapLibreTripMap").MapLibreDiagnostics | null>(null);
   const [stages, setStages] = useState<{
     mounted: boolean; mapCreated: boolean; styleLoaded: boolean;
     firstRender: boolean; routeLayerAdded: boolean;
@@ -225,8 +234,10 @@ export function TripMap(props: Props) {
               height="h-full"
               className={undefined}
               maptilerKey={cfg.maptilerKey}
+              variant={styleVariant}
               onReady={() => setMaplibreReady(true)}
               onStage={onStage}
+              onDiagnostics={setDiag}
               onError={(msg) => { setErrored(true); setErrorMsg(msg ?? "unknown"); setMaplibreReady(false); }}
             />
           </Suspense>
@@ -234,10 +245,14 @@ export function TripMap(props: Props) {
       )}
 
       {debug && (
-        <div className="absolute left-2 top-2 z-20 rounded-md border border-primary/40 bg-background/90 backdrop-blur px-2 py-1.5 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[360px] pointer-events-auto">
+        <div className="absolute left-2 top-2 z-20 rounded-md border border-primary/40 bg-background/90 backdrop-blur px-2 py-1.5 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[380px] pointer-events-auto">
           <div>mode: <span className="text-primary font-semibold normal-case">{mode}</span></div>
           <div>visible layer: <span className="text-primary font-semibold normal-case">{visibleLayer}</span></div>
           <div>cfg.hasRealMap: {String(Boolean(cfg?.hasRealMap))} · keyLen: {cfg?.maptilerKey?.length ?? 0}</div>
+          <div>style: <span className="normal-case">{diag?.styleId ?? styleVariant} @ {diag?.styleHost ?? "—"}</span></div>
+          <div>styleLoaded: {String(diag?.styleLoaded ?? false)} · tilesLoaded: {String(diag?.tilesLoaded ?? false)}</div>
+          <div>sources: {diag?.sourceCount ?? "—"} · layers: {diag?.layerCount ?? "—"}</div>
+          <div>route src: {String(diag?.routeSourceAdded ?? false)} · route layer: {String(diag?.routeLayerAdded ?? false)} · paint: #f59e3a / 7px</div>
           <div>origin: {originLoc ? `${originLoc.lat.toFixed(2)},${originLoc.lng.toFixed(2)}` : "—"} · dest: {destLoc ? `${destLoc.lat.toFixed(2)},${destLoc.lng.toFixed(2)}` : "—"}</div>
           <div>
             stages: m{stages.mounted ? "✓" : "·"} c{stages.mapCreated ? "✓" : "·"} s{stages.styleLoaded ? "✓" : "·"} r{stages.firstRender ? "✓" : "·"} l{stages.routeLayerAdded ? "✓" : "·"} · ready: {String(maplibreReady)}
@@ -246,6 +261,7 @@ export function TripMap(props: Props) {
           <div>z: svg=0 ml=10 · svg opacity: {svgHidden ? "0" : "1"} · ml opacity: {mapLibreVisible ? "1" : "0"}</div>
           <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} · stops: {stopsWithCoords}/{props.stops.length} (d+2={routePointCount})</div>
           {fallbackReason && <div className="normal-case text-yellow-400">reason: {fallbackReason}</div>}
+          {diag?.lastError && <div className="text-destructive normal-case">tile/style err: {diag.lastErrorStatus ?? ""} {diag.lastErrorHost ?? ""} {diag.lastError}</div>}
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
           <div className="flex flex-wrap gap-1 pt-1">
             {!mapLibreVisible && cfg?.hasRealMap && (
@@ -257,6 +273,13 @@ export function TripMap(props: Props) {
                 Force MapLibre
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setStyleVariant((v) => v === "dark" ? "light" : "dark")}
+              className="rounded border border-primary/60 bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20"
+            >
+              {styleVariant === "dark" ? "Use streets style" : "Use dark style"}
+            </button>
             <button
               type="button"
               onClick={() => setHideSvg((v) => !v)}
