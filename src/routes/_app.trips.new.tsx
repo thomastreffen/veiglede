@@ -183,6 +183,10 @@ function NewTripWizard() {
     setAiPrompt(snapshot.aiPrompt);
     setGenerating(false);
     setTripId(snapshot.tripId);
+
+    if (restoreParam === "fresh") {
+      navigate({ to: "/trips/new", replace: true });
+    }
   }, [restoreParam, ts]);
 
   // Mark this tab as having an active wizard session, and clear that marker
