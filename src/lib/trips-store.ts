@@ -269,49 +269,43 @@ export const tripsApi = {
     ensureInit();
     const trip: Trip = { ...input, id: uid(), stopsCount: input.stopsCount ?? 0, createdAt: Date.now() };
 
-    const numDays = Math.max(1, Math.min(5, Math.round(trip.distanceKm / 250)));
-    const newDays: TripDay[] = [];
-    const newStops: Stop[] = [];
-    for (let i = 0; i < numDays; i++) {
-      newDays.push({
-        id: uid(),
-        tripId: trip.id,
-        dayNumber: i + 1,
-        title: numDays === 1 ? `${trip.origin} → ${trip.destination}` : `Dag ${i + 1}`,
-        date: shiftDate(trip.startDate, i),
-        summary: i === 0 ? trip.aiSummary : undefined,
-      });
-    }
-    const suggestions = suggestStops(trip);
-    suggestions.forEach((sug, idx) => {
-      const dayIdx = Math.min(numDays - 1, Math.floor((idx / suggestions.length) * numDays));
-      const day = newDays[dayIdx];
-      newStops.push({
-        id: uid(),
-        dayId: day.id,
-        name: sug.name,
-        type: sug.type,
-        location: sug.location,
-        estimatedTime: sug.time,
-        notes: sug.notes,
-        description: sug.description,
-        reason: sug.reason,
-        durationMin: sug.durationMin,
-        distanceFromPrevKm: sug.distanceFromPrevKm,
-        photoOp: sug.photoOp,
-        order: newStops.filter((s) => s.dayId === day.id).length,
-      });
-    });
+    // Trip-planner UX v2: ALWAYS create a single Day 1 (origin → destination)
+    // as a route draft. The user decides whether to split into days, add
+    // overnights or extend the trip — we never force a multi-day itinerary
+    // or auto-place suggested stops into a Day 2 the user didn't ask for.
+    const day1: TripDay = {
+      id: uid(),
+      tripId: trip.id,
+      dayNumber: 1,
+      title: `${trip.origin} → ${trip.destination}`,
+      date: trip.startDate,
+      summary: trip.aiSummary,
+    };
+    const newStops: Stop[] = [
+      {
+        id: uid(), dayId: day1.id, order: 0,
+        name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin,
+        description: "Start på dagen — sjekk dekktrykk, fyll tanken.",
+        reason: "Felles startpunkt for ruta.", durationMin: 15,
+      },
+      {
+        id: uid(), dayId: day1.id, order: 1,
+        name: `Ankomst ${trip.destination}`, type: "city", location: trip.destination,
+        description: "Veis ende for denne etappen.",
+        reason: "Ankomst.", durationMin: 0,
+      },
+    ];
 
     const finalTrip = { ...trip, stopsCount: newStops.length };
     state = {
       trips: [finalTrip, ...state.trips],
-      days: [...state.days, ...newDays],
+      days: [...state.days, day1],
       stops: [...state.stops, ...newStops],
     };
     persist();
     return finalTrip;
   },
+
   updateTrip(id: string, patch: Partial<Trip>) {
     ensureInit();
     state = { ...state, trips: state.trips.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
