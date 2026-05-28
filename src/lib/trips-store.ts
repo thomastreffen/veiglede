@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { lookupPlace } from "@/lib/geo";
+import { computeTimeBreakdown } from "@/lib/trip-time";
 
 export type StopType =
   | "viewpoint"
@@ -45,6 +47,10 @@ export interface Stop {
   isSuggestion?: boolean;
   isPartner?: boolean;
   isPhotoStop?: boolean;
+  placement?: "along" | "detour" | "after" | "new-day" | "day";
+  routeStatus?: "on-route" | "detour" | "suggestion";
+  distanceFromRouteKm?: number;
+  extraDistanceKm?: number;
 }
 
 export interface TripDay {
@@ -259,6 +265,29 @@ function persist() {
 function subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); }
 function getSnapshot() { ensureInit(); return state; }
 function getServerSnapshot(): State { return EMPTY_STATE; }
+
+function refreshTripDerivedState(tripId: string) {
+  const trip = state.trips.find((t) => t.id === tripId);
+  if (!trip) return;
+  const days = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+  const dayIds = new Set(days.map((d) => d.id));
+  const stops = state.stops.filter((s) => dayIds.has(s.dayId));
+  const breakdown = computeTimeBreakdown(trip, days, stops);
+  state = {
+    ...state,
+    trips: state.trips.map((t) => (
+      t.id === tripId ? { ...t, stopsCount: stops.length, timeBreakdown: breakdown } : t
+    )),
+  };
+}
+
+function getTripIdForDay(dayId: string): string | null {
+  return state.days.find((d) => d.id === dayId)?.tripId ?? null;
+}
+
+function suggestionLoc(sug: Pick<SuggestedStop, "location" | "name">) {
+  return lookupPlace(sug.location ?? sug.name);
+}
 
 export function useTripsStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
