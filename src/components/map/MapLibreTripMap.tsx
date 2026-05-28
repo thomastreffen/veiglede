@@ -51,6 +51,16 @@ export interface MapLibreDiagnostics {
   resizeObserverFires: number;
   mapResizeCalls: number;
   firstValidSizeTs: number | null;
+  /** Canvas-level visual confirmation. */
+  canvasComputedOpacity: string | null;
+  canvasComputedDisplay: string | null;
+  canvasComputedVisibility: string | null;
+  canvasComputedBackground: string | null;
+  /** Feature/layer composition for confirming actual paint. */
+  featuresAtCenter: number;
+  baseLayerIds: string[];
+  firstSymbolLayerId: string | null;
+  firstLineLayerId: string | null;
 }
 
 interface Props {
