@@ -33,6 +33,16 @@ export interface MapLibreDiagnostics {
   lastError: string | null;
   lastErrorHost: string | null;
   lastErrorStatus: number | null;
+  /** First route point as the app stores it ({lat,lng}). */
+  firstPointApp: { lat: number; lng: number } | null;
+  /** First route point in MapLibre's GeoJSON order ([lng, lat]). */
+  firstPointMaplibre: [number, number] | null;
+  /** Bounds passed to fitBounds, in lng/lat order. */
+  fitBoundsSW: [number, number] | null;
+  fitBoundsNE: [number, number] | null;
+  /** Map state after fitBounds: center in [lng, lat] and zoom. */
+  centerLngLat: [number, number] | null;
+  zoom: number | null;
 }
 
 interface Props {
@@ -89,6 +99,12 @@ export function MapLibreTripMap({
   const lastErrorRef = useRef<{ msg: string | null; host: string | null; status: number | null }>(
     { msg: null, host: null, status: null },
   );
+  const fitInfoRef = useRef<{
+    firstApp: { lat: number; lng: number } | null;
+    firstMl: [number, number] | null;
+    sw: [number, number] | null;
+    ne: [number, number] | null;
+  }>({ firstApp: null, firstMl: null, sw: null, ne: null });
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
   const styleUrl = useMemo(() => buildMaptilerStyleUrl(maptilerKey, variant), [maptilerKey, variant]);
@@ -111,6 +127,13 @@ export function MapLibreTripMap({
       routeSourceAdded = !!map.getSource("vg-route");
       routeLayerAdded = !!map.getLayer("vg-route-line");
     } catch { /* style not ready */ }
+    let centerLngLat: [number, number] | null = null;
+    let zoom: number | null = null;
+    try {
+      const c = map.getCenter();
+      centerLngLat = [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))];
+      zoom = Number(map.getZoom().toFixed(2));
+    } catch { /* not ready */ }
     onDiagnostics({
       styleId,
       styleHost: "api.maptiler.com",
@@ -123,6 +146,12 @@ export function MapLibreTripMap({
       lastError: lastErrorRef.current.msg,
       lastErrorHost: lastErrorRef.current.host,
       lastErrorStatus: lastErrorRef.current.status,
+      firstPointApp: fitInfoRef.current.firstApp,
+      firstPointMaplibre: fitInfoRef.current.firstMl,
+      fitBoundsSW: fitInfoRef.current.sw,
+      fitBoundsNE: fitInfoRef.current.ne,
+      centerLngLat,
+      zoom,
     });
   }, [onDiagnostics, styleId]);
 
@@ -217,8 +246,18 @@ export function MapLibreTripMap({
       (acc, p) => acc.extend([p.lng, p.lat]),
       new maplibregl.LngLatBounds([pts[0].lng, pts[0].lat], [pts[0].lng, pts[0].lat]),
     );
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const first = (routeGeom && routeGeom[0]) ?? pts[0];
+    fitInfoRef.current = {
+      firstApp: { lat: Number(first.lat.toFixed(4)), lng: Number(first.lng.toFixed(4)) },
+      firstMl: [Number(first.lng.toFixed(4)), Number(first.lat.toFixed(4))],
+      sw: [Number(sw.lng.toFixed(4)), Number(sw.lat.toFixed(4))],
+      ne: [Number(ne.lng.toFixed(4)), Number(ne.lat.toFixed(4))],
+    };
     map.fitBounds(bounds, { padding: compact ? 32 : 56, duration: 400, maxZoom: 11 });
-  }, [projected, suggestionPins, routeGeom, ready, compact]);
+    emitDiagnostics();
+  }, [projected, suggestionPins, routeGeom, ready, compact, emitDiagnostics]);
 
   // Fetch a real route when ORS is configured.
   useEffect(() => {
