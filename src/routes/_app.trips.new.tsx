@@ -305,10 +305,11 @@ function NewTripWizard() {
       // Snapshot a trip time breakdown using the freshly-seeded stops.
       try {
         const { computeTimeBreakdown } = await import("@/lib/trip-time");
-        const allDays = tripsApi._raw().days.filter((d) => d.tripId === trip.id);
-        const allStops = tripsApi._raw().stops.filter((s) => allDays.some((d) => d.id === s.dayId));
-        const breakdown = computeTimeBreakdown(trip, allDays, allStops);
-        tripsApi.updateTrip(trip.id, { timeBreakdown: breakdown });
+        const bundle = tripsApi.getTripBundle(trip.id);
+        if (bundle.trip) {
+          const breakdown = computeTimeBreakdown(bundle.trip, bundle.days, bundle.stops);
+          tripsApi.updateTrip(trip.id, { timeBreakdown: breakdown });
+        }
       } catch (err) {
         if (import.meta.env.DEV) console.debug("[wizard] timeBreakdown snapshot failed", err);
       }
