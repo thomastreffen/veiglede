@@ -102,7 +102,7 @@ function Roadbook() {
           days={tripDays}
           stops={tripStops}
           compact
-          height="h-56"
+          height="h-64 md:h-80"
         />
       </section>
 
