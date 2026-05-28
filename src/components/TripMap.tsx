@@ -137,9 +137,11 @@ export function TripMap(props: Props) {
           <div>mode: <span className="text-primary font-semibold">{mode}</span></div>
           <div>overlay: {String(useMapLibre && maplibreReady)} · ready: {String(maplibreReady)}</div>
           <div>real: {String(cfg?.hasRealMap ?? false)} · pts: {routePointCount} · stops: {stopsWithCoords}/{props.stops.length}</div>
+          <div>routing: {props.trip.routeProvider ?? "—"} · geom: {props.trip.routeGeometry?.length ?? 0}</div>
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
         </div>
       )}
+
     </div>
   );
 }
@@ -184,12 +186,15 @@ function SvgTripMap({
   // Bigger pad on the short axis so pins/labels don't sit on the card edge.
   const padding = Math.max(compact ? 24 : 40, Math.round(Math.min(W, H) * 0.12));
 
+  const geometry = trip.routeGeometry && trip.routeGeometry.length > 1 ? trip.routeGeometry : null;
+
   const bounds = useMemo(() => {
     const all: LatLng[] = [
       projected.origin,
       projected.destination,
       ...projected.mapped.map((m) => m.loc),
       ...suggestionPins.map((p) => p.loc),
+      ...(geometry ?? []),
     ];
     const lats = all.map((p) => p.lat);
     const lngs = all.map((p) => p.lng);
@@ -204,16 +209,25 @@ function SvgTripMap({
       minLng: minLng - padLng,
       maxLng: maxLng + padLng,
     };
-  }, [projected, suggestionPins]);
+  }, [projected, suggestionPins, geometry]);
 
   const project = (p: LatLng) => projectToView(p, bounds, W, H, padding);
 
   const originPt = project(projected.origin);
   const destPt = project(projected.destination);
 
+  // If we have a real route geometry, draw it as the single primary route
+  // line and skip per-day schematic segments (they'd duplicate the path).
+  const geometryPath = geometry
+    ? geometry.map((p, i) => {
+        const pt = project(p);
+        return `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+      }).join(" ")
+    : null;
+
   // Build per-day polyline segments
   const sortedDays = [...days].sort((a, b) => a.dayNumber - b.dayNumber);
-  const segments = sortedDays.map((day, dayIdx) => {
+  const segments = geometry ? [] : sortedDays.map((day, dayIdx) => {
     const dayMapped = projected.mapped.filter((m) => m.day.id === day.id);
     const dayPoints: LatLng[] = [];
     // Connect previous day's last point (or origin) → this day's stops → next day's first (or destination handled at end)
@@ -235,9 +249,10 @@ function SvgTripMap({
   });
 
   // Empty-state fallback path: straight origin→destination
-  const fallbackPath = sortedDays.length === 0
+  const fallbackPath = !geometry && sortedDays.length === 0
     ? `M${originPt.x},${originPt.y} L${destPt.x},${destPt.y}`
     : null;
+
 
   return (
     <div ref={containerRef} className={cn("relative overflow-hidden rounded-2xl border border-border bg-surface", height, className)}>
@@ -274,6 +289,13 @@ function SvgTripMap({
           <ellipse cx={W * 0.5} cy={H * 0.75} rx={220} ry={60} fill="oklch(0.20 0.016 250)" />
         </g>
 
+        {/* Real route geometry takes precedence over per-day schematic */}
+        {geometryPath && (
+          <g>
+            <path d={geometryPath} fill="none" stroke={DAY_COLORS[0]} strokeWidth="10" opacity="0.18" strokeLinecap="round" filter="url(#vg-soft-glow)" />
+            <path d={geometryPath} fill="none" stroke={DAY_COLORS[0]} strokeWidth={compact ? 2.5 : 3.5} strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        )}
         {/* Day-colored route segments */}
         {fallbackPath && (
           <path d={fallbackPath} fill="none" stroke="oklch(0.78 0.17 65)" strokeWidth="3" strokeDasharray="6 6" strokeLinecap="round" />
@@ -292,6 +314,7 @@ function SvgTripMap({
             </g>
           );
         })}
+
 
         {/* Suggestion pins (semi-transparent until hovered) */}
         {suggestionPins.map((p) => {

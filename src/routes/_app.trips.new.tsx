@@ -8,6 +8,7 @@ import { DemoDebugPanel, useDebugMode } from "@/components/DemoDebugPanel";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { manualPlace } from "@/lib/places/geocoder";
+import { getRoute, type RouteResult } from "@/lib/routing";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -184,6 +185,7 @@ function NewTripWizard() {
   const [generating, setGenerating] = useState(false);
   const [tripId, setTripId] = useState<string | null>(initialSnapshot.tripId);
   const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
+  const [lastRoute, setLastRoute] = useState<RouteResult | null>(null);
   const debug = useDebugMode();
 
   useEffect(() => {
@@ -241,13 +243,10 @@ function NewTripWizard() {
     if (!origin || !destination) return;
     setGenerating(true);
     setStep(4);
-    setTimeout(() => {
+    void (async () => {
       const s = styleMeta(style);
       const vt = selectedVehicle.type;
       const energy = selectedVehicle.energy;
-      const distanceKm = 140 + Math.floor(Math.random() * 520);
-      const hours = Math.floor(distanceKm / 60);
-      const mins = Math.round(((distanceKm / 60) - hours) * 60);
       const ai = buildAiSummary({
         origin, destination, vehicle: vt, style,
         energy, vehicleName: selectedVehicle.name,
@@ -262,6 +261,30 @@ function NewTripWizard() {
       // Prefer selected place coords; fall back to local demo lookup from text.
       const fromResolved = fromPlace ?? manualPlace(origin);
       const toResolved = toPlace ?? manualPlace(destination);
+
+      // Try real routing when we have coordinates for both endpoints.
+      let route: RouteResult | null = null;
+      if (fromResolved && toResolved) {
+        route = await getRoute({
+          origin: { lat: fromResolved.lat, lng: fromResolved.lng },
+          destination: { lat: toResolved.lat, lng: toResolved.lng },
+          vehicleType: vt,
+          routeStyle: style,
+          avoidHighways: style === "scenic" || style === "curvy" || style === "tourist",
+          avoidFerries: false,
+        });
+        setLastRoute(route);
+      } else {
+        setLastRoute(null);
+      }
+
+      const distanceKm = route?.distanceKm ?? 140 + Math.floor(Math.random() * 520);
+      const hours = Math.floor(distanceKm / 60);
+      const mins = Math.round(((distanceKm / 60) - hours) * 60);
+      const drivingTime = route?.durationMin
+        ? `${Math.floor(route.durationMin / 60)}t ${route.durationMin % 60}min`
+        : `${hours}t ${mins}min`;
+
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
         subtitle: `${s.label} med ${selectedVehicle.name}`,
@@ -269,16 +292,21 @@ function NewTripWizard() {
         origin, destination, startDate: date,
         vehicle: vt, vehicleId: selectedVehicle.id, vehicleName: selectedVehicle.name, energy,
         style,
-        distanceKm, drivingTime: `${hours}t ${mins}min`,
+        distanceKm, drivingTime,
         cover: pickCover(style),
         aiSummary: ai,
         originLoc: fromResolved ? { lat: fromResolved.lat, lng: fromResolved.lng } : undefined,
         destinationLoc: toResolved ? { lat: toResolved.lat, lng: toResolved.lng } : undefined,
+        routeGeometry: route?.geometry,
+        routeDistanceKm: route?.distanceKm,
+        routeDurationMin: route?.durationMin,
+        routeProvider: route?.provider,
       });
       setTripId(trip.id);
       setGenerating(false);
-    }, 1400);
+    })();
   };
+
 
   const regenerate = () => {
     if (tripId) tripsApi.deleteTrip(tripId);
@@ -294,8 +322,13 @@ function NewTripWizard() {
           { label: "Route", value: "/trips/new" },
           { label: "Step", value: `${step}/4` },
           { label: "Trip id", value: tripId ?? "ikke opprettet" },
+          { label: "Routing", value: lastRoute?.provider ?? "—" },
+          { label: "Geometry pts", value: lastRoute?.geometry.length ?? 0 },
+          { label: "Dist src", value: lastRoute ? `${lastRoute.distanceKm} km` : "estimat" },
+          { label: "Routing warn", value: lastRoute?.warnings?.join(",") ?? "—" },
         ]}
       />
+
 
       <div className="flex items-center justify-between">
         {step > 1 ? (
