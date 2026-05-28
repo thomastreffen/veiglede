@@ -397,7 +397,7 @@ export function MapLibreTripMap({
       const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
       const selected = selectedStopId === m.stop.id;
       const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
-      const el = stopEl(meta.emoji, color, selected, status);
+      const el = stopEl(meta.emoji, color, selected, status === "detour" ? "detour" : "on-route");
       el.title = `${m.stop.name} · ${meta.label} · ${status === "detour" ? "avstikker" : "på rute"}`;
       const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
       const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" })
