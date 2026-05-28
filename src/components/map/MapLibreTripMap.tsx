@@ -21,6 +21,20 @@ export type MapLibreStage =
   | "firstRender"
   | "routeLayerAdded";
 
+export interface MapLibreDiagnostics {
+  styleId: string;
+  styleHost: string;
+  styleLoaded: boolean;
+  tilesLoaded: boolean;
+  sourceCount: number;
+  layerCount: number;
+  routeSourceAdded: boolean;
+  routeLayerAdded: boolean;
+  lastError: string | null;
+  lastErrorHost: string | null;
+  lastErrorStatus: number | null;
+}
+
 interface Props {
   trip: Trip;
   days: TripDay[];
@@ -36,6 +50,7 @@ interface Props {
   onError?: (msg?: string) => void;
   onReady?: () => void;
   onStage?: (stage: MapLibreStage) => void;
+  onDiagnostics?: (d: MapLibreDiagnostics) => void;
   /** MapTiler browser key fetched at runtime via /api/public-map-config. */
   maptilerKey: string;
 }
