@@ -62,7 +62,7 @@ export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 7000);
-    const res = await fetch("/api/public/route", {
+    const res = await fetch("/api/public/directions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
