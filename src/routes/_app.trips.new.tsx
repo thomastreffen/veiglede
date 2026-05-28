@@ -12,10 +12,14 @@ export const Route = createFileRoute("/_app/trips/new")({
   head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
   validateSearch: (s: Record<string, unknown>): { restoreDraft?: "force" | "fresh" } => {
     const raw = s.restoreDraft;
-    const v = typeof raw === "boolean" ? String(raw) : typeof raw === "number" ? String(raw) : typeof raw === "string" ? raw.toLowerCase() : undefined;
-    if (v === "1" || v === "true") return { restoreDraft: "force" };
-    if (v === "0" || v === "false") return { restoreDraft: "fresh" };
-    return {};
+    const v = typeof raw === "boolean" ? String(raw) : typeof raw === "number" ? String(raw) : typeof raw === "string" ? raw.trim().toLowerCase() : undefined;
+    if (v === undefined || v === "") return {};
+    const FORCE = new Set(["1", "true", "force", "yes"]);
+    const FRESH = new Set(["0", "false", "fresh", "no"]);
+    if (FORCE.has(v)) return { restoreDraft: "force" };
+    if (FRESH.has(v)) return { restoreDraft: "fresh" };
+    // Unknown values: treat as fresh to avoid hijacking with stale drafts.
+    return { restoreDraft: "fresh" };
   },
   component: NewTripWizard,
 });
