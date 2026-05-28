@@ -116,7 +116,7 @@ function MapTestPage() {
           const c = map.getCenter();
           setDebug((d) => ({
             ...d,
-            styleLoaded: map!.isStyleLoaded(),
+            styleLoaded: Boolean(map!.isStyleLoaded()),
             sourceCount: style?.sources ? Object.keys(style.sources).length : 0,
             layerCount: style?.layers?.length ?? 0,
             canvasW: canvas?.width ?? 0,
