@@ -500,18 +500,23 @@ function SuggestionCard({
 }) {
   const meta = stopMeta(sug.type);
   const [open, setOpen] = useState(false);
+  const [detourOpen, setDetourOpen] = useState(false);
+  const [pendingDayId, setPendingDayId] = useState<string | undefined>(undefined);
   const choose = (p: Placement, dayId?: string) => {
     if (p === "along" && off) {
-      const ok = confirm(
-        `Dette ligger et stykke unna ruta (ca. ${distanceFromRouteKm} km fra ruta, +${extraDistanceKm} km og ~${detourMin} min). Vil du legge det til som avstikker?`,
-      );
-      if (!ok) return;
-      onAdd("detour", dayId);
+      setPendingDayId(dayId);
+      setDetourOpen(true);
       setOpen(false);
       return;
     }
     onAdd(p, dayId);
     setOpen(false);
+  };
+  const handleDetourChoice = (c: "detour" | "via" | "save" | "cancel") => {
+    if (c === "cancel") return;
+    if (c === "detour") onAdd("detour", pendingDayId);
+    else if (c === "via") onAdd("along", pendingDayId);
+    else if (c === "save") onAdd("day", pendingDayId);
   };
   // Hover is intentionally passive — no map sync, no popup, no flyTo.
   // (onHover prop kept for API compat; intentionally unused.)
@@ -579,9 +584,20 @@ function SuggestionCard({
           <button onClick={() => setOpen(false)} className="mt-1 w-full rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-background">Avbryt</button>
         </div>
       )}
+      <DetourPromptDialog
+        open={detourOpen}
+        onOpenChange={setDetourOpen}
+        name={sug.name}
+        location={sug.location}
+        distanceFromRouteKm={distanceFromRouteKm}
+        extraDistanceKm={extraDistanceKm}
+        detourMin={detourMin}
+        onChoose={handleDetourChoice}
+      />
     </div>
   );
 }
+
 
 function PlacementBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
