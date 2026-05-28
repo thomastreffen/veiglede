@@ -4,7 +4,10 @@ import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type C
 import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { TripMap } from "@/components/TripMap";
-import { DemoDebugPanel } from "@/components/DemoDebugPanel";
+import { DemoDebugPanel, useDebugMode } from "@/components/DemoDebugPanel";
+import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import type { ResolvedPlace } from "@/lib/places/geocoder";
+import { manualPlace } from "@/lib/places/geocoder";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
