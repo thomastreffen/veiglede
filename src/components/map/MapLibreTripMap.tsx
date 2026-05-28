@@ -317,6 +317,31 @@ export function MapLibreTripMap({
       geometry: { type: "LineString", coordinates: coords },
     };
 
+    // Detour spurs: for each stop flagged as a detour, draw a dashed
+    // amber line from the nearest point on the main route to the stop.
+    const detourFeatures: GeoJSON.Feature<GeoJSON.LineString>[] = [];
+    projected.mapped.forEach((m) => {
+      const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
+      if (status !== "detour" || m.approximated) return;
+      const anchor = nearestPointOnRoute(m.loc, geom);
+      if (!anchor) return;
+      detourFeatures.push({
+        type: "Feature",
+        properties: { stopId: m.stop.id },
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [anchor.lng, anchor.lat],
+            [m.loc.lng, m.loc.lat],
+          ],
+        },
+      });
+    });
+    const detourData: GeoJSON.FeatureCollection<GeoJSON.LineString> = {
+      type: "FeatureCollection",
+      features: detourFeatures,
+    };
+
     try {
       const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
       if (src) {
@@ -338,9 +363,35 @@ export function MapLibreTripMap({
           layout: { "line-cap": "round", "line-join": "round" },
         });
       }
+
+      const detourSrc = map.getSource("vg-detours") as maplibregl.GeoJSONSource | undefined;
+      if (detourSrc) {
+        detourSrc.setData(detourData);
+      } else {
+        map.addSource("vg-detours", { type: "geojson", data: detourData });
+        map.addLayer({
+          id: "vg-detours-casing",
+          type: "line",
+          source: "vg-detours",
+          paint: { "line-color": "#1a1a1a", "line-width": compact ? 5 : 7, "line-opacity": 0.4 },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+        map.addLayer({
+          id: "vg-detours-line",
+          type: "line",
+          source: "vg-detours",
+          paint: {
+            "line-color": "#f0b429", // amber
+            "line-width": compact ? 3 : 4,
+            "line-dasharray": [1.5, 1.5],
+          },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+      }
       onStage?.("routeLayerAdded");
 
-      // Fit bounds to the route.
+      // Fit bounds to the route + detour spurs so the user always sees
+      // how the detour relates to the main route.
       let minLng = coords[0][0], maxLng = coords[0][0];
       let minLat = coords[0][1], maxLat = coords[0][1];
       for (const [lng, lat] of coords) {
@@ -348,6 +399,14 @@ export function MapLibreTripMap({
         if (lng > maxLng) maxLng = lng;
         if (lat < minLat) minLat = lat;
         if (lat > maxLat) maxLat = lat;
+      }
+      for (const f of detourFeatures) {
+        for (const [lng, lat] of f.geometry.coordinates) {
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+        }
       }
       map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
         padding: compact ? 32 : 56, duration: 400, maxZoom: 11,
@@ -358,6 +417,7 @@ export function MapLibreTripMap({
       emitDiagnostics();
     }
   }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics]);
+
 
   useEffect(() => { addRouteAndFit(); }, [addRouteAndFit]);
 
