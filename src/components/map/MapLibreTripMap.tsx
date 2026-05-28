@@ -397,7 +397,7 @@ export function MapLibreTripMap({
       const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
       const selected = selectedStopId === m.stop.id;
       const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
-      const el = stopEl(meta.emoji, color, selected, status);
+      const el = stopEl(meta.emoji, color, selected, status === "detour" ? "detour" : "on-route");
       el.title = `${m.stop.name} · ${meta.label} · ${status === "detour" ? "avstikker" : "på rute"}`;
       const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
       const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" })
@@ -458,10 +458,11 @@ function pinEl(label: string, color: string) {
   return el;
 }
 
-function stopEl(emoji: string, color: string, selected: boolean) {
+function stopEl(emoji: string, color: string, selected: boolean, status: "on-route" | "detour" = "on-route") {
   const size = selected ? 34 : 26;
   const el = document.createElement("div");
-  el.style.cssText = `width:${size}px;height:${size}px;border-radius:9999px;background:${color};display:flex;align-items:center;justify-content:center;font-size:${selected ? 16 : 13}px;border:${selected ? 3 : 2}px solid #fafafa;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .15s;`;
+  const border = status === "detour" ? `${selected ? 3 : 2}px dashed #fafafa` : `${selected ? 3 : 2}px solid #fafafa`;
+  el.style.cssText = `width:${size}px;height:${size}px;border-radius:9999px;background:${color};display:flex;align-items:center;justify-content:center;font-size:${selected ? 16 : 13}px;border:${border};cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .15s;`;
   el.textContent = emoji;
   return el;
 }
