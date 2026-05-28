@@ -99,6 +99,12 @@ export function MapLibreTripMap({
   const lastErrorRef = useRef<{ msg: string | null; host: string | null; status: number | null }>(
     { msg: null, host: null, status: null },
   );
+  const fitInfoRef = useRef<{
+    firstApp: { lat: number; lng: number } | null;
+    firstMl: [number, number] | null;
+    sw: [number, number] | null;
+    ne: [number, number] | null;
+  }>({ firstApp: null, firstMl: null, sw: null, ne: null });
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
   const styleUrl = useMemo(() => buildMaptilerStyleUrl(maptilerKey, variant), [maptilerKey, variant]);
@@ -121,6 +127,13 @@ export function MapLibreTripMap({
       routeSourceAdded = !!map.getSource("vg-route");
       routeLayerAdded = !!map.getLayer("vg-route-line");
     } catch { /* style not ready */ }
+    let centerLngLat: [number, number] | null = null;
+    let zoom: number | null = null;
+    try {
+      const c = map.getCenter();
+      centerLngLat = [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))];
+      zoom = Number(map.getZoom().toFixed(2));
+    } catch { /* not ready */ }
     onDiagnostics({
       styleId,
       styleHost: "api.maptiler.com",
@@ -133,6 +146,12 @@ export function MapLibreTripMap({
       lastError: lastErrorRef.current.msg,
       lastErrorHost: lastErrorRef.current.host,
       lastErrorStatus: lastErrorRef.current.status,
+      firstPointApp: fitInfoRef.current.firstApp,
+      firstPointMaplibre: fitInfoRef.current.firstMl,
+      fitBoundsSW: fitInfoRef.current.sw,
+      fitBoundsNE: fitInfoRef.current.ne,
+      centerLngLat,
+      zoom,
     });
   }, [onDiagnostics, styleId]);
 
