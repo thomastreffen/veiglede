@@ -110,8 +110,8 @@ export function projectTrip(
   days: TripDay[],
   stops: Stop[],
 ): { origin: LatLng; destination: LatLng; mapped: MappedStop[]; originName: string; destinationName: string } {
-  const origin = lookupPlace(trip.origin) ?? { lat: 60.0, lng: 9.0 };
-  const destination = lookupPlace(trip.destination) ?? { lat: 62.0, lng: 9.0 };
+  const origin = trip.originLoc ?? lookupPlace(trip.origin) ?? { lat: 60.0, lng: 9.0 };
+  const destination = trip.destinationLoc ?? lookupPlace(trip.destination) ?? { lat: 62.0, lng: 9.0 };
   const sortedDays = [...days].sort((a, b) => a.dayNumber - b.dayNumber);
 
   // Build flat ordered list of stops by day then stop.order

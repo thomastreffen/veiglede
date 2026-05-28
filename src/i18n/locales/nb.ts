@@ -134,6 +134,14 @@ export const nb = {
     realRoute: "Faktisk kjørerute",
     noKeys: "Demo-kart (ingen kart-nøkkel konfigurert)",
   },
+  placeSearch: {
+    placeholder: "Søk etter sted eller adresse",
+    searching: "Søker…",
+    noResults: "Ingen treff",
+    useAnyway: "Bruk teksten likevel",
+    selectPlace: "Velg sted",
+    usingLocal: "Bruker lokalt stedssøk",
+  },
 };
 
 export type Dict = typeof nb;

@@ -4,7 +4,10 @@ import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type C
 import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { TripMap } from "@/components/TripMap";
-import { DemoDebugPanel } from "@/components/DemoDebugPanel";
+import { DemoDebugPanel, useDebugMode } from "@/components/DemoDebugPanel";
+import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import type { ResolvedPlace } from "@/lib/places/geocoder";
+import { manualPlace } from "@/lib/places/geocoder";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +43,8 @@ interface Draft {
   style?: RouteStyle;
   origin?: string;
   destination?: string;
+  fromPlace?: ResolvedPlace | null;
+  toPlace?: ResolvedPlace | null;
   date?: string;
   aiPrompt?: string;
   tripId?: string | null;
@@ -51,6 +56,8 @@ interface WizardSnapshot {
   style: RouteStyle;
   origin: string;
   destination: string;
+  fromPlace: ResolvedPlace | null;
+  toPlace: ResolvedPlace | null;
   date: string;
   aiPrompt: string;
   tripId: string | null;
@@ -90,6 +97,8 @@ function createFreshSnapshot(initialVehicle: Vehicle): WizardSnapshot {
     style: initialVehicle.defaultStyle,
     origin: "",
     destination: "",
+    fromPlace: null,
+    toPlace: null,
     date: DEFAULT_DATE,
     aiPrompt: "",
     tripId: null,
@@ -119,6 +128,8 @@ function createRestoredSnapshot({
     style: draft?.style ?? vehicle.defaultStyle,
     origin: draft?.origin ?? "",
     destination: draft?.destination ?? "",
+    fromPlace: draft?.fromPlace ?? null,
+    toPlace: draft?.toPlace ?? null,
     date: draft?.date ?? DEFAULT_DATE,
     aiPrompt: draft?.aiPrompt ?? "",
     tripId,
@@ -166,11 +177,14 @@ function NewTripWizard() {
   const [style, setStyle] = useState<RouteStyle>(initialSnapshot.style);
   const [origin, setOrigin] = useState(initialSnapshot.origin);
   const [destination, setDestination] = useState(initialSnapshot.destination);
+  const [fromPlace, setFromPlace] = useState<ResolvedPlace | null>(initialSnapshot.fromPlace);
+  const [toPlace, setToPlace] = useState<ResolvedPlace | null>(initialSnapshot.toPlace);
   const [date, setDate] = useState(initialSnapshot.date);
   const [aiPrompt, setAiPrompt] = useState(initialSnapshot.aiPrompt);
   const [generating, setGenerating] = useState(false);
   const [tripId, setTripId] = useState<string | null>(initialSnapshot.tripId);
   const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
+  const debug = useDebugMode();
 
   useEffect(() => {
     const snapshot = resolveSnapshot();
@@ -179,6 +193,8 @@ function NewTripWizard() {
     setStyle(snapshot.style);
     setOrigin(snapshot.origin);
     setDestination(snapshot.destination);
+    setFromPlace(snapshot.fromPlace);
+    setToPlace(snapshot.toPlace);
     setDate(snapshot.date);
     setAiPrompt(snapshot.aiPrompt);
     setGenerating(false);
@@ -199,8 +215,9 @@ function NewTripWizard() {
 
   // Persist wizard state so refresh on result/step doesn't lose progress.
   useEffect(() => {
-    saveDraft({ step, vehicleId, style, origin, destination, date, aiPrompt, tripId });
-  }, [step, vehicleId, style, origin, destination, date, aiPrompt, tripId]);
+    saveDraft({ step, vehicleId, style, origin, destination, fromPlace, toPlace, date, aiPrompt, tripId });
+  }, [step, vehicleId, style, origin, destination, fromPlace, toPlace, date, aiPrompt, tripId]);
+
 
 
   const pickVehicle = (v: Vehicle) => {
@@ -242,6 +259,9 @@ function NewTripWizard() {
           pauseEveryMin: prefs.pauseEveryMin,
         },
       });
+      // Prefer selected place coords; fall back to local demo lookup from text.
+      const fromResolved = fromPlace ?? manualPlace(origin);
+      const toResolved = toPlace ?? manualPlace(destination);
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
         subtitle: `${s.label} med ${selectedVehicle.name}`,
@@ -252,6 +272,8 @@ function NewTripWizard() {
         distanceKm, drivingTime: `${hours}t ${mins}min`,
         cover: pickCover(style),
         aiSummary: ai,
+        originLoc: fromResolved ? { lat: fromResolved.lat, lng: fromResolved.lng } : undefined,
+        destinationLoc: toResolved ? { lat: toResolved.lat, lng: toResolved.lng } : undefined,
       });
       setTripId(trip.id);
       setGenerating(false);
@@ -365,14 +387,36 @@ function NewTripWizard() {
 
           <div className="mt-6 space-y-5">
             <Field label="Fra">
-              <input value={origin} onChange={(e) => setOrigin(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
+              <PlaceAutocomplete
+                value={origin}
+                onTextChange={setOrigin}
+                selected={fromPlace}
+                onSelect={setFromPlace}
+                ariaLabel="Fra"
+              />
             </Field>
             <Field label="Til">
-              <input value={destination} onChange={(e) => setDestination(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
+              <PlaceAutocomplete
+                value={destination}
+                onTextChange={setDestination}
+                selected={toPlace}
+                onSelect={setToPlace}
+                ariaLabel="Til"
+              />
             </Field>
             <Field label="Dato">
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
             </Field>
+
+            {debug && (
+              <div className="rounded-xl border border-primary/40 bg-background/60 p-3 text-[11px] space-y-1 font-mono">
+                <p className="uppercase tracking-wider text-primary not-italic">Place debug</p>
+                <p>from: {fromPlace ? `${fromPlace.source} · ${fromPlace.lat.toFixed(4)}, ${fromPlace.lng.toFixed(4)}` : "(none)"}</p>
+                <p>to:   {toPlace ? `${toPlace.source} · ${toPlace.lat.toFixed(4)}, ${toPlace.lng.toFixed(4)}` : "(none)"}</p>
+                <p>provider: {fromPlace?.source ?? "—"} / {toPlace?.source ?? "—"}</p>
+              </div>
+            )}
+
 
             <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
               <div className="flex items-center justify-between">

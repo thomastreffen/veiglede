@@ -80,8 +80,8 @@ export function TripMap(props: Props) {
   const cfg = useRuntimeMapConfig();
   const debug = useDebugMode();
 
-  const hasOrigin = Boolean(lookupPlace(props.trip.origin));
-  const hasDestination = Boolean(lookupPlace(props.trip.destination));
+  const hasOrigin = Boolean(props.trip.originLoc) || Boolean(lookupPlace(props.trip.origin));
+  const hasDestination = Boolean(props.trip.destinationLoc) || Boolean(lookupPlace(props.trip.destination));
   const hasUsableCoords = hasOrigin || hasDestination;
 
   const useMapLibre = Boolean(cfg?.hasRealMap && cfg.maptilerKey && !errored && hasUsableCoords);

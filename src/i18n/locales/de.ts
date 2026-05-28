@@ -135,4 +135,12 @@ export const de: Dict = {
     realRoute: "Tatsächliche Fahrtroute",
     noKeys: "Demo-Karte (kein Karten-Schlüssel konfiguriert)",
   },
+  placeSearch: {
+    placeholder: "Ort oder Adresse suchen",
+    searching: "Suche…",
+    noResults: "Keine Treffer",
+    useAnyway: "Text trotzdem verwenden",
+    selectPlace: "Ort auswählen",
+    usingLocal: "Lokale Ortssuche wird verwendet",
+  },
 };
