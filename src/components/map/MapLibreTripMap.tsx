@@ -51,6 +51,16 @@ export interface MapLibreDiagnostics {
   resizeObserverFires: number;
   mapResizeCalls: number;
   firstValidSizeTs: number | null;
+  /** Canvas-level visual confirmation. */
+  canvasComputedOpacity: string | null;
+  canvasComputedDisplay: string | null;
+  canvasComputedVisibility: string | null;
+  canvasComputedBackground: string | null;
+  /** Feature/layer composition for confirming actual paint. */
+  featuresAtCenter: number;
+  baseLayerIds: string[];
+  firstSymbolLayerId: string | null;
+  firstLineLayerId: string | null;
 }
 
 interface Props {
@@ -64,7 +74,7 @@ interface Props {
   suggestionPins?: { id: string; name: string; loc: LatLng; emoji: string }[];
   hoveredSuggestionId?: string | null;
   compact?: boolean;
-  variant?: "dark" | "light";
+  variant?: "dark" | "light" | "route-only";
   onError?: (msg?: string) => void;
   onReady?: () => void;
   onStage?: (stage: MapLibreStage) => void;
@@ -132,8 +142,23 @@ export function MapLibreTripMap({
   });
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
-  const styleUrl = useMemo(() => buildMaptilerStyleUrl(maptilerKey, variant), [maptilerKey, variant]);
-  const styleId = variant === "light" ? "streets-v2" : "streets-v2-dark";
+  // A blank one-layer style used by the "Force route-only" diagnostic. If the
+  // orange line is visible against this, the issue is MapTiler styling; if not,
+  // the issue is the route layer / canvas rendering itself.
+  const routeOnlyStyle = useMemo<maplibregl.StyleSpecification>(() => ({
+    version: 8,
+    sources: {},
+    layers: [{ id: "vg-bg", type: "background", paint: { "background-color": "#1f2937" } }],
+  }), []);
+  const styleSpec: string | maplibregl.StyleSpecification = useMemo(
+    () => variant === "route-only" ? routeOnlyStyle : buildMaptilerStyleUrl(maptilerKey, variant),
+    [maptilerKey, variant, routeOnlyStyle],
+  );
+  const styleId = variant === "route-only"
+    ? "route-only"
+    : variant === "light"
+      ? "streets-v2"
+      : "streets-v2-dark";
 
   // Signal mount immediately so the parent's diagnostic badge shows progress.
   useEffect(() => { onStage?.("mounted"); }, [onStage]);
@@ -149,6 +174,14 @@ export function MapLibreTripMap({
     let tilesLoaded = false;
     let centerLngLat: [number, number] | null = null;
     let zoom: number | null = null;
+    let canvasComputedOpacity: string | null = null;
+    let canvasComputedDisplay: string | null = null;
+    let canvasComputedVisibility: string | null = null;
+    let canvasComputedBackground: string | null = null;
+    let featuresAtCenter = 0;
+    const baseLayerIds: string[] = [];
+    let firstSymbolLayerId: string | null = null;
+    let firstLineLayerId: string | null = null;
     if (map) {
       try {
         const s = map.getStyle();
@@ -161,11 +194,30 @@ export function MapLibreTripMap({
         const c = map.getCenter();
         centerLngLat = [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))];
         zoom = Number(map.getZoom().toFixed(2));
+        for (const layer of s?.layers ?? []) {
+          if (layer.type === "background" || layer.type === "fill" || layer.type === "raster") {
+            if (baseLayerIds.length < 4) baseLayerIds.push(layer.id);
+          }
+          if (!firstSymbolLayerId && layer.type === "symbol") firstSymbolLayerId = layer.id;
+          if (!firstLineLayerId && layer.type === "line") firstLineLayerId = layer.id;
+        }
+        try {
+          const canvas = map.getCanvas();
+          const cs = window.getComputedStyle(canvas);
+          canvasComputedOpacity = cs.opacity;
+          canvasComputedDisplay = cs.display;
+          canvasComputedVisibility = cs.visibility;
+          canvasComputedBackground = cs.backgroundColor;
+        } catch { /* canvas not ready */ }
+        try {
+          const cp = map.project(map.getCenter());
+          featuresAtCenter = map.queryRenderedFeatures([cp.x, cp.y]).length;
+        } catch { /* not ready */ }
       } catch { /* style not ready */ }
     }
     onDiagnostics({
       styleId,
-      styleHost: "api.maptiler.com",
+      styleHost: variant === "route-only" ? "inline" : "api.maptiler.com",
       styleLoaded,
       tilesLoaded,
       sourceCount,
@@ -188,6 +240,14 @@ export function MapLibreTripMap({
       resizeObserverFires: sizeInfoRef.current.resizeObserverFires,
       mapResizeCalls: sizeInfoRef.current.mapResizeCalls,
       firstValidSizeTs: sizeInfoRef.current.firstValidSizeTs,
+      canvasComputedOpacity,
+      canvasComputedDisplay,
+      canvasComputedVisibility,
+      canvasComputedBackground,
+      featuresAtCenter,
+      baseLayerIds,
+      firstSymbolLayerId,
+      firstLineLayerId,
     });
   }, [onDiagnostics, styleId]);
 
@@ -197,7 +257,7 @@ export function MapLibreTripMap({
   useEffect(() => {
     const wrapper = containerRef.current;
     if (!wrapper || mapRef.current) return;
-    if (!styleUrl) {
+    if (!styleSpec) {
       sizeInfoRef.current.mapCreationSkippedReason = "no-style-url";
       emitDiagnostics();
       onError?.("no-style-url");
@@ -230,7 +290,7 @@ export function MapLibreTripMap({
       try {
         map = new maplibregl.Map({
           container: containerRef.current,
-          style: styleUrl,
+          style: styleSpec,
           center: [projected.origin.lng, projected.origin.lat],
           zoom: 5,
           attributionControl: { compact: true },
@@ -317,12 +377,12 @@ export function MapLibreTripMap({
     const map = mapRef.current;
     if (!map || !ready) return;
     try {
-      map.setStyle(styleUrl);
+      map.setStyle(styleSpec);
       // Style swap drops sources/layers — re-add route on next styledata.
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] setStyle failed", err);
     }
-  }, [styleUrl, ready]);
+  }, [styleSpec, ready]);
 
   // Fit to bounds when projection changes.
   useEffect(() => {
@@ -394,13 +454,21 @@ export function MapLibreTripMap({
         src.setData(data);
       } else {
         map.addSource("vg-route", { type: "geojson", data });
-        // Add as last layers — they'll sit on top of every base style layer,
-        // so even if base tiles are blank the route is still visible.
+        // Casing first (white halo for contrast against any base style),
+        // then the bright orange line on top. Both sit on the topmost slot
+        // so they remain visible regardless of base style layers.
         map.addLayer({
           id: "vg-route-glow",
           type: "line",
           source: "vg-route",
-          paint: { "line-color": DAY_COLORS[0], "line-width": 14, "line-opacity": 0.22, "line-blur": 8 },
+          paint: { "line-color": DAY_COLORS[0], "line-width": 16, "line-opacity": 0.22, "line-blur": 8 },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+        map.addLayer({
+          id: "vg-route-casing",
+          type: "line",
+          source: "vg-route",
+          paint: { "line-color": "#ffffff", "line-width": compact ? 8 : 12, "line-opacity": 0.95 },
           layout: { "line-cap": "round", "line-join": "round" },
         });
         map.addLayer({
@@ -409,7 +477,8 @@ export function MapLibreTripMap({
           source: "vg-route",
           paint: {
             "line-color": DAY_COLORS[0],
-            "line-width": compact ? 5 : 7,
+            "line-width": compact ? 5 : 8,
+            "line-opacity": 1,
             "line-dasharray": routeGeom ? [1, 0] : [2, 2],
           },
           layout: { "line-cap": "round", "line-join": "round" },

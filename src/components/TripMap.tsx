@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 // for when MapTiler is actually configured.
 type RealMapProps = Props & {
   maptilerKey: string;
-  variant?: "dark" | "light";
+  variant?: "dark" | "light" | "route-only";
   onError?: (msg?: string) => void;
   onReady?: () => void;
   onStage?: (stage: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => void;
@@ -86,8 +86,8 @@ export function TripMap(props: Props) {
   const [maplibreReady, setMaplibreReady] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [forced, setForced] = useState(false);
-  const [hideSvg, setHideSvg] = useState(false);
-  const [styleVariant, setStyleVariant] = useState<"dark" | "light">("dark");
+  const [showSvg, setShowSvg] = useState(false);
+  const [styleVariant, setStyleVariant] = useState<"dark" | "light" | "route-only">("light");
   const [diag, setDiag] = useState<import("./map/MapLibreTripMap").MapLibreDiagnostics | null>(null);
   const [stages, setStages] = useState<{
     mounted: boolean; mapCreated: boolean; styleLoaded: boolean;
@@ -199,10 +199,10 @@ export function TripMap(props: Props) {
   const originLoc = props.trip.originLoc ?? lookupPlace(props.trip.origin);
   const destLoc = props.trip.destinationLoc ?? lookupPlace(props.trip.destination);
 
-  // When MapLibre is truly visible we hide the SVG entirely so it can't
-  // dominate visually. SVG only stays painted while we're still waiting on
-  // MapLibre or have fallen back.
-  const svgHidden = (mapLibreVisible && !forced && !debug) || hideSvg;
+  // SVG is hidden as soon as MapLibre is visible (or forced) so it can't
+  // visually overlap the real tiles. Debug mode can opt to keep showing it
+  // via the "Show SVG underneath" toggle.
+  const svgHidden = (mapLibreVisible || forced) && !showSvg;
   const visibleLayer = mapLibreVisible ? "maplibre" : "svg";
 
   return (
@@ -218,12 +218,14 @@ export function TripMap(props: Props) {
         <SvgTripMap {...props} height="h-full" className={undefined} />
       </div>
 
-      {/* MapLibre — primary renderer when MapTiler is configured. */}
+      {/* MapLibre — primary renderer when MapTiler is configured. Wrapper
+          has an opaque slate background so the canvas always sits on a solid
+          surface even while tiles are still streaming in. */}
       {canTryMapLibre && cfg?.maptilerKey && (
         <div
           ref={mlContainerRef}
           className={cn(
-            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300",
+            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300 bg-[#1f2937]",
             mapLibreVisible ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           aria-hidden={!mapLibreVisible}
@@ -266,6 +268,9 @@ export function TripMap(props: Props) {
           <div className="normal-case">center (lng,lat): {diag?.centerLngLat ? `[${diag.centerLngLat[0]}, ${diag.centerLngLat[1]}]` : "—"} · zoom: {diag?.zoom ?? "—"}</div>
           <div className="normal-case">wrapper rect: {diag?.lastWrapperRect ? `${diag.lastWrapperRect.w}×${diag.lastWrapperRect.h}` : "—"} · wait: {diag?.waitCount ?? 0} · ro fires: {diag?.resizeObserverFires ?? 0} · resize calls: {diag?.mapResizeCalls ?? 0}</div>
           <div className="normal-case">map.create attempted: {String(diag?.mapCreationAttempted ?? false)}{diag?.mapCreationSkippedReason ? ` · skipped: ${diag.mapCreationSkippedReason}` : ""}{diag?.firstValidSizeTs ? ` · firstValidTs: +${Math.max(0, Date.now() - diag.firstValidSizeTs)}ms` : ""}</div>
+          <div className="normal-case">canvas css: opacity={diag?.canvasComputedOpacity ?? "—"} · display={diag?.canvasComputedDisplay ?? "—"} · vis={diag?.canvasComputedVisibility ?? "—"} · bg={diag?.canvasComputedBackground ?? "—"}</div>
+          <div className="normal-case">features@center: {diag?.featuresAtCenter ?? 0} · base layers: {diag?.baseLayerIds?.join(", ") || "—"}</div>
+          <div className="normal-case">1st symbol: {diag?.firstSymbolLayerId ?? "—"} · 1st line: {diag?.firstLineLayerId ?? "—"}</div>
           <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} · stops: {stopsWithCoords}/{props.stops.length} (d+2={routePointCount})</div>
           {fallbackReason && <div className="normal-case text-yellow-400">reason: {fallbackReason}</div>}
           {diag?.lastError && <div className="text-destructive normal-case">tile/style err: {diag.lastErrorStatus ?? ""} {diag.lastErrorHost ?? ""} {diag.lastError}</div>}
@@ -282,17 +287,40 @@ export function TripMap(props: Props) {
             )}
             <button
               type="button"
-              onClick={() => setStyleVariant((v) => v === "dark" ? "light" : "dark")}
-              className="rounded border border-primary/60 bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20"
+              onClick={() => setStyleVariant("light")}
+              className={cn(
+                "rounded border border-primary/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20",
+                styleVariant === "light" ? "bg-primary/30" : "bg-primary/10",
+              )}
             >
-              {styleVariant === "dark" ? "Use streets style" : "Use dark style"}
+              Bright streets
             </button>
             <button
               type="button"
-              onClick={() => setHideSvg((v) => !v)}
+              onClick={() => setStyleVariant("dark")}
+              className={cn(
+                "rounded border border-primary/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20",
+                styleVariant === "dark" ? "bg-primary/30" : "bg-primary/10",
+              )}
+            >
+              Dark style
+            </button>
+            <button
+              type="button"
+              onClick={() => setStyleVariant("route-only")}
+              className={cn(
+                "rounded border border-primary/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20",
+                styleVariant === "route-only" ? "bg-primary/30" : "bg-primary/10",
+              )}
+            >
+              Route-only
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSvg((v) => !v)}
               className="rounded border border-primary/60 bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20"
             >
-              {hideSvg ? "Show SVG" : "Hide SVG"}
+              {showSvg ? "Hide SVG underneath" : "Show SVG underneath"}
             </button>
           </div>
         </div>
