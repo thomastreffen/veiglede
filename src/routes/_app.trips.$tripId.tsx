@@ -470,17 +470,29 @@ function TripPlanner() {
   );
 }
 
+type Placement = "along" | "detour" | "after" | "new-day" | "day";
+
 function SuggestionCard({
   sug, onAdd, onHover, detourMin, distanceFromRouteKm, off, vehicleDisplay, styleLabel,
+  tripDays, tripDestination,
 }: {
-  sug: SuggestedStop; onAdd: () => void; onHover: (h: boolean) => void;
+  sug: SuggestedStop;
+  onAdd: (placement: Placement, dayId?: string) => void;
+  onHover: (h: boolean) => void;
   detourMin: number; distanceFromRouteKm: number; off: boolean;
   vehicleDisplay: string; styleLabel: string;
+  tripDays: { id: string; dayNumber: number; title: string }[];
+  tripDestination: string;
 }) {
   const meta = stopMeta(sug.type);
+  const [open, setOpen] = useState(false);
+  const choose = (p: Placement, dayId?: string) => {
+    onAdd(p, dayId);
+    setOpen(false);
+  };
   return (
     <div
-      className="rounded-2xl border border-border bg-surface p-4 flex flex-col hover:border-primary/50 transition-colors"
+      className="rounded-2xl border border-border bg-surface p-4 flex flex-col hover:border-primary/50 transition-colors relative"
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
     >
@@ -516,13 +528,125 @@ function SuggestionCard({
       </p>
       <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-border/50">
         <p className="text-[11px] text-muted-foreground">{sug.photoOp ? "📸 fotomulighet" : ""}</p>
-        <button onClick={onAdd} className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider hover:bg-primary/25">
+        <button onClick={() => setOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider hover:bg-primary/25">
           <Plus className="h-3 w-3" /> Legg til
         </button>
       </div>
+      {open && (
+        <div className="absolute right-3 bottom-14 z-30 w-64 rounded-2xl border border-border bg-surface-2 shadow-xl p-2 text-sm">
+          <p className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">Hvor skal det legges?</p>
+          <PlacementBtn label="Legg til langs nåværende rute" onClick={() => choose("along")} />
+          <PlacementBtn label="Legg til som avstikker" onClick={() => choose("detour")} />
+          <PlacementBtn label={`Legg til etter ${tripDestination}`} onClick={() => choose("after")} />
+          <PlacementBtn label="Legg til som egen dag" onClick={() => choose("new-day")} />
+          {tripDays.length > 1 && (
+            <>
+              <p className="px-2 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">Velg dag</p>
+              {tripDays.map((d) => (
+                <PlacementBtn key={d.id} label={`Dag ${d.dayNumber} — ${d.title}`} onClick={() => choose("day", d.id)} />
+              ))}
+            </>
+          )}
+          <button onClick={() => setOpen(false)} className="mt-1 w-full rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-background">Avbryt</button>
+        </div>
+      )}
     </div>
   );
 }
+
+function PlacementBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="w-full text-left rounded-lg px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary transition-colors">
+      {label}
+    </button>
+  );
+}
+
+function PlannerActions({
+  trip, tripDays, maxDrivingHours,
+}: {
+  trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string };
+  tripDays: { id: string; dayNumber: number }[];
+  maxDrivingHours: number;
+}) {
+  const [destOpen, setDestOpen] = useState(false);
+  const [destText, setDestText] = useState("");
+  const durationMin = trip.routeDurationMin ?? 0;
+  const isLongLeg = durationMin > 0 && durationMin > maxDrivingHours * 60;
+
+  return (
+    <section className="mt-4 space-y-3">
+      {isLongLeg && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <p className="text-sm font-semibold text-amber-200">Denne etappen er lang ({trip.drivingTime}).</p>
+          <p className="mt-1 text-xs text-amber-100/80">
+            Lengre enn dine {maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => { tripsApi.splitIntoDays(trip.id, 2); tripsApi.addOvernight(trip.id); }}
+              className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-950 hover:brightness-110"
+            >
+              Ja, foreslå overnatting
+            </button>
+            <button
+              onClick={() => { /* keep as-is */ }}
+              className="rounded-full border border-amber-500/40 bg-background/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-100 hover:bg-amber-500/20"
+            >
+              Nei, behold som én dag
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <PlannerBtn label="Del opp i flere dager" onClick={() => tripsApi.splitIntoDays(trip.id, tripDays.length + 1)} />
+        <PlannerBtn label="Legg til overnatting" onClick={() => tripsApi.addOvernight(trip.id)} />
+        <PlannerBtn label="+ Legg til neste destinasjon" onClick={() => setDestOpen(true)} />
+      </div>
+      {destOpen && (
+        <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+          <p className="text-sm font-semibold">Neste destinasjon etter {trip.destination}</p>
+          <p className="mt-1 text-xs text-muted-foreground">F.eks. Ålesund, Geiranger, eller et hotell. Kartet oppdateres ved neste rutegenerering.</p>
+          <div className="mt-3 flex gap-2">
+            <input
+              value={destText}
+              onChange={(e) => setDestText(e.target.value)}
+              placeholder="Sted eller hotell"
+              className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <button
+              onClick={() => {
+                const place = destText.trim();
+                if (!place) return;
+                tripsApi.addDestination(trip.id, place);
+                setDestText("");
+                setDestOpen(false);
+              }}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110"
+            >
+              Legg til
+            </button>
+            <button onClick={() => { setDestOpen(false); setDestText(""); }} className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+              Avbryt
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PlannerBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-2xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:bg-surface-2 transition-colors"
+    >
+      {label}
+    </button>
+  );
+}
+
 
 
 function PartnerCard({ tip }: { tip: PartnerTip }) {
