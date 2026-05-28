@@ -94,6 +94,19 @@ export function TripMap(props: Props) {
   const routePointCount = props.days.length + 2;
   const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
 
+  const geom = props.trip.routeGeometry ?? [];
+  const geomMode = geom.length > 4 ? (props.trip.routeProvider === "ors" ? "real-geometry" : "demo-geometry") : "missing";
+  const geomFirst = geom[0];
+  const geomLast = geom[geom.length - 1];
+  const geomBounds = geom.length
+    ? {
+        minLat: Math.min(...geom.map((p) => p.lat)),
+        maxLat: Math.max(...geom.map((p) => p.lat)),
+        minLng: Math.min(...geom.map((p) => p.lng)),
+        maxLng: Math.max(...geom.map((p) => p.lng)),
+      }
+    : null;
+
   if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.debug("[TripMap]", {
@@ -104,6 +117,9 @@ export function TripMap(props: Props) {
       errored,
       errorMsg,
       hasOrigin, hasDestination,
+      routeProvider: props.trip.routeProvider,
+      geometryLen: geom.length,
+      geomMode,
     });
   }
 

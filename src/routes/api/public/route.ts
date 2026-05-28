@@ -64,7 +64,7 @@ function demoResponse(body: Body, warnings: string[]) {
   };
 }
 
-export const Route = createFileRoute("/api/public/route")({
+export const Route = createFileRoute("/api/public")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: CORS_HEADERS }),
