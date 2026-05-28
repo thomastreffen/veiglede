@@ -527,7 +527,9 @@ function NewTripWizard() {
 function PreviewStep({
   generating, tripId, onRegenerate, onOpen,
 }: { generating: boolean; tripId: string | null; onRegenerate: () => void; onOpen: () => void }) {
+  const navigate = useNavigate();
   const { trips, days, stops } = useTripsStore();
+  const prefs = useDriverPrefs();
   const trip = tripId ? trips.find((t) => t.id === tripId) : null;
 
   if (generating || !trip) {
@@ -547,30 +549,103 @@ function PreviewStep({
 
   const tripDays = days.filter((d) => d.tripId === trip.id).sort((a, b) => a.dayNumber - b.dayNumber);
   const tripStops = stops.filter((s) => tripDays.some((d) => d.id === s.dayId));
+  const durationMin = trip.routeDurationMin ?? 0;
+  const maxMin = prefs.maxDrivingHours * 60;
+  const isLongLeg = durationMin > 0 && durationMin > maxMin;
+
+  const goToPlanner = () => {
+    if (!tripId) return;
+    onOpen();
+  };
 
   return (
     <div className="mt-6 space-y-5">
       <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary">
-        <Check className="h-3.5 w-3.5" /> Ruta er klar
+        <Check className="h-3.5 w-3.5" /> Rutekladd klar
       </div>
       <h1 className="font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
-      <p className="text-sm text-muted-foreground">Et utgangspunkt — finpuss stopp og dager i planleggeren.</p>
+      <p className="text-sm text-muted-foreground">Dette er en kladd av første etappe — du bestemmer hvordan turen skal bygges videre.</p>
 
-      <TripMap trip={trip} days={tripDays} stops={tripStops} compact height="h-48" />
+      <TripMap trip={trip} days={tripDays} stops={tripStops} compact height="h-64 md:h-[420px]" />
 
       <div className="grid grid-cols-3 gap-3">
         <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
-        <PreviewStat label={trip.routeProvider === "ors" ? "Beregnet kjøretid" : "Estimert kjøretid"} value={trip.drivingTime} />
-        <PreviewStat label="Dager" value={String(tripDays.length)} />
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
+        <PreviewStat label="Beregnet kjøretid" value={trip.drivingTime} />
         <PreviewStat label="Kjøretøy" value={trip.vehicleName ?? vehicleMeta(trip.vehicle).label} />
-        <PreviewStat label="Rutestil" value={styleMeta(trip.style).label} />
-        <PreviewStat label="Stopp" value={String(tripStops.length)} />
       </div>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        Beregnet av rutemotor. Kan avvike fra Google Maps, trafikk, ferge og lokale forhold.
+      </p>
 
-      <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} title="Turregnskap" />
+      {isLongLeg && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <p className="text-sm font-semibold text-amber-200">Denne etappen er lang ({trip.drivingTime}).</p>
+          <p className="mt-1 text-xs text-amber-100/80">
+            Lengre enn dine {prefs.maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                if (!tripId) return;
+                tripsApi.splitIntoDays(tripId, 2);
+                tripsApi.addOvernight(tripId);
+                goToPlanner();
+              }}
+              className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-950 hover:brightness-110"
+            >
+              Ja, foreslå overnatting
+            </button>
+            <button
+              onClick={goToPlanner}
+              className="rounded-full border border-amber-500/40 bg-background/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-100 hover:bg-amber-500/20"
+            >
+              Nei, behold som én dag
+            </button>
+            <button
+              onClick={goToPlanner}
+              className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:border-primary"
+            >
+              Velg selv senere
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.28em] text-primary font-bold">Neste steg</p>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <ActionBtn
+            onClick={() => { if (!tripId) return; goToPlanner(); }}
+            label="Kjør som én dag"
+            sub="Behold som én etappe og åpne planlegger"
+          />
+          <ActionBtn
+            onClick={() => { if (!tripId) return; tripsApi.splitIntoDays(tripId, 2); goToPlanner(); }}
+            label="Del opp i flere dager"
+            sub="Legger til en ny tom dag"
+          />
+          <ActionBtn
+            onClick={() => { if (!tripId) return; tripsApi.addOvernight(tripId); goToPlanner(); }}
+            label="Legg til overnatting"
+            sub={`Overnatting i ${trip.destination}`}
+          />
+          <ActionBtn
+            onClick={goToPlanner}
+            label="Legg til neste destinasjon"
+            sub="Bygg ruta videre fra planleggeren"
+          />
+          <ActionBtn
+            onClick={goToPlanner}
+            label="Legg til stopp langs ruta"
+            sub="Se forslag og velg plassering"
+          />
+          <ActionBtn
+            onClick={goToPlanner}
+            label="Åpne roadbook"
+            sub="Detaljert dag-for-dag oversikt"
+          />
+        </div>
+      </div>
 
       {trip.aiSummary && (
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
@@ -580,24 +655,6 @@ function PreviewStep({
           <p className="mt-2 text-sm leading-relaxed text-foreground/90">{trip.aiSummary}</p>
         </div>
       )}
-
-      <div>
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Foreslåtte stopp · {tripStops.length}</p>
-        <ul className="space-y-2">
-          {tripStops.slice(0, 8).map((s) => {
-            const m = stopMeta(s.type);
-            return (
-              <li key={s.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
-                <span className="h-8 w-8 rounded-lg bg-surface-2 grid place-items-center text-base">{m.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{s.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{m.label}{s.estimatedTime ? ` · ${s.estimatedTime}` : ""}</p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
 
       <div className="sticky bottom-24 md:bottom-0 md:static flex gap-3 pt-2">
         <button onClick={onRegenerate} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-4 text-sm font-medium hover:border-primary">
@@ -610,6 +667,19 @@ function PreviewStep({
     </div>
   );
 }
+
+function ActionBtn({ onClick, label, sub }: { onClick: () => void; label: string; sub: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-2xl border border-border bg-surface px-4 py-3 text-left hover:border-primary transition-colors"
+    >
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>
+    </button>
+  );
+}
+
 
 function PreviewStat({ label, value }: { label: string; value: string }) {
   return (
