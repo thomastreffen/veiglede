@@ -4,6 +4,14 @@
 // Uses OpenRouteService when ORS_API_KEY is set; otherwise responds with
 // a demo straight-line geometry so the client never has to special-case
 // "no provider".
+//
+// Route time honesty (Routing v1.1):
+// - We return ORS distance/duration AS-IS in km/min (rounded for display)
+//   but ALSO return the raw meters/seconds and the profile + avoid options
+//   used, so the client can show "Beregnet kjøretid" with honest helper
+//   text and the debug panel can verify nothing is being multiplied.
+// - We request `extra_info: ["waytypes"]` and try to separate the ferry
+//   portion (waytype = 8) from driving when possible.
 import { createFileRoute } from "@tanstack/react-router";
 
 const CORS_HEADERS = {
@@ -60,6 +68,8 @@ function demoResponse(body: Body, warnings: string[]) {
     durationMin: Math.round((km / speed) * 60),
     geometry: interpolate(body.origin!, body.destination!, 32),
     provider: "demo" as const,
+    profile: "driving-car",
+    avoidOptions: { highways: !!body.avoidHighways, ferries: !!body.avoidFerries },
     warnings: warnings.length ? warnings : undefined,
   };
 }
@@ -79,10 +89,10 @@ export const Route = createFileRoute("/api/public/directions")({
 
         const key = (process.env.ORS_API_KEY ?? "").trim();
         const warnings: string[] = [];
-
-        if (body.avoidHighways && body.vehicleType === "motorcycle") {
-          // ORS supports avoid_features, but only for some profiles; still accepted.
-        }
+        const avoidOptions = {
+          highways: !!body.avoidHighways,
+          ferries: !!body.avoidFerries,
+        };
 
         if (!key) {
           return json(demoResponse(body, ["no-ors-key"]));
@@ -94,20 +104,23 @@ export const Route = createFileRoute("/api/public/directions")({
           if (body.avoidFerries) avoid.push("ferries");
 
           const orsBody: Record<string, unknown> = {
+            // ORS expects [lng, lat] pairs.
             coordinates: [
               [body.origin.lng, body.origin.lat],
               [body.destination.lng, body.destination.lat],
             ],
             instructions: false,
+            // waytypes = 1 (paved), 2 (unpaved), 3..., 8 (ferry). Lets us
+            // separate ferry duration from driving when present.
+            extra_info: ["waytypes"],
           };
-          if (avoid.length) {
-            orsBody.options = { avoid_features: avoid };
-          }
+          if (avoid.length) orsBody.options = { avoid_features: avoid };
 
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 6000);
+          const profile = "driving-car";
           const res = await fetch(
-            "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+            `https://api.openrouteservice.org/v2/directions/${profile}/geojson`,
             {
               method: "POST",
               headers: {
@@ -132,11 +145,41 @@ export const Route = createFileRoute("/api/public/directions")({
             warnings.push("ors-no-geometry");
             return json(demoResponse(body, warnings));
           }
+
+          // Extra info: waytypes — try to derive ferry duration/distance.
+          // ORS shape: properties.extras.waytypes.values = [[fromIdx,toIdx,type], ...]
+          //            and a per-step summary at properties.extras.waytypes.summary
+          let ferryDurationSec: number | null = null;
+          let ferryDistanceM: number | null = null;
+          const extras = feat?.properties?.extras?.waytypes;
+          if (extras?.summary && Array.isArray(extras.summary)) {
+            const ferry = extras.summary.find((s: { value: number }) => s.value === 8);
+            if (ferry) {
+              ferryDistanceM = typeof ferry.distance === "number" ? ferry.distance : null;
+              // ORS doesn't give per-waytype duration in summary — only distance + amount.
+              // We approximate ferry duration with the route's average speed on that
+              // segment ratio (good enough for "inkludert i rutetid" semantics).
+              if (ferryDistanceM && summary.distance && summary.duration) {
+                const ratio = ferryDistanceM / summary.distance;
+                ferryDurationSec = Math.round(summary.duration * ratio);
+              }
+            }
+          }
+
+          const rawDistanceMeters = typeof summary.distance === "number" ? summary.distance : 0;
+          const rawDurationSeconds = typeof summary.duration === "number" ? summary.duration : 0;
+
           return json({
-            distanceKm: summary.distance ? Math.round(summary.distance / 100) / 10 : 0,
-            durationMin: summary.duration ? Math.round(summary.duration / 60) : 0,
+            distanceKm: rawDistanceMeters ? Math.round(rawDistanceMeters / 100) / 10 : 0,
+            durationMin: rawDurationSeconds ? Math.round(rawDurationSeconds / 60) : 0,
             geometry: coords.map(([lng, lat]) => ({ lat, lng })),
             provider: "ors" as const,
+            profile,
+            avoidOptions,
+            rawDistanceMeters,
+            rawDurationSeconds,
+            ferryDistanceKm: ferryDistanceM ? Math.round(ferryDistanceM / 100) / 10 : 0,
+            ferryDurationMin: ferryDurationSec ? Math.round(ferryDurationSec / 60) : 0,
             warnings: warnings.length ? warnings : undefined,
           });
         } catch (err) {
