@@ -7,6 +7,8 @@ import type { Stop, Trip, TripDay, SuggestedStop } from "./trips-store";
 
 export interface LatLng { lat: number; lng: number }
 
+export const DETOUR_THRESHOLD_KM = 12;
+
 // Approximate coordinates for places referenced in seed data + suggestions.
 // Norwegian projection — no claim to surveyor accuracy, just believable.
 const PLACES: Record<string, LatLng> = {
@@ -95,6 +97,37 @@ function interp(a: LatLng, b: LatLng, t: number): LatLng {
   return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
 }
 
+function explicitStopLoc(stop: Pick<Stop, "lat" | "lng">): LatLng | undefined {
+  if (typeof stop.lat === "number" && typeof stop.lng === "number") {
+    return { lat: stop.lat, lng: stop.lng };
+  }
+  return undefined;
+}
+
+function projectKm(point: LatLng, refLat: number) {
+  const cosLat = Math.cos((refLat * Math.PI) / 180);
+  return {
+    x: point.lng * 111.32 * cosLat,
+    y: point.lat * 110.574,
+  };
+}
+
+function pointToSegmentKm(point: LatLng, a: LatLng, b: LatLng): number {
+  if (a.lat === b.lat && a.lng === b.lng) return distanceKm(point, a);
+  const refLat = (point.lat + a.lat + b.lat) / 3;
+  const p = projectKm(point, refLat);
+  const p1 = projectKm(a, refLat);
+  const p2 = projectKm(b, refLat);
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(p.x - p1.x, p.y - p1.y);
+  const t = Math.max(0, Math.min(1, ((p.x - p1.x) * dx + (p.y - p1.y) * dy) / lenSq));
+  const projX = p1.x + t * dx;
+  const projY = p1.y + t * dy;
+  return Math.hypot(p.x - projX, p.y - projY);
+}
+
 export interface MappedStop {
   stop: Stop;
   day: TripDay;
@@ -135,7 +168,7 @@ export function projectTrip(
 
   const total = flat.length;
   const mapped: MappedStop[] = flat.map((entry, globalIndex) => {
-    const looked = lookupPlace(entry.stop.location ?? entry.stop.name);
+    const looked = explicitStopLoc(entry.stop) ?? lookupPlace(entry.stop.location ?? entry.stop.name);
     // Distribute unknown stops evenly along the route corridor
     const t = total > 0 ? (globalIndex + 1) / (total + 1) : 0.5;
     const fallback = pickAlongGeom(t);
@@ -170,10 +203,10 @@ export function distanceKm(a: LatLng, b: LatLng): number {
 /** Shortest distance from a point to the polyline of route stops. */
 export function distanceToRoute(point: LatLng, routePoints: LatLng[]): number {
   if (routePoints.length === 0) return 0;
-  // Approximate: minimum distance to any vertex (good enough for demo).
+  if (routePoints.length === 1) return distanceKm(point, routePoints[0]);
   let min = Infinity;
-  for (const p of routePoints) {
-    const d = distanceKm(point, p);
+  for (let i = 0; i < routePoints.length - 1; i++) {
+    const d = pointToSegmentKm(point, routePoints[i], routePoints[i + 1]);
     if (d < min) min = d;
   }
   return min;
@@ -188,15 +221,17 @@ export function detourMinutes(extraKm: number): number {
 export function suggestionRouteInfo(
   sug: SuggestedStop,
   routePoints: LatLng[],
-): { off: boolean; distanceFromRouteKm: number; detourMin: number; loc?: LatLng } {
+): { off: boolean; distanceFromRouteKm: number; extraDistanceKm: number; detourMin: number; loc?: LatLng } {
   const loc = lookupPlace(sug.location ?? sug.name);
   if (!loc || routePoints.length === 0) {
-    return { off: false, distanceFromRouteKm: 0, detourMin: 5, loc };
+    return { off: false, distanceFromRouteKm: 0, extraDistanceKm: 0, detourMin: 5, loc };
   }
   const d = distanceToRoute(loc, routePoints);
+  const extraDistanceKm = Math.round(d * 2 * 10) / 10;
   return {
-    off: d > 4,
+    off: d > DETOUR_THRESHOLD_KM,
     distanceFromRouteKm: Math.round(d * 10) / 10,
+    extraDistanceKm,
     detourMin: detourMinutes(d),
     loc,
   };
