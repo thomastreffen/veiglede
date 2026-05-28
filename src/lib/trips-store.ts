@@ -484,6 +484,7 @@ export const tripsApi = {
     ensureInit();
     const tripDays = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
     if (tripDays.length === 0) return null;
+    const loc = suggestionLoc(sug);
     const baseInput: Partial<Stop> = {
       name: sug.name,
       type: placement === "detour" ? "detour" : sug.type,
@@ -493,6 +494,11 @@ export const tripsApi = {
       durationMin: sug.durationMin,
       photoOp: sug.photoOp,
       promoted: sug.promoted,
+      lat: loc?.lat,
+      lng: loc?.lng,
+      placement,
+      routeStatus: placement === "detour" ? "detour" : "on-route",
+      isSuggestion: true,
     };
     if (placement === "along" || placement === "detour") {
       // insert before the arrival (last stop) of the last day
