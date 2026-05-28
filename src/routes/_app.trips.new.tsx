@@ -8,6 +8,7 @@ import { DemoDebugPanel, useDebugMode } from "@/components/DemoDebugPanel";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { manualPlace } from "@/lib/places/geocoder";
+import { getRoute, type RouteResult } from "@/lib/routing";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
