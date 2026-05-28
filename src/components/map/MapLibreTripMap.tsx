@@ -97,7 +97,7 @@ export function MapLibreTripMap({
   // Signal mount immediately so the parent's diagnostic badge shows progress.
   useEffect(() => { onStage?.("mounted"); }, [onStage]);
 
-  const emitDiagnostics = React.useCallback(() => {
+  const emitDiagnostics = useCallback(() => {
     const map = mapRef.current;
     if (!map || !onDiagnostics) return;
     let sourceCount = 0;
