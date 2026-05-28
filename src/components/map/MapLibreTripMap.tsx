@@ -191,66 +191,124 @@ export function MapLibreTripMap({
     });
   }, [onDiagnostics, styleId]);
 
-  // Initialize map once.
+  // Initialize map once — but only after the container actually has
+  // non-zero dimensions. ML canvas creation against a 0×0 container leaves
+  // tilesLoaded=false forever, so we wait via ResizeObserver and retry.
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-    if (!styleUrl) { onError?.("no-style-url"); return; }
-    let map: MlMap;
-    try {
-      map = new maplibregl.Map({
-        container: containerRef.current,
-        style: styleUrl,
-        center: [projected.origin.lng, projected.origin.lat],
-        zoom: 5,
-        attributionControl: { compact: true },
-        cooperativeGestures: false,
-      });
-      onStage?.("mapCreated");
-    } catch (err) {
-      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre init failed", err);
-      onError?.(`init: ${(err as Error)?.message ?? "unknown"}`);
+    const wrapper = containerRef.current;
+    if (!wrapper || mapRef.current) return;
+    if (!styleUrl) {
+      sizeInfoRef.current.mapCreationSkippedReason = "no-style-url";
+      emitDiagnostics();
+      onError?.("no-style-url");
       return;
     }
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    let signaled = false;
-    const signalReady = () => {
-      if (signaled) return;
-      if (!map.isStyleLoaded?.()) return;
-      signaled = true;
-      setReady(true);
-      onReady?.();
-      // Container may have settled to its final size after layout — force a
-      // resize so the canvas matches and tiles cover the full viewport.
-      try { map.resize(); } catch { /* ignore */ }
-    };
-    map.on("load", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
-    map.on("styledata", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
-    map.on("sourcedata", () => emitDiagnostics());
-    map.on("render", () => { onStage?.("firstRender"); signalReady(); });
-    map.on("idle", () => { signalReady(); emitDiagnostics(); });
-    map.on("error", (e) => {
-      const errAny = e as { error?: { status?: number; message?: string; url?: string } };
-      const status = errAny.error?.status ?? null;
-      const msg = errAny.error?.message ?? null;
-      const url = errAny.error?.url ?? null;
-      let host: string | null = null;
-      try { if (url) host = new URL(url).host; } catch { /* ignore */ }
-      lastErrorRef.current = { msg, host, status };
+
+    let cancelled = false;
+    let ro: ResizeObserver | null = null;
+
+    const tryCreate = (source: "initial" | "resize-observer") => {
+      if (cancelled || mapRef.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      sizeInfoRef.current.lastWrapperRect = { w, h };
+      if (source === "resize-observer") sizeInfoRef.current.resizeObserverFires += 1;
+      if (w <= 0 || h <= 0) {
+        sizeInfoRef.current.waitCount += 1;
+        sizeInfoRef.current.mapCreationSkippedReason = `container-${w}x${h}`;
+        emitDiagnostics();
+        return;
+      }
+      if (!sizeInfoRef.current.firstValidSizeTs) {
+        sizeInfoRef.current.firstValidSizeTs = Date.now();
+      }
+      sizeInfoRef.current.mapCreationAttempted = true;
+      sizeInfoRef.current.mapCreationSkippedReason = null;
+
+      let map: MlMap;
+      try {
+        map = new maplibregl.Map({
+          container: containerRef.current,
+          style: styleUrl,
+          center: [projected.origin.lng, projected.origin.lat],
+          zoom: 5,
+          attributionControl: { compact: true },
+          cooperativeGestures: false,
+        });
+        onStage?.("mapCreated");
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug("[TripMap] MapLibre init failed", err);
+        sizeInfoRef.current.mapCreationSkippedReason = `init-error: ${(err as Error)?.message ?? "unknown"}`;
+        emitDiagnostics();
+        onError?.(`init: ${(err as Error)?.message ?? "unknown"}`);
+        return;
+      }
+      // Immediately call resize so MapLibre matches the wrapper exactly.
+      try { map.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+      let signaled = false;
+      const signalReady = () => {
+        if (signaled) return;
+        if (!map.isStyleLoaded?.()) return;
+        signaled = true;
+        setReady(true);
+        onReady?.();
+        try { map.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+      };
+      map.on("load", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
+      map.on("styledata", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
+      map.on("sourcedata", () => emitDiagnostics());
+      map.on("render", () => { onStage?.("firstRender"); signalReady(); });
+      map.on("idle", () => { signalReady(); emitDiagnostics(); });
+      map.on("error", (e) => {
+        const errAny = e as { error?: { status?: number; message?: string; url?: string } };
+        const status = errAny.error?.status ?? null;
+        const msg = errAny.error?.message ?? null;
+        const url = errAny.error?.url ?? null;
+        let host: string | null = null;
+        try { if (url) host = new URL(url).host; } catch { /* ignore */ }
+        lastErrorRef.current = { msg, host, status };
+        emitDiagnostics();
+        if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, host, msg, signaled });
+        if (!signaled || status === 401 || status === 403) {
+          onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
+        }
+      });
+      map.on("click", (e) => {
+        const features = map.queryRenderedFeatures(e.point);
+        if (features.length === 0) onSelectStop?.(null);
+      });
+
+      mapRef.current = map;
       emitDiagnostics();
-      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, host, msg, signaled });
-      // Only treat as fatal before first frame, or on hard auth failures.
-      if (!signaled || status === 401 || status === 403) {
-        onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
+    };
+
+    // Observe wrapper size; create map once it's non-zero. Also keep observing
+    // so we can call map.resize() on later layout changes.
+    ro = new ResizeObserver(() => {
+      if (!mapRef.current) {
+        tryCreate("resize-observer");
+      } else {
+        const r = containerRef.current?.getBoundingClientRect();
+        if (r) {
+          sizeInfoRef.current.lastWrapperRect = { w: Math.round(r.width), h: Math.round(r.height) };
+          sizeInfoRef.current.resizeObserverFires += 1;
+          try { mapRef.current.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+          emitDiagnostics();
+        }
       }
     });
-    // Click on empty map deselects.
-    map.on("click", (e) => {
-      const features = map.queryRenderedFeatures(e.point);
-      if (features.length === 0) onSelectStop?.(null);
-    });
+    ro.observe(wrapper);
+    // Try immediately in case layout is already settled.
+    tryCreate("initial");
 
-    mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    return () => {
+      cancelled = true;
+      ro?.disconnect();
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
