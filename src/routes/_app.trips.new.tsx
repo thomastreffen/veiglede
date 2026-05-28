@@ -322,8 +322,13 @@ function NewTripWizard() {
           { label: "Route", value: "/trips/new" },
           { label: "Step", value: `${step}/4` },
           { label: "Trip id", value: tripId ?? "ikke opprettet" },
+          { label: "Routing", value: lastRoute?.provider ?? "—" },
+          { label: "Geometry pts", value: lastRoute?.geometry.length ?? 0 },
+          { label: "Dist src", value: lastRoute ? `${lastRoute.distanceKm} km` : "estimat" },
+          { label: "Routing warn", value: lastRoute?.warnings?.join(",") ?? "—" },
         ]}
       />
+
 
       <div className="flex items-center justify-between">
         {step > 1 ? (
