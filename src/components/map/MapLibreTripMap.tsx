@@ -26,7 +26,8 @@ interface Props {
   hoveredSuggestionId?: string | null;
   compact?: boolean;
   variant?: "dark" | "light";
-  onError?: () => void;
+  onError?: (msg?: string) => void;
+  onReady?: () => void;
   /** MapTiler browser key fetched at runtime via /api/public-map-config. */
   maptilerKey: string;
 }
@@ -52,6 +53,7 @@ export function MapLibreTripMap({
   compact = false,
   variant = "dark",
   onError,
+  onReady,
   maptilerKey,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -66,7 +68,7 @@ export function MapLibreTripMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const style = buildMaptilerStyleUrl(maptilerKey, variant);
-    if (!style) { onError?.(); return; }
+    if (!style) { onError?.("no-style-url"); return; }
     let map: MlMap;
     try {
       map = new maplibregl.Map({
@@ -79,22 +81,24 @@ export function MapLibreTripMap({
       });
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] MapLibre init failed", err);
-      onError?.();
+      onError?.(`init: ${(err as Error)?.message ?? "unknown"}`);
       return;
     }
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     let loaded = false;
-    map.on("load", () => { loaded = true; setReady(true); });
-    // If style/tiles fail (bad key, origin restriction, network) → fall back to SVG.
-    // We trigger fallback on ANY error if the map never loaded — covers
-    // MapTiler 401/403, DNS issues, and silent style fetch failures.
+    map.on("load", () => { loaded = true; setReady(true); onReady?.(); });
     map.on("error", (e) => {
-      const status = (e as { error?: { status?: number } }).error?.status;
+      const status = (e as { error?: { status?: number; message?: string } }).error?.status;
+      const msg = (e as { error?: { message?: string } }).error?.message;
       if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, loaded, err: e });
-      if (!loaded || status === 401 || status === 403 || status === 404) onError?.();
+      if (!loaded || status === 401 || status === 403 || status === 404) {
+        onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
+      }
     });
-    // Safety net: if the map never reports `load` within 6s, fall back.
-    const t = window.setTimeout(() => { if (!loaded) onError?.(); }, 6000);
+    // Safety net: if the map never reports `load` within 3s, fall back.
+    const t = window.setTimeout(() => {
+      if (!loaded) onError?.("load-timeout");
+    }, 3000);
     mapRef.current = map;
     return () => { window.clearTimeout(t); map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

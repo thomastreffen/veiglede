@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
 import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
@@ -15,21 +15,59 @@ export const Route = createFileRoute("/_app/trips/new")({
 
 type Step = 1 | 2 | 3 | 4;
 
+const DRAFT_KEY = "veiglede.newTrip.draft.v1";
+
+interface Draft {
+  step: Step;
+  vehicleId?: string;
+  style?: RouteStyle;
+  origin?: string;
+  destination?: string;
+  date?: string;
+  aiPrompt?: string;
+  tripId?: string | null;
+}
+
+function loadDraft(): Draft | null {
+  if (typeof localStorage === "undefined") return null;
+  try { const raw = localStorage.getItem(DRAFT_KEY); return raw ? JSON.parse(raw) as Draft : null; } catch { return null; }
+}
+function saveDraft(d: Draft) {
+  if (typeof localStorage === "undefined") return;
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch { /* ignore */ }
+}
+function clearDraft() {
+  if (typeof localStorage === "undefined") return;
+  try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+}
+
 function NewTripWizard() {
   const navigate = useNavigate();
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
   const initialVehicle: Vehicle = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
-  const [step, setStep] = useState<Step>(1);
-  const [vehicleId, setVehicleId] = useState<string>(initialVehicle.id);
+  const { trips } = useTripsStore();
+  const draft = typeof window !== "undefined" ? loadDraft() : null;
+  // If a previously-persisted tripId no longer exists in the store, drop it.
+  const draftTripValid = draft?.tripId ? trips.some((t) => t.id === draft.tripId) : false;
+
+  const [step, setStep] = useState<Step>(draftTripValid ? 4 : (draft?.step ?? 1));
+  const [vehicleId, setVehicleId] = useState<string>(
+    (draft?.vehicleId && vehicles.some((v) => v.id === draft.vehicleId)) ? draft.vehicleId : initialVehicle.id,
+  );
   const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
-  const [style, setStyle] = useState<RouteStyle>(selectedVehicle.defaultStyle);
-  const [origin, setOrigin] = useState("Drammen");
-  const [destination, setDestination] = useState("Hardangervidda");
-  const [date, setDate] = useState("2026-06-07");
-  const [aiPrompt, setAiPrompt] = useState("");
+  const [style, setStyle] = useState<RouteStyle>(draft?.style ?? selectedVehicle.defaultStyle);
+  const [origin, setOrigin] = useState(draft?.origin ?? "Drammen");
+  const [destination, setDestination] = useState(draft?.destination ?? "Hardangervidda");
+  const [date, setDate] = useState(draft?.date ?? "2026-06-07");
+  const [aiPrompt, setAiPrompt] = useState(draft?.aiPrompt ?? "");
   const [generating, setGenerating] = useState(false);
-  const [tripId, setTripId] = useState<string | null>(null);
+  const [tripId, setTripId] = useState<string | null>(draftTripValid ? draft!.tripId! : null);
+
+  // Persist wizard state so refresh on result/step doesn't lose progress.
+  useEffect(() => {
+    saveDraft({ step, vehicleId, style, origin, destination, date, aiPrompt, tripId });
+  }, [step, vehicleId, style, origin, destination, date, aiPrompt, tripId]);
 
   const pickVehicle = (v: Vehicle) => {
     setVehicleId(v.id);
@@ -40,7 +78,6 @@ function NewTripWizard() {
   const next = () => setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
   const prev = () => {
     if (step === 4) {
-      // discard preview
       if (tripId) tripsApi.deleteTrip(tripId);
       setTripId(null);
       setStep(3);
@@ -220,7 +257,16 @@ function NewTripWizard() {
       )}
 
       {step === 4 && (
-        <PreviewStep generating={generating} tripId={tripId} onRegenerate={regenerate} onOpen={() => tripId && navigate({ to: "/trips/$tripId", params: { tripId } })} />
+        <PreviewStep
+          generating={generating}
+          tripId={tripId}
+          onRegenerate={regenerate}
+          onOpen={() => {
+            if (!tripId) return;
+            clearDraft();
+            navigate({ to: "/trips/$tripId", params: { tripId } });
+          }}
+        />
       )}
 
       {step !== 4 && (
