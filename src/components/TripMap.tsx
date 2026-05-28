@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 // for when MapTiler is actually configured.
 type RealMapProps = Props & {
   maptilerKey: string;
-  variant?: "dark" | "light";
+  variant?: "dark" | "light" | "route-only";
   onError?: (msg?: string) => void;
   onReady?: () => void;
   onStage?: (stage: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => void;
