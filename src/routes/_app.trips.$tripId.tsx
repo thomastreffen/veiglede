@@ -174,7 +174,7 @@ function TripPlanner() {
           selectedStopId={selectedStopId}
           onSelectStop={handleSelectStop}
           suggestionPins={suggestionPins}
-          hoveredSuggestionId={hoveredSuggestionId}
+          hoveredSuggestionId={null}
           height="h-72 md:h-[520px]"
         />
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
@@ -490,11 +490,12 @@ function SuggestionCard({
     onAdd(p, dayId);
     setOpen(false);
   };
+  // Hover is intentionally passive — no map sync, no popup, no flyTo.
+  // (onHover prop kept for API compat; intentionally unused.)
+  void onHover;
   return (
     <div
       className="rounded-2xl border border-border bg-surface p-4 flex flex-col hover:border-primary/50 transition-colors relative"
-      onMouseEnter={() => onHover(true)}
-      onMouseLeave={() => onHover(false)}
     >
       <div className="flex items-start gap-3">
         <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
