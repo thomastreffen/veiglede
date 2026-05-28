@@ -19,6 +19,10 @@ export const Route = createFileRoute("/_app/trips/new")({
 type Step = 1 | 2 | 3 | 4;
 
 const DRAFT_KEY = "veiglede.newTrip.draft.v1";
+// Session marker: present means "we're inside an active wizard session in this tab".
+// Persists across hard refresh (sessionStorage) but NOT across new tabs/windows,
+// and we clear it on SPA navigation away from the wizard.
+const SESSION_KEY = "veiglede.newTrip.session.v1";
 
 interface Draft {
   step: Step;
@@ -43,14 +47,38 @@ function clearDraft() {
   if (typeof localStorage === "undefined") return;
   try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
 }
+function hasActiveSession(): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  try { return sessionStorage.getItem(SESSION_KEY) === "1"; } catch { return false; }
+}
+function markSessionActive() {
+  if (typeof sessionStorage === "undefined") return;
+  try { sessionStorage.setItem(SESSION_KEY, "1"); } catch { /* ignore */ }
+}
+function clearSession() {
+  if (typeof sessionStorage === "undefined") return;
+  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+}
 
 function NewTripWizard() {
   const navigate = useNavigate();
+  const { restoreDraft: restoreParam } = Route.useSearch();
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
   const initialVehicle: Vehicle = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
   const { trips } = useTripsStore();
-  const draft = typeof window !== "undefined" ? loadDraft() : null;
+
+  // Decide once on first render whether to restore the persisted draft.
+  // Restore if: (a) explicit ?restoreDraft=1 query, OR (b) sessionStorage marker
+  // says we're still in the same in-tab wizard session (= browser refresh).
+  // Otherwise treat this as a fresh entry (new tab, or click "Ny tur" again)
+  // and start at step 1.
+  const shouldRestore = typeof window !== "undefined" && (restoreParam || hasActiveSession());
+  const draft = shouldRestore ? loadDraft() : null;
+  if (typeof window !== "undefined" && !shouldRestore) {
+    // Fresh entry — make sure no stale completed result hijacks the new flow.
+    clearDraft();
+  }
   // If a previously-persisted tripId no longer exists in the store, drop it.
   const draftTripValid = draft?.tripId ? trips.some((t) => t.id === draft.tripId) : false;
 
@@ -67,10 +95,19 @@ function NewTripWizard() {
   const [generating, setGenerating] = useState(false);
   const [tripId, setTripId] = useState<string | null>(draftTripValid ? draft!.tripId! : null);
 
+  // Mark this tab as having an active wizard session, and clear that marker
+  // on SPA navigation away. A hard refresh tears down React without running
+  // the cleanup, so the marker survives the refresh — exactly what we want.
+  useEffect(() => {
+    markSessionActive();
+    return () => { clearSession(); };
+  }, []);
+
   // Persist wizard state so refresh on result/step doesn't lose progress.
   useEffect(() => {
     saveDraft({ step, vehicleId, style, origin, destination, date, aiPrompt, tripId });
   }, [step, vehicleId, style, origin, destination, date, aiPrompt, tripId]);
+
 
   const pickVehicle = (v: Vehicle) => {
     setVehicleId(v.id);
