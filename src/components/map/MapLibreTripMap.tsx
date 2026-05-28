@@ -66,7 +66,7 @@ export function MapLibreTripMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const style = buildMaptilerStyleUrl(maptilerKey, variant);
-    if (!style) return;
+    if (!style) { onError?.(); return; }
     let map: MlMap;
     try {
       map = new maplibregl.Map({
@@ -77,19 +77,26 @@ export function MapLibreTripMap({
         attributionControl: { compact: true },
         cooperativeGestures: compact,
       });
-    } catch {
+    } catch (err) {
+      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre init failed", err);
       onError?.();
       return;
     }
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.on("load", () => setReady(true));
-    // Tile/style auth failures (bad key, network) → fall back to SVG.
+    let loaded = false;
+    map.on("load", () => { loaded = true; setReady(true); });
+    // If style/tiles fail (bad key, origin restriction, network) → fall back to SVG.
+    // We trigger fallback on ANY error if the map never loaded — covers
+    // MapTiler 401/403, DNS issues, and silent style fetch failures.
     map.on("error", (e) => {
       const status = (e as { error?: { status?: number } }).error?.status;
-      if (status === 401 || status === 403 || status === 404) onError?.();
+      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, loaded, err: e });
+      if (!loaded || status === 401 || status === 403 || status === 404) onError?.();
     });
+    // Safety net: if the map never reports `load` within 6s, fall back.
+    const t = window.setTimeout(() => { if (!loaded) onError?.(); }, 6000);
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    return () => { window.clearTimeout(t); map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

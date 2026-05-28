@@ -80,6 +80,34 @@ const DAY_COLORS = [
 export function TripMap(props: Props) {
   const [errored, setErrored] = useState(false);
   const cfg = useRuntimeMapConfig();
+
+  // Determine if we have ANY usable coords (origin or destination resolves).
+  const hasOrigin = Boolean(lookupPlace(props.trip.origin));
+  const hasDestination = Boolean(lookupPlace(props.trip.destination));
+  const hasUsableCoords = hasOrigin || hasDestination;
+
+  if (import.meta.env.DEV) {
+    // Dev-only diagnostics — no secrets, no production noise.
+    // eslint-disable-next-line no-console
+    console.debug("[TripMap]", {
+      runtimeConfigLoaded: cfg !== null,
+      hasRealMap: cfg?.hasRealMap ?? false,
+      maptilerKeyPresent: Boolean(cfg?.maptilerKey),
+      mode: errored || !cfg?.hasRealMap ? "svg" : "maplibre",
+      origin: props.trip.origin,
+      destination: props.trip.destination,
+      hasOrigin,
+      hasDestination,
+      stops: props.stops.length,
+      days: props.days.length,
+    });
+  }
+
+  // Hard placeholder when there's truly nothing to plot — never show a blank box.
+  if (!hasUsableCoords) {
+    return <PlaceholderMap height={props.height} className={props.className} />;
+  }
+
   if (cfg?.hasRealMap && cfg.maptilerKey && !errored) {
     return (
       <Suspense fallback={<SvgTripMap {...props} />}>
@@ -88,6 +116,24 @@ export function TripMap(props: Props) {
     );
   }
   return <SvgTripMap {...props} />;
+}
+
+function PlaceholderMap({ height = "h-64", className }: { height?: string; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border border-border bg-surface flex items-center justify-center p-6 text-center",
+        height,
+        className,
+      )}
+    >
+      <div className="space-y-2 max-w-xs">
+        <div className="text-3xl" aria-hidden>🗺️</div>
+        <p className="text-sm text-foreground/90 font-medium">Kartdata mangler</p>
+        <p className="text-xs text-muted-foreground">Åpne planleggeren for å finpusse ruten.</p>
+      </div>
+    </div>
+  );
 }
 
 function SvgTripMap({

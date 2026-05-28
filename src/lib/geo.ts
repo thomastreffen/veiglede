@@ -37,6 +37,9 @@ const PLACES: Record<string, LatLng> = {
   // Romsdalen / Sunnmøre
   bjorli: { lat: 62.265, lng: 8.205 },
   romsdalen: { lat: 62.499, lng: 7.776 },
+  molde: { lat: 62.738, lng: 7.161 },
+  åndalsnes: { lat: 62.567, lng: 7.689 },
+  andalsnes: { lat: 62.567, lng: 7.689 },
   ålesund: { lat: 62.472, lng: 6.149 },
   alesund: { lat: 62.472, lng: 6.149 },
   geiranger: { lat: 62.103, lng: 7.207 },
