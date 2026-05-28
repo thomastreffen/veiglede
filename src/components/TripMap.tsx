@@ -85,11 +85,18 @@ export function TripMap(props: Props) {
   const hasUsableCoords = hasOrigin || hasDestination;
 
   const useMapLibre = Boolean(cfg?.hasRealMap && cfg.maptilerKey && !errored && hasUsableCoords);
+  const showSvgFallback = !useMapLibre; // SVG is now ONLY fallback (no key, errored, or no coords)
   const mode = !hasUsableCoords
-    ? "missing"
-    : useMapLibre
-      ? (maplibreReady ? "maptiler" : "loading-maptiler")
-      : "svg";
+    ? "missing-coords"
+    : !cfg
+      ? "loading-config"
+      : !cfg.hasRealMap
+        ? "svg-fallback (no-maptiler-key)"
+        : errored
+          ? `svg-fallback (maplibre-error: ${errorMsg ?? "unknown"})`
+          : maplibreReady
+            ? "maplibre"
+            : "loading-maplibre";
 
   const routePointCount = props.days.length + 2;
   const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
@@ -123,20 +130,19 @@ export function TripMap(props: Props) {
     });
   }
 
-  // Always render SVG as the base layer. This guarantees the container is
-  // never empty, even while MapLibre is still fetching the style or if it
-  // fails silently.
   return (
-    <div className={cn("relative", props.className)}>
-      <SvgTripMap {...props} className={undefined} />
+    <div className={cn("relative", props.height, props.className)}>
+      {/* SVG fallback — only when MapLibre is unavailable, still loading config, or errored */}
+      {showSvgFallback && (
+        <SvgTripMap {...props} className={undefined} />
+      )}
+
+      {/* MapLibre — primary renderer when MapTiler is configured */}
       {useMapLibre && (
-        <div
-          aria-hidden={!maplibreReady}
-          className={cn(
-            "absolute inset-0 rounded-2xl overflow-hidden transition-opacity duration-300 bg-transparent",
-            maplibreReady ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+        <div className="absolute inset-0 rounded-2xl overflow-hidden bg-surface border border-border">
+          {!maplibreReady && (
+            <div className="absolute inset-0 bg-gradient-to-br from-surface to-background animate-pulse" />
           )}
-        >
           <Suspense fallback={null}>
             <MapLibreTripMap
               {...props}
@@ -148,21 +154,22 @@ export function TripMap(props: Props) {
           </Suspense>
         </div>
       )}
+
       {debug && (
-        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[300px]">
-          <div>mode: <span className="text-primary font-semibold">{mode}</span> · geom: <span className="text-primary font-semibold">{geomMode}</span></div>
-          <div>overlay: {String(useMapLibre && maplibreReady)} · stops: {stopsWithCoords}/{props.stops.length}</div>
-          <div>routing: {props.trip.routeProvider ?? "—"} · pts: {geom.length} (days+2={routePointCount})</div>
+        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[340px]">
+          <div>mode: <span className="text-primary font-semibold">{mode}</span></div>
+          <div>maptiler cfg: {String(Boolean(cfg?.hasRealMap))} · maplibre loaded: {String(maplibreReady)}</div>
+          <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · routing: {props.trip.routeProvider ?? "—"} · pts: {geom.length}</div>
+          <div>stops w/coords: {stopsWithCoords}/{props.stops.length} (days+2={routePointCount})</div>
           {geomFirst && geomLast && (
             <div>first: {geomFirst.lat.toFixed(3)},{geomFirst.lng.toFixed(3)} · last: {geomLast.lat.toFixed(3)},{geomLast.lng.toFixed(3)}</div>
           )}
           {geomBounds && (
             <div>bounds lat {geomBounds.minLat.toFixed(2)}→{geomBounds.maxLat.toFixed(2)} · lng {geomBounds.minLng.toFixed(2)}→{geomBounds.maxLng.toFixed(2)}</div>
           )}
-          {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
+          {errorMsg && <div className="text-destructive normal-case">last err: {errorMsg}</div>}
         </div>
       )}
-
     </div>
   );
 }
