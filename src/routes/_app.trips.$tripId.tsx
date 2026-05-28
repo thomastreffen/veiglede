@@ -57,8 +57,12 @@ function TripPlanner() {
     [trip, tripDays, tripStops],
   );
   const routePoints = useMemo(
-    () => (projection ? [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination] : []),
-    [projection],
+    () => (trip?.routeGeometry && trip.routeGeometry.length > 1
+      ? trip.routeGeometry
+      : projection
+        ? [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination]
+        : []),
+    [projection, trip?.routeGeometry],
   );
   const mergedInterests = trip
     ? Array.from(new Set([...(getVehicleById(trip.vehicleId)?.stopInterests ?? []), ...prefs.stopInterests]))
@@ -100,6 +104,7 @@ function TripPlanner() {
   const em = trip.energy ? energyMeta(trip.energy) : undefined;
   const vehicleDisplay = trip.vehicleName ?? v.label;
   const totalStops = tripStops.length;
+  const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
@@ -123,6 +128,14 @@ function TripPlanner() {
           { label: "Trip", value: trip.id },
           { label: "Days", value: tripDays.length },
           { label: "Stops", value: totalStops },
+          { label: "Selected", value: selectedStop?.id ?? "—" },
+          { label: "Placement", value: selectedStop?.placement ?? "—" },
+          { label: "Status", value: selectedStop?.routeStatus ?? "—" },
+          { label: "Stop coords", value: selectedStop?.lat != null && selectedStop?.lng != null ? `${selectedStop.lat.toFixed(4)}, ${selectedStop.lng.toFixed(4)}` : (selectedStop?.location ?? "—") },
+          { label: "Dist from route", value: selectedStop?.distanceFromRouteKm != null ? `${selectedStop.distanceFromRouteKm} km` : "—" },
+          { label: "Extra", value: selectedStop?.extraDistanceKm != null ? `+${selectedStop.extraDistanceKm} km` : "—" },
+          { label: "Route provider", value: trip.routeProvider ?? "—" },
+          { label: "Geometry pts", value: trip.routeGeometry?.length ?? 0 },
         ]}
       />
 
@@ -374,12 +387,13 @@ function TripPlanner() {
               sug={sug}
               detourMin={info.detourMin}
               distanceFromRouteKm={info.distanceFromRouteKm}
+              extraDistanceKm={info.extraDistanceKm}
               off={info.off}
               vehicleDisplay={vehicleDisplay}
               styleLabel={s.label}
               tripDays={tripDays}
               tripDestination={trip.destination}
-              onAdd={(placement, dayId) => tripsApi.addSuggestionAt(tripId, sug, placement, dayId)}
+              onAdd={(placement, dayId) => tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info)}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
             />
           ))}
@@ -473,13 +487,13 @@ function TripPlanner() {
 type Placement = "along" | "detour" | "after" | "new-day" | "day";
 
 function SuggestionCard({
-  sug, onAdd, onHover, detourMin, distanceFromRouteKm, off, vehicleDisplay, styleLabel,
+  sug, onAdd, onHover, detourMin, distanceFromRouteKm, extraDistanceKm, off, vehicleDisplay, styleLabel,
   tripDays, tripDestination,
 }: {
   sug: SuggestedStop;
   onAdd: (placement: Placement, dayId?: string) => void;
   onHover: (h: boolean) => void;
-  detourMin: number; distanceFromRouteKm: number; off: boolean;
+  detourMin: number; distanceFromRouteKm: number; extraDistanceKm: number; off: boolean;
   vehicleDisplay: string; styleLabel: string;
   tripDays: { id: string; dayNumber: number; title: string }[];
   tripDestination: string;
@@ -487,6 +501,15 @@ function SuggestionCard({
   const meta = stopMeta(sug.type);
   const [open, setOpen] = useState(false);
   const choose = (p: Placement, dayId?: string) => {
+    if (p === "along" && off) {
+      const ok = confirm(
+        `Dette ligger et stykke unna ruta (ca. ${distanceFromRouteKm} km fra ruta, +${extraDistanceKm} km og ~${detourMin} min). Vil du legge det til som avstikker?`,
+      );
+      if (!ok) return;
+      onAdd("detour", dayId);
+      setOpen(false);
+      return;
+    }
     onAdd(p, dayId);
     setOpen(false);
   };
@@ -513,6 +536,11 @@ function SuggestionCard({
           <CornerDownRight className="h-3 w-3" />
           {off ? `+${detourMin} min detour` : "På ruta"}
         </span>
+        {off && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 px-2 py-0.5 text-amber-300">
+            +{extraDistanceKm} km ekstra
+          </span>
+        )}
         <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground">
           <Navigation className="h-3 w-3" />
           {distanceFromRouteKm < 1 ? "<1 km" : `${distanceFromRouteKm} km`} fra ruta

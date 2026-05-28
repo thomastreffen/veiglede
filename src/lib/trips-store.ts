@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { lookupPlace } from "@/lib/geo";
+import { computeTimeBreakdown } from "@/lib/trip-time";
 
 export type StopType =
   | "viewpoint"
@@ -45,6 +47,10 @@ export interface Stop {
   isSuggestion?: boolean;
   isPartner?: boolean;
   isPhotoStop?: boolean;
+  placement?: "along" | "detour" | "after" | "new-day" | "day";
+  routeStatus?: "on-route" | "detour" | "suggestion";
+  distanceFromRouteKm?: number;
+  extraDistanceKm?: number;
 }
 
 export interface TripDay {
@@ -144,6 +150,13 @@ export interface SuggestedStop {
   promoted?: boolean;
   badge?: "partner" | "local" | "promoted";
   energy?: EnergySource; // for fuel/charging stops only
+}
+
+export interface SuggestedStopRouteMeta {
+  distanceFromRouteKm: number;
+  extraDistanceKm: number;
+  detourMin: number;
+  off: boolean;
 }
 
 export interface PartnerTip {
@@ -260,6 +273,29 @@ function subscribe(l: () => void) { listeners.add(l); return () => listeners.del
 function getSnapshot() { ensureInit(); return state; }
 function getServerSnapshot(): State { return EMPTY_STATE; }
 
+function refreshTripDerivedState(tripId: string) {
+  const trip = state.trips.find((t) => t.id === tripId);
+  if (!trip) return;
+  const days = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+  const dayIds = new Set(days.map((d) => d.id));
+  const stops = state.stops.filter((s) => dayIds.has(s.dayId));
+  const breakdown = computeTimeBreakdown(trip, days, stops);
+  state = {
+    ...state,
+    trips: state.trips.map((t) => (
+      t.id === tripId ? { ...t, stopsCount: stops.length, timeBreakdown: breakdown } : t
+    )),
+  };
+}
+
+function getTripIdForDay(dayId: string): string | null {
+  return state.days.find((d) => d.id === dayId)?.tripId ?? null;
+}
+
+function suggestionLoc(sug: Pick<SuggestedStop, "location" | "name">) {
+  return lookupPlace(sug.location ?? sug.name);
+}
+
 export function useTripsStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
@@ -309,6 +345,7 @@ export const tripsApi = {
   updateTrip(id: string, patch: Partial<Trip>) {
     ensureInit();
     state = { ...state, trips: state.trips.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
+    refreshTripDerivedState(id);
     persist();
   },
   /** Read the current trip + days + stops snapshot for a trip id. */
@@ -365,20 +402,38 @@ export const tripsApi = {
       distanceFromPrevKm: input.distanceFromPrevKm,
       photoOp: input.photoOp,
       promoted: input.promoted,
+      lat: input.lat,
+      lng: input.lng,
+      placement: input.placement,
+      routeStatus: input.routeStatus,
+      distanceFromRouteKm: input.distanceFromRouteKm,
+      extraDistanceKm: input.extraDistanceKm,
       order,
     };
     state = { ...state, stops: [...state.stops, stop] };
+    const tripId = getTripIdForDay(dayId);
+    if (tripId) refreshTripDerivedState(tripId);
     persist();
     return stop;
   },
   updateStop(id: string, patch: Partial<Stop>) {
     ensureInit();
+    const stop = state.stops.find((s) => s.id === id);
     state = { ...state, stops: state.stops.map((s) => (s.id === id ? { ...s, ...patch } : s)) };
+    if (stop) {
+      const tripId = getTripIdForDay(stop.dayId);
+      if (tripId) refreshTripDerivedState(tripId);
+    }
     persist();
   },
   deleteStop(id: string) {
     ensureInit();
+    const stop = state.stops.find((s) => s.id === id);
     state = { ...state, stops: state.stops.filter((s) => s.id !== id) };
+    if (stop) {
+      const tripId = getTripIdForDay(stop.dayId);
+      if (tripId) refreshTripDerivedState(tripId);
+    }
     persist();
   },
   moveStop(id: string, direction: -1 | 1) {
@@ -398,6 +453,8 @@ export const tripsApi = {
         return s;
       }),
     };
+    const tripId = getTripIdForDay(stop.dayId);
+    if (tripId) refreshTripDerivedState(tripId);
     persist();
   },
   addSuggestion(tripId: string, sug: SuggestedStop): Stop | null {
@@ -430,10 +487,12 @@ export const tripsApi = {
     sug: SuggestedStop,
     placement: "along" | "detour" | "after" | "new-day" | "day",
     targetDayId?: string,
+    routeMeta?: SuggestedStopRouteMeta,
   ): Stop | null {
     ensureInit();
     const tripDays = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
     if (tripDays.length === 0) return null;
+    const loc = suggestionLoc(sug);
     const baseInput: Partial<Stop> = {
       name: sug.name,
       type: placement === "detour" ? "detour" : sug.type,
@@ -443,6 +502,13 @@ export const tripsApi = {
       durationMin: sug.durationMin,
       photoOp: sug.photoOp,
       promoted: sug.promoted,
+      lat: loc?.lat,
+      lng: loc?.lng,
+      placement,
+      routeStatus: placement === "detour" ? "detour" : "on-route",
+      isSuggestion: true,
+      distanceFromRouteKm: routeMeta?.distanceFromRouteKm,
+      extraDistanceKm: routeMeta?.extraDistanceKm,
     };
     if (placement === "along" || placement === "detour") {
       // insert before the arrival (last stop) of the last day
