@@ -142,8 +142,23 @@ export function MapLibreTripMap({
   });
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
-  const styleUrl = useMemo(() => buildMaptilerStyleUrl(maptilerKey, variant), [maptilerKey, variant]);
-  const styleId = variant === "light" ? "streets-v2" : "streets-v2-dark";
+  // A blank one-layer style used by the "Force route-only" diagnostic. If the
+  // orange line is visible against this, the issue is MapTiler styling; if not,
+  // the issue is the route layer / canvas rendering itself.
+  const routeOnlyStyle = useMemo<maplibregl.StyleSpecification>(() => ({
+    version: 8,
+    sources: {},
+    layers: [{ id: "vg-bg", type: "background", paint: { "background-color": "#1f2937" } }],
+  }), []);
+  const styleSpec: string | maplibregl.StyleSpecification = useMemo(
+    () => variant === "route-only" ? routeOnlyStyle : buildMaptilerStyleUrl(maptilerKey, variant),
+    [maptilerKey, variant, routeOnlyStyle],
+  );
+  const styleId = variant === "route-only"
+    ? "route-only"
+    : variant === "light"
+      ? "streets-v2"
+      : "streets-v2-dark";
 
   // Signal mount immediately so the parent's diagnostic badge shows progress.
   useEffect(() => { onStage?.("mounted"); }, [onStage]);
@@ -159,6 +174,14 @@ export function MapLibreTripMap({
     let tilesLoaded = false;
     let centerLngLat: [number, number] | null = null;
     let zoom: number | null = null;
+    let canvasComputedOpacity: string | null = null;
+    let canvasComputedDisplay: string | null = null;
+    let canvasComputedVisibility: string | null = null;
+    let canvasComputedBackground: string | null = null;
+    let featuresAtCenter = 0;
+    const baseLayerIds: string[] = [];
+    let firstSymbolLayerId: string | null = null;
+    let firstLineLayerId: string | null = null;
     if (map) {
       try {
         const s = map.getStyle();
@@ -171,11 +194,30 @@ export function MapLibreTripMap({
         const c = map.getCenter();
         centerLngLat = [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))];
         zoom = Number(map.getZoom().toFixed(2));
+        for (const layer of s?.layers ?? []) {
+          if (layer.type === "background" || layer.type === "fill" || layer.type === "raster") {
+            if (baseLayerIds.length < 4) baseLayerIds.push(layer.id);
+          }
+          if (!firstSymbolLayerId && layer.type === "symbol") firstSymbolLayerId = layer.id;
+          if (!firstLineLayerId && layer.type === "line") firstLineLayerId = layer.id;
+        }
+        try {
+          const canvas = map.getCanvas();
+          const cs = window.getComputedStyle(canvas);
+          canvasComputedOpacity = cs.opacity;
+          canvasComputedDisplay = cs.display;
+          canvasComputedVisibility = cs.visibility;
+          canvasComputedBackground = cs.backgroundColor;
+        } catch { /* canvas not ready */ }
+        try {
+          const cp = map.project(map.getCenter());
+          featuresAtCenter = map.queryRenderedFeatures([cp.x, cp.y]).length;
+        } catch { /* not ready */ }
       } catch { /* style not ready */ }
     }
     onDiagnostics({
       styleId,
-      styleHost: "api.maptiler.com",
+      styleHost: variant === "route-only" ? "inline" : "api.maptiler.com",
       styleLoaded,
       tilesLoaded,
       sourceCount,
@@ -198,6 +240,14 @@ export function MapLibreTripMap({
       resizeObserverFires: sizeInfoRef.current.resizeObserverFires,
       mapResizeCalls: sizeInfoRef.current.mapResizeCalls,
       firstValidSizeTs: sizeInfoRef.current.firstValidSizeTs,
+      canvasComputedOpacity,
+      canvasComputedDisplay,
+      canvasComputedVisibility,
+      canvasComputedBackground,
+      featuresAtCenter,
+      baseLayerIds,
+      firstSymbolLayerId,
+      firstLineLayerId,
     });
   }, [onDiagnostics, styleId]);
 
