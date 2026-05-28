@@ -21,9 +21,23 @@ export type MapLibreStage =
   | "firstRender"
   | "routeLayerAdded";
 
+export type MapLibreReadinessSource =
+  | "render"
+  | "idle"
+  | "sourcedata"
+  | "features"
+  | "styleLoaded"
+  | "manual"
+  | null;
+
 export interface MapLibreDiagnostics {
   styleId: string;
   styleHost: string;
+  paintedEnough: boolean;
+  readinessSource: MapLibreReadinessSource;
+  renderEventCount: number;
+  idleEventCount: number;
+  sourceDataEventCount: number;
   styleLoaded: boolean;
   tilesLoaded: boolean;
   sourceCount: number;
@@ -150,6 +164,11 @@ export function MapLibreTripMap({
     sources: {},
     layers: [{ id: "vg-bg", type: "background", paint: { "background-color": "#1f2937" } }],
   }), []);
+  const bootstrapStyle = useMemo<maplibregl.StyleSpecification>(() => ({
+    version: 8,
+    sources: {},
+    layers: [{ id: "vg-bootstrap-bg", type: "background", paint: { "background-color": "#0f172a" } }],
+  }), []);
   const styleSpec: string | maplibregl.StyleSpecification = useMemo(
     () => variant === "route-only" ? routeOnlyStyle : buildMaptilerStyleUrl(maptilerKey, variant),
     [maptilerKey, variant, routeOnlyStyle],
@@ -163,15 +182,35 @@ export function MapLibreTripMap({
   // Signal mount immediately so the parent's diagnostic badge shows progress.
   useEffect(() => { onStage?.("mounted"); }, [onStage]);
 
-  const emitDiagnostics = useCallback(() => {
-    if (!onDiagnostics) return;
-    const map = mapRef.current;
+  const readySignalRef = useRef(false);
+  const readinessInfoRef = useRef<{
+    paintedEnough: boolean;
+    readinessSource: MapLibreReadinessSource;
+    renderEventCount: number;
+    idleEventCount: number;
+    sourceDataEventCount: number;
+  }>({
+    paintedEnough: false,
+    readinessSource: null,
+    renderEventCount: 0,
+    idleEventCount: 0,
+    sourceDataEventCount: 0,
+  });
+
+  const isFatalMapError = useCallback((status: number | null, msg: string | null) => {
+    if (status === 401 || status === 403) return true;
+    if (status === 404 && /(style|tile)/i.test(msg ?? "")) return true;
+    return false;
+  }, []);
+
+  const inspectPaintState = useCallback((map: MlMap | null = mapRef.current) => {
     let sourceCount = 0;
     let layerCount = 0;
     let routeSourceAdded = false;
     let routeLayerAdded = false;
     let styleLoaded = false;
     let tilesLoaded = false;
+    let loaded = false;
     let centerLngLat: [number, number] | null = null;
     let zoom: number | null = null;
     let canvasComputedOpacity: string | null = null;
@@ -179,9 +218,16 @@ export function MapLibreTripMap({
     let canvasComputedVisibility: string | null = null;
     let canvasComputedBackground: string | null = null;
     let featuresAtCenter = 0;
+    let canvasWidth = 0;
+    let canvasHeight = 0;
     const baseLayerIds: string[] = [];
     let firstSymbolLayerId: string | null = null;
     let firstLineLayerId: string | null = null;
+
+    const wrapperRect = containerRef.current?.getBoundingClientRect();
+    const wrapperW = Math.round(wrapperRect?.width ?? sizeInfoRef.current.lastWrapperRect?.w ?? 0);
+    const wrapperH = Math.round(wrapperRect?.height ?? sizeInfoRef.current.lastWrapperRect?.h ?? 0);
+
     if (map) {
       try {
         const s = map.getStyle();
@@ -191,6 +237,7 @@ export function MapLibreTripMap({
         routeLayerAdded = !!map.getLayer("vg-route-line");
         styleLoaded = !!map.isStyleLoaded?.();
         tilesLoaded = !!map.areTilesLoaded?.();
+        loaded = !!map.loaded?.();
         const c = map.getCenter();
         centerLngLat = [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))];
         zoom = Number(map.getZoom().toFixed(2));
@@ -204,6 +251,9 @@ export function MapLibreTripMap({
         try {
           const canvas = map.getCanvas();
           const cs = window.getComputedStyle(canvas);
+          const rect = canvas.getBoundingClientRect();
+          canvasWidth = Math.round(rect.width);
+          canvasHeight = Math.round(rect.height);
           canvasComputedOpacity = cs.opacity;
           canvasComputedDisplay = cs.display;
           canvasComputedVisibility = cs.visibility;
@@ -215,31 +265,28 @@ export function MapLibreTripMap({
         } catch { /* not ready */ }
       } catch { /* style not ready */ }
     }
-    onDiagnostics({
-      styleId,
-      styleHost: variant === "route-only" ? "inline" : "api.maptiler.com",
-      styleLoaded,
-      tilesLoaded,
+
+    const fatalError = isFatalMapError(lastErrorRef.current.status, lastErrorRef.current.msg);
+    const paintedEnough =
+      wrapperW > 0 &&
+      wrapperH > 0 &&
+      canvasWidth > 0 &&
+      canvasHeight > 0 &&
+      sourceCount > 0 &&
+      layerCount > 0 &&
+      !fatalError &&
+      (featuresAtCenter > 0 || routeLayerAdded || baseLayerIds.length > 0 || loaded || tilesLoaded);
+
+    return {
       sourceCount,
       layerCount,
       routeSourceAdded,
       routeLayerAdded,
-      lastError: lastErrorRef.current.msg,
-      lastErrorHost: lastErrorRef.current.host,
-      lastErrorStatus: lastErrorRef.current.status,
-      firstPointApp: fitInfoRef.current.firstApp,
-      firstPointMaplibre: fitInfoRef.current.firstMl,
-      fitBoundsSW: fitInfoRef.current.sw,
-      fitBoundsNE: fitInfoRef.current.ne,
+      styleLoaded,
+      tilesLoaded,
+      loaded,
       centerLngLat,
       zoom,
-      waitCount: sizeInfoRef.current.waitCount,
-      lastWrapperRect: sizeInfoRef.current.lastWrapperRect,
-      mapCreationAttempted: sizeInfoRef.current.mapCreationAttempted,
-      mapCreationSkippedReason: sizeInfoRef.current.mapCreationSkippedReason,
-      resizeObserverFires: sizeInfoRef.current.resizeObserverFires,
-      mapResizeCalls: sizeInfoRef.current.mapResizeCalls,
-      firstValidSizeTs: sizeInfoRef.current.firstValidSizeTs,
       canvasComputedOpacity,
       canvasComputedDisplay,
       canvasComputedVisibility,
@@ -248,8 +295,76 @@ export function MapLibreTripMap({
       baseLayerIds,
       firstSymbolLayerId,
       firstLineLayerId,
+      paintedEnough,
+      canvasWidth,
+      canvasHeight,
+    };
+  }, [isFatalMapError]);
+
+  const promoteReadiness = useCallback((
+    source: Exclude<MapLibreReadinessSource, null>,
+    snapshot = inspectPaintState(),
+  ) => {
+    const map = mapRef.current;
+    readinessInfoRef.current.paintedEnough = snapshot.paintedEnough;
+    if (!snapshot.paintedEnough || !map) return false;
+
+    readinessInfoRef.current.readinessSource = snapshot.featuresAtCenter > 0 ? "features" : source;
+    if (readySignalRef.current) return true;
+
+    readySignalRef.current = true;
+    setReady(true);
+    onReady?.();
+    try {
+      map.resize();
+      sizeInfoRef.current.mapResizeCalls += 1;
+    } catch { /* ignore */ }
+    return true;
+  }, [inspectPaintState, onReady]);
+
+  const emitDiagnostics = useCallback(() => {
+    if (!onDiagnostics) return;
+    const snapshot = inspectPaintState();
+    onDiagnostics({
+      styleId,
+      styleHost: variant === "route-only" ? "inline" : "api.maptiler.com",
+      paintedEnough: snapshot.paintedEnough,
+      readinessSource: readinessInfoRef.current.readinessSource,
+      renderEventCount: readinessInfoRef.current.renderEventCount,
+      idleEventCount: readinessInfoRef.current.idleEventCount,
+      sourceDataEventCount: readinessInfoRef.current.sourceDataEventCount,
+      styleLoaded: snapshot.styleLoaded,
+      tilesLoaded: snapshot.tilesLoaded,
+      sourceCount: snapshot.sourceCount,
+      layerCount: snapshot.layerCount,
+      routeSourceAdded: snapshot.routeSourceAdded,
+      routeLayerAdded: snapshot.routeLayerAdded,
+      lastError: lastErrorRef.current.msg,
+      lastErrorHost: lastErrorRef.current.host,
+      lastErrorStatus: lastErrorRef.current.status,
+      firstPointApp: fitInfoRef.current.firstApp,
+      firstPointMaplibre: fitInfoRef.current.firstMl,
+      fitBoundsSW: fitInfoRef.current.sw,
+      fitBoundsNE: fitInfoRef.current.ne,
+      centerLngLat: snapshot.centerLngLat,
+      zoom: snapshot.zoom,
+      waitCount: sizeInfoRef.current.waitCount,
+      lastWrapperRect: sizeInfoRef.current.lastWrapperRect,
+      mapCreationAttempted: sizeInfoRef.current.mapCreationAttempted,
+      mapCreationSkippedReason: sizeInfoRef.current.mapCreationSkippedReason,
+      resizeObserverFires: sizeInfoRef.current.resizeObserverFires,
+      mapResizeCalls: sizeInfoRef.current.mapResizeCalls,
+      firstValidSizeTs: sizeInfoRef.current.firstValidSizeTs,
+      canvasComputedOpacity: snapshot.canvasComputedOpacity,
+      canvasComputedDisplay: snapshot.canvasComputedDisplay,
+      canvasComputedVisibility: snapshot.canvasComputedVisibility,
+      canvasComputedBackground: snapshot.canvasComputedBackground,
+      featuresAtCenter: snapshot.featuresAtCenter,
+      baseLayerIds: snapshot.baseLayerIds,
+      firstSymbolLayerId: snapshot.firstSymbolLayerId,
+      firstLineLayerId: snapshot.firstLineLayerId,
     });
-  }, [onDiagnostics, styleId]);
+  }, [inspectPaintState, onDiagnostics, styleId, variant]);
 
   // Initialize map once — but only after the container actually has
   // non-zero dimensions. ML canvas creation against a 0×0 container leaves
@@ -290,7 +405,7 @@ export function MapLibreTripMap({
       try {
         map = new maplibregl.Map({
           container: containerRef.current,
-          style: styleSpec,
+          style: bootstrapStyle,
           center: [projected.origin.lng, projected.origin.lat],
           zoom: 5,
           attributionControl: { compact: true },
@@ -306,22 +421,29 @@ export function MapLibreTripMap({
       }
       // Immediately call resize so MapLibre matches the wrapper exactly.
       try { map.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+      mapRef.current = map;
 
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-      let signaled = false;
-      const signalReady = () => {
-        if (signaled) return;
-        if (!map.isStyleLoaded?.()) return;
-        signaled = true;
-        setReady(true);
-        onReady?.();
-        try { map.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+      const updateReadiness = (source: Exclude<MapLibreReadinessSource, null>) => {
+        const snapshot = inspectPaintState(map);
+        promoteReadiness(source, snapshot);
+        emitDiagnostics();
       };
-      map.on("load", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
-      map.on("styledata", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
-      map.on("sourcedata", () => emitDiagnostics());
-      map.on("render", () => { onStage?.("firstRender"); signalReady(); });
-      map.on("idle", () => { signalReady(); emitDiagnostics(); });
+      map.on("load", () => { onStage?.("styleLoaded"); updateReadiness("styleLoaded"); });
+      map.on("styledata", () => { onStage?.("styleLoaded"); updateReadiness("styleLoaded"); });
+      map.on("sourcedata", () => {
+        readinessInfoRef.current.sourceDataEventCount += 1;
+        updateReadiness("sourcedata");
+      });
+      map.on("render", () => {
+        readinessInfoRef.current.renderEventCount += 1;
+        onStage?.("firstRender");
+        updateReadiness("render");
+      });
+      map.on("idle", () => {
+        readinessInfoRef.current.idleEventCount += 1;
+        updateReadiness("idle");
+      });
       map.on("error", (e) => {
         const errAny = e as { error?: { status?: number; message?: string; url?: string } };
         const status = errAny.error?.status ?? null;
@@ -330,9 +452,10 @@ export function MapLibreTripMap({
         let host: string | null = null;
         try { if (url) host = new URL(url).host; } catch { /* ignore */ }
         lastErrorRef.current = { msg, host, status };
+        readinessInfoRef.current.paintedEnough = false;
         emitDiagnostics();
-        if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, host, msg, signaled });
-        if (!signaled || status === 401 || status === 403) {
+        if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, host, msg, ready: readySignalRef.current });
+        if (!readySignalRef.current || isFatalMapError(status, msg)) {
           onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
         }
       });
@@ -341,7 +464,12 @@ export function MapLibreTripMap({
         if (features.length === 0) onSelectStop?.(null);
       });
 
-      mapRef.current = map;
+      try {
+        map.setStyle(styleSpec);
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug("[TripMap] initial setStyle failed", err);
+      }
+      updateReadiness("manual");
       emitDiagnostics();
     };
 
@@ -355,7 +483,11 @@ export function MapLibreTripMap({
         if (r) {
           sizeInfoRef.current.lastWrapperRect = { w: Math.round(r.width), h: Math.round(r.height) };
           sizeInfoRef.current.resizeObserverFires += 1;
-          try { mapRef.current.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+          try {
+            mapRef.current.resize();
+            sizeInfoRef.current.mapResizeCalls += 1;
+          } catch { /* ignore */ }
+          promoteReadiness("manual");
           emitDiagnostics();
         }
       }
@@ -370,7 +502,7 @@ export function MapLibreTripMap({
       if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bootstrapStyle, emitDiagnostics, inspectPaintState, isFatalMapError, onError, onSelectStop, onStage, projected.origin.lat, projected.origin.lng, promoteReadiness, styleSpec]);
 
   // Hot-swap style when the variant prop changes (e.g. debug "Use streets style").
   useEffect(() => {

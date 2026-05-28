@@ -99,18 +99,19 @@ export function TripMap(props: Props) {
   const hasOrigin = Boolean(props.trip.originLoc) || Boolean(lookupPlace(props.trip.origin));
   const hasDestination = Boolean(props.trip.destinationLoc) || Boolean(lookupPlace(props.trip.destination));
   const hasUsableCoords = hasOrigin || hasDestination;
+  const paintedEnough = Boolean(diag?.paintedEnough);
 
   const canTryMapLibre = Boolean(
-    cfg?.hasRealMap && cfg.maptilerKey && (!errored || forced) && (!timedOut || forced) && (hasUsableCoords || forced),
+    cfg?.hasRealMap && cfg.maptilerKey && (!errored || forced) && (hasUsableCoords || paintedEnough || forced),
   );
 
   // Safety timeout: if MapLibre never visibly renders within 6s, mark as
   // timed-out so the SVG fallback stays visible. Disabled when forced.
   React.useEffect(() => {
-    if (!canTryMapLibre || maplibreReady || forced) return;
+    if (!canTryMapLibre || maplibreReady || paintedEnough || forced) return;
     const t = window.setTimeout(() => setTimedOut(true), 6000);
     return () => window.clearTimeout(t);
-  }, [canTryMapLibre, maplibreReady, forced]);
+  }, [canTryMapLibre, maplibreReady, paintedEnough, forced]);
 
   // Verify MapLibre canvas is actually painted (non-zero size, has GL context).
   const mlContainerRef = useRef<HTMLDivElement | null>(null);
@@ -143,7 +144,7 @@ export function TripMap(props: Props) {
   // with non-zero size. Otherwise we'd lie about maplibre-visible while the
   // user stares at the SVG underneath.
   const canvasPainted = canvasInfo.hasCanvas && canvasInfo.cw > 0 && canvasInfo.ch > 0;
-  const mapLibreVisible = canTryMapLibre && (forced || (maplibreReady && canvasPainted));
+  const mapLibreVisible = canTryMapLibre && (forced || ((maplibreReady || paintedEnough) && canvasPainted));
   const fallbackReason = !hasUsableCoords
     ? "no-coords"
     : !cfg
@@ -153,8 +154,10 @@ export function TripMap(props: Props) {
         : errored
           ? `maplibre-error: ${errorMsg ?? "unknown"}`
           : timedOut
-            ? "maplibre-timeout (no firstRender within 6s)"
-            : !maplibreReady
+            ? paintedEnough
+              ? null
+              : "maplibre-timeout (no reliable paint signal within 6s)"
+            : !(maplibreReady || paintedEnough)
               ? "loading-maplibre"
               : !canvasPainted
                 ? "maplibre-canvas-not-painted"
@@ -252,6 +255,8 @@ export function TripMap(props: Props) {
           <div>visible layer: <span className="text-primary font-semibold normal-case">{visibleLayer}</span></div>
           <div>cfg.hasRealMap: {String(Boolean(cfg?.hasRealMap))} · keyLen: {cfg?.maptilerKey?.length ?? 0}</div>
           <div>style: <span className="normal-case">{diag?.styleId ?? styleVariant} @ {diag?.styleHost ?? "—"}</span></div>
+          <div>paintedEnough: {String(diag?.paintedEnough ?? false)} · readiness: <span className="normal-case">{diag?.readinessSource ?? "—"}</span></div>
+          <div>events: render {diag?.renderEventCount ?? 0} · idle {diag?.idleEventCount ?? 0} · sourcedata {diag?.sourceDataEventCount ?? 0}</div>
           <div>styleLoaded: {String(diag?.styleLoaded ?? false)} · tilesLoaded: {String(diag?.tilesLoaded ?? false)}</div>
           <div>sources: {diag?.sourceCount ?? "—"} · layers: {diag?.layerCount ?? "—"}</div>
           <div>route src: {String(diag?.routeSourceAdded ?? false)} · route layer: {String(diag?.routeLayerAdded ?? false)} · paint: #f59e3a / 7px</div>
