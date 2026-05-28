@@ -457,43 +457,78 @@ export function MapLibreTripMap({
       const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
       const selected = selectedStopId === m.stop.id;
       const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
-      const el = stopEl(meta.emoji, color, selected, status === "detour" ? "detour" : "on-route");
-      el.title = `${m.stop.name} · ${meta.label} · ${status === "detour" ? "avstikker" : "på rute"}`;
+      const isDetour = status === "detour";
+      const el = stopEl(meta.emoji, isDetour ? "#f0b429" : color, selected, isDetour ? "detour" : "on-route");
+      el.title = `${m.stop.name} · ${meta.label} · ${isDetour ? "avstikker" : "på rute"}`;
       const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
-      const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" })
-        .setHTML(
-          `<div style="font-family:inherit;padding:2px 4px;max-width:220px;">
-            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${color};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)} · ${status === "detour" ? "avstikker" : "på rute"}</div>
+      const labelColor = isDetour ? "#b07a00" : color;
+      const extraLine = isDetour && (m.stop.extraDistanceKm != null || m.stop.distanceFromRouteKm != null)
+        ? `<div style="font-size:11px;color:#b07a00;margin-top:4px;font-weight:600;">Avstikker${m.stop.extraDistanceKm != null ? ` +${m.stop.extraDistanceKm} km` : ""}${m.stop.distanceFromRouteKm != null ? ` · ${m.stop.distanceFromRouteKm} km fra ruta` : ""}</div>`
+        : m.stop.distanceFromRouteKm != null
+          ? `<div style="font-size:11px;color:#555;margin-top:2px;">📍 ${m.stop.distanceFromRouteKm} km fra ruta${m.stop.extraDistanceKm != null ? ` · +${m.stop.extraDistanceKm} km` : ""}</div>`
+          : "";
+      const promoteBtn = isDetour
+        ? `<button data-vg-promote="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #2d8a5f;color:#2d8a5f;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Gjør til via-punkt</button>`
+        : "";
+      const removeLabel = isDetour ? "Fjern avstikker" : "Fjern fra rute";
+      const popupHtml = `<div style="font-family:inherit;padding:2px 4px;max-width:240px;">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${labelColor};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)} · ${isDetour ? "avstikker" : "på rute"}</div>
             <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
             ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
-            ${m.stop.distanceFromRouteKm != null ? `<div style="font-size:11px;color:#555;margin-top:2px;">📍 ${m.stop.distanceFromRouteKm} km fra rute${m.stop.extraDistanceKm != null ? ` · +${m.stop.extraDistanceKm} km` : ""}</div>` : ""}
+            ${extraLine}
             ${durationStr ? `<div style="font-size:11px;color:#555;margin-top:2px;">⏱ ${durationStr}</div>` : ""}
-            <button data-vg-remove="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d33;color:#d33;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Fjern fra rute</button>
-          </div>`,
-        );
-      el.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        onSelectStop?.(m.stop.id);
-        if (!popup.isOpen()) marker.togglePopup();
-      });
-      const marker = new maplibregl.Marker({ element: el }).setLngLat([m.loc.lng, m.loc.lat]).addTo(map);
-      marker.setPopup(popup);
-      if (selected && !popup.isOpen()) {
-        marker.togglePopup();
-        // Wire the Fjern button via event delegation on the popup element.
+            ${promoteBtn}
+            <button data-vg-center="${m.stop.id}" style="margin-top:6px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #ccc;color:#333;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Vis i kart</button>
+            <button data-vg-remove="${m.stop.id}" style="margin-top:6px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d33;color:#d33;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">${removeLabel}</button>
+          </div>`;
+      const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" }).setHTML(popupHtml);
+
+      const wirePopupActions = () => {
         requestAnimationFrame(() => {
           const popupEl = popup.getElement();
-          const btn = popupEl?.querySelector<HTMLButtonElement>(`[data-vg-remove="${m.stop.id}"]`);
-          btn?.addEventListener("click", (ev) => {
+          if (!popupEl) return;
+          popupEl.querySelector<HTMLButtonElement>(`[data-vg-remove="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
             try { tripsApi.deleteStop(m.stop.id); } catch { /* noop */ }
             onSelectStop?.(null);
-            toast.success("Stoppet fjernet. Ruten oppdateres.");
+            toast.success(isDetour ? "Avstikker fjernet." : "Stoppet fjernet. Ruten oppdateres.");
+          });
+          popupEl.querySelector<HTMLButtonElement>(`[data-vg-promote="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            try {
+              tripsApi.updateStop(m.stop.id, {
+                placement: "along",
+                routeStatus: "on-route",
+                type: m.stop.type === "detour" ? "attraction" : m.stop.type,
+              });
+            } catch { /* noop */ }
+            toast.success("Lagt inn som via-punkt. Ruten beregnes på nytt.");
+          });
+          popupEl.querySelector<HTMLButtonElement>(`[data-vg-center="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            try { map.flyTo({ center: [m.loc.lng, m.loc.lat], zoom: Math.max(map.getZoom(), 9), duration: 600 }); } catch { /* noop */ }
           });
         });
+      };
+
+      popup.on("open", wirePopupActions);
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([m.loc.lng, m.loc.lat]).addTo(map);
+      marker.setPopup(popup);
+      // Reliable click: always select; opening is owned by MapLibre's
+      // default click handler on the marker element. Calling togglePopup
+      // here as well would re-close a freshly-opened popup, which is the
+      // "popup gets stuck" symptom users hit.
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        onSelectStop?.(m.stop.id);
+      });
+      if (selected && !popup.isOpen()) {
+        marker.togglePopup();
       }
       markersRef.current.push(marker);
     });
+
 
     suggestionPins.forEach((p) => {
       const active = hoveredSuggestionId === p.id;
