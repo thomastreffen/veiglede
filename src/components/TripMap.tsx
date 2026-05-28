@@ -122,7 +122,13 @@ export function TripMap(props: Props) {
   const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
 
   const geom = props.trip.routeGeometry ?? [];
-  const geomMode = geom.length > 4 ? (props.trip.routeProvider === "ors" ? "real-geometry" : "demo-geometry") : "missing";
+  const geomMode = geom.length < 2
+    ? "missing"
+    : props.trip.routeProvider === "ors"
+      ? "ors-routeGeometry"
+      : geom.length > 100
+        ? "trip-routeGeometry"
+        : "demo-generated";
 
   const onStage = React.useCallback((s: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => {
     setStages((prev) => prev[s] ? prev : { ...prev, [s]: true });
