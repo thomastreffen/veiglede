@@ -153,7 +153,7 @@ export const Route = createFileRoute("/api/public/directions")({
           //            and a per-step summary at properties.extras.waytypes.summary
           let ferryDurationSec: number | null = null;
           let ferryDistanceM: number | null = null;
-          const extras = feat?.properties?.extras?.waytypes;
+          const extras = feat?.properties?.extras?.waytype;
           if (extras?.summary && Array.isArray(extras.summary)) {
             const ferry = extras.summary.find((s: { value: number }) => s.value === 8);
             if (ferry) {
