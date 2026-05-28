@@ -753,3 +753,48 @@ function formatPauseLabel(min: number): string {
   }
   return `hvert ${min}. minutt`;
 }
+
+/**
+ * Detour totals — when one or more stops are flagged as detours, show
+ * the user how the trip is composed: base route, detour extras, and the
+ * total including detours. If there are no detours, render nothing.
+ */
+function DetourTotals({
+  trip, stops,
+}: {
+  trip: { distanceKm: number; drivingTime: string; routeDistanceKm?: number; routeDurationMin?: number };
+  stops: { routeStatus?: string; extraDistanceKm?: number }[];
+}) {
+  const detours = stops.filter((s) => s.routeStatus === "detour");
+  if (detours.length === 0) return null;
+  const extraKm = detours.reduce((sum, s) => sum + (s.extraDistanceKm ?? 0), 0);
+  // 60 km/h average for detour spurs (round-trip already baked into extraKm).
+  const extraMin = Math.round(extraKm * 60 / 60);
+  const baseKm = trip.routeDistanceKm ?? trip.distanceKm;
+  const baseMin = trip.routeDurationMin ?? 0;
+  const totalKm = Math.round((baseKm + extraKm) * 10) / 10;
+  const totalMin = baseMin + extraMin;
+  return (
+    <div className="mt-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-amber-300 font-bold">Med avstikker</p>
+      <div className="mt-2 grid grid-cols-3 gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Hovedrute</p>
+          <p className="mt-0.5 font-semibold">{Math.round(baseKm)} km</p>
+          <p className="text-[11px] text-muted-foreground">{trip.drivingTime}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-amber-300">Avstikkere ({detours.length})</p>
+          <p className="mt-0.5 font-semibold text-amber-300">+{Math.round(extraKm * 10) / 10} km</p>
+          <p className="text-[11px] text-amber-200/80">+{formatDuration(extraMin)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-foreground">Total</p>
+          <p className="mt-0.5 font-semibold">{totalKm} km</p>
+          <p className="text-[11px] text-muted-foreground">{formatDuration(totalMin)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
