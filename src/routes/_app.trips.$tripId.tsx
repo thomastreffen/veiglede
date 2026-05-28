@@ -138,6 +138,11 @@ function TripPlanner() {
           { label: "Extra", value: selectedStop?.extraDistanceKm != null ? `+${selectedStop.extraDistanceKm} km` : "—" },
           { label: "Route provider", value: trip.routeProvider ?? "—" },
           { label: "Geometry pts", value: trip.routeGeometry?.length ?? 0 },
+          { label: "Waypoints hash", value: (trip.routeWaypointsHash ?? "—").slice(0, 24) },
+          { label: "On-route stops", value: tripStops.filter((s) => (s.routeStatus ?? "on-route") === "on-route" && s.lat != null).length },
+          { label: "Detour stops", value: tripStops.filter((s) => s.routeStatus === "detour").length },
+          { label: "Route dist", value: trip.routeDistanceKm != null ? `${trip.routeDistanceKm} km` : "—" },
+          { label: "Route time", value: trip.routeDurationMin != null ? `${trip.routeDurationMin} min` : "—" },
         ]}
       />
 
