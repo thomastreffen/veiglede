@@ -80,6 +80,8 @@ export function TripMap(props: Props) {
   const [timedOut, setTimedOut] = useState(false);
   const [forced, setForced] = useState(false);
   const [hideSvg, setHideSvg] = useState(false);
+  const [styleVariant, setStyleVariant] = useState<"dark" | "light">("dark");
+  const [diag, setDiag] = useState<import("./map/MapLibreTripMap").MapLibreDiagnostics | null>(null);
   const [stages, setStages] = useState<{
     mounted: boolean; mapCreated: boolean; styleLoaded: boolean;
     firstRender: boolean; routeLayerAdded: boolean;
