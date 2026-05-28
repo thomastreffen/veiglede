@@ -215,8 +215,25 @@ export function MapLibreTripMap({
       const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
       const selected = selectedStopId === m.stop.id;
       const el = stopEl(meta.emoji, color, selected);
-      el.addEventListener("click", () => onSelectStop?.(selected ? null : m.stop.id));
-      addMarker(m.loc, el);
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        onSelectStop?.(selected ? null : m.stop.id);
+      });
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([m.loc.lng, m.loc.lat]).addTo(map);
+      if (selected) {
+        const popup = new maplibregl.Popup({ offset: 22, closeButton: false, className: "vg-popup" })
+          .setHTML(
+            `<div style="font-family:inherit;padding:2px 4px;max-width:200px;">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${color};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)}</div>
+              <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
+              ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
+            </div>`,
+          );
+        marker.setPopup(popup);
+        // Open popup imperatively (Marker.togglePopup opens if closed)
+        marker.togglePopup();
+      }
+      markersRef.current.push(marker);
     });
 
     // Suggestion pins
