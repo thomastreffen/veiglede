@@ -20,6 +20,19 @@ export interface RouteResult {
   geometry: LatLng[];
   provider: "ors" | "demo" | "fallback";
   warnings?: string[];
+  // Routing v1.1 — honest debug fields. These are populated by the server
+  // route from the raw ORS response so the UI can verify nothing is being
+  // multiplied client-side and the debug panel can show source-of-truth.
+  profile?: string;
+  avoidOptions?: { highways: boolean; ferries: boolean };
+  rawDistanceMeters?: number;
+  rawDurationSeconds?: number;
+  ferryDistanceKm?: number;
+  ferryDurationMin?: number;
+  /** Straight-line haversine km × 1.25 road factor (for fallback comparison only). */
+  fallbackEstimateKm?: number;
+  /** Straight-line based duration estimate at cruise speed (for comparison only). */
+  fallbackEstimateMin?: number;
 }
 
 // Haversine distance in km
@@ -45,20 +58,29 @@ function interpolateGeometry(a: LatLng, b: LatLng, steps = 24): LatLng[] {
   return pts;
 }
 
-export function fallbackRoute(input: GetRouteInput, warning?: string): RouteResult {
-  const km = Math.round(distKm(input.origin, input.destination) * 1.25); // road factor
+function fallbackEstimate(input: GetRouteInput): { km: number; min: number } {
+  const km = Math.round(distKm(input.origin, input.destination) * 1.25);
   const speedKmh = input.routeStyle === "fastest" ? 75 : 60;
+  return { km, min: Math.round((km / speedKmh) * 60) };
+}
+
+export function fallbackRoute(input: GetRouteInput, warning?: string): RouteResult {
+  const est = fallbackEstimate(input);
   return {
-    distanceKm: km,
-    durationMin: Math.round((km / speedKmh) * 60),
+    distanceKm: est.km,
+    durationMin: est.min,
     geometry: interpolateGeometry(input.origin, input.destination, 32),
     provider: "fallback",
     warnings: warning ? [warning] : undefined,
+    fallbackEstimateKm: est.km,
+    fallbackEstimateMin: est.min,
+    avoidOptions: { highways: !!input.avoidHighways, ferries: !!input.avoidFerries },
   };
 }
 
 export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
   if (typeof fetch === "undefined") return fallbackRoute(input, "no-fetch");
+  const est = fallbackEstimate(input);
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 7000);
@@ -88,6 +110,14 @@ export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
       geometry: data.geometry,
       provider: (data.provider as RouteResult["provider"]) ?? "fallback",
       warnings: data.warnings,
+      profile: data.profile,
+      avoidOptions: data.avoidOptions ?? { highways: !!input.avoidHighways, ferries: !!input.avoidFerries },
+      rawDistanceMeters: data.rawDistanceMeters,
+      rawDurationSeconds: data.rawDurationSeconds,
+      ferryDistanceKm: data.ferryDistanceKm,
+      ferryDurationMin: data.ferryDurationMin,
+      fallbackEstimateKm: est.km,
+      fallbackEstimateMin: est.min,
     };
   } catch (err) {
     return fallbackRoute(input, `error-${(err as Error)?.name ?? "unknown"}`);

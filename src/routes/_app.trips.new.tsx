@@ -302,6 +302,14 @@ function NewTripWizard() {
         routeDistanceKm: route?.distanceKm,
         routeDurationMin: route?.durationMin,
         routeProvider: route?.provider,
+        routeProfile: route?.profile,
+        routeAvoidHighways: route?.avoidOptions?.highways,
+        routeAvoidFerries: route?.avoidOptions?.ferries,
+        routeRawDistanceMeters: route?.rawDistanceMeters,
+        routeRawDurationSeconds: route?.rawDurationSeconds,
+        routeFerryDistanceKm: route?.ferryDistanceKm,
+        routeFerryDurationMin: route?.ferryDurationMin,
+        routeFallbackEstimateMin: route?.fallbackEstimateMin,
       });
       // Snapshot a trip time breakdown using the freshly-seeded stops.
       try {
@@ -335,9 +343,16 @@ function NewTripWizard() {
           { label: "Step", value: `${step}/4` },
           { label: "Trip id", value: tripId ?? "ikke opprettet" },
           { label: "Routing", value: lastRoute?.provider ?? "—" },
+          { label: "Profile", value: lastRoute?.profile ?? "—" },
+          { label: "Avoid", value: lastRoute?.avoidOptions ? `hw=${lastRoute.avoidOptions.highways} fer=${lastRoute.avoidOptions.ferries}` : "—" },
           { label: "Geometry pts", value: lastRoute?.geometry.length ?? 0 },
-          { label: "Dist src", value: lastRoute ? `${lastRoute.distanceKm} km` : "estimat" },
-          { label: "Driving src", value: lastRoute?.durationMin != null ? "ors" : "estimated" },
+          { label: "ORS raw dist", value: lastRoute?.rawDistanceMeters != null ? `${lastRoute.rawDistanceMeters} m` : "—" },
+          { label: "ORS raw dur", value: lastRoute?.rawDurationSeconds != null ? `${lastRoute.rawDurationSeconds} s` : "—" },
+          { label: "Normalized", value: lastRoute ? `${lastRoute.distanceKm} km · ${lastRoute.durationMin} min` : "—" },
+          { label: "Ferry (ORS)", value: lastRoute?.ferryDurationMin ? `${lastRoute.ferryDurationMin} min · ${lastRoute.ferryDistanceKm} km` : "none/unknown" },
+          { label: "Fallback est", value: lastRoute?.fallbackEstimateMin != null ? `${lastRoute.fallbackEstimateKm} km · ${lastRoute.fallbackEstimateMin} min` : "—" },
+          { label: "Δ vs fallback", value: lastRoute?.fallbackEstimateMin != null && lastRoute.provider === "ors" ? `${lastRoute.durationMin - lastRoute.fallbackEstimateMin} min` : "—" },
+          { label: "Driving src", value: lastRoute?.durationMin != null && lastRoute.provider === "ors" ? "ors" : "estimated" },
           { label: "Stop sum (min)", value: tripId ? (tripsApi.getTripBundle(tripId).stops.reduce((a, s) => a + (s.durationMin ?? 0), 0)) : "—" },
           { label: "Routing warn", value: lastRoute?.warnings?.join(",") ?? "—" },
         ]}
@@ -545,7 +560,7 @@ function PreviewStep({
 
       <div className="grid grid-cols-3 gap-3">
         <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
-        <PreviewStat label="Ren kjøretid" value={trip.drivingTime} />
+        <PreviewStat label={trip.routeProvider === "ors" ? "Beregnet kjøretid" : "Estimert kjøretid"} value={trip.drivingTime} />
         <PreviewStat label="Dager" value={String(tripDays.length)} />
       </div>
 
