@@ -387,14 +387,36 @@ function NewTripWizard() {
 
           <div className="mt-6 space-y-5">
             <Field label="Fra">
-              <input value={origin} onChange={(e) => setOrigin(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
+              <PlaceAutocomplete
+                value={origin}
+                onTextChange={setOrigin}
+                selected={fromPlace}
+                onSelect={setFromPlace}
+                ariaLabel="Fra"
+              />
             </Field>
             <Field label="Til">
-              <input value={destination} onChange={(e) => setDestination(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
+              <PlaceAutocomplete
+                value={destination}
+                onTextChange={setDestination}
+                selected={toPlace}
+                onSelect={setToPlace}
+                ariaLabel="Til"
+              />
             </Field>
             <Field label="Dato">
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
             </Field>
+
+            {debug && (
+              <div className="rounded-xl border border-primary/40 bg-background/60 p-3 text-[11px] space-y-1 font-mono">
+                <p className="uppercase tracking-wider text-primary not-italic">Place debug</p>
+                <p>from: {fromPlace ? `${fromPlace.source} · ${fromPlace.lat.toFixed(4)}, ${fromPlace.lng.toFixed(4)}` : "(none)"}</p>
+                <p>to:   {toPlace ? `${toPlace.source} · ${toPlace.lat.toFixed(4)}, ${toPlace.lng.toFixed(4)}` : "(none)"}</p>
+                <p>provider: {fromPlace?.source ?? "—"} / {toPlace?.source ?? "—"}</p>
+              </div>
+            )}
+
 
             <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
               <div className="flex items-center justify-between">
