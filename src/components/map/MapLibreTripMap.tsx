@@ -24,6 +24,14 @@ export type MapLibreStage =
   | "firstRender"
   | "routeLayerAdded";
 
+export interface CssSnapshot {
+  opacity: string;
+  display: string;
+  visibility: string;
+  zIndex: string;
+  position: string;
+}
+
 export interface MapLibreDiagnostics {
   styleId: string;
   styleHost: string;
@@ -39,6 +47,9 @@ export interface MapLibreDiagnostics {
   zoom: number | null;
   routeGeometryLen: number;
   lastError: string | null;
+  cssCanvas: CssSnapshot | null;
+  cssContainer: CssSnapshot | null;
+  cssParent: CssSnapshot | null;
 }
 
 interface Props {
