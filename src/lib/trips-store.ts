@@ -29,6 +29,10 @@ export interface Stop {
   description?: string;
   reason?: string;
   durationMin?: number;
+  /** Trip time v1: where the duration came from. Defaults to "default". */
+  durationSource?: "default" | "user" | "ai" | "provider";
+  /** Trip time v1: optional explicit override; otherwise inferred from type. */
+  timeCategory?: "driving" | "pause" | "charging" | "meal" | "photo" | "ferry" | "overnight" | "other";
   distanceFromPrevKm?: number;
   photoOp?: boolean;
   promoted?: boolean;
