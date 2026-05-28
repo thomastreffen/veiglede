@@ -135,4 +135,12 @@ export const en: Dict = {
     realRoute: "Actual driving route",
     noKeys: "Demo map (no map key configured)",
   },
+  placeSearch: {
+    placeholder: "Search for a place or address",
+    searching: "Searching…",
+    noResults: "No results",
+    useAnyway: "Use text anyway",
+    selectPlace: "Select place",
+    usingLocal: "Using local place search",
+  },
 };
