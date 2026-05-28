@@ -543,7 +543,7 @@ function PreviewStep({
 
       <div className="grid grid-cols-3 gap-3">
         <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
-        <PreviewStat label="Kjøretid" value={trip.drivingTime} />
+        <PreviewStat label="Ren kjøretid" value={trip.drivingTime} />
         <PreviewStat label="Dager" value={String(tripDays.length)} />
       </div>
 
@@ -552,6 +552,8 @@ function PreviewStep({
         <PreviewStat label="Rutestil" value={styleMeta(trip.style).label} />
         <PreviewStat label="Stopp" value={String(tripStops.length)} />
       </div>
+
+      <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} title="Turregnskap" />
 
       {trip.aiSummary && (
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
