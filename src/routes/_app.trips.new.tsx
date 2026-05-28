@@ -259,6 +259,9 @@ function NewTripWizard() {
           pauseEveryMin: prefs.pauseEveryMin,
         },
       });
+      // Prefer selected place coords; fall back to local demo lookup from text.
+      const fromResolved = fromPlace ?? manualPlace(origin);
+      const toResolved = toPlace ?? manualPlace(destination);
       const trip = tripsApi.createTrip({
         title: `${origin} → ${destination}`,
         subtitle: `${s.label} med ${selectedVehicle.name}`,
@@ -269,6 +272,8 @@ function NewTripWizard() {
         distanceKm, drivingTime: `${hours}t ${mins}min`,
         cover: pickCover(style),
         aiSummary: ai,
+        originLoc: fromResolved ? { lat: fromResolved.lat, lng: fromResolved.lng } : undefined,
+        destinationLoc: toResolved ? { lat: toResolved.lat, lng: toResolved.lng } : undefined,
       });
       setTripId(trip.id);
       setGenerating(false);
