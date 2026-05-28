@@ -25,6 +25,7 @@ interface LatLng { lat: number; lng: number }
 interface Body {
   origin?: LatLng;
   destination?: LatLng;
+  waypoints?: LatLng[];
   vehicleType?: string;
   routeStyle?: string;
   avoidHighways?: boolean;
