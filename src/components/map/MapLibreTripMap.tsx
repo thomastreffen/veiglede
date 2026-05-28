@@ -139,31 +139,35 @@ export function MapLibreTripMap({
   useEffect(() => { onStage?.("mounted"); }, [onStage]);
 
   const emitDiagnostics = useCallback(() => {
+    if (!onDiagnostics) return;
     const map = mapRef.current;
-    if (!map || !onDiagnostics) return;
     let sourceCount = 0;
     let layerCount = 0;
     let routeSourceAdded = false;
     let routeLayerAdded = false;
-    try {
-      const s = map.getStyle();
-      sourceCount = s?.sources ? Object.keys(s.sources).length : 0;
-      layerCount = s?.layers?.length ?? 0;
-      routeSourceAdded = !!map.getSource("vg-route");
-      routeLayerAdded = !!map.getLayer("vg-route-line");
-    } catch { /* style not ready */ }
+    let styleLoaded = false;
+    let tilesLoaded = false;
     let centerLngLat: [number, number] | null = null;
     let zoom: number | null = null;
-    try {
-      const c = map.getCenter();
-      centerLngLat = [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))];
-      zoom = Number(map.getZoom().toFixed(2));
-    } catch { /* not ready */ }
+    if (map) {
+      try {
+        const s = map.getStyle();
+        sourceCount = s?.sources ? Object.keys(s.sources).length : 0;
+        layerCount = s?.layers?.length ?? 0;
+        routeSourceAdded = !!map.getSource("vg-route");
+        routeLayerAdded = !!map.getLayer("vg-route-line");
+        styleLoaded = !!map.isStyleLoaded?.();
+        tilesLoaded = !!map.areTilesLoaded?.();
+        const c = map.getCenter();
+        centerLngLat = [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))];
+        zoom = Number(map.getZoom().toFixed(2));
+      } catch { /* style not ready */ }
+    }
     onDiagnostics({
       styleId,
       styleHost: "api.maptiler.com",
-      styleLoaded: !!map.isStyleLoaded?.(),
-      tilesLoaded: !!map.areTilesLoaded?.(),
+      styleLoaded,
+      tilesLoaded,
       sourceCount,
       layerCount,
       routeSourceAdded,
@@ -177,6 +181,13 @@ export function MapLibreTripMap({
       fitBoundsNE: fitInfoRef.current.ne,
       centerLngLat,
       zoom,
+      waitCount: sizeInfoRef.current.waitCount,
+      lastWrapperRect: sizeInfoRef.current.lastWrapperRect,
+      mapCreationAttempted: sizeInfoRef.current.mapCreationAttempted,
+      mapCreationSkippedReason: sizeInfoRef.current.mapCreationSkippedReason,
+      resizeObserverFires: sizeInfoRef.current.resizeObserverFires,
+      mapResizeCalls: sizeInfoRef.current.mapResizeCalls,
+      firstValidSizeTs: sizeInfoRef.current.firstValidSizeTs,
     });
   }, [onDiagnostics, styleId]);
 
