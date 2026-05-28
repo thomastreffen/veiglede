@@ -57,8 +57,12 @@ function TripPlanner() {
     [trip, tripDays, tripStops],
   );
   const routePoints = useMemo(
-    () => (projection ? [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination] : []),
-    [projection],
+    () => (trip?.routeGeometry && trip.routeGeometry.length > 1
+      ? trip.routeGeometry
+      : projection
+        ? [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination]
+        : []),
+    [projection, trip?.routeGeometry],
   );
   const mergedInterests = trip
     ? Array.from(new Set([...(getVehicleById(trip.vehicleId)?.stopInterests ?? []), ...prefs.stopInterests]))
@@ -100,6 +104,7 @@ function TripPlanner() {
   const em = trip.energy ? energyMeta(trip.energy) : undefined;
   const vehicleDisplay = trip.vehicleName ?? v.label;
   const totalStops = tripStops.length;
+  const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
   const partnerTips = getPartnerTips(trip);
   const memories = getPhotoMemories(trip, tripStops);
 
@@ -123,6 +128,14 @@ function TripPlanner() {
           { label: "Trip", value: trip.id },
           { label: "Days", value: tripDays.length },
           { label: "Stops", value: totalStops },
+          { label: "Selected", value: selectedStop?.id ?? "—" },
+          { label: "Placement", value: selectedStop?.placement ?? "—" },
+          { label: "Status", value: selectedStop?.routeStatus ?? "—" },
+          { label: "Stop coords", value: selectedStop?.lat != null && selectedStop?.lng != null ? `${selectedStop.lat.toFixed(4)}, ${selectedStop.lng.toFixed(4)}` : (selectedStop?.location ?? "—") },
+          { label: "Dist from route", value: selectedStop?.distanceFromRouteKm != null ? `${selectedStop.distanceFromRouteKm} km` : "—" },
+          { label: "Extra", value: selectedStop?.extraDistanceKm != null ? `+${selectedStop.extraDistanceKm} km` : "—" },
+          { label: "Route provider", value: trip.routeProvider ?? "—" },
+          { label: "Geometry pts", value: trip.routeGeometry?.length ?? 0 },
         ]}
       />
 
@@ -374,12 +387,13 @@ function TripPlanner() {
               sug={sug}
               detourMin={info.detourMin}
               distanceFromRouteKm={info.distanceFromRouteKm}
+              extraDistanceKm={info.extraDistanceKm}
               off={info.off}
               vehicleDisplay={vehicleDisplay}
               styleLabel={s.label}
               tripDays={tripDays}
               tripDestination={trip.destination}
-              onAdd={(placement, dayId) => tripsApi.addSuggestionAt(tripId, sug, placement, dayId)}
+              onAdd={(placement, dayId) => tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info)}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
             />
           ))}
