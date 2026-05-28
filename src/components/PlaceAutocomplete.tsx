@@ -49,7 +49,7 @@ function typeBadge(t: ResolvedPlace["type"], lang: string): string {
 export function PlaceAutocomplete({
   value, onTextChange, selected, onSelect, placeholder, className, ariaLabel,
 }: Props) {
-  const t = useT();
+  const { t, locale } = useI18n();
   const tt = t.placeSearch;
   const listId = useId();
   const [open, setOpen] = useState(false);
