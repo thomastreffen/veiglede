@@ -10,12 +10,25 @@ import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
-import { stopMeta } from "@/lib/trips-store";
+import { stopMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip } from "@/lib/geo";
 import { getCachedRoute, mapConfig } from "@/lib/map";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+function waypointHash(wps: LatLng[]): string {
+  return wps.map((w) => `${w.lat.toFixed(4)},${w.lng.toFixed(4)}`).join("|");
+}
+function formatDrivingTime(min: number): string {
+  if (!min || min < 1) return "0min";
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}t`;
+  return `${h}t ${m}min`;
+}
 
 export type MapLibreStage =
   | "mounted"
