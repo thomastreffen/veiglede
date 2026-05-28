@@ -5,16 +5,17 @@ import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
 import { stopMeta } from "@/lib/trips-store";
 import { useRuntimeMapConfig } from "@/lib/map/runtime-config";
+import { useDebugMode } from "@/components/DemoDebugPanel";
 import { cn } from "@/lib/utils";
 
 // Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
 // for when MapTiler is actually configured.
-type RealMapProps = Props & { maptilerKey: string; onError?: () => void };
+type RealMapProps = Props & { maptilerKey: string; onError?: (msg?: string) => void; onReady?: () => void };
 const MapLibreTripMap = lazy(() =>
   import("./map/MapLibreTripMap")
     .then((m) => ({ default: m.MapLibreTripMap as React.ComponentType<RealMapProps> }))
-    // If the chunk fails to load (e.g. network), fall back to SVG silently.
-    .catch(() => ({ default: (props: RealMapProps) => <SvgTripMap {...props} /> })),
+    // If the chunk fails to load (e.g. network), render nothing — SVG base stays visible.
+    .catch(() => ({ default: () => null })),
 );
 
 
@@ -44,97 +45,103 @@ function projectToView(
   const innerH = height - padding * 2;
   const lngSpan = bounds.maxLng - bounds.minLng || 0.01;
   const latSpan = bounds.maxLat - bounds.minLat || 0.01;
-  // Compensate lng squeeze at higher latitudes (north Norway).
   const midLat = ((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180;
   const lngScale = Math.cos(midLat);
   const adjLngSpan = lngSpan * lngScale || 0.01;
-  // Lock aspect to the larger span so the route doesn't squish.
   const scale = Math.min(innerW / adjLngSpan, innerH / latSpan);
   const centerX = width / 2;
   const centerY = height / 2;
   const centerLng = (bounds.minLng + bounds.maxLng) / 2;
   const centerLat = (bounds.minLat + bounds.maxLat) / 2;
   const x = centerX + (point.lng - centerLng) * lngScale * scale;
-  // y inverted: north is up
   const y = centerY - (point.lat - centerLat) * scale;
   return { x, y };
 }
 
-// Day-segment colors (cycled).
 const DAY_COLORS = [
-  "oklch(0.78 0.17 65)",   // primary orange
-  "oklch(0.75 0.16 200)",  // cyan
-  "oklch(0.72 0.18 140)",  // green
-  "oklch(0.70 0.20 320)",  // magenta
-  "oklch(0.78 0.14 90)",   // yellow
+  "oklch(0.78 0.17 65)",
+  "oklch(0.75 0.16 200)",
+  "oklch(0.72 0.18 140)",
+  "oklch(0.70 0.20 320)",
+  "oklch(0.78 0.14 90)",
 ];
 
 /**
  * TripMap — provider-agnostic trip map.
  *
- * Renders a real tile-based map (MapLibre + MapTiler) when API keys are
- * configured, otherwise falls back to the SVG renderer. Consumers (planner,
- * roadbook, shared view) use this single component — they never reach for a
- * vendor SDK directly.
+ * Always renders the SVG base immediately so the container is never empty.
+ * When MapTiler is configured and reachable, MapLibre is overlaid on top
+ * and the SVG underneath becomes the silent fallback.
  */
 export function TripMap(props: Props) {
   const [errored, setErrored] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [maplibreReady, setMaplibreReady] = useState(false);
   const cfg = useRuntimeMapConfig();
+  const debug = useDebugMode();
 
-  // Determine if we have ANY usable coords (origin or destination resolves).
   const hasOrigin = Boolean(lookupPlace(props.trip.origin));
   const hasDestination = Boolean(lookupPlace(props.trip.destination));
   const hasUsableCoords = hasOrigin || hasDestination;
 
+  const useMapLibre = Boolean(cfg?.hasRealMap && cfg.maptilerKey && !errored && hasUsableCoords);
+  const mode = !hasUsableCoords
+    ? "missing"
+    : useMapLibre
+      ? (maplibreReady ? "maptiler" : "loading-maptiler")
+      : "svg";
+
+  const routePointCount = props.days.length + 2;
+  const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
+
   if (import.meta.env.DEV) {
-    // Dev-only diagnostics — no secrets, no production noise.
     // eslint-disable-next-line no-console
     console.debug("[TripMap]", {
       runtimeConfigLoaded: cfg !== null,
       hasRealMap: cfg?.hasRealMap ?? false,
-      maptilerKeyPresent: Boolean(cfg?.maptilerKey),
-      mode: errored || !cfg?.hasRealMap ? "svg" : "maplibre",
-      origin: props.trip.origin,
-      destination: props.trip.destination,
-      hasOrigin,
-      hasDestination,
-      stops: props.stops.length,
-      days: props.days.length,
+      mode,
+      maplibreReady,
+      errored,
+      errorMsg,
+      hasOrigin, hasDestination,
     });
   }
 
-  // Hard placeholder when there's truly nothing to plot — never show a blank box.
-  if (!hasUsableCoords) {
-    return <PlaceholderMap height={props.height} className={props.className} />;
-  }
-
-  if (cfg?.hasRealMap && cfg.maptilerKey && !errored) {
-    return (
-      <Suspense fallback={<SvgTripMap {...props} />}>
-        <MapLibreTripMap {...props} maptilerKey={cfg.maptilerKey} onError={() => setErrored(true)} />
-      </Suspense>
-    );
-  }
-  return <SvgTripMap {...props} />;
-}
-
-function PlaceholderMap({ height = "h-64", className }: { height?: string; className?: string }) {
+  // Always render SVG as the base layer. This guarantees the container is
+  // never empty, even while MapLibre is still fetching the style or if it
+  // fails silently.
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-surface flex items-center justify-center p-6 text-center",
-        height,
-        className,
+    <div className={cn("relative", props.className)}>
+      <SvgTripMap {...props} className={undefined} />
+      {useMapLibre && (
+        <div
+          className={cn(
+            "absolute inset-0 rounded-2xl overflow-hidden transition-opacity duration-300 pointer-events-auto",
+            maplibreReady ? "opacity-100" : "opacity-0",
+          )}
+        >
+          <Suspense fallback={null}>
+            <MapLibreTripMap
+              {...props}
+              className={undefined}
+              maptilerKey={cfg!.maptilerKey!}
+              onReady={() => setMaplibreReady(true)}
+              onError={(msg) => { setErrored(true); setErrorMsg(msg ?? "unknown"); }}
+            />
+          </Suspense>
+        </div>
       )}
-    >
-      <div className="space-y-2 max-w-xs">
-        <div className="text-3xl" aria-hidden>🗺️</div>
-        <p className="text-sm text-foreground/90 font-medium">Kartdata mangler</p>
-        <p className="text-xs text-muted-foreground">Åpne planleggeren for å finpusse ruten.</p>
-      </div>
+      {debug && (
+        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5">
+          <div>map: <span className="text-primary font-semibold">{mode}</span></div>
+          <div>real: {String(cfg?.hasRealMap ?? false)} · pts: {routePointCount} · stops: {stopsWithCoords}/{props.stops.length}</div>
+          {errorMsg && <div className="text-destructive">err: {errorMsg}</div>}
+        </div>
+      )}
     </div>
   );
 }
+
 
 function SvgTripMap({
   trip,
