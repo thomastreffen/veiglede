@@ -43,6 +43,8 @@ interface Draft {
   style?: RouteStyle;
   origin?: string;
   destination?: string;
+  fromPlace?: ResolvedPlace | null;
+  toPlace?: ResolvedPlace | null;
   date?: string;
   aiPrompt?: string;
   tripId?: string | null;
@@ -54,6 +56,8 @@ interface WizardSnapshot {
   style: RouteStyle;
   origin: string;
   destination: string;
+  fromPlace: ResolvedPlace | null;
+  toPlace: ResolvedPlace | null;
   date: string;
   aiPrompt: string;
   tripId: string | null;
