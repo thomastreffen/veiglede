@@ -43,6 +43,14 @@ export interface MapLibreDiagnostics {
   /** Map state after fitBounds: center in [lng, lat] and zoom. */
   centerLngLat: [number, number] | null;
   zoom: number | null;
+  /** Sizing / init lifecycle counters. */
+  waitCount: number;
+  lastWrapperRect: { w: number; h: number } | null;
+  mapCreationAttempted: boolean;
+  mapCreationSkippedReason: string | null;
+  resizeObserverFires: number;
+  mapResizeCalls: number;
+  firstValidSizeTs: number | null;
 }
 
 interface Props {
