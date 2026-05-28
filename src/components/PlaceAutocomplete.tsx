@@ -213,7 +213,7 @@ export function PlaceAutocomplete({
                 {p.secondary && <p className="text-[11px] text-muted-foreground truncate">{p.secondary}</p>}
               </div>
               <span className="text-[10px] uppercase tracking-wider rounded-full border border-border px-2 py-0.5 text-muted-foreground shrink-0">
-                {typeBadge(p.type, t === undefined ? "nb" : (document.documentElement.lang || "nb"))}
+                {typeBadge(p.type, locale)}
               </span>
             </button>
           ))}
