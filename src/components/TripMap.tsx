@@ -149,11 +149,16 @@ export function TripMap(props: Props) {
         </div>
       )}
       {debug && (
-        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5">
-          <div>mode: <span className="text-primary font-semibold">{mode}</span></div>
-          <div>overlay: {String(useMapLibre && maplibreReady)} · ready: {String(maplibreReady)}</div>
-          <div>real: {String(cfg?.hasRealMap ?? false)} · pts: {routePointCount} · stops: {stopsWithCoords}/{props.stops.length}</div>
-          <div>routing: {props.trip.routeProvider ?? "—"} · geom: {props.trip.routeGeometry?.length ?? 0}</div>
+        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[300px]">
+          <div>mode: <span className="text-primary font-semibold">{mode}</span> · geom: <span className="text-primary font-semibold">{geomMode}</span></div>
+          <div>overlay: {String(useMapLibre && maplibreReady)} · stops: {stopsWithCoords}/{props.stops.length}</div>
+          <div>routing: {props.trip.routeProvider ?? "—"} · pts: {geom.length} (days+2={routePointCount})</div>
+          {geomFirst && geomLast && (
+            <div>first: {geomFirst.lat.toFixed(3)},{geomFirst.lng.toFixed(3)} · last: {geomLast.lat.toFixed(3)},{geomLast.lng.toFixed(3)}</div>
+          )}
+          {geomBounds && (
+            <div>bounds lat {geomBounds.minLat.toFixed(2)}→{geomBounds.maxLat.toFixed(2)} · lng {geomBounds.minLng.toFixed(2)}→{geomBounds.maxLng.toFixed(2)}</div>
+          )}
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
         </div>
       )}
