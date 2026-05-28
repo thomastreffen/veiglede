@@ -62,6 +62,7 @@ export function MapLibreTripMap({
   variant = "dark",
   onError,
   onReady,
+  onStage,
   maptilerKey,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -71,6 +72,9 @@ export function MapLibreTripMap({
   const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
+
+  // Signal mount immediately so the parent's diagnostic badge shows progress.
+  useEffect(() => { onStage?.("mounted"); }, [onStage]);
 
   // Initialize map once.
   useEffect(() => {
