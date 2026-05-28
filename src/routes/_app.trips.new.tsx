@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips/new")({
   head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    restoreDraft: s.restoreDraft === "1" || s.restoreDraft === 1 || s.restoreDraft === true,
+  }),
   component: NewTripWizard,
 });
 
