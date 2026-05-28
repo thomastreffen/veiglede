@@ -194,7 +194,9 @@ function TripPlanner() {
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
           Beregnet av rutemotor. Kan avvike fra Google Maps, trafikk, ferge og lokale forhold.
         </p>
+        <DetourTotals trip={trip} stops={tripStops} />
       </section>
+
 
       {/* Planning actions — flexible trip model */}
       <PlannerActions trip={trip} tripDays={tripDays} maxDrivingHours={prefs.maxDrivingHours} />
