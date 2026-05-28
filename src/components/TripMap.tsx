@@ -259,6 +259,11 @@ export function TripMap(props: Props) {
           </div>
           <div>ml-box: {canvasInfo.mw}×{canvasInfo.mh} · canvas: {canvasInfo.hasCanvas ? `${canvasInfo.cw}×${canvasInfo.ch}` : "missing"}</div>
           <div>z: svg=0 ml=10 · svg opacity: {svgHidden ? "0" : "1"} · ml opacity: {mapLibreVisible ? "1" : "0"}</div>
+          <div className="normal-case">first pt app (lat,lng): {diag?.firstPointApp ? `${diag.firstPointApp.lat},${diag.firstPointApp.lng}` : "—"}</div>
+          <div className="normal-case">first pt ml (lng,lat): {diag?.firstPointMaplibre ? `[${diag.firstPointMaplibre[0]}, ${diag.firstPointMaplibre[1]}]` : "—"}</div>
+          <div className="normal-case">fit SW (lng,lat): {diag?.fitBoundsSW ? `[${diag.fitBoundsSW[0]}, ${diag.fitBoundsSW[1]}]` : "—"}</div>
+          <div className="normal-case">fit NE (lng,lat): {diag?.fitBoundsNE ? `[${diag.fitBoundsNE[0]}, ${diag.fitBoundsNE[1]}]` : "—"}</div>
+          <div className="normal-case">center (lng,lat): {diag?.centerLngLat ? `[${diag.centerLngLat[0]}, ${diag.centerLngLat[1]}]` : "—"} · zoom: {diag?.zoom ?? "—"}</div>
           <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} · stops: {stopsWithCoords}/{props.stops.length} (d+2={routePointCount})</div>
           {fallbackReason && <div className="normal-case text-yellow-400">reason: {fallbackReason}</div>}
           {diag?.lastError && <div className="text-destructive normal-case">tile/style err: {diag.lastErrorStatus ?? ""} {diag.lastErrorHost ?? ""} {diag.lastError}</div>}
