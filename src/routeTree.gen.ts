@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -30,6 +31,11 @@ import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.tri
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapTestRoute = MapTestRouteImport.update({
+  id: '/map-test',
+  path: '/map-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -116,6 +122,7 @@ const AppTripsTripIdStopsStopIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/roadbook': typeof AppRoadbookRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/map-test'
     | '/signup'
     | '/onboarding'
     | '/roadbook'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/map-test'
     | '/signup'
     | '/onboarding'
     | '/roadbook'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/map-test'
     | '/signup'
     | '/_app/onboarding'
     | '/_app/roadbook'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  MapTestRoute: typeof MapTestRoute
   SignupRoute: typeof SignupRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map-test': {
+      id: '/map-test'
+      path: '/map-test'
+      fullPath: '/map-test'
+      preLoaderRoute: typeof MapTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -411,6 +431,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  MapTestRoute: MapTestRoute,
   SignupRoute: SignupRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   InviteTokenRoute: InviteTokenRoute,
