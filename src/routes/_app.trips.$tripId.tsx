@@ -24,6 +24,7 @@ import {
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
   Navigation, CornerDownRight,
 } from "lucide-react";
+import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
@@ -137,6 +138,11 @@ function TripPlanner() {
           { label: "Extra", value: selectedStop?.extraDistanceKm != null ? `+${selectedStop.extraDistanceKm} km` : "—" },
           { label: "Route provider", value: trip.routeProvider ?? "—" },
           { label: "Geometry pts", value: trip.routeGeometry?.length ?? 0 },
+          { label: "Waypoints hash", value: (trip.routeWaypointsHash ?? "—").slice(0, 24) },
+          { label: "On-route stops", value: tripStops.filter((s) => (s.routeStatus ?? "on-route") === "on-route" && s.lat != null).length },
+          { label: "Detour stops", value: tripStops.filter((s) => s.routeStatus === "detour").length },
+          { label: "Route dist", value: trip.routeDistanceKm != null ? `${trip.routeDistanceKm} km` : "—" },
+          { label: "Route time", value: trip.routeDurationMin != null ? `${trip.routeDurationMin} min` : "—" },
         ]}
       />
 
@@ -396,7 +402,21 @@ function TripPlanner() {
               styleLabel={s.label}
               tripDays={tripDays}
               tripDestination={trip.destination}
-              onAdd={(placement, dayId) => tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info)}
+              onAdd={(placement, dayId) => {
+                const added = tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info);
+                if (added) {
+                  const status = added.routeStatus ?? "—";
+                  const coords = added.lat != null && added.lng != null
+                    ? `${added.lat.toFixed(3)},${added.lng.toFixed(3)}`
+                    : "(no coords)";
+                  // Temporary debug toast — verifies waypoint reaches the routing engine.
+                  // eslint-disable-next-line no-console
+                  console.info("[veiglede] added stop", { name: added.name, status, placement, coords });
+                  if (placement === "along") {
+                    toast(`Added waypoint: ${added.name} ${coords} routeStatus=${status}`);
+                  }
+                }
+              }}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
             />
           ))}

@@ -25,6 +25,7 @@ interface LatLng { lat: number; lng: number }
 interface Body {
   origin?: LatLng;
   destination?: LatLng;
+  waypoints?: LatLng[];
   vehicleType?: string;
   routeStyle?: string;
   avoidHighways?: boolean;
@@ -103,18 +104,22 @@ export const Route = createFileRoute("/api/public/directions")({
           if (body.avoidHighways) avoid.push("highways");
           if (body.avoidFerries) avoid.push("ferries");
 
+          const viaCoords = Array.isArray(body.waypoints)
+            ? body.waypoints.filter(isLatLng).map((w) => [w.lng, w.lat] as [number, number])
+            : [];
+
           const orsBody: Record<string, unknown> = {
             // ORS expects [lng, lat] pairs.
             coordinates: [
               [body.origin.lng, body.origin.lat],
+              ...viaCoords,
               [body.destination.lng, body.destination.lat],
             ],
             instructions: false,
-            // waytype: ORS extra_info key (singular). value 8 = ferry, so we
-            // can separate ferry duration from driving when present.
             extra_info: ["waytype"],
           };
           if (avoid.length) orsBody.options = { avoid_features: avoid };
+          warnings.push(`ors-waypoint-count-${viaCoords.length + 2}`);
 
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 6000);

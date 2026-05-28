@@ -8,6 +8,8 @@ import type { RouteStyle, VehicleType } from "@/lib/trips-store";
 export interface GetRouteInput {
   origin: LatLng;
   destination: LatLng;
+  /** Intermediate via-points (in order) between origin and destination. */
+  waypoints?: LatLng[];
   vehicleType?: VehicleType;
   routeStyle?: RouteStyle;
   avoidHighways?: boolean;
