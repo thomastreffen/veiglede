@@ -84,92 +84,30 @@ export function TripMap(props: Props) {
   const [errored, setErrored] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [maplibreReady, setMaplibreReady] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
-  const [forced, setForced] = useState(false);
-  const [showSvg, setShowSvg] = useState(false);
   const [styleVariant, setStyleVariant] = useState<"dark" | "light" | "route-only">("light");
   const [diag, setDiag] = useState<import("./map/MapLibreTripMap").MapLibreDiagnostics | null>(null);
-  const [stages, setStages] = useState<{
-    mounted: boolean; mapCreated: boolean; styleLoaded: boolean;
-    firstRender: boolean; routeLayerAdded: boolean;
-  }>({ mounted: false, mapCreated: false, styleLoaded: false, firstRender: false, routeLayerAdded: false });
   const cfg = useRuntimeMapConfig();
   const debug = useDebugMode();
 
   const hasOrigin = Boolean(props.trip.originLoc) || Boolean(lookupPlace(props.trip.origin));
   const hasDestination = Boolean(props.trip.destinationLoc) || Boolean(lookupPlace(props.trip.destination));
   const hasUsableCoords = hasOrigin || hasDestination;
-  const paintedEnough = Boolean(diag?.paintedEnough);
 
-  const canTryMapLibre = Boolean(
-    cfg?.hasRealMap && cfg.maptilerKey && (!errored || forced) && (hasUsableCoords || paintedEnough || forced),
-  );
+  const canTryMapLibre = Boolean(cfg?.hasRealMap && cfg.maptilerKey && !errored && hasUsableCoords);
+  const mapLibreVisible = canTryMapLibre && maplibreReady;
 
-  // Safety timeout: if MapLibre never visibly renders within 6s, mark as
-  // timed-out so the SVG fallback stays visible. Disabled when forced.
-  React.useEffect(() => {
-    if (!canTryMapLibre || maplibreReady || paintedEnough || forced) return;
-    const t = window.setTimeout(() => setTimedOut(true), 6000);
-    return () => window.clearTimeout(t);
-  }, [canTryMapLibre, maplibreReady, paintedEnough, forced]);
-
-  // Verify MapLibre canvas is actually painted (non-zero size, has GL context).
-  const mlContainerRef = useRef<HTMLDivElement | null>(null);
-  const [canvasInfo, setCanvasInfo] = useState<{ cw: number; ch: number; mw: number; mh: number; hasCanvas: boolean }>(
-    { cw: 0, ch: 0, mw: 0, mh: 0, hasCanvas: false },
-  );
-  React.useEffect(() => {
-    if (!maplibreReady) return;
-    let raf = 0;
-    const measure = () => {
-      const root = mlContainerRef.current;
-      if (!root) return;
-      const canvas = root.querySelector("canvas") as HTMLCanvasElement | null;
-      const r = root.getBoundingClientRect();
-      const c = canvas?.getBoundingClientRect();
-      setCanvasInfo({
-        cw: c ? Math.round(c.width) : 0,
-        ch: c ? Math.round(c.height) : 0,
-        mw: Math.round(r.width),
-        mh: Math.round(r.height),
-        hasCanvas: !!canvas,
-      });
-    };
-    measure();
-    raf = window.setTimeout(measure, 500) as unknown as number;
-    return () => window.clearTimeout(raf);
-  }, [maplibreReady]);
-
-  // Honest "visible" check: ready AND the canvas has actually been painted
-  // with non-zero size. Otherwise we'd lie about maplibre-visible while the
-  // user stares at the SVG underneath.
-  const canvasPainted = canvasInfo.hasCanvas && canvasInfo.cw > 0 && canvasInfo.ch > 0;
-  const mapLibreVisible = canTryMapLibre && (forced || ((maplibreReady || paintedEnough) && canvasPainted));
   const fallbackReason = !hasUsableCoords
     ? "no-coords"
     : !cfg
       ? "loading-config"
       : !cfg.hasRealMap
-        ? "no-maptiler-key (check MAPTILER_API_KEY secret)"
+        ? "no-maptiler-key"
         : errored
           ? `maplibre-error: ${errorMsg ?? "unknown"}`
-          : timedOut
-            ? paintedEnough
-              ? null
-              : "maplibre-timeout (no reliable paint signal within 6s)"
-            : !(maplibreReady || paintedEnough)
-              ? "loading-maplibre"
-              : !canvasPainted
-                ? "maplibre-canvas-not-painted"
-                : null;
-  const mode = mapLibreVisible
-    ? "maplibre-visible"
-    : maplibreReady && !canvasPainted
-      ? "maplibre-not-visible"
-      : `svg-fallback (${fallbackReason ?? "unknown"})`;
-
-  const routePointCount = props.days.length + 2;
-  const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
+          : !maplibreReady
+            ? "loading-maplibre"
+            : null;
+  const mode = mapLibreVisible ? "maplibre" : `svg-fallback (${fallbackReason ?? "unknown"})`;
 
   const geom = props.trip.routeGeometry ?? [];
   const geomMode = geom.length < 2
@@ -180,37 +118,16 @@ export function TripMap(props: Props) {
         ? "trip-routeGeometry"
         : "demo-generated";
 
-  const onStage = React.useCallback((s: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => {
-    setStages((prev) => prev[s] ? prev : { ...prev, [s]: true });
-  }, []);
-
-  if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
-    console.debug("[TripMap]", {
-      runtimeConfigLoaded: cfg !== null,
-      hasRealMap: cfg?.hasRealMap ?? false,
-      keyLen: cfg?.maptilerKey?.length ?? 0,
-      mode, maplibreReady, errored, timedOut, errorMsg,
-      stages, canvasInfo,
-      hasOrigin, hasDestination,
-      routeProvider: props.trip.routeProvider,
-      geometryLen: geom.length, geomMode,
-    });
-  }
-
   const heightClass = props.height ?? "h-64";
   const originLoc = props.trip.originLoc ?? lookupPlace(props.trip.origin);
   const destLoc = props.trip.destinationLoc ?? lookupPlace(props.trip.destination);
 
-  // SVG is hidden as soon as MapLibre is visible (or forced) so it can't
-  // visually overlap the real tiles. Debug mode can opt to keep showing it
-  // via the "Show SVG underneath" toggle.
-  const svgHidden = (mapLibreVisible || forced) && !showSvg;
-  const visibleLayer = mapLibreVisible ? "maplibre" : "svg";
+  // SVG sits underneath; hide once MapLibre is visibly ready.
+  const svgHidden = mapLibreVisible;
 
   return (
     <div className={cn("relative w-full min-h-[16rem]", heightClass, props.className)}>
-      {/* SVG base — rendered behind MapLibre; hidden once MapLibre is visible. */}
+      {/* SVG base — fallback while MapLibre loads or if it errors. */}
       <div
         className={cn(
           "absolute inset-0 z-0 transition-opacity duration-300",
@@ -221,14 +138,11 @@ export function TripMap(props: Props) {
         <SvgTripMap {...props} height="h-full" className={undefined} />
       </div>
 
-      {/* MapLibre — primary renderer when MapTiler is configured. Wrapper
-          has an opaque slate background so the canvas always sits on a solid
-          surface even while tiles are still streaming in. */}
+      {/* MapLibre — primary when MapTiler is configured. */}
       {canTryMapLibre && cfg?.maptilerKey && (
         <div
-          ref={mlContainerRef}
           className={cn(
-            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300 bg-[#1f2937]",
+            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300",
             mapLibreVisible ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           aria-hidden={!mapLibreVisible}
@@ -241,7 +155,6 @@ export function TripMap(props: Props) {
               maptilerKey={cfg.maptilerKey}
               variant={styleVariant}
               onReady={() => setMaplibreReady(true)}
-              onStage={onStage}
               onDiagnostics={setDiag}
               onError={(msg) => { setErrored(true); setErrorMsg(msg ?? "unknown"); setMaplibreReady(false); }}
             />
@@ -252,44 +165,20 @@ export function TripMap(props: Props) {
       {debug && (
         <div className="absolute left-2 top-2 z-20 rounded-md border border-primary/40 bg-background/90 backdrop-blur px-2 py-1.5 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[380px] pointer-events-auto">
           <div>mode: <span className="text-primary font-semibold normal-case">{mode}</span></div>
-          <div>visible layer: <span className="text-primary font-semibold normal-case">{visibleLayer}</span></div>
           <div>cfg.hasRealMap: {String(Boolean(cfg?.hasRealMap))} · keyLen: {cfg?.maptilerKey?.length ?? 0}</div>
           <div>style: <span className="normal-case">{diag?.styleId ?? styleVariant} @ {diag?.styleHost ?? "—"}</span></div>
-          <div>paintedEnough: {String(diag?.paintedEnough ?? false)} · readiness: <span className="normal-case">{diag?.readinessSource ?? "—"}</span></div>
-          <div>events: render {diag?.renderEventCount ?? 0} · idle {diag?.idleEventCount ?? 0} · sourcedata {diag?.sourceDataEventCount ?? 0}</div>
-          <div>styleLoaded: {String(diag?.styleLoaded ?? false)} · tilesLoaded: {String(diag?.tilesLoaded ?? false)}</div>
+          <div>mapCreated: {String(diag?.mapCreated ?? false)} · styleLoaded: {String(diag?.styleLoaded ?? false)}</div>
           <div>sources: {diag?.sourceCount ?? "—"} · layers: {diag?.layerCount ?? "—"}</div>
-          <div>route src: {String(diag?.routeSourceAdded ?? false)} · route layer: {String(diag?.routeLayerAdded ?? false)} · paint: #f59e3a / 7px</div>
+          <div>route src: {String(diag?.routeSourceAdded ?? false)} · route layer: {String(diag?.routeLayerAdded ?? false)}</div>
+          <div>canvas: {diag?.canvasW ?? 0}×{diag?.canvasH ?? 0}</div>
+          <div className="normal-case">center: {diag?.centerLngLat ? `[${diag.centerLngLat[0]}, ${diag.centerLngLat[1]}]` : "—"} · zoom: {diag?.zoom ?? "—"}</div>
           <div>origin: {originLoc ? `${originLoc.lat.toFixed(2)},${originLoc.lng.toFixed(2)}` : "—"} · dest: {destLoc ? `${destLoc.lat.toFixed(2)},${destLoc.lng.toFixed(2)}` : "—"}</div>
-          <div>
-            stages: m{stages.mounted ? "✓" : "·"} c{stages.mapCreated ? "✓" : "·"} s{stages.styleLoaded ? "✓" : "·"} r{stages.firstRender ? "✓" : "·"} l{stages.routeLayerAdded ? "✓" : "·"} · ready: {String(maplibreReady)}
-          </div>
-          <div>ml-box: {canvasInfo.mw}×{canvasInfo.mh} · canvas: {canvasInfo.hasCanvas ? `${canvasInfo.cw}×${canvasInfo.ch}` : "missing"}</div>
-          <div>z: svg=0 ml=10 · svg opacity: {svgHidden ? "0" : "1"} · ml opacity: {mapLibreVisible ? "1" : "0"}</div>
-          <div className="normal-case">first pt app (lat,lng): {diag?.firstPointApp ? `${diag.firstPointApp.lat},${diag.firstPointApp.lng}` : "—"}</div>
-          <div className="normal-case">first pt ml (lng,lat): {diag?.firstPointMaplibre ? `[${diag.firstPointMaplibre[0]}, ${diag.firstPointMaplibre[1]}]` : "—"}</div>
-          <div className="normal-case">fit SW (lng,lat): {diag?.fitBoundsSW ? `[${diag.fitBoundsSW[0]}, ${diag.fitBoundsSW[1]}]` : "—"}</div>
-          <div className="normal-case">fit NE (lng,lat): {diag?.fitBoundsNE ? `[${diag.fitBoundsNE[0]}, ${diag.fitBoundsNE[1]}]` : "—"}</div>
-          <div className="normal-case">center (lng,lat): {diag?.centerLngLat ? `[${diag.centerLngLat[0]}, ${diag.centerLngLat[1]}]` : "—"} · zoom: {diag?.zoom ?? "—"}</div>
-          <div className="normal-case">wrapper rect: {diag?.lastWrapperRect ? `${diag.lastWrapperRect.w}×${diag.lastWrapperRect.h}` : "—"} · wait: {diag?.waitCount ?? 0} · ro fires: {diag?.resizeObserverFires ?? 0} · resize calls: {diag?.mapResizeCalls ?? 0}</div>
-          <div className="normal-case">map.create attempted: {String(diag?.mapCreationAttempted ?? false)}{diag?.mapCreationSkippedReason ? ` · skipped: ${diag.mapCreationSkippedReason}` : ""}{diag?.firstValidSizeTs ? ` · firstValidTs: +${Math.max(0, Date.now() - diag.firstValidSizeTs)}ms` : ""}</div>
-          <div className="normal-case">canvas css: opacity={diag?.canvasComputedOpacity ?? "—"} · display={diag?.canvasComputedDisplay ?? "—"} · vis={diag?.canvasComputedVisibility ?? "—"} · bg={diag?.canvasComputedBackground ?? "—"}</div>
-          <div className="normal-case">features@center: {diag?.featuresAtCenter ?? 0} · base layers: {diag?.baseLayerIds?.join(", ") || "—"}</div>
-          <div className="normal-case">1st symbol: {diag?.firstSymbolLayerId ?? "—"} · 1st line: {diag?.firstLineLayerId ?? "—"}</div>
-          <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} · stops: {stopsWithCoords}/{props.stops.length} (d+2={routePointCount})</div>
+          <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} / diag: {diag?.routeGeometryLen ?? 0}</div>
+          <div>ready: {String(maplibreReady)}</div>
           {fallbackReason && <div className="normal-case text-yellow-400">reason: {fallbackReason}</div>}
-          {diag?.lastError && <div className="text-destructive normal-case">tile/style err: {diag.lastErrorStatus ?? ""} {diag.lastErrorHost ?? ""} {diag.lastError}</div>}
+          {diag?.lastError && <div className="text-destructive normal-case">err: {diag.lastError}</div>}
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
           <div className="flex flex-wrap gap-1 pt-1">
-            {!mapLibreVisible && cfg?.hasRealMap && (
-              <button
-                type="button"
-                onClick={() => { setForced(true); setErrored(false); setTimedOut(false); }}
-                className="rounded border border-primary/60 bg-primary/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/30"
-              >
-                Force MapLibre
-              </button>
-            )}
             <button
               type="button"
               onClick={() => setStyleVariant("light")}
@@ -298,7 +187,7 @@ export function TripMap(props: Props) {
                 styleVariant === "light" ? "bg-primary/30" : "bg-primary/10",
               )}
             >
-              Bright streets
+              Bright
             </button>
             <button
               type="button"
@@ -308,32 +197,16 @@ export function TripMap(props: Props) {
                 styleVariant === "dark" ? "bg-primary/30" : "bg-primary/10",
               )}
             >
-              Dark style
-            </button>
-            <button
-              type="button"
-              onClick={() => setStyleVariant("route-only")}
-              className={cn(
-                "rounded border border-primary/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20",
-                styleVariant === "route-only" ? "bg-primary/30" : "bg-primary/10",
-              )}
-            >
-              Route-only
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSvg((v) => !v)}
-              className="rounded border border-primary/60 bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20"
-            >
-              {showSvg ? "Hide SVG underneath" : "Show SVG underneath"}
+              Dark
             </button>
           </div>
         </div>
-
       )}
     </div>
   );
 }
+
+
 
 
 function SvgTripMap({
