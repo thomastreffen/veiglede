@@ -62,7 +62,7 @@ export function AppShell() {
                 </Link>
               );
             })}
-            <Link to="/trips/new" className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
+            <Link to="/trips/new" search={{ restoreDraft: "fresh" }} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Plus className="h-4 w-4" /> Ny tur
             </Link>
             {user ? (
@@ -96,7 +96,7 @@ export function AppShell() {
         <ul className="grid grid-cols-5 items-end">
           {nav.slice(0, 2).map((n) => <NavItem key={n.to} n={n} pathname={pathname} />)}
           <li className="flex justify-center -mt-6">
-            <Link to="/trips/new" className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background">
+            <Link to="/trips/new" search={{ restoreDraft: "fresh" }} className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background">
               <Plus className="h-6 w-6" strokeWidth={3} />
             </Link>
           </li>
