@@ -152,6 +152,13 @@ export interface SuggestedStop {
   energy?: EnergySource; // for fuel/charging stops only
 }
 
+export interface SuggestedStopRouteMeta {
+  distanceFromRouteKm: number;
+  extraDistanceKm: number;
+  detourMin: number;
+  off: boolean;
+}
+
 export interface PartnerTip {
   id: string;
   name: string;
@@ -480,6 +487,7 @@ export const tripsApi = {
     sug: SuggestedStop,
     placement: "along" | "detour" | "after" | "new-day" | "day",
     targetDayId?: string,
+    routeMeta?: SuggestedStopRouteMeta,
   ): Stop | null {
     ensureInit();
     const tripDays = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
@@ -499,6 +507,8 @@ export const tripsApi = {
       placement,
       routeStatus: placement === "detour" ? "detour" : "on-route",
       isSuggestion: true,
+      distanceFromRouteKm: routeMeta?.distanceFromRouteKm,
+      extraDistanceKm: routeMeta?.extraDistanceKm,
     };
     if (placement === "along" || placement === "detour") {
       // insert before the arrival (last stop) of the last day
