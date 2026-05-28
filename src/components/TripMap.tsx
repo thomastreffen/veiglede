@@ -240,11 +240,11 @@ function SvgTripMap({
     : null;
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-border bg-surface", height, className)}>
+    <div ref={containerRef} className={cn("relative overflow-hidden rounded-2xl border border-border bg-surface", height, className)}>
       <svg
         className="absolute inset-0 h-full w-full"
         viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="none"
       >
         <defs>
           <pattern id="vg-map-grid" width="40" height="40" patternUnits="userSpaceOnUse">
