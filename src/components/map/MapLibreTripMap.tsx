@@ -33,6 +33,16 @@ export interface MapLibreDiagnostics {
   lastError: string | null;
   lastErrorHost: string | null;
   lastErrorStatus: number | null;
+  /** First route point as the app stores it ({lat,lng}). */
+  firstPointApp: { lat: number; lng: number } | null;
+  /** First route point in MapLibre's GeoJSON order ([lng, lat]). */
+  firstPointMaplibre: [number, number] | null;
+  /** Bounds passed to fitBounds, in lng/lat order. */
+  fitBoundsSW: [number, number] | null;
+  fitBoundsNE: [number, number] | null;
+  /** Map state after fitBounds: center in [lng, lat] and zoom. */
+  centerLngLat: [number, number] | null;
+  zoom: number | null;
 }
 
 interface Props {
