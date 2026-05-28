@@ -257,7 +257,7 @@ export function MapLibreTripMap({
   useEffect(() => {
     const wrapper = containerRef.current;
     if (!wrapper || mapRef.current) return;
-    if (!styleUrl) {
+    if (!styleSpec) {
       sizeInfoRef.current.mapCreationSkippedReason = "no-style-url";
       emitDiagnostics();
       onError?.("no-style-url");
@@ -290,7 +290,7 @@ export function MapLibreTripMap({
       try {
         map = new maplibregl.Map({
           container: containerRef.current,
-          style: styleUrl,
+          style: styleSpec,
           center: [projected.origin.lng, projected.origin.lat],
           zoom: 5,
           attributionControl: { compact: true },
@@ -377,12 +377,12 @@ export function MapLibreTripMap({
     const map = mapRef.current;
     if (!map || !ready) return;
     try {
-      map.setStyle(styleUrl);
+      map.setStyle(styleSpec);
       // Style swap drops sources/layers — re-add route on next styledata.
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] setStyle failed", err);
     }
-  }, [styleUrl, ready]);
+  }, [styleSpec, ready]);
 
   // Fit to bounds when projection changes.
   useEffect(() => {
