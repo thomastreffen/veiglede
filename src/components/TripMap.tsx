@@ -10,7 +10,14 @@ import { cn } from "@/lib/utils";
 
 // Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
 // for when MapTiler is actually configured.
-type RealMapProps = Props & { maptilerKey: string; onError?: (msg?: string) => void; onReady?: () => void; onStage?: (stage: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => void };
+type RealMapProps = Props & {
+  maptilerKey: string;
+  variant?: "dark" | "light";
+  onError?: (msg?: string) => void;
+  onReady?: () => void;
+  onStage?: (stage: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => void;
+  onDiagnostics?: (d: import("./map/MapLibreTripMap").MapLibreDiagnostics) => void;
+};
 const MapLibreTripMap = lazy(() =>
   import("./map/MapLibreTripMap")
     .then((m) => ({ default: m.MapLibreTripMap as React.ComponentType<RealMapProps> }))
