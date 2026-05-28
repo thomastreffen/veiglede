@@ -338,6 +338,7 @@ export const tripsApi = {
   updateTrip(id: string, patch: Partial<Trip>) {
     ensureInit();
     state = { ...state, trips: state.trips.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
+    refreshTripDerivedState(id);
     persist();
   },
   /** Read the current trip + days + stops snapshot for a trip id. */
@@ -394,20 +395,38 @@ export const tripsApi = {
       distanceFromPrevKm: input.distanceFromPrevKm,
       photoOp: input.photoOp,
       promoted: input.promoted,
+      lat: input.lat,
+      lng: input.lng,
+      placement: input.placement,
+      routeStatus: input.routeStatus,
+      distanceFromRouteKm: input.distanceFromRouteKm,
+      extraDistanceKm: input.extraDistanceKm,
       order,
     };
     state = { ...state, stops: [...state.stops, stop] };
+    const tripId = getTripIdForDay(dayId);
+    if (tripId) refreshTripDerivedState(tripId);
     persist();
     return stop;
   },
   updateStop(id: string, patch: Partial<Stop>) {
     ensureInit();
+    const stop = state.stops.find((s) => s.id === id);
     state = { ...state, stops: state.stops.map((s) => (s.id === id ? { ...s, ...patch } : s)) };
+    if (stop) {
+      const tripId = getTripIdForDay(stop.dayId);
+      if (tripId) refreshTripDerivedState(tripId);
+    }
     persist();
   },
   deleteStop(id: string) {
     ensureInit();
+    const stop = state.stops.find((s) => s.id === id);
     state = { ...state, stops: state.stops.filter((s) => s.id !== id) };
+    if (stop) {
+      const tripId = getTripIdForDay(stop.dayId);
+      if (tripId) refreshTripDerivedState(tripId);
+    }
     persist();
   },
   moveStop(id: string, direction: -1 | 1) {
@@ -427,6 +446,8 @@ export const tripsApi = {
         return s;
       }),
     };
+    const tripId = getTripIdForDay(stop.dayId);
+    if (tripId) refreshTripDerivedState(tripId);
     persist();
   },
   addSuggestion(tripId: string, sug: SuggestedStop): Stop | null {
