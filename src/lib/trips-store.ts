@@ -81,6 +81,20 @@ export interface Trip {
   routeDurationMin?: number;
   routeProvider?: string;
   routeWaypointsHash?: string;
+  // Map UX v1.1 — primary route is `routeGeometry`. Alternatives are reserved
+  // for a future routing v2 where ORS / another provider returns multiple
+  // options. Persisted so the planner can later let the user pick.
+  routeAlternatives?: RouteAlternative[];
+}
+
+export interface RouteAlternative {
+  id: string;
+  label: string;
+  distanceKm: number;
+  durationMin: number;
+  geometry: { lat: number; lng: number }[];
+  provider: string;
+  summary?: string;
 }
 
 export type CoverKey = "fjord" | "mountain" | "coast" | "valley" | "lofoten" | "forest";

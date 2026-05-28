@@ -174,7 +174,7 @@ function TripPlanner() {
           onSelectStop={handleSelectStop}
           suggestionPins={suggestionPins}
           hoveredSuggestionId={hoveredSuggestionId}
-          height="h-56 md:h-72"
+          height="h-72 md:h-[28rem]"
         />
       </section>
 
