@@ -237,24 +237,66 @@ export function MapLibreTripMap({
     try { map.setStyle(styleUrl); } catch { /* noop */ }
   }, [styleUrl]);
 
-  // Fetch route via ORS when not provided.
+  // Waypoint-driven routing — recompute the route whenever the set of
+  // route-affecting stops changes (origin, destination, and any stop whose
+  // location we can resolve to real coordinates). Persists back to the trip
+  // so distance/time stays honest and the cached geometry is reusable.
+  const lastHashRef = useRef<string>("");
+  const prevHashRef = useRef<string>(trip.routeWaypointsHash ?? "");
   useEffect(() => {
-    if (!mapConfig.hasRouting) return;
-    if (trip.routeGeometry && trip.routeGeometry.length > 1) {
-      setRouteGeom(trip.routeGeometry);
+    if (!mapConfig.hasRouting) {
+      if (trip.routeGeometry && trip.routeGeometry.length > 1) setRouteGeom(trip.routeGeometry);
       return;
     }
-    const wps = [
-      projected.origin,
-      ...projected.mapped.map((m) => m.loc),
-      projected.destination,
-    ];
+    // Only stops with real (non-approximated) coordinates participate in
+    // routing. "detour"-typed stops are included — they still pass through
+    // the point. Approximated stops would just snap onto the existing line.
+    const stopWps = projected.mapped
+      .filter((m) => !m.approximated)
+      .map((m) => m.loc);
+    const wps: LatLng[] = [projected.origin, ...stopWps, projected.destination];
+    const hash = waypointHash(wps);
+    if (hash === lastHashRef.current) return;
+    lastHashRef.current = hash;
+
+    // Cache hit on the trip itself — no fetch, no update.
+    if (hash === trip.routeWaypointsHash && trip.routeGeometry && trip.routeGeometry.length > 1) {
+      setRouteGeom(trip.routeGeometry);
+      prevHashRef.current = hash;
+      return;
+    }
+
     let cancelled = false;
     getCachedRoute(wps).then((res) => {
-      if (!cancelled && res) setRouteGeom(res.geometry);
+      if (cancelled) return;
+      if (!res) {
+        if (prevHashRef.current && prevHashRef.current !== hash) {
+          toast.error("Stoppet er lagt til, men ruten kunne ikke beregnes på nytt. Prøv igjen.");
+        }
+        return;
+      }
+      setRouteGeom(res.geometry);
+      const userChanged = prevHashRef.current !== "" && prevHashRef.current !== hash;
+      prevHashRef.current = hash;
+      // Persist back to the trip so the rest of the app (turregnskap, hero
+      // stats, roadbook) stays in sync. Guarded by hash so we don't loop.
+      try {
+        tripsApi.updateTrip(trip.id, {
+          routeGeometry: res.geometry,
+          routeDistanceKm: res.distanceKm,
+          routeDurationMin: res.durationMin,
+          routeWaypointsHash: hash,
+          routeProvider: res.provider,
+          distanceKm: Math.round(res.distanceKm),
+          drivingTime: formatDrivingTime(res.durationMin),
+        });
+      } catch { /* noop */ }
+      if (userChanged) {
+        toast.success("Lagt til i ruta. Ruten er oppdatert.");
+      }
     });
     return () => { cancelled = true; };
-  }, [projected, trip.routeGeometry]);
+  }, [projected, trip.id, trip.routeGeometry, trip.routeWaypointsHash]);
 
   // Add/update route layer and fit bounds. Also re-runs after setStyle().
   const addRouteAndFit = useCallback(() => {
