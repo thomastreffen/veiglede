@@ -212,6 +212,30 @@ export function distanceToRoute(point: LatLng, routePoints: LatLng[]): number {
   return min;
 }
 
+/** Nearest point on the polyline to `point` — used to anchor detour spurs. */
+export function nearestPointOnRoute(point: LatLng, routePoints: LatLng[]): LatLng | null {
+  if (routePoints.length === 0) return null;
+  if (routePoints.length === 1) return routePoints[0];
+  let best: { loc: LatLng; d: number } | null = null;
+  for (let i = 0; i < routePoints.length - 1; i++) {
+    const a = routePoints[i];
+    const b = routePoints[i + 1];
+    const refLat = (point.lat + a.lat + b.lat) / 3;
+    const p = projectKm(point, refLat);
+    const p1 = projectKm(a, refLat);
+    const p2 = projectKm(b, refLat);
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const lenSq = dx * dx + dy * dy;
+    const t = lenSq === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - p1.x) * dx + (p.y - p1.y) * dy) / lenSq));
+    const loc: LatLng = { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+    const d = distanceKm(point, loc);
+    if (!best || d < best.d) best = { loc, d };
+  }
+  return best ? best.loc : null;
+}
+
+
 /** Estimate detour minutes from km off-route (rough 60km/h average). */
 export function detourMinutes(extraKm: number): number {
   return Math.max(2, Math.round((extraKm * 2) / (60 / 60))); // 2× because round trip
