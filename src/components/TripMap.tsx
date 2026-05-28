@@ -86,8 +86,8 @@ export function TripMap(props: Props) {
   const [maplibreReady, setMaplibreReady] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [forced, setForced] = useState(false);
-  const [hideSvg, setHideSvg] = useState(false);
-  const [styleVariant, setStyleVariant] = useState<"dark" | "light">("dark");
+  const [showSvg, setShowSvg] = useState(false);
+  const [styleVariant, setStyleVariant] = useState<"dark" | "light" | "route-only">("light");
   const [diag, setDiag] = useState<import("./map/MapLibreTripMap").MapLibreDiagnostics | null>(null);
   const [stages, setStages] = useState<{
     mounted: boolean; mapCreated: boolean; styleLoaded: boolean;
