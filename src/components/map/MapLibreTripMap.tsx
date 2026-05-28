@@ -12,7 +12,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import { stopMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
-import { distanceKm, projectTrip } from "@/lib/geo";
+import { distanceKm, nearestPointOnRoute, projectTrip } from "@/lib/geo";
 import { getCachedRoute, mapConfig } from "@/lib/map";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
