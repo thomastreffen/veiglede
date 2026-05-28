@@ -134,7 +134,9 @@ export const Route = createFileRoute("/api/public/directions")({
           clearTimeout(timeout);
 
           if (!res.ok) {
+            const text = await res.text().catch(() => "");
             warnings.push(`ors-http-${res.status}`);
+            if (text) warnings.push(`ors-body-${text.slice(0, 180)}`);
             return json(demoResponse(body, warnings));
           }
           const data = await res.json();
