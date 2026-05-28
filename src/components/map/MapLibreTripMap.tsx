@@ -113,6 +113,23 @@ export function MapLibreTripMap({
     sw: [number, number] | null;
     ne: [number, number] | null;
   }>({ firstApp: null, firstMl: null, sw: null, ne: null });
+  const sizeInfoRef = useRef<{
+    waitCount: number;
+    lastWrapperRect: { w: number; h: number } | null;
+    mapCreationAttempted: boolean;
+    mapCreationSkippedReason: string | null;
+    resizeObserverFires: number;
+    mapResizeCalls: number;
+    firstValidSizeTs: number | null;
+  }>({
+    waitCount: 0,
+    lastWrapperRect: null,
+    mapCreationAttempted: false,
+    mapCreationSkippedReason: null,
+    resizeObserverFires: 0,
+    mapResizeCalls: 0,
+    firstValidSizeTs: null,
+  });
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
   const styleUrl = useMemo(() => buildMaptilerStyleUrl(maptilerKey, variant), [maptilerKey, variant]);
