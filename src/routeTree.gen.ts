@@ -20,8 +20,8 @@ import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
-import { Route as ApiPublicRouteRouteImport } from './routes/api/public/route'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
+import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
 import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
@@ -81,15 +81,15 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AppRoute,
 } as any)
-const ApiPublicRouteRoute = ApiPublicRouteRouteImport.update({
-  id: '/api/public',
-  path: '/api/public',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
   id: '/map-config',
   path: '/map-config',
   getParentRoute: () => ApiPublicRouteRoute,
+} as any)
+const ApiPublicDirectionsRoute = ApiPublicDirectionsRouteImport.update({
+  id: '/api/public/directions',
+  path: '/api/public/directions',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppTripsNewRoute = AppTripsNewRouteImport.update({
   id: '/new',
@@ -117,7 +117,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/api/public': typeof ApiPublicRouteRouteWithChildren
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
@@ -127,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
+  '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -135,7 +135,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/api/public': typeof ApiPublicRouteRouteWithChildren
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
@@ -145,6 +144,7 @@ export interface FileRoutesByTo {
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
+  '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -155,7 +155,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/api/public': typeof ApiPublicRouteRouteWithChildren
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/roadbook': typeof AppRoadbookRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -165,6 +164,7 @@ export interface FileRoutesById {
   '/shared/$tripId': typeof SharedTripIdRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
+  '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -175,7 +175,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
-    | '/api/public'
     | '/onboarding'
     | '/roadbook'
     | '/settings'
@@ -185,6 +184,7 @@ export interface FileRouteTypes {
     | '/shared/$tripId'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/api/public/directions'
     | '/api/public/map-config'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
@@ -193,7 +193,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
-    | '/api/public'
     | '/onboarding'
     | '/roadbook'
     | '/settings'
@@ -203,6 +202,7 @@ export interface FileRouteTypes {
     | '/shared/$tripId'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/api/public/directions'
     | '/api/public/map-config'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
@@ -212,7 +212,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/signup'
-    | '/api/public'
     | '/_app/onboarding'
     | '/_app/roadbook'
     | '/_app/settings'
@@ -222,6 +221,7 @@ export interface FileRouteTypes {
     | '/shared/$tripId'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
+    | '/api/public/directions'
     | '/api/public/map-config'
     | '/_app/trips/$tripId/roadbook'
     | '/_app/trips/$tripId/stops/$stopId'
@@ -232,10 +232,10 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
-  ApiPublicRouteRoute: typeof ApiPublicRouteRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   InviteTokenRoute: typeof InviteTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
+  ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -317,19 +317,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOnboardingRouteImport
       parentRoute: typeof AppRoute
     }
-    '/api/public': {
-      id: '/api/public'
-      path: '/api/public'
-      fullPath: '/api/public'
-      preLoaderRoute: typeof ApiPublicRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/map-config': {
       id: '/api/public/map-config'
       path: '/map-config'
       fullPath: '/api/public/map-config'
       preLoaderRoute: typeof ApiPublicMapConfigRouteImport
       parentRoute: typeof ApiPublicRouteRoute
+    }
+    '/api/public/directions': {
+      id: '/api/public/directions'
+      path: '/api/public/directions'
+      fullPath: '/api/public/directions'
+      preLoaderRoute: typeof ApiPublicDirectionsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/trips/new': {
       id: '/_app/trips/new'
@@ -406,27 +406,15 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
-interface ApiPublicRouteRouteChildren {
-  ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
-}
-
-const ApiPublicRouteRouteChildren: ApiPublicRouteRouteChildren = {
-  ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
-}
-
-const ApiPublicRouteRouteWithChildren = ApiPublicRouteRoute._addFileChildren(
-  ApiPublicRouteRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
-  ApiPublicRouteRoute: ApiPublicRouteRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   InviteTokenRoute: InviteTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
+  ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
