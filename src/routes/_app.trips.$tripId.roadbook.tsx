@@ -122,6 +122,7 @@ function Roadbook() {
       )}
 
       <div className="mt-10 space-y-10 max-w-2xl mx-auto">
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
         {tripDays.map((day) => {
           const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
           return (
