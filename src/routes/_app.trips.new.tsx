@@ -257,7 +257,16 @@ function NewTripWizard() {
       )}
 
       {step === 4 && (
-        <PreviewStep generating={generating} tripId={tripId} onRegenerate={regenerate} onOpen={() => tripId && navigate({ to: "/trips/$tripId", params: { tripId } })} />
+        <PreviewStep
+          generating={generating}
+          tripId={tripId}
+          onRegenerate={regenerate}
+          onOpen={() => {
+            if (!tripId) return;
+            clearDraft();
+            navigate({ to: "/trips/$tripId", params: { tripId } });
+          }}
+        />
       )}
 
       {step !== 4 && (
