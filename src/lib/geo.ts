@@ -123,12 +123,22 @@ export function projectTrip(
     dayStops.forEach((stop) => flat.push({ stop, day, dayIndex }));
   });
 
+  // If we have a real route geometry, place approximated stops along the
+  // actual route corridor (proportional t along the polyline) so they don't
+  // cluster on a straight line between origin and destination.
+  const geom = trip.routeGeometry && trip.routeGeometry.length > 1 ? trip.routeGeometry : null;
+  const pickAlongGeom = (t: number): LatLng => {
+    if (!geom) return interp(origin, destination, t);
+    const idx = Math.min(geom.length - 1, Math.max(0, Math.round(t * (geom.length - 1))));
+    return geom[idx];
+  };
+
   const total = flat.length;
   const mapped: MappedStop[] = flat.map((entry, globalIndex) => {
     const looked = lookupPlace(entry.stop.location ?? entry.stop.name);
-    // Distribute unknown stops evenly between origin and destination
+    // Distribute unknown stops evenly along the route corridor
     const t = total > 0 ? (globalIndex + 1) / (total + 1) : 0.5;
-    const fallback = interp(origin, destination, t);
+    const fallback = pickAlongGeom(t);
     return {
       ...entry,
       globalIndex,
