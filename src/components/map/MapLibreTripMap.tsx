@@ -91,6 +91,7 @@ export function MapLibreTripMap({
         attributionControl: { compact: true },
         cooperativeGestures: false,
       });
+      onStage?.("mapCreated");
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] MapLibre init failed", err);
       onError?.(`init: ${(err as Error)?.message ?? "unknown"}`);
@@ -104,8 +105,10 @@ export function MapLibreTripMap({
       setReady(true);
       onReady?.();
     };
-    map.on("load", () => signalReady());
-    map.once("render", () => signalReady());
+    map.on("load", () => { onStage?.("styleLoaded"); signalReady(); });
+    map.on("styledata", () => onStage?.("styleLoaded"));
+    map.once("render", () => { onStage?.("firstRender"); signalReady(); });
+    map.once("idle", () => signalReady());
     map.on("error", (e) => {
       const status = (e as { error?: { status?: number; message?: string } }).error?.status;
       const msg = (e as { error?: { message?: string } }).error?.message;
