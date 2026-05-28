@@ -29,6 +29,10 @@ export interface Stop {
   description?: string;
   reason?: string;
   durationMin?: number;
+  /** Trip time v1: where the duration came from. Defaults to "default". */
+  durationSource?: "default" | "user" | "ai" | "provider";
+  /** Trip time v1: optional explicit override; otherwise inferred from type. */
+  timeCategory?: "driving" | "pause" | "charging" | "meal" | "photo" | "ferry" | "overnight" | "other";
   distanceFromPrevKm?: number;
   photoOp?: boolean;
   promoted?: boolean;
@@ -85,6 +89,25 @@ export interface Trip {
   // for a future routing v2 where ORS / another provider returns multiple
   // options. Persisted so the planner can later let the user pick.
   routeAlternatives?: RouteAlternative[];
+  // Trip time v1 — snapshot of the time breakdown computed at generation.
+  // The UI recomputes live from current stops so it stays accurate when the
+  // user edits — this snapshot is kept for debug / future analytics.
+  timeBreakdown?: TripTimeBreakdownSnapshot;
+}
+
+export interface TripTimeBreakdownSnapshot {
+  drivingMin: number;
+  ferryMin?: number;
+  plannedStopsMin: number;
+  chargingMin?: number;
+  mealMin?: number;
+  photoStopMin?: number;
+  restMin?: number;
+  overnightMin?: number;
+  totalActiveDayMin: number;
+  totalTripMin: number;
+  source: "ors" | "estimated" | "mixed";
+  warnings?: string[];
 }
 
 export interface RouteAlternative {
@@ -278,6 +301,20 @@ export const tripsApi = {
     };
     persist();
     return finalTrip;
+  },
+  updateTrip(id: string, patch: Partial<Trip>) {
+    ensureInit();
+    state = { ...state, trips: state.trips.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
+    persist();
+  },
+  /** Read the current trip + days + stops snapshot for a trip id. */
+  getTripBundle(id: string): { trip: Trip | null; days: TripDay[]; stops: Stop[] } {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === id) ?? null;
+    const days = state.days.filter((d) => d.tripId === id);
+    const dayIds = new Set(days.map((d) => d.id));
+    const stops = state.stops.filter((s) => dayIds.has(s.dayId));
+    return { trip, days, stops };
   },
   deleteTrip(id: string) {
     ensureInit();

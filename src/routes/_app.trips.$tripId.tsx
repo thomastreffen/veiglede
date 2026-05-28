@@ -9,6 +9,7 @@ import { useDriverPrefs } from "@/lib/driver-prefs";
 import { getVehicleById, energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { TripMap } from "@/components/TripMap";
+import { TripTimeBudget } from "@/components/TripTimeBudget";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
@@ -176,6 +177,11 @@ function TripPlanner() {
           hoveredSuggestionId={hoveredSuggestionId}
           height="h-72 md:h-[28rem]"
         />
+      </section>
+
+      {/* Time budget */}
+      <section className="mt-4">
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
       </section>
 
 

@@ -11,6 +11,7 @@ import { ShareTripModal } from "@/components/ShareTripModal";
 import { TripCompanions } from "@/components/TripCompanions";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { TripMap } from "@/components/TripMap";
+import { TripTimeBudget, TripDayTimeRow } from "@/components/TripTimeBudget";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag } from "lucide-react";
 
@@ -121,6 +122,7 @@ function Roadbook() {
       )}
 
       <div className="mt-10 space-y-10 max-w-2xl mx-auto">
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
         {tripDays.map((day) => {
           const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
           return (
@@ -131,6 +133,7 @@ function Roadbook() {
               </div>
               <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">{day.title}</h2>
               {day.summary && <p className="mt-2 text-sm text-muted-foreground">{day.summary}</p>}
+              <TripDayTimeRow trip={trip} days={tripDays} stops={tripStops} dayId={day.id} startTime={dayStops[0]?.estimatedTime} />
 
               <ol className="mt-6 relative border-l-2 border-border ml-3 space-y-6">
                 {dayStops.map((stop) => {

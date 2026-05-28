@@ -9,6 +9,7 @@ import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { manualPlace } from "@/lib/places/geocoder";
 import { getRoute, type RouteResult } from "@/lib/routing";
+import { TripTimeBudget } from "@/components/TripTimeBudget";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -302,6 +303,17 @@ function NewTripWizard() {
         routeDurationMin: route?.durationMin,
         routeProvider: route?.provider,
       });
+      // Snapshot a trip time breakdown using the freshly-seeded stops.
+      try {
+        const { computeTimeBreakdown } = await import("@/lib/trip-time");
+        const bundle = tripsApi.getTripBundle(trip.id);
+        if (bundle.trip) {
+          const breakdown = computeTimeBreakdown(bundle.trip, bundle.days, bundle.stops);
+          tripsApi.updateTrip(trip.id, { timeBreakdown: breakdown });
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug("[wizard] timeBreakdown snapshot failed", err);
+      }
       setTripId(trip.id);
       setGenerating(false);
     })();
@@ -325,6 +337,8 @@ function NewTripWizard() {
           { label: "Routing", value: lastRoute?.provider ?? "—" },
           { label: "Geometry pts", value: lastRoute?.geometry.length ?? 0 },
           { label: "Dist src", value: lastRoute ? `${lastRoute.distanceKm} km` : "estimat" },
+          { label: "Driving src", value: lastRoute?.durationMin != null ? "ors" : "estimated" },
+          { label: "Stop sum (min)", value: tripId ? (tripsApi.getTripBundle(tripId).stops.reduce((a, s) => a + (s.durationMin ?? 0), 0)) : "—" },
           { label: "Routing warn", value: lastRoute?.warnings?.join(",") ?? "—" },
         ]}
       />
@@ -531,7 +545,7 @@ function PreviewStep({
 
       <div className="grid grid-cols-3 gap-3">
         <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
-        <PreviewStat label="Kjøretid" value={trip.drivingTime} />
+        <PreviewStat label="Ren kjøretid" value={trip.drivingTime} />
         <PreviewStat label="Dager" value={String(tripDays.length)} />
       </div>
 
@@ -540,6 +554,8 @@ function PreviewStep({
         <PreviewStat label="Rutestil" value={styleMeta(trip.style).label} />
         <PreviewStat label="Stopp" value={String(tripStops.length)} />
       </div>
+
+      <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} title="Turregnskap" />
 
       {trip.aiSummary && (
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
