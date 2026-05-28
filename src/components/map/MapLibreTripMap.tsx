@@ -26,7 +26,8 @@ interface Props {
   hoveredSuggestionId?: string | null;
   compact?: boolean;
   variant?: "dark" | "light";
-  onError?: () => void;
+  onError?: (msg?: string) => void;
+  onReady?: () => void;
   /** MapTiler browser key fetched at runtime via /api/public-map-config. */
   maptilerKey: string;
 }
