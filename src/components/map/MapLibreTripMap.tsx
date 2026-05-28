@@ -10,12 +10,25 @@ import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
-import { stopMeta } from "@/lib/trips-store";
+import { stopMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip } from "@/lib/geo";
 import { getCachedRoute, mapConfig } from "@/lib/map";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+function waypointHash(wps: LatLng[]): string {
+  return wps.map((w) => `${w.lat.toFixed(4)},${w.lng.toFixed(4)}`).join("|");
+}
+function formatDrivingTime(min: number): string {
+  if (!min || min < 1) return "0min";
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}t`;
+  return `${h}t ${m}min`;
+}
 
 export type MapLibreStage =
   | "mounted"
@@ -224,24 +237,66 @@ export function MapLibreTripMap({
     try { map.setStyle(styleUrl); } catch { /* noop */ }
   }, [styleUrl]);
 
-  // Fetch route via ORS when not provided.
+  // Waypoint-driven routing — recompute the route whenever the set of
+  // route-affecting stops changes (origin, destination, and any stop whose
+  // location we can resolve to real coordinates). Persists back to the trip
+  // so distance/time stays honest and the cached geometry is reusable.
+  const lastHashRef = useRef<string>("");
+  const prevHashRef = useRef<string>(trip.routeWaypointsHash ?? "");
   useEffect(() => {
-    if (!mapConfig.hasRouting) return;
-    if (trip.routeGeometry && trip.routeGeometry.length > 1) {
-      setRouteGeom(trip.routeGeometry);
+    if (!mapConfig.hasRouting) {
+      if (trip.routeGeometry && trip.routeGeometry.length > 1) setRouteGeom(trip.routeGeometry);
       return;
     }
-    const wps = [
-      projected.origin,
-      ...projected.mapped.map((m) => m.loc),
-      projected.destination,
-    ];
+    // Only stops with real (non-approximated) coordinates participate in
+    // routing. "detour"-typed stops are included — they still pass through
+    // the point. Approximated stops would just snap onto the existing line.
+    const stopWps = projected.mapped
+      .filter((m) => !m.approximated)
+      .map((m) => m.loc);
+    const wps: LatLng[] = [projected.origin, ...stopWps, projected.destination];
+    const hash = waypointHash(wps);
+    if (hash === lastHashRef.current) return;
+    lastHashRef.current = hash;
+
+    // Cache hit on the trip itself — no fetch, no update.
+    if (hash === trip.routeWaypointsHash && trip.routeGeometry && trip.routeGeometry.length > 1) {
+      setRouteGeom(trip.routeGeometry);
+      prevHashRef.current = hash;
+      return;
+    }
+
     let cancelled = false;
     getCachedRoute(wps).then((res) => {
-      if (!cancelled && res) setRouteGeom(res.geometry);
+      if (cancelled) return;
+      if (!res) {
+        if (prevHashRef.current && prevHashRef.current !== hash) {
+          toast.error("Stoppet er lagt til, men ruten kunne ikke beregnes på nytt. Prøv igjen.");
+        }
+        return;
+      }
+      setRouteGeom(res.geometry);
+      const userChanged = prevHashRef.current !== "" && prevHashRef.current !== hash;
+      prevHashRef.current = hash;
+      // Persist back to the trip so the rest of the app (turregnskap, hero
+      // stats, roadbook) stays in sync. Guarded by hash so we don't loop.
+      try {
+        tripsApi.updateTrip(trip.id, {
+          routeGeometry: res.geometry,
+          routeDistanceKm: res.distanceKm,
+          routeDurationMin: res.durationMin,
+          routeWaypointsHash: hash,
+          routeProvider: res.provider,
+          distanceKm: Math.round(res.distanceKm),
+          drivingTime: formatDrivingTime(res.durationMin),
+        });
+      } catch { /* noop */ }
+      if (userChanged) {
+        toast.success("Lagt til i ruta. Ruten er oppdatert.");
+      }
     });
     return () => { cancelled = true; };
-  }, [projected, trip.routeGeometry]);
+  }, [projected, trip.id, trip.routeGeometry, trip.routeWaypointsHash]);
 
   // Add/update route layer and fit bounds. Also re-runs after setStyle().
   const addRouteAndFit = useCallback(() => {
@@ -342,16 +397,30 @@ export function MapLibreTripMap({
       });
       const marker = new maplibregl.Marker({ element: el }).setLngLat([m.loc.lng, m.loc.lat]).addTo(map);
       if (selected) {
-        const popup = new maplibregl.Popup({ offset: 22, closeButton: false, className: "vg-popup" })
+        const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
+        const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" })
           .setHTML(
-            `<div style="font-family:inherit;padding:2px 4px;max-width:200px;">
+            `<div style="font-family:inherit;padding:2px 4px;max-width:220px;">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${color};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)}</div>
               <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
               ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
+              ${durationStr ? `<div style="font-size:11px;color:#555;margin-top:2px;">⏱ ${durationStr}</div>` : ""}
+              <button data-vg-remove="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d33;color:#d33;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Fjern fra rute</button>
             </div>`,
           );
         marker.setPopup(popup);
         marker.togglePopup();
+        // Wire the Fjern button via event delegation on the popup element.
+        requestAnimationFrame(() => {
+          const popupEl = popup.getElement();
+          const btn = popupEl?.querySelector<HTMLButtonElement>(`[data-vg-remove="${m.stop.id}"]`);
+          btn?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            try { tripsApi.deleteStop(m.stop.id); } catch { /* noop */ }
+            onSelectStop?.(null);
+            toast.success("Stoppet fjernet. Ruten oppdateres.");
+          });
+        });
       }
       markersRef.current.push(marker);
     });
