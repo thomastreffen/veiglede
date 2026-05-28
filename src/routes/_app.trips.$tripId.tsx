@@ -24,6 +24,7 @@ import {
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
   Navigation, CornerDownRight,
 } from "lucide-react";
+import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
