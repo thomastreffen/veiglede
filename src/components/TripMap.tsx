@@ -206,7 +206,7 @@ export function TripMap(props: Props) {
   const visibleLayer = mapLibreVisible ? "maplibre" : "svg";
 
   return (
-    <div className={cn("relative", heightClass, props.className)}>
+    <div className={cn("relative w-full min-h-[16rem]", heightClass, props.className)}>
       {/* SVG base — rendered behind MapLibre; hidden once MapLibre is visible. */}
       <div
         className={cn(
