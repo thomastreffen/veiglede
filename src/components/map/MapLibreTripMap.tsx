@@ -85,7 +85,6 @@ export function MapLibreTripMap({
       return;
     }
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    let loaded = false;
     let signaled = false;
     const signalReady = () => {
       if (signaled) return;
@@ -93,21 +92,27 @@ export function MapLibreTripMap({
       setReady(true);
       onReady?.();
     };
-    map.on("load", () => { loaded = true; });
-    // Wait for first idle (tiles drawn) before revealing the overlay.
-    map.once("idle", () => { loaded = true; signalReady(); });
+    // Reveal as soon as style+first tiles are rendered. `load` fires after the
+    // style is parsed and the first frame is drawn — strong enough to mean
+    // "the user sees a map", without waiting for full network idle (which can
+    // stall indefinitely on slow tile fetches).
+    map.on("load", () => signalReady());
+    // Belt-and-braces: also reveal on the first successful render frame.
+    map.once("render", () => signalReady());
     map.on("error", (e) => {
       const status = (e as { error?: { status?: number; message?: string } }).error?.status;
       const msg = (e as { error?: { message?: string } }).error?.message;
-      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, loaded, err: e });
+      if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, signaled, err: e });
+      // Only treat as fatal if we haven't yet shown anything, or auth failed.
       if (!signaled || status === 401 || status === 403 || status === 404) {
         onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
       }
     });
-    // Safety net: if the map never becomes idle within 3s, fall back to SVG.
+    // Safety net: if neither load nor render fires within 4s, fall back to SVG.
     const t = window.setTimeout(() => {
       if (!signaled) onError?.("MapTiler map load timeout");
-    }, 3000);
+    }, 4000);
+
     mapRef.current = map;
     return () => { window.clearTimeout(t); map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
