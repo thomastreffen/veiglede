@@ -1,5 +1,5 @@
 import * as React from "react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
@@ -159,9 +159,30 @@ function SvgTripMap({
 }: Props) {
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
 
-  const W = 800;
-  const H = 480;
-  const padding = compact ? 32 : 48;
+  // Measure the actual rendered card so the projection fits the visible area
+  // instead of relying on a fixed 800×480 viewBox + `slice` (which clipped
+  // vertical routes like Drammen → Molde at the top/bottom of wide cards).
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<{ w: number; h: number }>({ w: 800, h: 480 });
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.max(120, Math.round(rect.width));
+      const h = Math.max(120, Math.round(rect.height));
+      setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
+  const W = size.w;
+  const H = size.h;
+  // Bigger pad on the short axis so pins/labels don't sit on the card edge.
+  const padding = Math.max(compact ? 24 : 40, Math.round(Math.min(W, H) * 0.12));
 
   const bounds = useMemo(() => {
     const all: LatLng[] = [
@@ -219,11 +240,11 @@ function SvgTripMap({
     : null;
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-border bg-surface", height, className)}>
+    <div ref={containerRef} className={cn("relative overflow-hidden rounded-2xl border border-border bg-surface", height, className)}>
       <svg
         className="absolute inset-0 h-full w-full"
         viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="none"
       >
         <defs>
           <pattern id="vg-map-grid" width="40" height="40" patternUnits="userSpaceOnUse">
