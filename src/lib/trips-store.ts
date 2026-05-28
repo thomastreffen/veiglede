@@ -85,6 +85,16 @@ export interface Trip {
   routeDurationMin?: number;
   routeProvider?: string;
   routeWaypointsHash?: string;
+  // Routing v1.1 — honest source-of-truth fields from the routing provider.
+  // Persisted so debug panels and the time budget can be transparent.
+  routeProfile?: string;
+  routeAvoidHighways?: boolean;
+  routeAvoidFerries?: boolean;
+  routeRawDistanceMeters?: number;
+  routeRawDurationSeconds?: number;
+  routeFerryDistanceKm?: number;
+  routeFerryDurationMin?: number;
+  routeFallbackEstimateMin?: number;
   // Map UX v1.1 — primary route is `routeGeometry`. Alternatives are reserved
   // for a future routing v2 where ORS / another provider returns multiple
   // options. Persisted so the planner can later let the user pick.
