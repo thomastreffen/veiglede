@@ -101,14 +101,18 @@ export function MapLibreTripMap({
     let signaled = false;
     const signalReady = () => {
       if (signaled) return;
+      // Require the style to actually be loaded — otherwise we may flip the
+      // overlay opaque before any tiles have been requested and the SVG
+      // beneath stays visually dominant.
+      if (!map.isStyleLoaded?.()) return;
       signaled = true;
       setReady(true);
       onReady?.();
     };
     map.on("load", () => { onStage?.("styleLoaded"); signalReady(); });
-    map.on("styledata", () => onStage?.("styleLoaded"));
-    map.once("render", () => { onStage?.("firstRender"); signalReady(); });
-    map.once("idle", () => signalReady());
+    map.on("styledata", () => { onStage?.("styleLoaded"); signalReady(); });
+    map.on("render", () => { onStage?.("firstRender"); signalReady(); });
+    map.on("idle", () => signalReady());
     map.on("error", (e) => {
       const status = (e as { error?: { status?: number; message?: string } }).error?.status;
       const msg = (e as { error?: { message?: string } }).error?.message;
