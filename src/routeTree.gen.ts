@@ -82,9 +82,9 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
-  id: '/map-config',
-  path: '/map-config',
-  getParentRoute: () => ApiPublicRouteRoute,
+  id: '/api/public/map-config',
+  path: '/api/public/map-config',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicDirectionsRoute = ApiPublicDirectionsRouteImport.update({
   id: '/api/public/directions',
@@ -236,6 +236,7 @@ export interface RootRouteChildren {
   InviteTokenRoute: typeof InviteTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
+  ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -319,10 +320,10 @@ declare module '@tanstack/react-router' {
     }
     '/api/public/map-config': {
       id: '/api/public/map-config'
-      path: '/map-config'
+      path: '/api/public/map-config'
       fullPath: '/api/public/map-config'
       preLoaderRoute: typeof ApiPublicMapConfigRouteImport
-      parentRoute: typeof ApiPublicRouteRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/directions': {
       id: '/api/public/directions'
@@ -415,17 +416,8 @@ const rootRouteChildren: RootRouteChildren = {
   InviteTokenRoute: InviteTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
+  ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
