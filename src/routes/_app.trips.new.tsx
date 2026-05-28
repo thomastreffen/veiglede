@@ -73,11 +73,16 @@ function NewTripWizard() {
   const { trips } = useTripsStore();
 
   // Decide once on first render whether to restore the persisted draft.
-  // Restore if: (a) explicit ?restoreDraft=1 query, OR (b) sessionStorage marker
-  // says we're still in the same in-tab wizard session (= browser refresh).
-  // Otherwise treat this as a fresh entry (new tab, or click "Ny tur" again)
-  // and start at step 1.
-  const shouldRestore = typeof window !== "undefined" && (restoreParam || hasActiveSession());
+  // - ?restoreDraft=1|true  → force restore
+  // - ?restoreDraft=0|false → force fresh (also clears session marker)
+  // - no param              → restore only if sessionStorage marker is set
+  //                           (= browser refresh within the same wizard tab)
+  const shouldRestore = typeof window !== "undefined" && (
+    restoreParam === "force" || (restoreParam !== "fresh" && hasActiveSession())
+  );
+  if (typeof window !== "undefined" && restoreParam === "fresh") {
+    clearSession();
+  }
   const draft = shouldRestore ? loadDraft() : null;
   if (typeof window !== "undefined" && !shouldRestore) {
     // Fresh entry — make sure no stale completed result hijacks the new flow.
