@@ -553,7 +553,7 @@ function PreviewStep({
 
       <div className="grid grid-cols-3 gap-3">
         <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
-        <PreviewStat label="Ren kjøretid" value={trip.drivingTime} />
+        <PreviewStat label={trip.routeProvider === "ors" ? "Beregnet kjøretid" : "Estimert kjøretid"} value={trip.drivingTime} />
         <PreviewStat label="Dager" value={String(tripDays.length)} />
       </div>
 
