@@ -264,6 +264,8 @@ export function TripMap(props: Props) {
           <div className="normal-case">fit SW (lng,lat): {diag?.fitBoundsSW ? `[${diag.fitBoundsSW[0]}, ${diag.fitBoundsSW[1]}]` : "—"}</div>
           <div className="normal-case">fit NE (lng,lat): {diag?.fitBoundsNE ? `[${diag.fitBoundsNE[0]}, ${diag.fitBoundsNE[1]}]` : "—"}</div>
           <div className="normal-case">center (lng,lat): {diag?.centerLngLat ? `[${diag.centerLngLat[0]}, ${diag.centerLngLat[1]}]` : "—"} · zoom: {diag?.zoom ?? "—"}</div>
+          <div className="normal-case">wrapper rect: {diag?.lastWrapperRect ? `${diag.lastWrapperRect.w}×${diag.lastWrapperRect.h}` : "—"} · wait: {diag?.waitCount ?? 0} · ro fires: {diag?.resizeObserverFires ?? 0} · resize calls: {diag?.mapResizeCalls ?? 0}</div>
+          <div className="normal-case">map.create attempted: {String(diag?.mapCreationAttempted ?? false)}{diag?.mapCreationSkippedReason ? ` · skipped: ${diag.mapCreationSkippedReason}` : ""}{diag?.firstValidSizeTs ? ` · firstValidTs: +${Math.max(0, Date.now() - diag.firstValidSizeTs)}ms` : ""}</div>
           <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} · stops: {stopsWithCoords}/{props.stops.length} (d+2={routePointCount})</div>
           {fallbackReason && <div className="normal-case text-yellow-400">reason: {fallbackReason}</div>}
           {diag?.lastError && <div className="text-destructive normal-case">tile/style err: {diag.lastErrorStatus ?? ""} {diag.lastErrorHost ?? ""} {diag.lastError}</div>}
