@@ -78,6 +78,7 @@ export function MapLibreTripMap({
   onError,
   onReady,
   onStage,
+  onDiagnostics,
   maptilerKey,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
