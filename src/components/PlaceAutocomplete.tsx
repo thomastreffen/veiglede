@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { searchPlaces, manualPlace, type ResolvedPlace, type PlaceSource } from "@/lib/places/geocoder";
 import { useI18n } from "@/i18n/provider";
-import { useT } from "@/i18n/provider";
+
 import { cn } from "@/lib/utils";
 import { MapPin, Loader2, X } from "lucide-react";
 
