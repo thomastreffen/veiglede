@@ -337,6 +337,8 @@ function NewTripWizard() {
           { label: "Routing", value: lastRoute?.provider ?? "—" },
           { label: "Geometry pts", value: lastRoute?.geometry.length ?? 0 },
           { label: "Dist src", value: lastRoute ? `${lastRoute.distanceKm} km` : "estimat" },
+          { label: "Driving src", value: lastRoute?.durationMin != null ? "ors" : "estimated" },
+          { label: "Stop sum (min)", value: tripId ? (tripsApi.getTripBundle(tripId).stops.reduce((a, s) => a + (s.durationMin ?? 0), 0)) : "—" },
           { label: "Routing warn", value: lastRoute?.warnings?.join(",") ?? "—" },
         ]}
       />
