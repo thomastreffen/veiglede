@@ -26,10 +26,30 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
   const breakdown = computeTimeBreakdown(trip, days, stops);
   const perDay = showPerDay ? computeDayBreakdowns(trip, days, stops) : [];
 
+  // Routing v1.1 — be honest about what ORS gave us.
+  const orsFerryMin = trip.routeFerryDurationMin ?? 0;
+  const ferryFromOrs = breakdown.source !== "estimated" && orsFerryMin > 0;
+  const drivingLabel = breakdown.source === "estimated" ? "Estimert kjøretid" : "Beregnet kjøretid";
+  // We can only call it "Ren kjøretid" when ferries have been excluded from
+  // the route — either ORS confirmed no ferry, or the user asked to avoid it.
+  const isPureDriving =
+    breakdown.source !== "estimated" &&
+    (trip.routeAvoidFerries === true || (orsFerryMin === 0 && trip.routeProvider === "ors"));
+  const headlineLabel = isPureDriving ? "Ren kjøretid" : drivingLabel;
+  const drivingHelper = isPureDriving
+    ? null
+    : breakdown.source === "estimated"
+      ? "Estimat: avstand × 60 km/t."
+      : "Fra ruteberegning. Kan inkludere ferge/transporttid der ruten krever det.";
+
   const rows: { icon: React.ReactNode; label: string; value: string; muted?: boolean }[] = [
-    { icon: <Clock className="h-3.5 w-3.5" />, label: "Ren kjøretid", value: formatDuration(breakdown.drivingMin) },
+    { icon: <Clock className="h-3.5 w-3.5" />, label: headlineLabel, value: formatDuration(breakdown.drivingMin) },
   ];
-  if (breakdown.ferryMin) rows.push({ icon: <Ship className="h-3.5 w-3.5" />, label: "Ferge / venting", value: formatDuration(breakdown.ferryMin) });
+  if (ferryFromOrs) {
+    rows.push({ icon: <Ship className="h-3.5 w-3.5" />, label: "Ferge (inkl. i rutetid)", value: `~${formatDuration(orsFerryMin)}`, muted: true });
+  } else if (breakdown.ferryMin) {
+    rows.push({ icon: <Ship className="h-3.5 w-3.5" />, label: "Ferge / venting", value: formatDuration(breakdown.ferryMin) });
+  }
   if (breakdown.chargingMin) rows.push({ icon: <BatteryCharging className="h-3.5 w-3.5" />, label: "Lading", value: formatDuration(breakdown.chargingMin) });
   if (breakdown.mealMin) rows.push({ icon: <Coffee className="h-3.5 w-3.5" />, label: "Mat", value: formatDuration(breakdown.mealMin) });
   if (breakdown.photoStopMin) rows.push({ icon: <Sparkles className="h-3.5 w-3.5" />, label: "Fotostopp", value: formatDuration(breakdown.photoStopMin) });
@@ -65,6 +85,15 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
           </li>
         ) : null}
       </ul>
+
+      {drivingHelper && (
+        <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{drivingHelper}</p>
+      )}
+      {trip.routeAvoidHighways && (
+        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+          Ruten unngår motorvei (valgt kjørestil). Det forklarer at tiden kan være lengre enn raskeste vei.
+        </p>
+      )}
 
       {showPerDay && perDay.length > 1 && (
         <div className="mt-4 pt-3 border-t border-border/60">
