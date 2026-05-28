@@ -226,7 +226,7 @@ export function MapLibreTripMap({
   }, [projected, suggestionPins, hoveredSuggestionId, selectedStopId, onSelectStop, ready]);
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-border bg-surface", height, className)}>
+    <div className={cn("relative h-full w-full overflow-hidden rounded-2xl", className)}>
       <div ref={containerRef} className="absolute inset-0" />
     </div>
   );
