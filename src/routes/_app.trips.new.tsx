@@ -10,16 +10,18 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips/new")({
   head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
-  validateSearch: (s: Record<string, unknown>): { restoreDraft?: "force" | "fresh" } => {
+  validateSearch: (s: Record<string, unknown>): { restoreDraft?: "force" | "fresh"; ts?: string } => {
     const raw = s.restoreDraft;
     const v = typeof raw === "boolean" ? String(raw) : typeof raw === "number" ? String(raw) : typeof raw === "string" ? raw.trim().toLowerCase() : undefined;
+    const tsRaw = s.ts;
+    const ts = tsRaw == null ? undefined : String(tsRaw);
     if (v === undefined || v === "") return {};
     const FORCE = new Set(["1", "true", "force", "yes"]);
     const FRESH = new Set(["0", "false", "fresh", "no"]);
-    if (FORCE.has(v)) return { restoreDraft: "force" };
-    if (FRESH.has(v)) return { restoreDraft: "fresh" };
+    if (FORCE.has(v)) return { restoreDraft: "force", ts };
+    if (FRESH.has(v)) return { restoreDraft: "fresh", ts };
     // Unknown values: treat as fresh to avoid hijacking with stale drafts.
-    return { restoreDraft: "fresh" };
+    return { restoreDraft: "fresh", ts };
   },
   component: NewTripWizard,
 });
@@ -42,6 +44,19 @@ interface Draft {
   aiPrompt?: string;
   tripId?: string | null;
 }
+
+interface WizardSnapshot {
+  step: Step;
+  vehicleId: string;
+  style: RouteStyle;
+  origin: string;
+  destination: string;
+  date: string;
+  aiPrompt: string;
+  tripId: string | null;
+}
+
+const DEFAULT_DATE = "2026-06-07";
 
 function loadDraft(): Draft | null {
   if (typeof localStorage === "undefined") return null;
@@ -68,45 +83,111 @@ function clearSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
 }
 
+function createFreshSnapshot(initialVehicle: Vehicle): WizardSnapshot {
+  return {
+    step: 1,
+    vehicleId: initialVehicle.id,
+    style: initialVehicle.defaultStyle,
+    origin: "",
+    destination: "",
+    date: DEFAULT_DATE,
+    aiPrompt: "",
+    tripId: null,
+  };
+}
+
+function createRestoredSnapshot({
+  draft,
+  vehicles,
+  initialVehicle,
+  trips,
+}: {
+  draft: Draft | null;
+  vehicles: Vehicle[];
+  initialVehicle: Vehicle;
+  trips: ReturnType<typeof useTripsStore>["trips"];
+}): WizardSnapshot {
+  const vehicleId = draft?.vehicleId && vehicles.some((vehicle) => vehicle.id === draft.vehicleId)
+    ? draft.vehicleId
+    : initialVehicle.id;
+  const vehicle = vehicles.find((candidate) => candidate.id === vehicleId) ?? initialVehicle;
+  const tripId = draft?.tripId && trips.some((trip) => trip.id === draft.tripId) ? draft.tripId : null;
+
+  return {
+    step: tripId ? 4 : (draft?.step ?? 1),
+    vehicleId,
+    style: draft?.style ?? vehicle.defaultStyle,
+    origin: draft?.origin ?? "",
+    destination: draft?.destination ?? "",
+    date: draft?.date ?? DEFAULT_DATE,
+    aiPrompt: draft?.aiPrompt ?? "",
+    tripId,
+  };
+}
+
 function NewTripWizard() {
   const navigate = useNavigate();
-  const { restoreDraft: restoreParam } = Route.useSearch();
+  const { restoreDraft: restoreParam, ts } = Route.useSearch();
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
   const initialVehicle: Vehicle = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
   const { trips } = useTripsStore();
 
-  // Decide once on first render whether to restore the persisted draft.
-  // - ?restoreDraft=1|true  → force restore
-  // - ?restoreDraft=0|false → force fresh (also clears session marker)
-  // - no param              → restore only if sessionStorage marker is set
-  //                           (= browser refresh within the same wizard tab)
-  const shouldRestore = typeof window !== "undefined" && (
-    restoreParam === "force" || (restoreParam !== "fresh" && hasActiveSession())
-  );
-  if (typeof window !== "undefined" && restoreParam === "fresh") {
-    clearSession();
-  }
-  const draft = shouldRestore ? loadDraft() : null;
-  if (typeof window !== "undefined" && !shouldRestore) {
-    // Fresh entry — make sure no stale completed result hijacks the new flow.
-    clearDraft();
-  }
-  // If a previously-persisted tripId no longer exists in the store, drop it.
-  const draftTripValid = draft?.tripId ? trips.some((t) => t.id === draft.tripId) : false;
+  const resolveSnapshot = (): WizardSnapshot => {
+    if (typeof window === "undefined") {
+      return createFreshSnapshot(initialVehicle);
+    }
 
-  const [step, setStep] = useState<Step>(draftTripValid ? 4 : (draft?.step ?? 1));
-  const [vehicleId, setVehicleId] = useState<string>(
-    (draft?.vehicleId && vehicles.some((v) => v.id === draft.vehicleId)) ? draft.vehicleId : initialVehicle.id,
-  );
-  const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
-  const [style, setStyle] = useState<RouteStyle>(draft?.style ?? selectedVehicle.defaultStyle);
-  const [origin, setOrigin] = useState(draft?.origin ?? "Drammen");
-  const [destination, setDestination] = useState(draft?.destination ?? "Hardangervidda");
-  const [date, setDate] = useState(draft?.date ?? "2026-06-07");
-  const [aiPrompt, setAiPrompt] = useState(draft?.aiPrompt ?? "");
+    if (restoreParam === "fresh") {
+      clearDraft();
+      clearSession();
+      return createFreshSnapshot(initialVehicle);
+    }
+
+    const shouldRestore = restoreParam === "force" || hasActiveSession();
+    if (!shouldRestore) {
+      clearDraft();
+      clearSession();
+      return createFreshSnapshot(initialVehicle);
+    }
+
+    return createRestoredSnapshot({
+      draft: loadDraft(),
+      vehicles,
+      initialVehicle,
+      trips,
+    });
+  };
+
+  const initialSnapshot = resolveSnapshot();
+
+  const [step, setStep] = useState<Step>(initialSnapshot.step);
+  const [vehicleId, setVehicleId] = useState<string>(initialSnapshot.vehicleId);
+  const [style, setStyle] = useState<RouteStyle>(initialSnapshot.style);
+  const [origin, setOrigin] = useState(initialSnapshot.origin);
+  const [destination, setDestination] = useState(initialSnapshot.destination);
+  const [date, setDate] = useState(initialSnapshot.date);
+  const [aiPrompt, setAiPrompt] = useState(initialSnapshot.aiPrompt);
   const [generating, setGenerating] = useState(false);
-  const [tripId, setTripId] = useState<string | null>(draftTripValid ? draft!.tripId! : null);
+  const [tripId, setTripId] = useState<string | null>(initialSnapshot.tripId);
+  const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
+
+  useEffect(() => {
+    const snapshot = resolveSnapshot();
+    setStep(snapshot.step);
+    setVehicleId(snapshot.vehicleId);
+    setStyle(snapshot.style);
+    setOrigin(snapshot.origin);
+    setDestination(snapshot.destination);
+    setDate(snapshot.date);
+    setAiPrompt(snapshot.aiPrompt);
+    setGenerating(false);
+    setTripId(snapshot.tripId);
+
+    if (restoreParam === "fresh") {
+      navigate({ to: "/trips/new", replace: true });
+    }
+  }, [restoreParam, ts]);
 
   // Mark this tab as having an active wizard session, and clear that marker
   // on SPA navigation away. A hard refresh tears down React without running
