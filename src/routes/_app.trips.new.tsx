@@ -304,6 +304,7 @@ function NewTripWizard() {
           onOpen={() => {
             if (!tripId) return;
             clearDraft();
+            clearSession();
             navigate({ to: "/trips/$tripId", params: { tripId } });
           }}
         />
