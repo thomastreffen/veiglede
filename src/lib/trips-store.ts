@@ -89,6 +89,25 @@ export interface Trip {
   // for a future routing v2 where ORS / another provider returns multiple
   // options. Persisted so the planner can later let the user pick.
   routeAlternatives?: RouteAlternative[];
+  // Trip time v1 — snapshot of the time breakdown computed at generation.
+  // The UI recomputes live from current stops so it stays accurate when the
+  // user edits — this snapshot is kept for debug / future analytics.
+  timeBreakdown?: TripTimeBreakdownSnapshot;
+}
+
+export interface TripTimeBreakdownSnapshot {
+  drivingMin: number;
+  ferryMin?: number;
+  plannedStopsMin: number;
+  chargingMin?: number;
+  mealMin?: number;
+  photoStopMin?: number;
+  restMin?: number;
+  overnightMin?: number;
+  totalActiveDayMin: number;
+  totalTripMin: number;
+  source: "ors" | "estimated" | "mixed";
+  warnings?: string[];
 }
 
 export interface RouteAlternative {
