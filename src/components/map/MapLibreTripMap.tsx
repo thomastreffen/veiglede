@@ -14,6 +14,13 @@ import { getCachedRoute, mapConfig } from "@/lib/map";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 
+export type MapLibreStage =
+  | "mounted"
+  | "mapCreated"
+  | "styleLoaded"
+  | "firstRender"
+  | "routeLayerAdded";
+
 interface Props {
   trip: Trip;
   days: TripDay[];
@@ -28,6 +35,7 @@ interface Props {
   variant?: "dark" | "light";
   onError?: (msg?: string) => void;
   onReady?: () => void;
+  onStage?: (stage: MapLibreStage) => void;
   /** MapTiler browser key fetched at runtime via /api/public-map-config. */
   maptilerKey: string;
 }
@@ -54,6 +62,7 @@ export function MapLibreTripMap({
   variant = "dark",
   onError,
   onReady,
+  onStage,
   maptilerKey,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -63,6 +72,9 @@ export function MapLibreTripMap({
   const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
+
+  // Signal mount immediately so the parent's diagnostic badge shows progress.
+  useEffect(() => { onStage?.("mounted"); }, [onStage]);
 
   // Initialize map once.
   useEffect(() => {
@@ -79,6 +91,7 @@ export function MapLibreTripMap({
         attributionControl: { compact: true },
         cooperativeGestures: false,
       });
+      onStage?.("mapCreated");
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] MapLibre init failed", err);
       onError?.(`init: ${(err as Error)?.message ?? "unknown"}`);
@@ -92,8 +105,10 @@ export function MapLibreTripMap({
       setReady(true);
       onReady?.();
     };
-    map.on("load", () => signalReady());
-    map.once("render", () => signalReady());
+    map.on("load", () => { onStage?.("styleLoaded"); signalReady(); });
+    map.on("styledata", () => onStage?.("styleLoaded"));
+    map.once("render", () => { onStage?.("firstRender"); signalReady(); });
+    map.once("idle", () => signalReady());
     map.on("error", (e) => {
       const status = (e as { error?: { status?: number; message?: string } }).error?.status;
       const msg = (e as { error?: { message?: string } }).error?.message;
@@ -166,31 +181,37 @@ export function MapLibreTripMap({
       properties: {},
       geometry: { type: "LineString", coordinates: geom.map((p) => [p.lng, p.lat]) },
     };
-    const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
-    if (src) {
-      src.setData(data);
-    } else {
-      map.addSource("vg-route", { type: "geojson", data });
-      map.addLayer({
-        id: "vg-route-glow",
-        type: "line",
-        source: "vg-route",
-        paint: { "line-color": DAY_COLORS[0], "line-width": 10, "line-opacity": 0.18, "line-blur": 6 },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
-      map.addLayer({
-        id: "vg-route-line",
-        type: "line",
-        source: "vg-route",
-        paint: {
-          "line-color": DAY_COLORS[0],
-          "line-width": compact ? 3 : 4,
-          "line-dasharray": routeGeom ? [1, 0] : [2, 2],
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
+    try {
+      const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
+      if (src) {
+        src.setData(data);
+      } else {
+        map.addSource("vg-route", { type: "geojson", data });
+        map.addLayer({
+          id: "vg-route-glow",
+          type: "line",
+          source: "vg-route",
+          paint: { "line-color": DAY_COLORS[0], "line-width": 10, "line-opacity": 0.18, "line-blur": 6 },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+        map.addLayer({
+          id: "vg-route-line",
+          type: "line",
+          source: "vg-route",
+          paint: {
+            "line-color": DAY_COLORS[0],
+            "line-width": compact ? 3 : 4,
+            "line-dasharray": routeGeom ? [1, 0] : [2, 2],
+          },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+      }
+      onStage?.("routeLayerAdded");
+    } catch (err) {
+      if (import.meta.env.DEV) console.debug("[TripMap] route layer add failed", err);
+      // Non-fatal: base map should still be visible.
     }
-  }, [routeGeom, projected, ready, compact]);
+  }, [routeGeom, projected, ready, compact, onStage]);
 
   // Render markers (origin, destination, stops, suggestions).
   useEffect(() => {

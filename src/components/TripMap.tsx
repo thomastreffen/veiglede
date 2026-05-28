@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 // Lazy-load the real (MapLibre) renderer so the heavy dep is only paid
 // for when MapTiler is actually configured.
-type RealMapProps = Props & { maptilerKey: string; onError?: (msg?: string) => void; onReady?: () => void };
+type RealMapProps = Props & { maptilerKey: string; onError?: (msg?: string) => void; onReady?: () => void; onStage?: (stage: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => void };
 const MapLibreTripMap = lazy(() =>
   import("./map/MapLibreTripMap")
     .then((m) => ({ default: m.MapLibreTripMap as React.ComponentType<RealMapProps> }))
@@ -78,6 +78,11 @@ export function TripMap(props: Props) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [maplibreReady, setMaplibreReady] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  const [forced, setForced] = useState(false);
+  const [stages, setStages] = useState<{
+    mounted: boolean; mapCreated: boolean; styleLoaded: boolean;
+    firstRender: boolean; routeLayerAdded: boolean;
+  }>({ mounted: false, mapCreated: false, styleLoaded: false, firstRender: false, routeLayerAdded: false });
   const cfg = useRuntimeMapConfig();
   const debug = useDebugMode();
 
@@ -86,32 +91,32 @@ export function TripMap(props: Props) {
   const hasUsableCoords = hasOrigin || hasDestination;
 
   const canTryMapLibre = Boolean(
-    cfg?.hasRealMap && cfg.maptilerKey && !errored && !timedOut && hasUsableCoords,
+    cfg?.hasRealMap && cfg.maptilerKey && (!errored || forced) && (!timedOut || forced) && (hasUsableCoords || forced),
   );
 
   // Safety timeout: if MapLibre never visibly renders within 6s, mark as
-  // timed-out so the SVG fallback (which has been visible the whole time) is
-  // the only thing shown and we don't keep a half-loaded canvas around.
+  // timed-out so the SVG fallback stays visible. Disabled when forced.
   React.useEffect(() => {
-    if (!canTryMapLibre || maplibreReady) return;
+    if (!canTryMapLibre || maplibreReady || forced) return;
     const t = window.setTimeout(() => setTimedOut(true), 6000);
     return () => window.clearTimeout(t);
-  }, [canTryMapLibre, maplibreReady]);
+  }, [canTryMapLibre, maplibreReady, forced]);
 
-  const mapLibreVisible = canTryMapLibre && maplibreReady;
-  const mode = !hasUsableCoords
-    ? "missing-coords"
+  const mapLibreVisible = canTryMapLibre && (maplibreReady || forced);
+  const fallbackReason = !hasUsableCoords
+    ? "no-coords"
     : !cfg
       ? "loading-config"
       : !cfg.hasRealMap
-        ? "svg-fallback (no-maptiler-key)"
+        ? "no-maptiler-key (check MAPTILER_API_KEY secret)"
         : errored
-          ? `svg-fallback (maplibre-error: ${errorMsg ?? "unknown"})`
+          ? `maplibre-error: ${errorMsg ?? "unknown"}`
           : timedOut
-            ? "svg-fallback (maplibre-timeout)"
-            : maplibreReady
-              ? "maplibre-visible"
-              : "loading-maplibre";
+            ? "maplibre-timeout (no firstRender within 6s)"
+            : !maplibreReady
+              ? "loading-maplibre"
+              : null;
+  const mode = mapLibreVisible ? "maplibre-visible" : `svg-fallback (${fallbackReason ?? "unknown"})`;
 
   const routePointCount = props.days.length + 2;
   const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
@@ -119,39 +124,37 @@ export function TripMap(props: Props) {
   const geom = props.trip.routeGeometry ?? [];
   const geomMode = geom.length > 4 ? (props.trip.routeProvider === "ors" ? "real-geometry" : "demo-geometry") : "missing";
 
+  const onStage = React.useCallback((s: "mounted" | "mapCreated" | "styleLoaded" | "firstRender" | "routeLayerAdded") => {
+    setStages((prev) => prev[s] ? prev : { ...prev, [s]: true });
+  }, []);
+
   if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.debug("[TripMap]", {
       runtimeConfigLoaded: cfg !== null,
       hasRealMap: cfg?.hasRealMap ?? false,
-      mode,
-      maplibreReady,
-      errored,
-      timedOut,
-      errorMsg,
+      keyLen: cfg?.maptilerKey?.length ?? 0,
+      mode, maplibreReady, errored, timedOut, errorMsg,
+      stages,
       hasOrigin, hasDestination,
       routeProvider: props.trip.routeProvider,
-      geometryLen: geom.length,
-      geomMode,
+      geometryLen: geom.length, geomMode,
     });
   }
 
   const heightClass = props.height ?? "h-64";
+  const originLoc = props.trip.originLoc ?? lookupPlace(props.trip.origin);
+  const destLoc = props.trip.destinationLoc ?? lookupPlace(props.trip.destination);
 
   return (
     <div className={cn("relative", heightClass, props.className)}>
-      {/* SVG base — ALWAYS rendered so the container is never blank. It also
-          gives the parent a guaranteed visible height. MapLibre is overlaid
-          on top once it has visibly rendered. */}
+      {/* SVG base — ALWAYS rendered so the container is never blank. */}
       <div className="absolute inset-0">
         <SvgTripMap {...props} height="h-full" className={undefined} />
       </div>
 
-      {/* MapLibre — primary renderer when MapTiler is configured. Mounted
-          invisibly behind the SVG until `onReady` fires; then faded in to
-          cover the SVG. If it errors or times out, it unmounts and the SVG
-          remains the visible surface. */}
-      {canTryMapLibre && (
+      {/* MapLibre — primary renderer when MapTiler is configured. */}
+      {canTryMapLibre && cfg?.maptilerKey && (
         <div
           className={cn(
             "absolute inset-0 rounded-2xl overflow-hidden transition-opacity duration-300",
@@ -164,8 +167,9 @@ export function TripMap(props: Props) {
               {...props}
               height="h-full"
               className={undefined}
-              maptilerKey={cfg!.maptilerKey!}
+              maptilerKey={cfg.maptilerKey}
               onReady={() => setMaplibreReady(true)}
+              onStage={onStage}
               onError={(msg) => { setErrored(true); setErrorMsg(msg ?? "unknown"); setMaplibreReady(false); }}
             />
           </Suspense>
@@ -173,12 +177,25 @@ export function TripMap(props: Props) {
       )}
 
       {debug && (
-        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[340px]">
-          <div>mode: <span className="text-primary font-semibold">{mode}</span></div>
-          <div>maptiler cfg: {String(Boolean(cfg?.hasRealMap))} · ml ready: {String(maplibreReady)} · timeout: {String(timedOut)}</div>
-          <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · routing: {props.trip.routeProvider ?? "—"} · pts: {geom.length}</div>
-          <div>stops w/coords: {stopsWithCoords}/{props.stops.length} (days+2={routePointCount})</div>
-          {errorMsg && <div className="text-destructive normal-case">last err: {errorMsg}</div>}
+        <div className="absolute left-2 top-2 z-20 rounded-md border border-primary/40 bg-background/90 backdrop-blur px-2 py-1.5 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[360px] pointer-events-auto">
+          <div>mode: <span className="text-primary font-semibold normal-case">{mode}</span></div>
+          <div>cfg.hasRealMap: {String(Boolean(cfg?.hasRealMap))} · keyLen: {cfg?.maptilerKey?.length ?? 0}</div>
+          <div>origin: {originLoc ? `${originLoc.lat.toFixed(2)},${originLoc.lng.toFixed(2)}` : "—"} · dest: {destLoc ? `${destLoc.lat.toFixed(2)},${destLoc.lng.toFixed(2)}` : "—"}</div>
+          <div>
+            stages: m{stages.mounted ? "✓" : "·"} c{stages.mapCreated ? "✓" : "·"} s{stages.styleLoaded ? "✓" : "·"} r{stages.firstRender ? "✓" : "·"} l{stages.routeLayerAdded ? "✓" : "·"} · ready: {String(maplibreReady)}
+          </div>
+          <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} · stops: {stopsWithCoords}/{props.stops.length} (d+2={routePointCount})</div>
+          {fallbackReason && <div className="normal-case text-yellow-400">reason: {fallbackReason}</div>}
+          {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
+          {!mapLibreVisible && cfg?.hasRealMap && (
+            <button
+              type="button"
+              onClick={() => { setForced(true); setErrored(false); setTimedOut(false); }}
+              className="mt-1 rounded border border-primary/60 bg-primary/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/30"
+            >
+              Force MapLibre
+            </button>
+          )}
         </div>
       )}
     </div>
