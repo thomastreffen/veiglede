@@ -137,9 +137,11 @@ export function TripMap(props: Props) {
           <div>mode: <span className="text-primary font-semibold">{mode}</span></div>
           <div>overlay: {String(useMapLibre && maplibreReady)} · ready: {String(maplibreReady)}</div>
           <div>real: {String(cfg?.hasRealMap ?? false)} · pts: {routePointCount} · stops: {stopsWithCoords}/{props.stops.length}</div>
+          <div>routing: {props.trip.routeProvider ?? "—"} · geom: {props.trip.routeGeometry?.length ?? 0}</div>
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
         </div>
       )}
+
     </div>
   );
 }
