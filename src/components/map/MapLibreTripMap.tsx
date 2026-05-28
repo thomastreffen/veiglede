@@ -14,6 +14,7 @@ import { stopMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { distanceKm, nearestPointOnRoute, projectTrip } from "@/lib/geo";
 import { getCachedRoute, mapConfig } from "@/lib/map";
+import { getRoute } from "@/lib/routing";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
