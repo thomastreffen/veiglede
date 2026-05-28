@@ -110,9 +110,9 @@ export const Route = createFileRoute("/api/public/directions")({
               [body.destination.lng, body.destination.lat],
             ],
             instructions: false,
-            // waytypes = 1 (paved), 2 (unpaved), 3..., 8 (ferry). Lets us
-            // separate ferry duration from driving when present.
-            extra_info: ["waytypes"],
+            // waytype: ORS extra_info key (singular). value 8 = ferry, so we
+            // can separate ferry duration from driving when present.
+            extra_info: ["waytype"],
           };
           if (avoid.length) orsBody.options = { avoid_features: avoid };
 
@@ -134,7 +134,9 @@ export const Route = createFileRoute("/api/public/directions")({
           clearTimeout(timeout);
 
           if (!res.ok) {
+            const text = await res.text().catch(() => "");
             warnings.push(`ors-http-${res.status}`);
+            if (text) warnings.push(`ors-body-${text.slice(0, 180)}`);
             return json(demoResponse(body, warnings));
           }
           const data = await res.json();
@@ -151,7 +153,7 @@ export const Route = createFileRoute("/api/public/directions")({
           //            and a per-step summary at properties.extras.waytypes.summary
           let ferryDurationSec: number | null = null;
           let ferryDistanceM: number | null = null;
-          const extras = feat?.properties?.extras?.waytypes;
+          const extras = feat?.properties?.extras?.waytype;
           if (extras?.summary && Array.isArray(extras.summary)) {
             const ferry = extras.summary.find((s: { value: number }) => s.value === 8);
             if (ferry) {
