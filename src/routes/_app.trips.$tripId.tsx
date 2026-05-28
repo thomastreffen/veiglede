@@ -377,11 +377,14 @@ function TripPlanner() {
               off={info.off}
               vehicleDisplay={vehicleDisplay}
               styleLabel={s.label}
-              onAdd={() => tripsApi.addSuggestion(tripId, sug)}
+              tripDays={tripDays}
+              tripDestination={trip.destination}
+              onAdd={(placement, dayId) => tripsApi.addSuggestionAt(tripId, sug, placement, dayId)}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
             />
           ))}
         </div>
+
       </section>
 
 
