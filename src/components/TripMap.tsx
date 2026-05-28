@@ -86,6 +86,7 @@ export function TripMap(props: Props) {
   const [maplibreReady, setMaplibreReady] = useState(false);
   const [styleVariant, setStyleVariant] = useState<"dark" | "light" | "route-only">("light");
   const [diag, setDiag] = useState<import("./map/MapLibreTripMap").MapLibreDiagnostics | null>(null);
+  const [rawMode, setRawMode] = useState(false);
   const cfg = useRuntimeMapConfig();
   const debug = useDebugMode();
 
@@ -122,31 +123,29 @@ export function TripMap(props: Props) {
   const originLoc = props.trip.originLoc ?? lookupPlace(props.trip.origin);
   const destLoc = props.trip.destinationLoc ?? lookupPlace(props.trip.destination);
 
-  // SVG sits underneath; hide once MapLibre is visibly ready.
-  const svgHidden = mapLibreVisible;
+  // SVG sits underneath as fallback. Hide once MapLibre is ready, OR in raw mode.
+  const svgHidden = mapLibreVisible || rawMode;
 
   return (
     <div className={cn("relative w-full min-h-[16rem]", heightClass, props.className)}>
-      {/* SVG base — fallback while MapLibre loads or if it errors. */}
-      <div
-        className={cn(
-          "absolute inset-0 z-0 transition-opacity duration-300",
-          svgHidden ? "opacity-0 pointer-events-none" : "opacity-100",
-        )}
-        aria-hidden={svgHidden}
-      >
-        <SvgTripMap {...props} height="h-full" className={undefined} />
-      </div>
-
-      {/* MapLibre — primary when MapTiler is configured. */}
-      {canTryMapLibre && cfg?.maptilerKey && (
+      {/* SVG base — fallback while MapLibre loads or if it errors. Hidden in raw mode. */}
+      {!rawMode && (
         <div
           className={cn(
-            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300",
-            mapLibreVisible ? "opacity-100" : "opacity-0 pointer-events-none",
+            "absolute inset-0 z-0 transition-opacity duration-300",
+            svgHidden ? "opacity-0 pointer-events-none" : "opacity-100",
           )}
-          aria-hidden={!mapLibreVisible}
+          aria-hidden={svgHidden}
         >
+          <SvgTripMap {...props} height="h-full" className={undefined} />
+        </div>
+      )}
+
+      {/* MapLibre — primary when MapTiler is configured. Always rendered at full
+          opacity (no fade-in wrapper) so the canvas paints while visible from
+          frame one — matches the working /map-test pattern. */}
+      {canTryMapLibre && cfg?.maptilerKey && (
+        <div className="absolute inset-0 z-10 overflow-hidden rounded-2xl">
           <Suspense fallback={null}>
             <MapLibreTripMap
               {...props}
@@ -164,13 +163,22 @@ export function TripMap(props: Props) {
 
       {debug && (
         <div className="absolute left-2 top-2 z-20 rounded-md border border-primary/40 bg-background/90 backdrop-blur px-2 py-1.5 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[380px] pointer-events-auto">
-          <div>mode: <span className="text-primary font-semibold normal-case">{mode}</span></div>
+          <div>mode: <span className="text-primary font-semibold normal-case">{mode}{rawMode ? " · RAW" : ""}</span></div>
           <div>cfg.hasRealMap: {String(Boolean(cfg?.hasRealMap))} · keyLen: {cfg?.maptilerKey?.length ?? 0}</div>
           <div>style: <span className="normal-case">{diag?.styleId ?? styleVariant} @ {diag?.styleHost ?? "—"}</span></div>
           <div>mapCreated: {String(diag?.mapCreated ?? false)} · styleLoaded: {String(diag?.styleLoaded ?? false)}</div>
           <div>sources: {diag?.sourceCount ?? "—"} · layers: {diag?.layerCount ?? "—"}</div>
           <div>route src: {String(diag?.routeSourceAdded ?? false)} · route layer: {String(diag?.routeLayerAdded ?? false)}</div>
           <div>canvas: {diag?.canvasW ?? 0}×{diag?.canvasH ?? 0}</div>
+          {diag?.cssCanvas && (
+            <div className="normal-case">canvas css: op={diag.cssCanvas.opacity} · disp={diag.cssCanvas.display} · vis={diag.cssCanvas.visibility} · z={diag.cssCanvas.zIndex} · pos={diag.cssCanvas.position}</div>
+          )}
+          {diag?.cssContainer && (
+            <div className="normal-case">cont css: op={diag.cssContainer.opacity} · disp={diag.cssContainer.display} · vis={diag.cssContainer.visibility} · z={diag.cssContainer.zIndex} · pos={diag.cssContainer.position}</div>
+          )}
+          {diag?.cssParent && (
+            <div className="normal-case">parent css: op={diag.cssParent.opacity} · disp={diag.cssParent.display} · vis={diag.cssParent.visibility} · z={diag.cssParent.zIndex} · pos={diag.cssParent.position}</div>
+          )}
           <div className="normal-case">center: {diag?.centerLngLat ? `[${diag.centerLngLat[0]}, ${diag.centerLngLat[1]}]` : "—"} · zoom: {diag?.zoom ?? "—"}</div>
           <div>origin: {originLoc ? `${originLoc.lat.toFixed(2)},${originLoc.lng.toFixed(2)}` : "—"} · dest: {destLoc ? `${destLoc.lat.toFixed(2)},${destLoc.lng.toFixed(2)}` : "—"}</div>
           <div>geom: <span className="text-primary font-semibold">{geomMode}</span> · pts: {geom.length} / diag: {diag?.routeGeometryLen ?? 0}</div>
@@ -179,6 +187,16 @@ export function TripMap(props: Props) {
           {diag?.lastError && <div className="text-destructive normal-case">err: {diag.lastError}</div>}
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
           <div className="flex flex-wrap gap-1 pt-1">
+            <button
+              type="button"
+              onClick={() => setRawMode((v) => !v)}
+              className={cn(
+                "rounded border border-primary/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary hover:bg-primary/20",
+                rawMode ? "bg-primary/40" : "bg-primary/10",
+              )}
+            >
+              Raw MapLibre {rawMode ? "ON" : "OFF"}
+            </button>
             <button
               type="button"
               onClick={() => setStyleVariant("light")}
@@ -205,6 +223,7 @@ export function TripMap(props: Props) {
     </div>
   );
 }
+
 
 
 
