@@ -1,5 +1,5 @@
 import * as React from "react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
