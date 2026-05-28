@@ -397,16 +397,30 @@ export function MapLibreTripMap({
       });
       const marker = new maplibregl.Marker({ element: el }).setLngLat([m.loc.lng, m.loc.lat]).addTo(map);
       if (selected) {
-        const popup = new maplibregl.Popup({ offset: 22, closeButton: false, className: "vg-popup" })
+        const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
+        const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" })
           .setHTML(
-            `<div style="font-family:inherit;padding:2px 4px;max-width:200px;">
+            `<div style="font-family:inherit;padding:2px 4px;max-width:220px;">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${color};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)}</div>
               <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
               ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
+              ${durationStr ? `<div style="font-size:11px;color:#555;margin-top:2px;">⏱ ${durationStr}</div>` : ""}
+              <button data-vg-remove="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d33;color:#d33;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Fjern fra rute</button>
             </div>`,
           );
         marker.setPopup(popup);
         marker.togglePopup();
+        // Wire the Fjern button via event delegation on the popup element.
+        requestAnimationFrame(() => {
+          const popupEl = popup.getElement();
+          const btn = popupEl?.querySelector<HTMLButtonElement>(`[data-vg-remove="${m.stop.id}"]`);
+          btn?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            try { tripsApi.deleteStop(m.stop.id); } catch { /* noop */ }
+            onSelectStop?.(null);
+            toast.success("Stoppet fjernet. Ruten oppdateres.");
+          });
+        });
       }
       markersRef.current.push(marker);
     });
