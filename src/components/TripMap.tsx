@@ -102,7 +102,7 @@ export function TripMap(props: Props) {
   const paintedEnough = Boolean(diag?.paintedEnough);
 
   const canTryMapLibre = Boolean(
-    cfg?.hasRealMap && cfg.maptilerKey && (!errored || forced) && ((!timedOut && hasUsableCoords) || paintedEnough || forced),
+    cfg?.hasRealMap && cfg.maptilerKey && (!errored || forced) && (hasUsableCoords || paintedEnough || forced),
   );
 
   // Safety timeout: if MapLibre never visibly renders within 6s, mark as
