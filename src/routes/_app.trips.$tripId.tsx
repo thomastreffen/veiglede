@@ -175,14 +175,21 @@ function TripPlanner() {
           onSelectStop={handleSelectStop}
           suggestionPins={suggestionPins}
           hoveredSuggestionId={hoveredSuggestionId}
-          height="h-72 md:h-[28rem]"
+          height="h-72 md:h-[520px]"
         />
+        <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+          Beregnet av rutemotor. Kan avvike fra Google Maps, trafikk, ferge og lokale forhold.
+        </p>
       </section>
+
+      {/* Planning actions — flexible trip model */}
+      <PlannerActions trip={trip} tripDays={tripDays} maxDrivingHours={prefs.maxDrivingHours} />
 
       {/* Time budget */}
       <section className="mt-4">
         <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
       </section>
+
 
 
       {/* AI explanation */}
