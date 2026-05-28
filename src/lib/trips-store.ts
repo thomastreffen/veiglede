@@ -302,6 +302,11 @@ export const tripsApi = {
     persist();
     return finalTrip;
   },
+  updateTrip(id: string, patch: Partial<Trip>) {
+    ensureInit();
+    state = { ...state, trips: state.trips.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
+    persist();
+  },
   deleteTrip(id: string) {
     ensureInit();
     const dayIds = state.days.filter((d) => d.tripId === id).map((d) => d.id);
