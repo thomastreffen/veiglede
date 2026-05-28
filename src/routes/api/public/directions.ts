@@ -110,9 +110,9 @@ export const Route = createFileRoute("/api/public/directions")({
               [body.destination.lng, body.destination.lat],
             ],
             instructions: false,
-            // waytypes = 1 (paved), 2 (unpaved), 3..., 8 (ferry). Lets us
-            // separate ferry duration from driving when present.
-            extra_info: ["waytypes"],
+            // waytype: ORS extra_info key (singular). value 8 = ferry, so we
+            // can separate ferry duration from driving when present.
+            extra_info: ["waytype"],
           };
           if (avoid.length) orsBody.options = { avoid_features: avoid };
 
