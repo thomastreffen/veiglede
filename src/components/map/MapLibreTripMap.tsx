@@ -239,8 +239,10 @@ export function MapLibreTripMap({
     return () => { cancelled = true; };
   }, [projected, trip.routeGeometry]);
 
-  // Render route line as a GeoJSON source/layer.
-  useEffect(() => {
+  // Render route line as a GeoJSON source/layer. Re-runs after setStyle()
+  // because the styledata listener bumps `ready` indirectly via diagnostics,
+  // but to be safe we also listen for styledata here and re-add.
+  const addRouteLayer = useCallback(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     const geom: LatLng[] = routeGeom ?? [
@@ -259,11 +261,13 @@ export function MapLibreTripMap({
         src.setData(data);
       } else {
         map.addSource("vg-route", { type: "geojson", data });
+        // Add as last layers — they'll sit on top of every base style layer,
+        // so even if base tiles are blank the route is still visible.
         map.addLayer({
           id: "vg-route-glow",
           type: "line",
           source: "vg-route",
-          paint: { "line-color": DAY_COLORS[0], "line-width": 10, "line-opacity": 0.18, "line-blur": 6 },
+          paint: { "line-color": DAY_COLORS[0], "line-width": 14, "line-opacity": 0.22, "line-blur": 8 },
           layout: { "line-cap": "round", "line-join": "round" },
         });
         map.addLayer({
@@ -272,18 +276,34 @@ export function MapLibreTripMap({
           source: "vg-route",
           paint: {
             "line-color": DAY_COLORS[0],
-            "line-width": compact ? 3 : 4,
+            "line-width": compact ? 5 : 7,
             "line-dasharray": routeGeom ? [1, 0] : [2, 2],
           },
           layout: { "line-cap": "round", "line-join": "round" },
         });
       }
       onStage?.("routeLayerAdded");
+      emitDiagnostics();
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] route layer add failed", err);
-      // Non-fatal: base map should still be visible.
+      lastErrorRef.current = { ...lastErrorRef.current, msg: `route-layer: ${(err as Error)?.message ?? "unknown"}` };
+      emitDiagnostics();
     }
-  }, [routeGeom, projected, ready, compact, onStage]);
+  }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics]);
+
+  useEffect(() => { addRouteLayer(); }, [addRouteLayer]);
+
+  // After a style swap (variant change) MapLibre drops our source/layer.
+  // Re-add once the new style finishes loading.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const handler = () => {
+      if (!map.getSource("vg-route")) addRouteLayer();
+    };
+    map.on("styledata", handler);
+    return () => { map.off("styledata", handler); };
+  }, [addRouteLayer]);
 
   // Render markers (origin, destination, stops, suggestions).
   useEffect(() => {
