@@ -9,6 +9,7 @@ import { useDriverPrefs } from "@/lib/driver-prefs";
 import { getVehicleById, energyMeta } from "@/lib/vehicles-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { TripMap } from "@/components/TripMap";
+import { TripTimeBudget } from "@/components/TripTimeBudget";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
