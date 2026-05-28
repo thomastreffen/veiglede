@@ -74,7 +74,7 @@ interface Props {
   suggestionPins?: { id: string; name: string; loc: LatLng; emoji: string }[];
   hoveredSuggestionId?: string | null;
   compact?: boolean;
-  variant?: "dark" | "light";
+  variant?: "dark" | "light" | "route-only";
   onError?: (msg?: string) => void;
   onReady?: () => void;
   onStage?: (stage: MapLibreStage) => void;
