@@ -302,6 +302,14 @@ function NewTripWizard() {
         routeDistanceKm: route?.distanceKm,
         routeDurationMin: route?.durationMin,
         routeProvider: route?.provider,
+        routeProfile: route?.profile,
+        routeAvoidHighways: route?.avoidOptions?.highways,
+        routeAvoidFerries: route?.avoidOptions?.ferries,
+        routeRawDistanceMeters: route?.rawDistanceMeters,
+        routeRawDurationSeconds: route?.rawDurationSeconds,
+        routeFerryDistanceKm: route?.ferryDistanceKm,
+        routeFerryDurationMin: route?.ferryDurationMin,
+        routeFallbackEstimateMin: route?.fallbackEstimateMin,
       });
       // Snapshot a trip time breakdown using the freshly-seeded stops.
       try {
