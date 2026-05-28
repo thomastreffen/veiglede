@@ -241,7 +241,7 @@ function Roadbook() {
           <p className="font-display uppercase text-foreground text-base">Praktisk info</p>
           <ul className="mt-3 space-y-1.5">
             <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
-            <li>· Anslått kjøretid: {trip.drivingTime}</li>
+            <li>· Beregnet kjøretid: {trip.drivingTime} <span className="text-[11px] text-muted-foreground/80">(rutemotor — kan avvike fra Google Maps, trafikk, ferge og lokale forhold)</span></li>
             <li>· Kjøretøy: {vehicleDisplay} ({v.label}{em ? ` · ${em.label}` : ""}) · stil: {s.label}</li>
             {trip.energy === "electric" && <li>· Ladestrategi: hurtigladere prioriteres — bensinstasjoner filtreres bort.</li>}
             {trip.energy === "hybrid" && <li>· Hybrid: både lading og bensinstopp foreslås der det passer.</li>}
