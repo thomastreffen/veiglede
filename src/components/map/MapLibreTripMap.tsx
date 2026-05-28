@@ -181,31 +181,37 @@ export function MapLibreTripMap({
       properties: {},
       geometry: { type: "LineString", coordinates: geom.map((p) => [p.lng, p.lat]) },
     };
-    const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
-    if (src) {
-      src.setData(data);
-    } else {
-      map.addSource("vg-route", { type: "geojson", data });
-      map.addLayer({
-        id: "vg-route-glow",
-        type: "line",
-        source: "vg-route",
-        paint: { "line-color": DAY_COLORS[0], "line-width": 10, "line-opacity": 0.18, "line-blur": 6 },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
-      map.addLayer({
-        id: "vg-route-line",
-        type: "line",
-        source: "vg-route",
-        paint: {
-          "line-color": DAY_COLORS[0],
-          "line-width": compact ? 3 : 4,
-          "line-dasharray": routeGeom ? [1, 0] : [2, 2],
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
+    try {
+      const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
+      if (src) {
+        src.setData(data);
+      } else {
+        map.addSource("vg-route", { type: "geojson", data });
+        map.addLayer({
+          id: "vg-route-glow",
+          type: "line",
+          source: "vg-route",
+          paint: { "line-color": DAY_COLORS[0], "line-width": 10, "line-opacity": 0.18, "line-blur": 6 },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+        map.addLayer({
+          id: "vg-route-line",
+          type: "line",
+          source: "vg-route",
+          paint: {
+            "line-color": DAY_COLORS[0],
+            "line-width": compact ? 3 : 4,
+            "line-dasharray": routeGeom ? [1, 0] : [2, 2],
+          },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+      }
+      onStage?.("routeLayerAdded");
+    } catch (err) {
+      if (import.meta.env.DEV) console.debug("[TripMap] route layer add failed", err);
+      // Non-fatal: base map should still be visible.
     }
-  }, [routeGeom, projected, ready, compact]);
+  }, [routeGeom, projected, ready, compact, onStage]);
 
   // Render markers (origin, destination, stops, suggestions).
   useEffect(() => {
