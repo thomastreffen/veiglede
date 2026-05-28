@@ -307,6 +307,15 @@ export const tripsApi = {
     state = { ...state, trips: state.trips.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
     persist();
   },
+  /** Read the current trip + days + stops snapshot for a trip id. */
+  getTripBundle(id: string): { trip: Trip | null; days: TripDay[]; stops: Stop[] } {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === id) ?? null;
+    const days = state.days.filter((d) => d.tripId === id);
+    const dayIds = new Set(days.map((d) => d.id));
+    const stops = state.stops.filter((s) => dayIds.has(s.dayId));
+    return { trip, days, stops };
+  },
   deleteTrip(id: string) {
     ensureInit();
     const dayIds = state.days.filter((d) => d.tripId === id).map((d) => d.id);
