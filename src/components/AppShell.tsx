@@ -62,7 +62,7 @@ export function AppShell() {
                 </Link>
               );
             })}
-            <Link to="/trips/new" className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
+            <Link to="/trips/new" search={{ restoreDraft: "fresh" }} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Plus className="h-4 w-4" /> Ny tur
             </Link>
             {user ? (
