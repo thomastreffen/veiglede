@@ -199,10 +199,10 @@ export function TripMap(props: Props) {
   const originLoc = props.trip.originLoc ?? lookupPlace(props.trip.origin);
   const destLoc = props.trip.destinationLoc ?? lookupPlace(props.trip.destination);
 
-  // When MapLibre is truly visible we hide the SVG entirely so it can't
-  // dominate visually. SVG only stays painted while we're still waiting on
-  // MapLibre or have fallen back.
-  const svgHidden = (mapLibreVisible && !forced && !debug) || hideSvg;
+  // SVG is hidden as soon as MapLibre is visible (or forced) so it can't
+  // visually overlap the real tiles. Debug mode can opt to keep showing it
+  // via the "Show SVG underneath" toggle.
+  const svgHidden = (mapLibreVisible || forced) && !showSvg;
   const visibleLayer = mapLibreVisible ? "maplibre" : "svg";
 
   return (
@@ -218,12 +218,14 @@ export function TripMap(props: Props) {
         <SvgTripMap {...props} height="h-full" className={undefined} />
       </div>
 
-      {/* MapLibre — primary renderer when MapTiler is configured. */}
+      {/* MapLibre — primary renderer when MapTiler is configured. Wrapper
+          has an opaque slate background so the canvas always sits on a solid
+          surface even while tiles are still streaming in. */}
       {canTryMapLibre && cfg?.maptilerKey && (
         <div
           ref={mlContainerRef}
           className={cn(
-            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300",
+            "absolute inset-0 z-10 rounded-2xl overflow-hidden transition-opacity duration-300 bg-[#1f2937]",
             mapLibreVisible ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           aria-hidden={!mapLibreVisible}
