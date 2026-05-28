@@ -246,8 +246,18 @@ export function MapLibreTripMap({
       (acc, p) => acc.extend([p.lng, p.lat]),
       new maplibregl.LngLatBounds([pts[0].lng, pts[0].lat], [pts[0].lng, pts[0].lat]),
     );
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const first = (routeGeom && routeGeom[0]) ?? pts[0];
+    fitInfoRef.current = {
+      firstApp: { lat: Number(first.lat.toFixed(4)), lng: Number(first.lng.toFixed(4)) },
+      firstMl: [Number(first.lng.toFixed(4)), Number(first.lat.toFixed(4))],
+      sw: [Number(sw.lng.toFixed(4)), Number(sw.lat.toFixed(4))],
+      ne: [Number(ne.lng.toFixed(4)), Number(ne.lat.toFixed(4))],
+    };
     map.fitBounds(bounds, { padding: compact ? 32 : 56, duration: 400, maxZoom: 11 });
-  }, [projected, suggestionPins, routeGeom, ready, compact]);
+    emitDiagnostics();
+  }, [projected, suggestionPins, routeGeom, ready, compact, emitDiagnostics]);
 
   // Fetch a real route when ORS is configured.
   useEffect(() => {
