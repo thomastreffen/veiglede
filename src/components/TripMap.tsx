@@ -115,9 +115,10 @@ export function TripMap(props: Props) {
       <SvgTripMap {...props} className={undefined} />
       {useMapLibre && (
         <div
+          aria-hidden={!maplibreReady}
           className={cn(
-            "absolute inset-0 rounded-2xl overflow-hidden transition-opacity duration-300 pointer-events-auto",
-            maplibreReady ? "opacity-100" : "opacity-0",
+            "absolute inset-0 rounded-2xl overflow-hidden transition-opacity duration-300 bg-transparent",
+            maplibreReady ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
           )}
         >
           <Suspense fallback={null}>
@@ -126,16 +127,17 @@ export function TripMap(props: Props) {
               className={undefined}
               maptilerKey={cfg!.maptilerKey!}
               onReady={() => setMaplibreReady(true)}
-              onError={(msg) => { setErrored(true); setErrorMsg(msg ?? "unknown"); }}
+              onError={(msg) => { setErrored(true); setErrorMsg(msg ?? "unknown"); setMaplibreReady(false); }}
             />
           </Suspense>
         </div>
       )}
       {debug && (
         <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5">
-          <div>map: <span className="text-primary font-semibold">{mode}</span></div>
+          <div>mode: <span className="text-primary font-semibold">{mode}</span></div>
+          <div>overlay: {String(useMapLibre && maplibreReady)} · ready: {String(maplibreReady)}</div>
           <div>real: {String(cfg?.hasRealMap ?? false)} · pts: {routePointCount} · stops: {stopsWithCoords}/{props.stops.length}</div>
-          {errorMsg && <div className="text-destructive">err: {errorMsg}</div>}
+          {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
         </div>
       )}
     </div>
