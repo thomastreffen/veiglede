@@ -346,8 +346,8 @@ export function MapLibreTripMap({
       firstPointMaplibre: fitInfoRef.current.firstMl,
       fitBoundsSW: fitInfoRef.current.sw,
       fitBoundsNE: fitInfoRef.current.ne,
-      centerLngLat,
-      zoom,
+      centerLngLat: snapshot.centerLngLat,
+      zoom: snapshot.zoom,
       waitCount: sizeInfoRef.current.waitCount,
       lastWrapperRect: sizeInfoRef.current.lastWrapperRect,
       mapCreationAttempted: sizeInfoRef.current.mapCreationAttempted,
@@ -405,7 +405,7 @@ export function MapLibreTripMap({
       try {
         map = new maplibregl.Map({
           container: containerRef.current,
-          style: styleSpec,
+          style: bootstrapStyle,
           center: [projected.origin.lng, projected.origin.lat],
           zoom: 5,
           attributionControl: { compact: true },
@@ -421,22 +421,29 @@ export function MapLibreTripMap({
       }
       // Immediately call resize so MapLibre matches the wrapper exactly.
       try { map.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+      mapRef.current = map;
 
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-      let signaled = false;
-      const signalReady = () => {
-        if (signaled) return;
-        if (!map.isStyleLoaded?.()) return;
-        signaled = true;
-        setReady(true);
-        onReady?.();
-        try { map.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+      const updateReadiness = (source: Exclude<MapLibreReadinessSource, null>) => {
+        const snapshot = inspectPaintState(map);
+        promoteReadiness(source, snapshot);
+        emitDiagnostics();
       };
-      map.on("load", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
-      map.on("styledata", () => { onStage?.("styleLoaded"); signalReady(); emitDiagnostics(); });
-      map.on("sourcedata", () => emitDiagnostics());
-      map.on("render", () => { onStage?.("firstRender"); signalReady(); });
-      map.on("idle", () => { signalReady(); emitDiagnostics(); });
+      map.on("load", () => { onStage?.("styleLoaded"); updateReadiness("styleLoaded"); });
+      map.on("styledata", () => { onStage?.("styleLoaded"); updateReadiness("styleLoaded"); });
+      map.on("sourcedata", () => {
+        readinessInfoRef.current.sourceDataEventCount += 1;
+        updateReadiness("sourcedata");
+      });
+      map.on("render", () => {
+        readinessInfoRef.current.renderEventCount += 1;
+        onStage?.("firstRender");
+        updateReadiness("render");
+      });
+      map.on("idle", () => {
+        readinessInfoRef.current.idleEventCount += 1;
+        updateReadiness("idle");
+      });
       map.on("error", (e) => {
         const errAny = e as { error?: { status?: number; message?: string; url?: string } };
         const status = errAny.error?.status ?? null;
@@ -445,9 +452,10 @@ export function MapLibreTripMap({
         let host: string | null = null;
         try { if (url) host = new URL(url).host; } catch { /* ignore */ }
         lastErrorRef.current = { msg, host, status };
+        readinessInfoRef.current.paintedEnough = false;
         emitDiagnostics();
-        if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, host, msg, signaled });
-        if (!signaled || status === 401 || status === 403) {
+        if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, host, msg, ready: readySignalRef.current });
+        if (!readySignalRef.current || isFatalMapError(status, msg)) {
           onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
         }
       });
@@ -456,7 +464,12 @@ export function MapLibreTripMap({
         if (features.length === 0) onSelectStop?.(null);
       });
 
-      mapRef.current = map;
+      try {
+        map.setStyle(styleSpec);
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug("[TripMap] initial setStyle failed", err);
+      }
+      updateReadiness("manual");
       emitDiagnostics();
     };
 
@@ -470,7 +483,11 @@ export function MapLibreTripMap({
         if (r) {
           sizeInfoRef.current.lastWrapperRect = { w: Math.round(r.width), h: Math.round(r.height) };
           sizeInfoRef.current.resizeObserverFires += 1;
-          try { mapRef.current.resize(); sizeInfoRef.current.mapResizeCalls += 1; } catch { /* ignore */ }
+          try {
+            mapRef.current.resize();
+            sizeInfoRef.current.mapResizeCalls += 1;
+          } catch { /* ignore */ }
+          promoteReadiness("manual");
           emitDiagnostics();
         }
       }
@@ -485,7 +502,7 @@ export function MapLibreTripMap({
       if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bootstrapStyle, emitDiagnostics, inspectPaintState, isFatalMapError, onError, onSelectStop, onStage, projected.origin.lat, projected.origin.lng, promoteReadiness, styleSpec]);
 
   // Hot-swap style when the variant prop changes (e.g. debug "Use streets style").
   useEffect(() => {
