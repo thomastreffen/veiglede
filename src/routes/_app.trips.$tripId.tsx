@@ -18,6 +18,7 @@ import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
 import { TripMemories } from "@/components/TripMemories";
+import { DetourPromptDialog } from "@/components/DetourPromptDialog";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
