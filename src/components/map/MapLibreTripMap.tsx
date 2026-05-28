@@ -110,15 +110,32 @@ export function MapLibreTripMap({
   const styleId = variant === "light" ? "streets-v2" : variant === "dark" ? "streets-v2-dark" : "route-only";
   const styleHost = (() => { try { return new URL(styleUrl).host; } catch { return ""; } })();
 
+  const snapCss = useCallback((el: Element | null | undefined): CssSnapshot | null => {
+    if (!el || typeof window === "undefined") return null;
+    const s = window.getComputedStyle(el);
+    return {
+      opacity: s.opacity,
+      display: s.display,
+      visibility: s.visibility,
+      zIndex: s.zIndex,
+      position: s.position,
+    };
+  }, []);
+
   const emitDiagnostics = useCallback(() => {
     const map = mapRef.current;
     if (!onDiagnostics) return;
+    const container = containerRef.current;
+    const parent = container?.parentElement ?? null;
     if (!map) {
       onDiagnostics({
         styleId, styleHost, mapCreated: false, styleLoaded: false,
         sourceCount: 0, layerCount: 0, routeSourceAdded: false, routeLayerAdded: false,
         canvasW: 0, canvasH: 0, centerLngLat: null, zoom: null,
         routeGeometryLen: routeGeom?.length ?? 0, lastError: lastErrorRef.current,
+        cssCanvas: null,
+        cssContainer: snapCss(container),
+        cssParent: snapCss(parent),
       });
       return;
     }
@@ -139,8 +156,11 @@ export function MapLibreTripMap({
       zoom: Number(map.getZoom().toFixed(2)),
       routeGeometryLen: routeGeom?.length ?? 0,
       lastError: lastErrorRef.current,
+      cssCanvas: snapCss(canvas),
+      cssContainer: snapCss(container),
+      cssParent: snapCss(parent),
     });
-  }, [onDiagnostics, styleId, styleHost, routeGeom]);
+  }, [onDiagnostics, styleId, styleHost, routeGeom, snapCss]);
 
   // Signal mount.
   useEffect(() => { onStage?.("mounted"); }, [onStage]);
