@@ -185,6 +185,7 @@ function NewTripWizard() {
   const [generating, setGenerating] = useState(false);
   const [tripId, setTripId] = useState<string | null>(initialSnapshot.tripId);
   const selectedVehicle: Vehicle = vehicles.find((v) => v.id === vehicleId) ?? initialVehicle;
+  const [lastRoute, setLastRoute] = useState<RouteResult | null>(null);
   const debug = useDebugMode();
 
   useEffect(() => {
