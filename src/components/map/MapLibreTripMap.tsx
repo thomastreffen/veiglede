@@ -2,7 +2,7 @@
 // This file is only imported when mapConfig.hasRealMap is true, so the
 // SVG fallback path stays free of MapLibre's runtime cost.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
