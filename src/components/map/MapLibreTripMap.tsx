@@ -454,13 +454,21 @@ export function MapLibreTripMap({
         src.setData(data);
       } else {
         map.addSource("vg-route", { type: "geojson", data });
-        // Add as last layers — they'll sit on top of every base style layer,
-        // so even if base tiles are blank the route is still visible.
+        // Casing first (white halo for contrast against any base style),
+        // then the bright orange line on top. Both sit on the topmost slot
+        // so they remain visible regardless of base style layers.
         map.addLayer({
           id: "vg-route-glow",
           type: "line",
           source: "vg-route",
-          paint: { "line-color": DAY_COLORS[0], "line-width": 14, "line-opacity": 0.22, "line-blur": 8 },
+          paint: { "line-color": DAY_COLORS[0], "line-width": 16, "line-opacity": 0.22, "line-blur": 8 },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+        map.addLayer({
+          id: "vg-route-casing",
+          type: "line",
+          source: "vg-route",
+          paint: { "line-color": "#ffffff", "line-width": compact ? 8 : 12, "line-opacity": 0.95 },
           layout: { "line-cap": "round", "line-join": "round" },
         });
         map.addLayer({
@@ -469,7 +477,8 @@ export function MapLibreTripMap({
           source: "vg-route",
           paint: {
             "line-color": DAY_COLORS[0],
-            "line-width": compact ? 5 : 7,
+            "line-width": compact ? 5 : 8,
+            "line-opacity": 1,
             "line-dasharray": routeGeom ? [1, 0] : [2, 2],
           },
           layout: { "line-cap": "round", "line-join": "round" },
