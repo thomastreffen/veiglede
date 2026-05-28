@@ -12,7 +12,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import { stopMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
-import { projectTrip } from "@/lib/geo";
+import { distanceKm, projectTrip } from "@/lib/geo";
 import { getCachedRoute, mapConfig } from "@/lib/map";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
@@ -253,6 +253,7 @@ export function MapLibreTripMap({
     // the point. Approximated stops would just snap onto the existing line.
     const stopWps = projected.mapped
       .filter((m) => !m.approximated)
+      .filter((m) => distanceKm(m.loc, projected.origin) > 1 && distanceKm(m.loc, projected.destination) > 1)
       .map((m) => m.loc);
     const wps: LatLng[] = [projected.origin, ...stopWps, projected.destination];
     const hash = waypointHash(wps);
@@ -383,32 +384,41 @@ export function MapLibreTripMap({
       markersRef.current.push(m);
     };
 
-    addMarker(projected.origin, pinEl("A", DAY_COLORS[0]));
-    addMarker(projected.destination, pinEl("B", "#e9b54a"));
+    const originEl = pinEl("A", DAY_COLORS[0]);
+    originEl.title = `${trip.origin} · start`;
+    addMarker(projected.origin, originEl);
+
+    const destEl = pinEl("B", "#e9b54a");
+    destEl.title = `${trip.destination} · mål`;
+    addMarker(projected.destination, destEl);
 
     projected.mapped.forEach((m) => {
       const meta = stopMeta(m.stop.type);
       const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
       const selected = selectedStopId === m.stop.id;
-      const el = stopEl(meta.emoji, color, selected);
+      const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
+      const el = stopEl(meta.emoji, color, selected, status);
+      el.title = `${m.stop.name} · ${meta.label} · ${status === "detour" ? "avstikker" : "på rute"}`;
+      const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
+      const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" })
+        .setHTML(
+          `<div style="font-family:inherit;padding:2px 4px;max-width:220px;">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${color};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)} · ${status === "detour" ? "avstikker" : "på rute"}</div>
+            <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
+            ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
+            ${m.stop.distanceFromRouteKm != null ? `<div style="font-size:11px;color:#555;margin-top:2px;">📍 ${m.stop.distanceFromRouteKm} km fra rute${m.stop.extraDistanceKm != null ? ` · +${m.stop.extraDistanceKm} km` : ""}</div>` : ""}
+            ${durationStr ? `<div style="font-size:11px;color:#555;margin-top:2px;">⏱ ${durationStr}</div>` : ""}
+            <button data-vg-remove="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d33;color:#d33;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Fjern fra rute</button>
+          </div>`,
+        );
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        onSelectStop?.(selected ? null : m.stop.id);
+        onSelectStop?.(m.stop.id);
+        if (!popup.isOpen()) marker.togglePopup();
       });
       const marker = new maplibregl.Marker({ element: el }).setLngLat([m.loc.lng, m.loc.lat]).addTo(map);
-      if (selected) {
-        const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
-        const popup = new maplibregl.Popup({ offset: 22, closeButton: true, className: "vg-popup" })
-          .setHTML(
-            `<div style="font-family:inherit;padding:2px 4px;max-width:220px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${color};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)}</div>
-              <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
-              ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
-              ${durationStr ? `<div style="font-size:11px;color:#555;margin-top:2px;">⏱ ${durationStr}</div>` : ""}
-              <button data-vg-remove="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d33;color:#d33;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Fjern fra rute</button>
-            </div>`,
-          );
-        marker.setPopup(popup);
+      marker.setPopup(popup);
+      if (selected && !popup.isOpen()) {
         marker.togglePopup();
         // Wire the Fjern button via event delegation on the popup element.
         requestAnimationFrame(() => {
