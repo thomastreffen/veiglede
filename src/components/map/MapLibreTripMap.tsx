@@ -86,18 +86,27 @@ export function MapLibreTripMap({
     }
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     let loaded = false;
-    map.on("load", () => { loaded = true; setReady(true); onReady?.(); });
+    let signaled = false;
+    const signalReady = () => {
+      if (signaled) return;
+      signaled = true;
+      setReady(true);
+      onReady?.();
+    };
+    map.on("load", () => { loaded = true; });
+    // Wait for first idle (tiles drawn) before revealing the overlay.
+    map.once("idle", () => { loaded = true; signalReady(); });
     map.on("error", (e) => {
       const status = (e as { error?: { status?: number; message?: string } }).error?.status;
       const msg = (e as { error?: { message?: string } }).error?.message;
       if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, loaded, err: e });
-      if (!loaded || status === 401 || status === 403 || status === 404) {
+      if (!signaled || status === 401 || status === 403 || status === 404) {
         onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
       }
     });
-    // Safety net: if the map never reports `load` within 3s, fall back.
+    // Safety net: if the map never becomes idle within 3s, fall back to SVG.
     const t = window.setTimeout(() => {
-      if (!loaded) onError?.("load-timeout");
+      if (!signaled) onError?.("MapTiler map load timeout");
     }, 3000);
     mapRef.current = map;
     return () => { window.clearTimeout(t); map.remove(); mapRef.current = null; };
