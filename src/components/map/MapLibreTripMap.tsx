@@ -362,10 +362,11 @@ export function MapLibreTripMap({
     });
   }, [projected, suggestionPins, hoveredSuggestionId, selectedStopId, onSelectStop, ready]);
 
+  // Match /map-test: a single container that the map mounts into. No
+  // intermediate wrapper, no opacity tricks, no rounded clipping that could
+  // interact with the WebGL canvas during init.
   return (
-    <div className={cn("relative h-full w-full overflow-hidden rounded-2xl", className)}>
-      <div ref={containerRef} className="absolute inset-0" />
-    </div>
+    <div ref={containerRef} className={cn("h-full w-full", className)} />
   );
 }
 
