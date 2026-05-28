@@ -46,41 +46,23 @@ function TripPlanner() {
 
   const trip = trips.find((t) => t.id === tripId);
 
-  if (pathname !== `/trips/${tripId}`) {
-    return <Outlet />;
-  }
-
-
-  if (!trip) {
-    return (
-      <div className="py-12 text-center">
-        <p className="font-display text-2xl uppercase">Tur ikke funnet</p>
-        <Link to="/trips" className="mt-4 inline-block text-sm text-primary underline">Tilbake til mine turer</Link>
-      </div>
-    );
-  }
-
-  const tripDays = days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
-  const tripStops = stops.filter((st) => tripDays.some((d) => d.id === st.dayId));
-  const v = vehicleMeta(trip.vehicle);
-  const s = styleMeta(trip.style);
-  const vehicle = getVehicleById(trip.vehicleId);
-  const em = trip.energy ? energyMeta(trip.energy) : undefined;
-  const vehicleDisplay = trip.vehicleName ?? v.label;
-  const totalStops = tripStops.length;
-
-  // merge driver interests with this trip's vehicle interests
-  const mergedInterests = Array.from(new Set([...(vehicle?.stopInterests ?? []), ...prefs.stopInterests]));
-  const suggestions = getRouteSuggestions(trip, mergedInterests);
-  const partnerTips = getPartnerTips(trip);
-  const memories = getPhotoMemories(trip, tripStops);
+  const tripDays = trip ? days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber) : [];
+  const tripStops = trip ? stops.filter((st) => tripDays.some((d) => d.id === st.dayId)) : [];
 
   // Project the trip so suggestions can be measured against the route polyline.
-  const projection = useMemo(() => projectTrip(trip, tripDays, tripStops), [trip, tripDays, tripStops]);
+  // NOTE: these hooks must run on every render — never put hooks behind an early return.
+  const projection = useMemo(
+    () => (trip ? projectTrip(trip, tripDays, tripStops) : null),
+    [trip, tripDays, tripStops],
+  );
   const routePoints = useMemo(
-    () => [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination],
+    () => (projection ? [projection.origin, ...projection.mapped.map((m) => m.loc), projection.destination] : []),
     [projection],
   );
+  const mergedInterests = trip
+    ? Array.from(new Set([...(getVehicleById(trip.vehicleId)?.stopInterests ?? []), ...prefs.stopInterests]))
+    : [];
+  const suggestions = trip ? getRouteSuggestions(trip, mergedInterests) : [];
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
@@ -97,6 +79,29 @@ function TripPlanner() {
         })),
     [enrichedSuggestions],
   );
+
+  if (pathname !== `/trips/${tripId}`) {
+    return <Outlet />;
+  }
+
+  if (!trip) {
+    return (
+      <div className="py-12 text-center">
+        <p className="font-display text-2xl uppercase">Tur ikke funnet</p>
+        <Link to="/trips" className="mt-4 inline-block text-sm text-primary underline">Tilbake til mine turer</Link>
+      </div>
+    );
+  }
+
+  const v = vehicleMeta(trip.vehicle);
+  const s = styleMeta(trip.style);
+  const vehicle = getVehicleById(trip.vehicleId);
+  const em = trip.energy ? energyMeta(trip.energy) : undefined;
+  const vehicleDisplay = trip.vehicleName ?? v.label;
+  const totalStops = tripStops.length;
+  const partnerTips = getPartnerTips(trip);
+  const memories = getPhotoMemories(trip, tripStops);
+
 
   const handleSelectStop = (id: string | null) => {
     setSelectedStopId(id);
