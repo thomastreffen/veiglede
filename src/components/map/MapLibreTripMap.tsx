@@ -77,7 +77,7 @@ export function MapLibreTripMap({
         center: [projected.origin.lng, projected.origin.lat],
         zoom: 5,
         attributionControl: { compact: true },
-        cooperativeGestures: compact,
+        cooperativeGestures: false,
       });
     } catch (err) {
       if (import.meta.env.DEV) console.debug("[TripMap] MapLibre init failed", err);
@@ -92,29 +92,25 @@ export function MapLibreTripMap({
       setReady(true);
       onReady?.();
     };
-    // Reveal as soon as style+first tiles are rendered. `load` fires after the
-    // style is parsed and the first frame is drawn — strong enough to mean
-    // "the user sees a map", without waiting for full network idle (which can
-    // stall indefinitely on slow tile fetches).
     map.on("load", () => signalReady());
-    // Belt-and-braces: also reveal on the first successful render frame.
     map.once("render", () => signalReady());
     map.on("error", (e) => {
       const status = (e as { error?: { status?: number; message?: string } }).error?.status;
       const msg = (e as { error?: { message?: string } }).error?.message;
       if (import.meta.env.DEV) console.debug("[TripMap] MapLibre error", { status, signaled, err: e });
-      // Only treat as fatal if we haven't yet shown anything, or auth failed.
-      if (!signaled || status === 401 || status === 403 || status === 404) {
+      // Only treat as fatal before first frame, or on hard auth failures.
+      if (!signaled || status === 401 || status === 403) {
         onError?.(`maplibre: ${status ?? ""} ${msg ?? ""}`.trim());
       }
     });
-    // Safety net: if neither load nor render fires within 4s, fall back to SVG.
-    const t = window.setTimeout(() => {
-      if (!signaled) onError?.("MapTiler map load timeout");
-    }, 4000);
+    // Click on empty map deselects.
+    map.on("click", (e) => {
+      const features = map.queryRenderedFeatures(e.point);
+      if (features.length === 0) onSelectStop?.(null);
+    });
 
     mapRef.current = map;
-    return () => { window.clearTimeout(t); map.remove(); mapRef.current = null; };
+    return () => { map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
