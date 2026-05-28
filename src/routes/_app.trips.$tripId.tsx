@@ -179,6 +179,11 @@ function TripPlanner() {
         />
       </section>
 
+      {/* Time budget */}
+      <section className="mt-4">
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
+      </section>
+
 
       {/* AI explanation */}
       {trip.aiSummary && (
