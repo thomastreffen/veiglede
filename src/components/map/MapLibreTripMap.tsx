@@ -14,6 +14,13 @@ import { getCachedRoute, mapConfig } from "@/lib/map";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 
+export type MapLibreStage =
+  | "mounted"
+  | "mapCreated"
+  | "styleLoaded"
+  | "firstRender"
+  | "routeLayerAdded";
+
 interface Props {
   trip: Trip;
   days: TripDay[];
@@ -28,6 +35,7 @@ interface Props {
   variant?: "dark" | "light";
   onError?: (msg?: string) => void;
   onReady?: () => void;
+  onStage?: (stage: MapLibreStage) => void;
   /** MapTiler browser key fetched at runtime via /api/public-map-config. */
   maptilerKey: string;
 }
