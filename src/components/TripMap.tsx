@@ -94,6 +94,19 @@ export function TripMap(props: Props) {
   const routePointCount = props.days.length + 2;
   const stopsWithCoords = props.stops.filter((s) => lookupPlace(s.location ?? s.name)).length;
 
+  const geom = props.trip.routeGeometry ?? [];
+  const geomMode = geom.length > 4 ? (props.trip.routeProvider === "ors" ? "real-geometry" : "demo-geometry") : "missing";
+  const geomFirst = geom[0];
+  const geomLast = geom[geom.length - 1];
+  const geomBounds = geom.length
+    ? {
+        minLat: Math.min(...geom.map((p) => p.lat)),
+        maxLat: Math.max(...geom.map((p) => p.lat)),
+        minLng: Math.min(...geom.map((p) => p.lng)),
+        maxLng: Math.max(...geom.map((p) => p.lng)),
+      }
+    : null;
+
   if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.debug("[TripMap]", {
@@ -104,6 +117,9 @@ export function TripMap(props: Props) {
       errored,
       errorMsg,
       hasOrigin, hasDestination,
+      routeProvider: props.trip.routeProvider,
+      geometryLen: geom.length,
+      geomMode,
     });
   }
 
@@ -133,11 +149,16 @@ export function TripMap(props: Props) {
         </div>
       )}
       {debug && (
-        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5">
-          <div>mode: <span className="text-primary font-semibold">{mode}</span></div>
-          <div>overlay: {String(useMapLibre && maplibreReady)} · ready: {String(maplibreReady)}</div>
-          <div>real: {String(cfg?.hasRealMap ?? false)} · pts: {routePointCount} · stops: {stopsWithCoords}/{props.stops.length}</div>
-          <div>routing: {props.trip.routeProvider ?? "—"} · geom: {props.trip.routeGeometry?.length ?? 0}</div>
+        <div className="absolute left-2 top-2 z-10 pointer-events-none rounded-md border border-primary/40 bg-background/85 backdrop-blur px-2 py-1 text-[10px] uppercase tracking-wider text-foreground/90 space-y-0.5 max-w-[300px]">
+          <div>mode: <span className="text-primary font-semibold">{mode}</span> · geom: <span className="text-primary font-semibold">{geomMode}</span></div>
+          <div>overlay: {String(useMapLibre && maplibreReady)} · stops: {stopsWithCoords}/{props.stops.length}</div>
+          <div>routing: {props.trip.routeProvider ?? "—"} · pts: {geom.length} (days+2={routePointCount})</div>
+          {geomFirst && geomLast && (
+            <div>first: {geomFirst.lat.toFixed(3)},{geomFirst.lng.toFixed(3)} · last: {geomLast.lat.toFixed(3)},{geomLast.lng.toFixed(3)}</div>
+          )}
+          {geomBounds && (
+            <div>bounds lat {geomBounds.minLat.toFixed(2)}→{geomBounds.maxLat.toFixed(2)} · lng {geomBounds.minLng.toFixed(2)}→{geomBounds.maxLng.toFixed(2)}</div>
+          )}
           {errorMsg && <div className="text-destructive normal-case">err: {errorMsg}</div>}
         </div>
       )}
