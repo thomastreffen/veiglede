@@ -396,7 +396,21 @@ function TripPlanner() {
               styleLabel={s.label}
               tripDays={tripDays}
               tripDestination={trip.destination}
-              onAdd={(placement, dayId) => tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info)}
+              onAdd={(placement, dayId) => {
+                const added = tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info);
+                if (added) {
+                  const status = added.routeStatus ?? "—";
+                  const coords = added.lat != null && added.lng != null
+                    ? `${added.lat.toFixed(3)},${added.lng.toFixed(3)}`
+                    : "(no coords)";
+                  // Temporary debug toast — verifies waypoint reaches the routing engine.
+                  // eslint-disable-next-line no-console
+                  console.info("[veiglede] added stop", { name: added.name, status, placement, coords });
+                  if (placement === "along") {
+                    toast(`Added waypoint: ${added.name} ${coords} routeStatus=${status}`);
+                  }
+                }
+              }}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
             />
           ))}
