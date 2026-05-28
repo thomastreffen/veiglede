@@ -418,6 +418,119 @@ export const tripsApi = {
       promoted: sug.promoted,
     });
   },
+  /**
+   * Trip-planner UX v2 — add a suggestion with explicit placement chosen by
+   * the user. "along" inserts before the arrival on the last day, "detour"
+   * is the same but flagged as a detour. "after" appends a new day after
+   * the current destination. "new-day" adds it as its own day. "day"
+   * inserts at the bottom of a chosen day.
+   */
+  addSuggestionAt(
+    tripId: string,
+    sug: SuggestedStop,
+    placement: "along" | "detour" | "after" | "new-day" | "day",
+    targetDayId?: string,
+  ): Stop | null {
+    ensureInit();
+    const tripDays = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+    if (tripDays.length === 0) return null;
+    const baseInput: Partial<Stop> = {
+      name: sug.name,
+      type: placement === "detour" ? "detour" : sug.type,
+      location: sug.location,
+      description: sug.description,
+      reason: sug.reason,
+      durationMin: sug.durationMin,
+      photoOp: sug.photoOp,
+      promoted: sug.promoted,
+    };
+    if (placement === "along" || placement === "detour") {
+      // insert before the arrival (last stop) of the last day
+      const last = tripDays[tripDays.length - 1];
+      const siblings = state.stops.filter((s) => s.dayId === last.id).sort((a, b) => a.order - b.order);
+      const insertOrder = Math.max(0, siblings.length - 1);
+      const stop = this.addStop(last.id, baseInput);
+      // shift the arrival down
+      state = {
+        ...state,
+        stops: state.stops.map((s) => {
+          if (s.id === stop.id) return { ...s, order: insertOrder };
+          if (s.dayId === last.id && s.id !== stop.id && s.order >= insertOrder) {
+            return { ...s, order: s.order + 1 };
+          }
+          return s;
+        }),
+      };
+      persist();
+      return stop;
+    }
+    if (placement === "new-day" || placement === "after") {
+      const newDay = this.addDay(tripId);
+      this.updateDay(newDay.id, { title: sug.location ? `${sug.location}` : sug.name });
+      return this.addStop(newDay.id, baseInput);
+    }
+    // placement === "day"
+    const dayId = targetDayId ?? tripDays[tripDays.length - 1].id;
+    return this.addStop(dayId, baseInput);
+  },
+  /**
+   * Trip-planner UX v2 — split the current trip into N days by adding
+   * empty days at the end. Existing day 1 keeps origin/destination stops.
+   */
+  splitIntoDays(tripId: string, count: number) {
+    ensureInit();
+    const current = state.days.filter((d) => d.tripId === tripId).length;
+    for (let i = current; i < count; i++) this.addDay(tripId);
+  },
+  /**
+   * Trip-planner UX v2 — add an overnight at the current destination
+   * (or a specified location). Creates a lodging stop on the last day.
+   */
+  addOvernight(tripId: string, location?: string): Stop | null {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    if (!trip) return null;
+    const tripDays = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+    if (tripDays.length === 0) return null;
+    const last = tripDays[tripDays.length - 1];
+    const place = location ?? trip.destination;
+    return this.addStop(last.id, {
+      name: `Overnatting i ${place}`,
+      type: "lodging",
+      location: place,
+      description: "Overnatting før neste etappe.",
+      reason: "Naturlig stopp for natten.",
+      durationMin: 720,
+    });
+  },
+  /**
+   * Trip-planner UX v2 — extend the trip with a new leg to the next
+   * destination. Adds a new day with an arrival stop and updates the
+   * trip's destination. Map geometry is NOT re-computed here; the planner
+   * shows a hint that the route updates on next generation.
+   */
+  addDestination(tripId: string, place: string, loc?: { lat: number; lng: number }) {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    if (!trip) return null;
+    const previousDestination = trip.destination;
+    const newDay = this.addDay(tripId);
+    this.updateDay(newDay.id, {
+      title: `${previousDestination} → ${place}`,
+      summary: `Ny etappe lagt til. Generer rute på nytt for å oppdatere kart og tider.`,
+    });
+    const stop = this.addStop(newDay.id, {
+      name: `Ankomst ${place}`,
+      type: "city",
+      location: place,
+      description: "Neste mål for turen.",
+      reason: "Lagt til som ny destinasjon.",
+      durationMin: 0,
+    });
+    this.updateTrip(tripId, { destination: place, destinationLoc: loc ?? trip.destinationLoc });
+    return stop;
+  },
+
 };
 
 function shiftDate(start: string | undefined, days: number): string | undefined {
