@@ -487,13 +487,13 @@ function TripPlanner() {
 type Placement = "along" | "detour" | "after" | "new-day" | "day";
 
 function SuggestionCard({
-  sug, onAdd, onHover, detourMin, distanceFromRouteKm, off, vehicleDisplay, styleLabel,
+  sug, onAdd, onHover, detourMin, distanceFromRouteKm, extraDistanceKm, off, vehicleDisplay, styleLabel,
   tripDays, tripDestination,
 }: {
   sug: SuggestedStop;
   onAdd: (placement: Placement, dayId?: string) => void;
   onHover: (h: boolean) => void;
-  detourMin: number; distanceFromRouteKm: number; off: boolean;
+  detourMin: number; distanceFromRouteKm: number; extraDistanceKm: number; off: boolean;
   vehicleDisplay: string; styleLabel: string;
   tripDays: { id: string; dayNumber: number; title: string }[];
   tripDestination: string;
@@ -501,6 +501,15 @@ function SuggestionCard({
   const meta = stopMeta(sug.type);
   const [open, setOpen] = useState(false);
   const choose = (p: Placement, dayId?: string) => {
+    if (p === "along" && off) {
+      const ok = confirm(
+        `Dette ligger et stykke unna ruta (ca. ${distanceFromRouteKm} km fra ruta, +${extraDistanceKm} km og ~${detourMin} min). Vil du legge det til som avstikker?`,
+      );
+      if (!ok) return;
+      onAdd("detour", dayId);
+      setOpen(false);
+      return;
+    }
     onAdd(p, dayId);
     setOpen(false);
   };
@@ -527,6 +536,11 @@ function SuggestionCard({
           <CornerDownRight className="h-3 w-3" />
           {off ? `+${detourMin} min detour` : "På ruta"}
         </span>
+        {off && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 px-2 py-0.5 text-amber-300">
+            +{extraDistanceKm} km ekstra
+          </span>
+        )}
         <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground">
           <Navigation className="h-3 w-3" />
           {distanceFromRouteKm < 1 ? "<1 km" : `${distanceFromRouteKm} km`} fra ruta
