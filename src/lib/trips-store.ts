@@ -819,25 +819,29 @@ interface MapboxPoiFeature {
 }
 
 interface PoiQuery {
-  /** Mapbox Places search terms — each becomes a separate API call. */
+  /** Search terms — each becomes a separate AI call. */
   terms: string[];
   type: StopType;
   photoOp?: boolean;
-  /** Fallback description if Mapbox returns no category. */
+  /** Fallback description if AI returns none. */
   fallbackDescription: string;
   reason: string;
   durationMin: number;
+  /** Max suggestions per term (drives prompt + post-filter cap). */
+  perTermLimit: number;
 }
 
+// Varied mix per fetch: up to ~2 viewpoints, 1–2 cafes/restaurants,
+// 1 attraction/museum, 1 fuel stop.
 const POI_QUERIES: PoiQuery[] = [
-  { terms: ["viewpoint", "scenic lookout"], type: "viewpoint", photoOp: true,
-    fallbackDescription: "Utsiktspunkt langs ruten", reason: "Utsiktspunkt langs ruten.", durationMin: 20 },
+  { terms: ["viewpoint"], type: "viewpoint", photoOp: true,
+    fallbackDescription: "Utsiktspunkt langs ruten", reason: "Utsiktspunkt langs ruten.", durationMin: 20, perTermLimit: 2 },
   { terms: ["cafe", "restaurant"], type: "food",
-    fallbackDescription: "Spisested langs ruten",     reason: "Mat- eller kaffepause langs ruten.", durationMin: 40 },
-  { terms: ["museum", "attraction"], type: "attraction",
-    fallbackDescription: "Severdighet langs ruten",   reason: "Severdighet langs ruten.", durationMin: 50 },
+    fallbackDescription: "Spisested langs ruten",     reason: "Mat- eller kaffepause langs ruten.", durationMin: 40, perTermLimit: 1 },
+  { terms: ["museum"], type: "attraction",
+    fallbackDescription: "Severdighet langs ruten",   reason: "Severdighet langs ruten.", durationMin: 50, perTermLimit: 1 },
   { terms: ["gas station"], type: "fuel",
-    fallbackDescription: "Drivstoff langs ruten",     reason: "Fyllestasjon langs ruten.", durationMin: 10 },
+    fallbackDescription: "Drivstoff langs ruten",     reason: "Fyllestasjon langs ruten.", durationMin: 10, perTermLimit: 1 },
 ];
 
 function prettyDescription(category: string, fallback: string): string {
