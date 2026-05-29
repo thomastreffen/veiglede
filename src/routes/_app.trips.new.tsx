@@ -148,20 +148,20 @@ function NewTripWizard() {
 
   const resolveSnapshot = (): WizardSnapshot => {
     if (typeof window === "undefined") {
-      return createFreshSnapshot(initialVehicle);
+      return createFreshSnapshot(initialVehicle, prefs.defaultStyle);
     }
 
     if (restoreParam === "fresh") {
       clearDraft();
       clearSession();
-      return createFreshSnapshot(initialVehicle);
+      return createFreshSnapshot(initialVehicle, prefs.defaultStyle);
     }
 
     const shouldRestore = restoreParam === "force" || hasActiveSession();
     if (!shouldRestore) {
       clearDraft();
       clearSession();
-      return createFreshSnapshot(initialVehicle);
+      return createFreshSnapshot(initialVehicle, prefs.defaultStyle);
     }
 
     return createRestoredSnapshot({
