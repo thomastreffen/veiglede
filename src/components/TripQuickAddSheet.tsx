@@ -1,11 +1,16 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { tripsApi } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
 import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
-import type { ResolvedPlace } from "@/lib/places/geocoder";
+import type { ResolvedPlace, SearchOptions } from "@/lib/places/geocoder";
+import { routeMidpointAndLengthKm } from "@/lib/geo";
+
+const NORWAY_BBOX = "4.0,57.0,32.0,71.5";
+const FUEL_CHIPS = ["Circle K", "Uno-X", "Shell", "Esso", "Recharge", "Mer", "Tesla"] as const;
+const LODGING_CHIPS = ["Hotell", "Hytte", "Camping", "Scandic", "Thon"] as const;
 
 interface Props {
   tripId: string;
@@ -27,6 +32,23 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   const firstDay = days[0];
   const lastDay = days[days.length - 1];
   const firstStop = firstDay ? bundle.stops.filter((s) => s.dayId === firstDay.id).sort((a, b) => a.order - b.order)[0] : undefined;
+
+  // Proximity bias for POI searches — route midpoint when available,
+  // otherwise the first stop, otherwise the centre of Norway.
+  const proximity = useMemo<{ lng: number; lat: number }>(() => {
+    const geom = trip?.routeGeometry && trip.routeGeometry.length > 1 ? trip.routeGeometry : null;
+    const mid = geom ? routeMidpointAndLengthKm(geom)?.mid : null;
+    if (mid) return { lng: mid.lng, lat: mid.lat };
+    if (firstStop?.lat != null && firstStop?.lng != null) return { lng: firstStop.lng, lat: firstStop.lat };
+    return { lng: 9.0, lat: 61.0 };
+  }, [trip?.routeGeometry, firstStop?.lat, firstStop?.lng]);
+
+  const fuelSearchOptions = useMemo<SearchOptions>(() => ({
+    provider: "mapbox", proximity, bbox: NORWAY_BBOX,
+  }), [proximity]);
+  const lodgingSearchOptions = useMemo<SearchOptions>(() => ({
+    provider: "mapbox", proximity, bbox: NORWAY_BBOX,
+  }), [proximity]);
 
   // Stop form
   const [stopText, setStopText] = useState("");
@@ -246,6 +268,12 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
 
         {mode === "fuel" && (
           <FormShell title="Legg til drivstoffstopp" onBack={() => setMode("menu")}>
+            {!fuelPlace && (
+              <ChipRow
+                chips={FUEL_CHIPS as unknown as string[]}
+                onPick={(brand) => { setFuelPlace(null); setFuelText(brand); }}
+              />
+            )}
             <PlaceField
               label="Søk etter bensinstasjon / ladestasjon"
               text={fuelText}
@@ -253,7 +281,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               onTextChange={setFuelText}
               onSelect={setFuelPlace}
               placeholder="F.eks. Circle K Lillehammer"
-              searchOptions={{ types: "poi", queryPrefix: "bensinstasjon OR Circle K OR Uno-X OR Esso OR Shell" }}
+              searchOptions={fuelSearchOptions}
             />
 
             {fuelPlace && (
@@ -273,6 +301,12 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
 
         {mode === "lodging" && (
           <FormShell title="Legg til overnatting" onBack={() => setMode("menu")}>
+            {!lodgingPlace && (
+              <ChipRow
+                chips={LODGING_CHIPS as unknown as string[]}
+                onPick={(brand) => { setLodgingPlace(null); setLodgingText(brand); }}
+              />
+            )}
             <PlaceField
               label="Søk etter hotell, hytte eller camping"
               text={lodgingText}
@@ -280,7 +314,9 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               onTextChange={setLodgingText}
               onSelect={setLodgingPlace}
               placeholder="F.eks. Scandic Geilo"
+              searchOptions={lodgingSearchOptions}
             />
+
             {lodgingPlace && (
               <>
                 <Field label="Dato">
@@ -429,6 +465,23 @@ function SubmitRow({ onCancel, onSubmit, label, disabled }: { onCancel: () => vo
       >
         {label}
       </button>
+    </div>
+  );
+}
+
+function ChipRow({ chips, onPick }: { chips: string[]; onPick: (label: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {chips.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => onPick(c)}
+          className="rounded-full border border-border bg-background/60 hover:bg-surface-2 active:bg-surface-2 px-3 py-1.5 text-xs font-medium text-foreground"
+        >
+          {c}
+        </button>
+      ))}
     </div>
   );
 }

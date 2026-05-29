@@ -119,10 +119,16 @@ interface MapTilerFeature {
 import { MAPTILER_GEOCODING_PARAMS } from "./maptiler-params";
 
 export interface SearchOptions {
-  /** MapTiler `types` filter, e.g. "poi", "poi,address". */
+  /** MapTiler/Mapbox `types` filter, e.g. "poi", "poi,address". */
   types?: string;
   /** Optional query prefix prepended to user input (e.g. brand keywords for fuel). */
   queryPrefix?: string;
+  /** Override the default provider. "mapbox" routes via the server proxy. */
+  provider?: "maptiler" | "mapbox";
+  /** Proximity bias for Mapbox provider (lng/lat). */
+  proximity?: { lng: number; lat: number };
+  /** Bounding box for Mapbox provider, "minLng,minLat,maxLng,maxLat". */
+  bbox?: string;
 }
 
 async function searchMapTiler(q: string, key: string, signal: AbortSignal, opts: SearchOptions = {}): Promise<ResolvedPlace[]> {
@@ -158,6 +164,42 @@ async function searchMapTiler(q: string, key: string, signal: AbortSignal, opts:
   }).filter((x): x is ResolvedPlace => x !== null);
 }
 
+interface MapboxFeature {
+  id?: string;
+  text?: string;
+  place_name?: string;
+  place_type?: string[];
+  center?: [number, number];
+  context?: { id?: string; text?: string }[];
+}
+
+async function searchMapbox(q: string, signal: AbortSignal, opts: SearchOptions): Promise<ResolvedPlace[]> {
+  const params = new URLSearchParams({ q, limit: "5" });
+  if (opts.types) params.set("types", opts.types);
+  if (opts.proximity) params.set("proximity", `${opts.proximity.lng},${opts.proximity.lat}`);
+  if (opts.bbox) params.set("bbox", opts.bbox);
+  const res = await fetch(`/api/public/mapbox-geocode?${params.toString()}`, { signal });
+  if (!res.ok) throw new Error(`mapbox ${res.status}`);
+  const data = (await res.json()) as { features?: MapboxFeature[] };
+  const feats = data.features ?? [];
+  return feats.map((f, i): ResolvedPlace | null => {
+    const coords = f.center;
+    if (!coords || coords.length < 2) return null;
+    const name = f.text?.trim() || f.place_name?.split(",")[0]?.trim() || q;
+    const secondary = (f.place_name ?? "").split(",").slice(1).map((s) => s.trim()).filter(Boolean).join(", ");
+    return {
+      id: `mapbox-${f.id ?? i}`,
+      label: f.place_name ?? name,
+      name,
+      secondary: secondary || undefined,
+      lat: coords[1],
+      lng: coords[0],
+      type: mapTilerType(f.place_type),
+      country: (f.context ?? []).find((c) => c.id?.startsWith("country"))?.text?.toLowerCase(),
+      source: "maptiler",
+    };
+  }).filter((x): x is ResolvedPlace => x !== null);
+}
 
 export interface SearchResult {
   results: ResolvedPlace[];
@@ -176,6 +218,28 @@ export async function searchPlaces(q: string, signal?: AbortSignal, options: Sea
   const timeout = setTimeout(() => ctrl?.abort(), 4000);
 
   let failed = false;
+
+  // Mapbox provider — server-proxied; no client key needed.
+  // Mapbox v5 geocoding has thin POI coverage in Norway, so if it returns
+  // nothing we transparently fall through to MapTiler before giving up.
+  if (options.provider === "mapbox") {
+    try {
+      const results = await searchMapbox(query, sig, options);
+      if (results.length > 0) {
+        clearTimeout(timeout);
+        return { results, provider: "maptiler", failed: false };
+      }
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") {
+        clearTimeout(timeout);
+        return { results: [], provider: "demo", failed: true };
+      }
+      failed = true;
+    }
+    // Fall through to MapTiler below.
+  }
+
+
   if (cfg.maptilerKey) {
     try {
       const results = await searchMapTiler(query, cfg.maptilerKey, sig, options);
