@@ -221,7 +221,7 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
                         onClick={() => setConfirmId(null)}
                         className="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-white text-xs font-medium"
                       >
-                        Avbryt
+                        Nei
                       </button>
                     </div>
                   </div>
