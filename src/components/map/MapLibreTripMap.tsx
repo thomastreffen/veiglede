@@ -439,15 +439,16 @@ export function MapLibreTripMap({
           layout: { "line-cap": "round", "line-join": "round" },
         });
         map.addLayer({
-          id: "vg-detours-line",
+          id: "vg-detours",
           type: "line",
           source: "vg-detours",
+          layout: { "line-join": "round", "line-cap": "round" },
           paint: {
-            "line-color": "#f0b429", // amber
-            "line-width": compact ? 3 : 4,
-            "line-dasharray": [1.5, 1.5],
+            "line-color": "#f59e0b",
+            "line-width": 2.5,
+            "line-dasharray": [2, 3],
+            "line-opacity": 0.8,
           },
-          layout: { "line-cap": "round", "line-join": "round" },
         });
       }
       onStage?.("routeLayerAdded");
