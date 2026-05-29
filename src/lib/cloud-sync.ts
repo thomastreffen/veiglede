@@ -102,6 +102,23 @@ function wrapLocalStorage() {
   };
 }
 
+/**
+ * Push the latest trips blob to Supabase immediately, bypassing the 800ms
+ * debounce. Use right after generating/toggling share tokens so the public
+ * `/shared/{token}` link works as soon as it's copied.
+ */
+export async function flushTripsNow(): Promise<void> {
+  if (typeof window === "undefined" || !currentUserId) return;
+  const raw = localStorage.getItem(KEYS.trips);
+  if (!raw) return;
+  if (debounce[KEYS.trips]) {
+    clearTimeout(debounce[KEYS.trips]);
+    debounce[KEYS.trips] = undefined;
+  }
+  await pushKey(KEYS.trips, raw);
+}
+
+
 export function startCloudSync() {
   if (installed || typeof window === "undefined") return;
   installed = true;
