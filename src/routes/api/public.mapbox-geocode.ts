@@ -72,7 +72,7 @@ export const Route = createFileRoute("/api/public/mapbox-geocode")({
         }
       },
     },
-  }),
+  },
 });
 
 function json(body: unknown, status = 200) {
