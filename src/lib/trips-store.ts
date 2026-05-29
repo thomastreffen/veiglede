@@ -863,23 +863,24 @@ async function searchMapboxPoiTerm(
     q: term,
     bbox: `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`,
     proximity: `${proximity.lng},${proximity.lat}`,
-    limit: "5",
+    limit: String(q.perTermLimit),
   });
   const res = await fetch(`/api/public/poi-search?${params.toString()}`, { signal });
   if (!res.ok) return [];
   const data = (await res.json()) as { features?: MapboxPoiFeature[] };
   const feats = data.features ?? [];
-  return feats.map((f, i): SuggestedStop => {
+  return feats.slice(0, q.perTermLimit).map((f, i): SuggestedStop => {
     const secondary = (f.place_name ?? "")
       .split(",").slice(1).map((s) => s.trim()).filter(Boolean).join(", ");
+    const aiDesc = (f.description ?? "").trim();
     return {
       id: `mb-${q.type}-${f.id ?? `${i}-${f.lng.toFixed(3)}-${f.lat.toFixed(3)}`}`,
       name: f.name,
       type: q.type,
       location: secondary || undefined,
-      description: prettyDescription(f.category, q.fallbackDescription),
+      description: aiDesc || prettyDescription(f.category, q.fallbackDescription),
       reason: q.reason,
-      durationMin: q.durationMin,
+      durationMin: typeof f.detourMin === "number" ? f.detourMin : q.durationMin,
       photoOp: q.photoOp,
       badge: "local",
       lat: f.lat,
