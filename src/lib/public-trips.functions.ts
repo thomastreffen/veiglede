@@ -6,12 +6,14 @@ const TokenSchema = z.object({
   token: z.string().min(8).max(128).regex(/^[a-zA-Z0-9_-]+$/),
 });
 
+type Json = string | number | boolean | null | Json[] | { [key: string]: Json | undefined };
+
 export interface PublicTripPayload {
   found: boolean;
   isPrivate?: boolean;
-  trip?: unknown;
-  days?: unknown[];
-  stops?: unknown[];
+  trip?: Json;
+  days?: Json[];
+  stops?: Json[];
 }
 
 /**
