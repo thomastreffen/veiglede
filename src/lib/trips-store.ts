@@ -52,6 +52,15 @@ export interface Stop {
   routeStatus?: "on-route" | "detour" | "suggestion";
   distanceFromRouteKm?: number;
   extraDistanceKm?: number;
+  /** Photos uploaded by the user, stored in Supabase Storage. Max 5 per stop. */
+  photos?: StopPhoto[];
+}
+
+export interface StopPhoto {
+  id: string;
+  url: string;
+  path: string;
+  addedAt?: number;
 }
 
 export interface TripDay {
