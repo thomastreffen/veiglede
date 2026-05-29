@@ -724,3 +724,59 @@ function pickCover(s: RouteStyle): CoverKey {
     default: return "forest";
   }
 }
+
+function UseMyLocationButton({ onResolved }: { onResolved: (name: string, place: ResolvedPlace | null) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async () => {
+    setError(null);
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("Posisjon ikke tilgjengelig"); return;
+    }
+    setLoading(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }),
+      );
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const { getRuntimeMapConfig } = await import("@/lib/map/runtime-config");
+      const cfg = await getRuntimeMapConfig();
+      const key = cfg.maptilerKey;
+      if (!key) { setError("Posisjon ikke tilgjengelig"); return; }
+      const url = `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${encodeURIComponent(key)}&language=nb&limit=1`;
+      const res = await fetch(url);
+      if (!res.ok) { setError("Posisjon ikke tilgjengelig"); return; }
+      const data = await res.json() as { features?: Array<{ text?: string; place_name?: string; center?: [number, number] }> };
+      const f = data.features?.[0];
+      const name = (f?.text || f?.place_name || "").trim();
+      if (!name) { setError("Posisjon ikke tilgjengelig"); return; }
+      const place: ResolvedPlace = {
+        id: `geo-${lat.toFixed(4)},${lng.toFixed(4)}`,
+        name, label: f?.place_name || name, secondary: f?.place_name, type: "city",
+        lat, lng, source: "maptiler",
+      };
+      onResolved(name, place);
+    } catch {
+      setError("Posisjon ikke tilgjengelig");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-end">
+      <button
+        type="button"
+        onClick={run}
+        disabled={loading}
+        aria-label="Bruk min posisjon"
+        title="Bruk min posisjon"
+        className="inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground hover:text-primary hover:border-primary disabled:opacity-60"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+      </button>
+      {error && <p className="mt-1 text-[11px] text-destructive">{error}</p>}
+    </div>
+  );
+}
