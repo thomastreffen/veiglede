@@ -246,7 +246,9 @@ export function suggestionRouteInfo(
   sug: SuggestedStop,
   routePoints: LatLng[],
 ): { off: boolean; distanceFromRouteKm: number; extraDistanceKm: number; detourMin: number; loc?: LatLng } {
-  const loc = lookupPlace(sug.location ?? sug.name);
+  const loc = (typeof sug.lat === "number" && typeof sug.lng === "number")
+    ? { lat: sug.lat, lng: sug.lng }
+    : lookupPlace(sug.location ?? sug.name);
   if (!loc || routePoints.length === 0) {
     return { off: false, distanceFromRouteKm: 0, extraDistanceKm: 0, detourMin: 5, loc };
   }

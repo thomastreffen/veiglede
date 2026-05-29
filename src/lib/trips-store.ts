@@ -150,6 +150,8 @@ export interface SuggestedStop {
   promoted?: boolean;
   badge?: "partner" | "local" | "promoted";
   energy?: EnergySource; // for fuel/charging stops only
+  lat?: number;
+  lng?: number;
 }
 
 export interface SuggestedStopRouteMeta {
@@ -167,6 +169,8 @@ export interface PartnerTip {
   location: string;
   blurb: string;
   badge: "partner" | "local" | "promoted";
+  lat?: number;
+  lng?: number;
 }
 
 export interface PhotoMemory {
@@ -292,7 +296,8 @@ function getTripIdForDay(dayId: string): string | null {
   return state.days.find((d) => d.id === dayId)?.tripId ?? null;
 }
 
-function suggestionLoc(sug: Pick<SuggestedStop, "location" | "name">) {
+function suggestionLoc(sug: Pick<SuggestedStop, "location" | "name" | "lat" | "lng">) {
+  if (typeof sug.lat === "number" && typeof sug.lng === "number") return { lat: sug.lat, lng: sug.lng };
   return lookupPlace(sug.location ?? sug.name);
 }
 
