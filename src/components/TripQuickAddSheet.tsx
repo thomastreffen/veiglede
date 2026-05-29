@@ -44,10 +44,10 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   }, [trip?.routeGeometry, firstStop?.lat, firstStop?.lng]);
 
   const fuelSearchOptions = useMemo<SearchOptions>(() => ({
-    provider: "mapbox", types: "poi", proximity, bbox: NORWAY_BBOX,
+    provider: "mapbox", proximity, bbox: NORWAY_BBOX,
   }), [proximity]);
   const lodgingSearchOptions = useMemo<SearchOptions>(() => ({
-    provider: "mapbox", types: "poi", proximity, bbox: NORWAY_BBOX,
+    provider: "mapbox", proximity, bbox: NORWAY_BBOX,
   }), [proximity]);
 
   // Stop form
