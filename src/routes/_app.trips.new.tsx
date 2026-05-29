@@ -92,11 +92,11 @@ function clearSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
 }
 
-function createFreshSnapshot(initialVehicle: Vehicle): WizardSnapshot {
+function createFreshSnapshot(initialVehicle: Vehicle, defaultStyle?: RouteStyle): WizardSnapshot {
   return {
     step: 1,
     vehicleId: initialVehicle.id,
-    style: initialVehicle.defaultStyle,
+    style: defaultStyle ?? initialVehicle.defaultStyle,
     origin: "",
     destination: "",
     fromPlace: null,
