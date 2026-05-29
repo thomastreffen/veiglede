@@ -116,11 +116,25 @@ interface MapTilerFeature {
   context?: { id?: string; text?: string }[];
 }
 
-async function searchMapTiler(q: string, key: string, signal: AbortSignal): Promise<ResolvedPlace[]> {
-  // No country filter — allow worldwide results. Bias toward Norway via
-  // proximity so Norwegian matches stay on top for users searching from Norway,
-  // while queries like "Göteborg" still surface Swedish results.
-  const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?key=${encodeURIComponent(key)}&proximity=10.75,59.91&language=nb&limit=6`;
+import { MAPTILER_GEOCODING_PARAMS } from "./maptiler-params";
+
+export interface SearchOptions {
+  /** MapTiler `types` filter, e.g. "poi", "poi,address". */
+  types?: string;
+  /** Optional query prefix prepended to user input (e.g. brand keywords for fuel). */
+  queryPrefix?: string;
+}
+
+async function searchMapTiler(q: string, key: string, signal: AbortSignal, opts: SearchOptions = {}): Promise<ResolvedPlace[]> {
+  const params = new URLSearchParams({
+    key,
+    proximity: MAPTILER_GEOCODING_PARAMS.proximity,
+    language: MAPTILER_GEOCODING_PARAMS.language,
+    country: MAPTILER_GEOCODING_PARAMS.country,
+    limit: String(MAPTILER_GEOCODING_PARAMS.limit),
+  });
+  if (opts.types) params.set("types", opts.types);
+  const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?${params.toString()}`;
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`maptiler ${res.status}`);
   const data = await res.json() as { features?: MapTilerFeature[] };
@@ -143,6 +157,7 @@ async function searchMapTiler(q: string, key: string, signal: AbortSignal): Prom
     };
   }).filter((x): x is ResolvedPlace => x !== null);
 }
+
 
 export interface SearchResult {
   results: ResolvedPlace[];
