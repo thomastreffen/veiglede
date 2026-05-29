@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { lookupPlace, distanceToRoute } from "@/lib/geo";
+import { lookupPlace, distanceToRoute, routeBoundingBox, isInsideBBox, routeMidpointAndLengthKm, type LatLng } from "@/lib/geo";
+import { getRuntimeMapConfig } from "@/lib/map/runtime-config";
 import { computeTimeBreakdown } from "@/lib/trip-time";
 
 export type StopType =
@@ -773,18 +774,159 @@ export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): Sug
 // ----- Partner / local tips -----
 
 const PARTNER_TIPS: PartnerTip[] = [
-  { id: "p1", name: "Hardanger Bakery", category: "Bakeri", emoji: "🥐", location: "Eidfjord", blurb: "Surdeigsbrød og kanelsnurrer rett fra ovnen.", badge: "partner" },
-  { id: "p2", name: "Fjordview Cabins", category: "Overnatting", emoji: "🛖", location: "Aurland", blurb: "Små hytter med utsikt, 10% for Veiglede-brukere.", badge: "promoted" },
-  { id: "p3", name: "Trollstigen Café", category: "Kafé", emoji: "☕", location: "Romsdalen", blurb: "Anbefalt av lokale MC-klubber.", badge: "local" },
-  { id: "p4", name: "Lofoten Fish & Co", category: "Restaurant", emoji: "🐟", location: "Reine", blurb: "Fersk fisk, åpent til 22:00 hele sommeren.", badge: "local" },
-  { id: "p5", name: "Mountain Charge", category: "Lading", emoji: "🔌", location: "Geilo", blurb: "Hurtiglader med varmestue og kaffeautomat.", badge: "partner" },
-  { id: "p6", name: "Numedal Local Museum", category: "Museum", emoji: "🏛️", location: "Uvdal", blurb: "Lite museum med inngangsbillett 80 kr.", badge: "local" },
+  { id: "p1", name: "Hardanger Bakery", category: "Bakeri", emoji: "🥐", location: "Eidfjord", blurb: "Surdeigsbrød og kanelsnurrer rett fra ovnen.", badge: "partner", lat: 60.466, lng: 7.073 },
+  { id: "p2", name: "Fjordview Cabins", category: "Overnatting", emoji: "🛖", location: "Aurland", blurb: "Små hytter med utsikt, 10% for Veiglede-brukere.", badge: "promoted", lat: 60.906, lng: 7.193 },
+  { id: "p3", name: "Trollstigen Café", category: "Kafé", emoji: "☕", location: "Romsdalen", blurb: "Anbefalt av lokale MC-klubber.", badge: "local", lat: 62.499, lng: 7.776 },
+  { id: "p4", name: "Lofoten Fish & Co", category: "Restaurant", emoji: "🐟", location: "Reine", blurb: "Fersk fisk, åpent til 22:00 hele sommeren.", badge: "local", lat: 67.932, lng: 13.090 },
+  { id: "p5", name: "Mountain Charge", category: "Lading", emoji: "🔌", location: "Geilo", blurb: "Hurtiglader med varmestue og kaffeautomat.", badge: "partner", lat: 60.531, lng: 8.207 },
+  { id: "p6", name: "Numedal Local Museum", category: "Museum", emoji: "🏛️", location: "Uvdal", blurb: "Lite museum med inngangsbillett 80 kr.", badge: "local", lat: 60.293, lng: 8.781 },
 ];
 
-export function getPartnerTips(trip: Trip): PartnerTip[] {
-  // mix 3 — bias scenic/tourist to museum/cafe; photo to scenic spots
-  const pool = [...PARTNER_TIPS].sort(() => Math.random() - 0.5);
-  return pool.slice(0, 3 + (trip.distanceKm > 400 ? 1 : 0));
+function partnerLoc(p: PartnerTip): LatLng | undefined {
+  if (typeof p.lat === "number" && typeof p.lng === "number") return { lat: p.lat, lng: p.lng };
+  return lookupPlace(p.location);
+}
+
+export function getPartnerTips(trip: Trip, routePoints?: LatLng[]): PartnerTip[] {
+  const points = routePoints && routePoints.length > 0 ? routePoints : trip.routeGeometry ?? [];
+  const bbox = routeBoundingBox(points, 0.5);
+  // No route geometry yet → return nothing rather than irrelevant suggestions.
+  if (!bbox) return [];
+  const inBox = PARTNER_TIPS.filter((p) => {
+    const loc = partnerLoc(p);
+    return loc ? isInsideBBox(loc, bbox) : false;
+  });
+  if (inBox.length === 0) return [];
+  // Sort by distance from the actual route line.
+  const sorted = inBox
+    .map((p) => ({ p, d: distanceToRoute(partnerLoc(p)!, points) }))
+    .sort((a, b) => a.d - b.d)
+    .map(({ p }) => p);
+  return sorted.slice(0, 3 + (trip.distanceKm > 400 ? 1 : 0));
+}
+
+// ----- Real POI suggestions via MapTiler geocoding -----
+
+interface MapTilerFeature {
+  id?: string;
+  text?: string;
+  place_name?: string;
+  place_type?: string[];
+  center?: [number, number];
+  geometry?: { coordinates?: [number, number] };
+}
+
+interface PoiQuery {
+  query: string;
+  type: StopType;
+  photoOp?: boolean;
+  reason: string;
+  durationMin: number;
+}
+
+const POI_QUERIES: PoiQuery[] = [
+  { query: "utsiktspunkt", type: "viewpoint", photoOp: true, reason: "Utsiktspunkt langs ruten.", durationMin: 20 },
+  { query: "kafe",         type: "food",                     reason: "Mat- eller kaffepause langs ruten.", durationMin: 35 },
+  { query: "restaurant",   type: "food",                     reason: "Spisested langs ruten.", durationMin: 50 },
+  { query: "bensinstasjon",type: "fuel",                     reason: "Fyllestasjon langs ruten.", durationMin: 10 },
+  { query: "ladestasjon",  type: "fuel",                     reason: "Hurtiglader langs ruten.", durationMin: 25 },
+  { query: "attraksjon",   type: "attraction",               reason: "Severdighet langs ruten.", durationMin: 45 },
+  { query: "museum",       type: "attraction",               reason: "Kulturstopp langs ruten.", durationMin: 60 },
+  { query: "fotostopp",    type: "photo", photoOp: true,     reason: "Fotostopp langs ruten.", durationMin: 15 },
+];
+
+async function searchMapTilerPoi(
+  q: PoiQuery,
+  apiKey: string,
+  bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number },
+  proximity: LatLng,
+  signal: AbortSignal,
+): Promise<SuggestedStop[]> {
+  const bboxStr = `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`;
+  const prox = `${proximity.lng},${proximity.lat}`;
+  const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(q.query)}.json`
+    + `?key=${encodeURIComponent(apiKey)}`
+    + `&country=no&language=nb&limit=10`
+    + `&bbox=${bboxStr}&proximity=${prox}`;
+  const res = await fetch(url, { signal });
+  if (!res.ok) return [];
+  const data = await res.json() as { features?: MapTilerFeature[] };
+  const feats = data.features ?? [];
+  return feats.map((f, i): SuggestedStop | null => {
+    const coords = f.center ?? f.geometry?.coordinates;
+    if (!coords || coords.length < 2) return null;
+    const name = f.text?.trim() || f.place_name?.split(",")[0]?.trim();
+    if (!name) return null;
+    const secondary = (f.place_name ?? "").split(",").slice(1).map((s) => s.trim()).filter(Boolean).join(", ");
+    return {
+      id: `mt-${q.query}-${f.id ?? i}-${coords[0].toFixed(3)}-${coords[1].toFixed(3)}`,
+      name,
+      type: q.type,
+      location: secondary || undefined,
+      description: `${q.query.charAt(0).toUpperCase()}${q.query.slice(1)} i nærheten av ruten.`,
+      reason: q.reason,
+      durationMin: q.durationMin,
+      photoOp: q.photoOp,
+      badge: "local",
+      lat: coords[1],
+      lng: coords[0],
+    };
+  }).filter((x): x is SuggestedStop => x !== null);
+}
+
+/**
+ * Fetch real points of interest along the trip route via MapTiler geocoding.
+ * Returns 6–8 results sorted by distance from the route line, all inside the
+ * 0.5° bounding box of the route geometry. Returns [] if no geometry or no key.
+ */
+export async function fetchRouteSuggestions(
+  trip: Trip,
+  _interests?: StopType[],
+  signal?: AbortSignal,
+): Promise<SuggestedStop[]> {
+  const geom = trip.routeGeometry && trip.routeGeometry.length > 1 ? trip.routeGeometry : null;
+  if (!geom) return [];
+  const bbox = routeBoundingBox(geom, 0.5);
+  const midLen = routeMidpointAndLengthKm(geom);
+  if (!bbox || !midLen) return [];
+
+  const cfg = await getRuntimeMapConfig();
+  if (!cfg.maptilerKey) return [];
+
+  const ctrl = signal ? undefined : new AbortController();
+  const sig = signal ?? ctrl!.signal;
+  const timeout = setTimeout(() => ctrl?.abort(), 6000);
+
+  try {
+    const results = await Promise.all(
+      POI_QUERIES.map((q) =>
+        searchMapTilerPoi(q, cfg.maptilerKey!, bbox, midLen.mid, sig).catch(() => [] as SuggestedStop[]),
+      ),
+    );
+    const all = results.flat();
+    // Bbox enforcement (defensive — MapTiler may relax bbox for low-result queries)
+    const inBox = all.filter((s) =>
+      typeof s.lat === "number" && typeof s.lng === "number" && isInsideBBox({ lat: s.lat, lng: s.lng }, bbox),
+    );
+    // De-duplicate by name + ~coordinate.
+    const seen = new Set<string>();
+    const unique: SuggestedStop[] = [];
+    for (const s of inBox) {
+      const key = `${s.name.toLowerCase()}|${s.lat!.toFixed(2)}|${s.lng!.toFixed(2)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(s);
+    }
+    // Sort by distance from the actual route line, take top 8.
+    const sorted = unique
+      .map((s) => ({ s, d: distanceToRoute({ lat: s.lat!, lng: s.lng! }, geom) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 8)
+      .map(({ s }) => s);
+    return sorted;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // ----- Photo memories (placeholder concept) -----

@@ -212,6 +212,42 @@ export function distanceToRoute(point: LatLng, routePoints: LatLng[]): number {
   return min;
 }
 
+export interface RouteBBox { minLng: number; minLat: number; maxLng: number; maxLat: number }
+
+/** Bounding box of a route polyline expanded by `bufferDeg` (≈111km/° lat). */
+export function routeBoundingBox(routePoints: LatLng[], bufferDeg = 0.5): RouteBBox | null {
+  if (!routePoints || routePoints.length === 0) return null;
+  let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  for (const p of routePoints) {
+    if (p.lng < minLng) minLng = p.lng;
+    if (p.lng > maxLng) maxLng = p.lng;
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+  }
+  return {
+    minLng: minLng - bufferDeg,
+    maxLng: maxLng + bufferDeg,
+    minLat: minLat - bufferDeg,
+    maxLat: maxLat + bufferDeg,
+  };
+}
+
+export function isInsideBBox(loc: LatLng, bbox: RouteBBox): boolean {
+  return loc.lng >= bbox.minLng && loc.lng <= bbox.maxLng && loc.lat >= bbox.minLat && loc.lat <= bbox.maxLat;
+}
+
+/** Midpoint of a polyline (by index) and approx length in km. */
+export function routeMidpointAndLengthKm(routePoints: LatLng[]): { mid: LatLng; lengthKm: number } | null {
+  if (!routePoints || routePoints.length === 0) return null;
+  if (routePoints.length === 1) return { mid: routePoints[0], lengthKm: 0 };
+  let lengthKm = 0;
+  for (let i = 0; i < routePoints.length - 1; i++) {
+    lengthKm += distanceKm(routePoints[i], routePoints[i + 1]);
+  }
+  const mid = routePoints[Math.floor(routePoints.length / 2)];
+  return { mid, lengthKm };
+}
+
 /** Nearest point on the polyline to `point` — used to anchor detour spurs. */
 export function nearestPointOnRoute(point: LatLng, routePoints: LatLng[]): LatLng | null {
   if (routePoints.length === 0) return null;

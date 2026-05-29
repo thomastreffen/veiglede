@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
-  COVERS, type CoverKey, getRouteSuggestions, getPartnerTips, getPhotoMemories,
+  COVERS, type CoverKey, fetchRouteSuggestions, getPartnerTips, getPhotoMemories,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
@@ -69,16 +69,25 @@ function TripPlanner() {
   const mergedInterests = trip
     ? Array.from(new Set([...(getVehicleById(trip.vehicleId)?.stopInterests ?? []), ...prefs.stopInterests]))
     : [];
-  const suggestions = trip ? getRouteSuggestions(trip, mergedInterests) : [];
+  const [suggestions, setSuggestions] = useState<SuggestedStop[]>([]);
+  useEffect(() => {
+    if (!trip) { setSuggestions([]); return; }
+    const ctrl = new AbortController();
+    fetchRouteSuggestions(trip, mergedInterests, ctrl.signal)
+      .then((s) => setSuggestions(s))
+      .catch(() => setSuggestions([]));
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id, trip?.routeGeometry, mergedInterests.join(",")]);
   const enrichedSuggestions = useMemo(
-    () => suggestions.map((sug) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
+    () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
   );
   const suggestionPins = useMemo(
     () =>
       enrichedSuggestions
-        .filter((e) => e.info.loc)
-        .map((e) => ({
+        .filter((e: { info: { loc?: { lat: number; lng: number } } }) => e.info.loc)
+        .map((e: { sug: SuggestedStop; info: { loc?: { lat: number; lng: number } } }) => ({
           id: e.sug.id,
           name: e.sug.name,
           loc: e.info.loc!,
@@ -107,7 +116,7 @@ function TripPlanner() {
   const vehicleDisplay = trip.vehicleName ?? v.label;
   const totalStops = tripStops.length;
   const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
-  const partnerTips = getPartnerTips(trip);
+  const partnerTips = getPartnerTips(trip, routePoints);
   const memories = getPhotoMemories(trip, tripStops);
 
 
@@ -387,7 +396,7 @@ function TripPlanner() {
         <p className="mt-1 text-xs text-muted-foreground">Tilpasset {vehicleDisplay}{em ? ` (${em.label.toLowerCase()})` : ""} · {s.label.toLowerCase()} · interesser fra profil og kjøretøy.</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {enrichedSuggestions.map(({ sug, info }) => (
+          {enrichedSuggestions.map(({ sug, info }: { sug: SuggestedStop; info: ReturnType<typeof suggestionRouteInfo> }) => (
             <SuggestionCard
               key={sug.id}
               sug={sug}
