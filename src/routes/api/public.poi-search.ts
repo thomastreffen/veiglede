@@ -23,6 +23,7 @@ interface AiStop {
   lat?: number;
   lng?: number;
   description?: string;
+  detourMin?: number;
 }
 
 interface ProxyFeature {
@@ -30,6 +31,8 @@ interface ProxyFeature {
   name: string;
   place_name: string;
   category: string;
+  description?: string;
+  detourMin?: number;
   lng: number;
   lat: number;
 }
