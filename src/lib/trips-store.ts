@@ -63,8 +63,13 @@ export interface TripDay {
   summary?: string;
 }
 
+export type TripStatus = "draft" | "saved";
+
 export interface Trip {
   id: string;
+  /** Lifecycle status. New trips default to "draft" and only show up in
+   *  "Mine turer" once the user explicitly saves them. */
+  status?: TripStatus;
   title: string;
   subtitle?: string;
   region?: string;
