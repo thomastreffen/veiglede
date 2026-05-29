@@ -84,7 +84,8 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-surface border-border">
+      <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto bg-surface border-border max-sm:max-w-none max-sm:w-screen max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:rounded-none max-sm:border-0 max-sm:p-4 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:left-0 max-sm:top-0 max-sm:gap-3">
+        <DialogClose className="max-sm:absolute max-sm:right-2 max-sm:top-2 max-sm:h-11 max-sm:w-11 max-sm:rounded-full max-sm:grid max-sm:place-items-center max-sm:bg-surface-2 max-sm:hidden" />
         <DialogHeader>
           <DialogTitle className="font-display text-2xl uppercase tracking-wide">
             Del turen
