@@ -117,7 +117,10 @@ interface MapTilerFeature {
 }
 
 async function searchMapTiler(q: string, key: string, signal: AbortSignal): Promise<ResolvedPlace[]> {
-  const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?key=${encodeURIComponent(key)}&country=no&language=nb&limit=6`;
+  // No country filter — allow worldwide results. Bias toward Norway via
+  // proximity so Norwegian matches stay on top for users searching from Norway,
+  // while queries like "Göteborg" still surface Swedish results.
+  const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?key=${encodeURIComponent(key)}&proximity=10.75,59.91&language=nb&limit=6`;
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`maptiler ${res.status}`);
   const data = await res.json() as { features?: MapTilerFeature[] };
