@@ -559,7 +559,7 @@ function StopPhotos({
       console.log("uploading photo...");
       const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const photoId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-      const path = `${tripId}/${Date.now()}_${photoId}.${ext}`;
+      const path = `${userId}/${tripId}/${Date.now()}_${photoId}.${ext}`;
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.storage.from("trip-photos").upload(path, file, {
         cacheControl: "3600", upsert: false, contentType: file.type || "image/jpeg",
