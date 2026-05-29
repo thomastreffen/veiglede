@@ -6,6 +6,7 @@ import { toast } from "sonner";
 interface PhotoRow {
   id: string;
   url: string;
+  path: string | null;
   created_at: string;
 }
 
