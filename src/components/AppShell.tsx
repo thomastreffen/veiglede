@@ -93,18 +93,49 @@ export function AppShell() {
       </main>
 
       {/* Mobile bottom nav */}
+      <MobileBottomNav pathname={pathname} />
+    </div>
+  );
+}
+
+function MobileBottomNav({ pathname }: { pathname: string }) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const tripMatch = pathname.match(/^\/trips\/([^/]+)/);
+  const insideTrip = !!tripMatch && tripMatch[1] !== "new";
+  const currentTripId = insideTrip ? tripMatch![1] : null;
+
+  return (
+    <>
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border/60 bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
         <ul className="grid grid-cols-5 items-end">
           {nav.slice(0, 2).map((n) => <NavItem key={n.to} n={n} pathname={pathname} />)}
           <li className="flex justify-center -mt-6">
-            <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background">
-              <Plus className="h-6 w-6" strokeWidth={3} />
-            </Link>
+            {insideTrip ? (
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                aria-label="Hurtigvalg"
+                className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background"
+              >
+                <Plus className="h-6 w-6" strokeWidth={3} />
+              </button>
+            ) : (
+              <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background">
+                <Plus className="h-6 w-6" strokeWidth={3} />
+              </Link>
+            )}
           </li>
           {nav.slice(2).map((n) => <NavItem key={n.to} n={n} pathname={pathname} />)}
         </ul>
       </nav>
-    </div>
+      {currentTripId && (
+        <TripQuickAddSheet
+          tripId={currentTripId}
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
