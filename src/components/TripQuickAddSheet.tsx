@@ -356,7 +356,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function PlaceField({
-  label, text, place, onTextChange, onSelect, placeholder,
+  label, text, place, onTextChange, onSelect, placeholder, searchOptions,
 }: {
   label: string;
   text: string;
@@ -364,6 +364,7 @@ function PlaceField({
   onTextChange: (t: string) => void;
   onSelect: (p: ResolvedPlace | null) => void;
   placeholder?: string;
+  searchOptions?: import("@/lib/places/geocoder").SearchOptions;
 }) {
   if (place) {
     return (
@@ -395,6 +396,7 @@ function PlaceField({
         selected={null}
         onSelect={onSelect}
         placeholder={placeholder}
+        searchOptions={searchOptions}
       />
     </div>
   );
