@@ -281,6 +281,7 @@ export function MapLibreTripMap({
 
     let cancelled = false;
     const userChanged = prevHashRef.current !== "" && prevHashRef.current !== hash;
+    setRecalculating(true);
     // Prefer multi-waypoint server route; fall back to direct ORS if the
     // legacy client-side key is present (single-segment only).
     const routeP = wps.length > 2
@@ -296,6 +297,7 @@ export function MapLibreTripMap({
 
     routeP.then((res) => {
       if (cancelled) return;
+      setRecalculating(false);
       if (!res) {
         if (userChanged) {
           toast.error("Ruten kunne ikke beregnes på nytt. Beholder forrige rute.");
@@ -323,10 +325,14 @@ export function MapLibreTripMap({
         });
       } catch { /* noop */ }
       if (userChanged) {
-        toast.success(`Ruta er oppdatert via ${stopWps.length} via-punkt${stopWps.length === 1 ? "" : "er"} (${Math.round(res.distanceKm)} km).`);
+        if (res.provider === "fallback" || res.provider === "demo") {
+          toast.warning(`Ruta kunne ikke snappes til veinettet. Viser foreløpig estimat (${Math.round(res.distanceKm)} km).`);
+        } else {
+          toast.success(`Ruta er oppdatert via ${stopWps.length} via-punkt${stopWps.length === 1 ? "" : "er"} (${Math.round(res.distanceKm)} km).`);
+        }
       }
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; setRecalculating(false); };
   }, [projected, trip.id, trip.routeGeometry, trip.routeWaypointsHash, trip.style]);
 
   // Add/update route layer and fit bounds. Also re-runs after setStyle().
