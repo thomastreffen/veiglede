@@ -159,19 +159,7 @@ function Settings() {
 
       {/* 1 — Driver profile */}
       <Section title="Sjåfør" caption="Grunninnstillinger">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl">
-            {prefs.displayName.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <input
-              value={prefs.displayName}
-              onChange={(e) => updateDriverPrefs({ displayName: e.target.value })}
-              className="w-full bg-transparent font-semibold text-lg outline-none focus:bg-surface-2 rounded px-1 -mx-1"
-            />
-            <p className="text-xs text-muted-foreground">Lokal demo-profil · ingen pålogging</p>
-          </div>
-        </div>
+        <ProfileHeader />
 
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <MiniSelect
