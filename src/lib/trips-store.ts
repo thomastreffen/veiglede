@@ -79,6 +79,10 @@ export interface Trip {
   /** Lifecycle status. New trips default to "draft" and only show up in
    *  "Mine turer" once the user explicitly saves them. */
   status?: TripStatus;
+  /** Stable token used for public read-only sharing at /shared/{shareToken}. */
+  shareToken?: string;
+  /** Whether the public share link is active. Defaults to true once a token is generated. */
+  isPublic?: boolean;
   title: string;
   subtitle?: string;
   region?: string;
