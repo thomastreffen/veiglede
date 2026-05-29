@@ -15,6 +15,7 @@ import {
   createInvite, listInvitesForTrip, deleteInvite, inviteUrl,
   type TripInvite,
 } from "@/lib/trip-invites";
+import { flushTripsNow } from "@/lib/cloud-sync";
 
 interface Props {
   trip: Trip;
@@ -32,9 +33,13 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
 
   const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
 
-  // Generate a share token on first open so the link is always available.
+  // Generate a share token on first open so the link is always available,
+  // and immediately push to Supabase so /shared/{token} resolves right away.
   useEffect(() => {
-    if (open && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+    if (open && !trip.shareToken) {
+      tripsApi.ensureShareToken(trip.id);
+      void flushTripsNow();
+    }
   }, [open, trip.id, trip.shareToken]);
 
   const isPublic = trip.isPublic ?? false;
@@ -111,6 +116,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
                 onCheckedChange={(v) => {
                   if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
                   tripsApi.setTripPublic(trip.id, v);
+                  void flushTripsNow();
                 }}
               />
             </div>
