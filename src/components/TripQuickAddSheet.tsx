@@ -3,6 +3,7 @@ import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft } from "lucid
 import { toast } from "sonner";
 import { tripsApi } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
+import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 
 interface Props {
   tripId: string;
@@ -44,54 +45,26 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   const close = () => { if (!busy) { reset(); onClose(); } };
 
   const onPhotoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file) return;
-    console.log("1. Starting upload", file.name, file.size);
+    if (files.length === 0) return;
     if (!user) { toast.error("Logg inn for å laste opp bilder"); return; }
     setBusy(true);
     try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `${user.id}/${tripId}/${Date.now()}_${safeName}`;
-      console.log("2. Uploading to path:", path);
-
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data, error } = await supabase.storage
-        .from("trip-photos")
-        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
-
-      if (error) {
-        console.error("3. Storage error:", error.message);
+      let ok = 0;
+      for (const file of files) {
+        const res = await uploadTripPhoto({ file, tripId, userId: user.id, stopId: firstStop?.id ?? null });
+        if (res) {
+          ok++;
+          if (firstStop) tripsApi.addStopPhoto(firstStop.id, { id: res.id, url: res.url, path: res.path });
+        }
+      }
+      if (ok === 0) {
         toast.error("Kunne ikke laste opp bilde — prøv igjen");
-        return;
+      } else {
+        toast.success(ok === 1 ? "Bilde lagt til" : `${ok} bilder lagt til`);
+        close();
       }
-      console.log("4. Upload success:", data.path);
-
-      const { data: pub } = supabase.storage.from("trip-photos").getPublicUrl(data.path);
-      console.log("5. Public URL:", pub.publicUrl);
-
-      const { data: row, error: dbErr } = await supabase
-        .from("trip_photos")
-        .insert({ trip_id: tripId, stop_id: firstStop?.id ?? null, user_id: user.id, url: pub.publicUrl, path: data.path })
-        .select("id")
-        .single();
-      if (dbErr) {
-        console.error("6. DB error:", dbErr.message);
-        toast.error("Kunne ikke laste opp bilde — prøv igjen");
-        return;
-      }
-      console.log("7. Saved to DB:", row?.id);
-
-      if (firstStop) tripsApi.addStopPhoto(firstStop.id, { id: row?.id ?? path, url: pub.publicUrl, path: data.path });
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("trip-photos:refresh", { detail: { tripId } }));
-      }
-      toast.success("Bilde lagt til");
-      close();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("Unexpected error:", msg);
-      toast.error("Kunne ikke laste opp bilde — prøv igjen");
     } finally {
       setBusy(false);
     }

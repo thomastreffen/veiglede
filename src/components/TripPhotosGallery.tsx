@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 
 interface PhotoRow {
   id: string;
@@ -60,44 +61,13 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
   }, [tripId]);
 
   const handlePhotoUpload = async (file: File) => {
-    console.log("1. Starting upload", file.name, file.size);
     if (!user) { toast.error("Logg inn for å laste opp bilder"); return; }
-
     try {
-      // Storage RLS requires first folder = auth.uid(); keep that prefix.
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `${user.id}/${tripId}/${Date.now()}_${safeName}`;
-      console.log("2. Uploading to path:", path);
-
-      const { data, error } = await supabase.storage
-        .from("trip-photos")
-        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
-
-      if (error) {
-        console.error("3. Storage error:", error.message);
+      const res = await uploadTripPhoto({ file, tripId, userId: user.id });
+      if (!res) {
         toast.error("Kunne ikke laste opp bilde — prøv igjen");
         return;
       }
-
-      console.log("4. Upload success:", data.path);
-
-      const { data: urlData } = supabase.storage
-        .from("trip-photos")
-        .getPublicUrl(data.path);
-
-      console.log("5. Public URL:", urlData.publicUrl);
-
-      const { error: dbError } = await supabase
-        .from("trip_photos")
-        .insert({ trip_id: tripId, user_id: user.id, url: urlData.publicUrl, path: data.path });
-
-      if (dbError) {
-        console.error("6. DB error:", dbError.message);
-        toast.error("Kunne ikke laste opp bilde — prøv igjen");
-        return;
-      }
-
-      console.log("7. Saved to DB - refreshing photos");
       await fetchPhotos();
     } catch (e) {
       console.error("Unexpected error:", e);
@@ -194,7 +164,7 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
                   type="button"
                   aria-label="Slett bilde"
                   onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
-                  className="absolute top-1.5 right-1.5 h-8 w-8 rounded-full bg-black/70 hover:bg-red-600 text-white grid place-items-center text-base leading-none opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  style={{ position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: "50%", background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 16, lineHeight: 1, display: "grid", placeItems: "center" }}
                 >
                   ×
                 </button>
