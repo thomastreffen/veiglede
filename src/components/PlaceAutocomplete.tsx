@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { searchPlaces, manualPlace, type ResolvedPlace, type PlaceSource } from "@/lib/places/geocoder";
+import { searchPlaces, manualPlace, type ResolvedPlace, type PlaceSource, type SearchOptions } from "@/lib/places/geocoder";
 import { useI18n } from "@/i18n/provider";
 
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ interface Props {
   placeholder?: string;
   className?: string;
   ariaLabel?: string;
+  searchOptions?: SearchOptions;
 }
 
 interface SearchState {
