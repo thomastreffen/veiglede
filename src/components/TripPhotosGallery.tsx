@@ -20,7 +20,7 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
   const fetchPhotos = async () => {
     const { data, error } = await supabase
       .from("trip_photos")
-      .select("id,url,created_at")
+      .select("id,url,path,created_at")
       .eq("trip_id", tripId)
       .order("created_at", { ascending: false });
     if (error) {
