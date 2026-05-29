@@ -15,6 +15,7 @@ import {
   createInvite, listInvitesForTrip, deleteInvite, inviteUrl,
   type TripInvite,
 } from "@/lib/trip-invites";
+import { flushTripsNow } from "@/lib/cloud-sync";
 
 interface Props {
   trip: Trip;
