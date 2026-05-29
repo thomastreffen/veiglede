@@ -47,33 +47,50 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    console.log("1. Starting upload", file.name, file.size);
     if (!user) { toast.error("Logg inn for å laste opp bilder"); return; }
     setBusy(true);
     try {
-      console.log("uploading photo...");
-      const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const photoId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-      const path = `${user.id}/${tripId}/${Date.now()}_${photoId}.${ext}`;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${user.id}/${tripId}/${Date.now()}_${safeName}`;
+      console.log("2. Uploading to path:", path);
+
       const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.storage.from("trip-photos").upload(path, file, {
-        cacheControl: "3600", upsert: false, contentType: file.type || "image/jpeg",
-      });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("trip-photos").getPublicUrl(path);
-      console.log(`upload complete: ${pub.publicUrl}`);
+      const { data, error } = await supabase.storage
+        .from("trip-photos")
+        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
+
+      if (error) {
+        console.error("3. Storage error:", error.message);
+        toast.error("Kunne ikke laste opp bilde — prøv igjen");
+        return;
+      }
+      console.log("4. Upload success:", data.path);
+
+      const { data: pub } = supabase.storage.from("trip-photos").getPublicUrl(data.path);
+      console.log("5. Public URL:", pub.publicUrl);
+
       const { data: row, error: dbErr } = await supabase
         .from("trip_photos")
-        .insert({ trip_id: tripId, stop_id: firstStop?.id ?? null, user_id: user.id, url: pub.publicUrl, path })
+        .insert({ trip_id: tripId, stop_id: firstStop?.id ?? null, user_id: user.id, url: pub.publicUrl, path: data.path })
         .select("id")
         .single();
-      if (dbErr) throw dbErr;
-      console.log(`saved to db: ${row?.id}`);
-      if (firstStop) tripsApi.addStopPhoto(firstStop.id, { id: photoId, url: pub.publicUrl, path });
+      if (dbErr) {
+        console.error("6. DB error:", dbErr.message);
+        toast.error("Kunne ikke laste opp bilde — prøv igjen");
+        return;
+      }
+      console.log("7. Saved to DB:", row?.id);
+
+      if (firstStop) tripsApi.addStopPhoto(firstStop.id, { id: row?.id ?? path, url: pub.publicUrl, path: data.path });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("trip-photos:refresh", { detail: { tripId } }));
+      }
       toast.success("Bilde lagt til");
       close();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`error: ${msg}`);
+      console.error("Unexpected error:", msg);
       toast.error("Kunne ikke laste opp bilde — prøv igjen");
     } finally {
       setBusy(false);
