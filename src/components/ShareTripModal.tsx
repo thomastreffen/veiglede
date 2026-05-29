@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -8,7 +8,7 @@ import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
   Radio, MapPin, Camera, Users, Eye, Trash2,
 } from "lucide-react";
-import type { Trip } from "@/lib/trips-store";
+import { tripsApi, type Trip } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/i18n/provider";
 import {
