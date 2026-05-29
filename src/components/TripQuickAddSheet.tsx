@@ -33,6 +33,23 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   const lastDay = days[days.length - 1];
   const firstStop = firstDay ? bundle.stops.filter((s) => s.dayId === firstDay.id).sort((a, b) => a.order - b.order)[0] : undefined;
 
+  // Proximity bias for POI searches — route midpoint when available,
+  // otherwise the first stop, otherwise the centre of Norway.
+  const proximity = useMemo<{ lng: number; lat: number }>(() => {
+    const geom = trip?.routeGeometry && trip.routeGeometry.length > 1 ? trip.routeGeometry : null;
+    const mid = geom ? routeMidpointAndLengthKm(geom)?.mid : null;
+    if (mid) return { lng: mid.lng, lat: mid.lat };
+    if (firstStop?.lat != null && firstStop?.lng != null) return { lng: firstStop.lng, lat: firstStop.lat };
+    return { lng: 9.0, lat: 61.0 };
+  }, [trip?.routeGeometry, firstStop?.lat, firstStop?.lng]);
+
+  const fuelSearchOptions = useMemo<SearchOptions>(() => ({
+    provider: "mapbox", types: "poi", proximity, bbox: NORWAY_BBOX,
+  }), [proximity]);
+  const lodgingSearchOptions = useMemo<SearchOptions>(() => ({
+    provider: "mapbox", types: "poi", proximity, bbox: NORWAY_BBOX,
+  }), [proximity]);
+
   // Stop form
   const [stopText, setStopText] = useState("");
   const [stopPlace, setStopPlace] = useState<ResolvedPlace | null>(null);
