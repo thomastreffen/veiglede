@@ -10,7 +10,7 @@ import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { manualPlace } from "@/lib/places/geocoder";
 import { getRoute, type RouteResult } from "@/lib/routing";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
-import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips/new")({
