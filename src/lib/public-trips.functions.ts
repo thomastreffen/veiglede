@@ -35,6 +35,8 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
       .select("data")
       .filter("data->trips", "cs", JSON.stringify([{ shareToken: token }]));
 
+    console.log("Share token lookup:", token, "rows:", rows?.length ?? 0, "error:", error?.message);
+
     if (error || !rows || rows.length === 0) {
       return { found: false };
     }
@@ -52,6 +54,7 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
       );
       if (!match) continue;
       if (match["isPublic"] !== true) {
+        console.log("Share token lookup:", token, "result: private");
         return { found: true, isPrivate: true };
       }
       const tripId = match["id"] as string | undefined;
@@ -64,6 +67,7 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
         (s): s is { [key: string]: Json | undefined } =>
           typeof s === "object" && s !== null && !Array.isArray(s) && dayIds.has((s as Record<string, Json | undefined>)["dayId"] as string | undefined),
       );
+      console.log("Share token lookup:", token, "result:", tripId, "days:", days.length, "stops:", stops.length);
       return { found: true, trip: match, days, stops };
     }
 
