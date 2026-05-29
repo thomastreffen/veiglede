@@ -738,7 +738,31 @@ export function getRouteSuggestions(trip: Trip, stopInterests?: StopType[]): Sug
     if (interests.has("photo") && s.photoOp) n += 2;
     return n + Math.random() * 0.5;
   };
-  return pool.sort((a, b) => score(b) - score(a)).slice(0, 5);
+  const scored = pool.sort((a, b) => score(b) - score(a));
+
+  // Filter to suggestions geographically inside the route's bounding box
+  // (with ~50km buffer) and sort by distance from the actual route line.
+  const geom = trip.routeGeometry && trip.routeGeometry.length > 0 ? trip.routeGeometry : null;
+  if (!geom) return scored.slice(0, 5);
+
+  const BUFFER = 0.5;
+  let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  for (const p of geom) {
+    if (p.lng < minLng) minLng = p.lng;
+    if (p.lng > maxLng) maxLng = p.lng;
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+  }
+  minLng -= BUFFER; maxLng += BUFFER; minLat -= BUFFER; maxLat += BUFFER;
+
+  const withLoc = scored
+    .map((s) => ({ s, loc: lookupPlace(s.location ?? s.name) }))
+    .filter(({ loc }) => !!loc && loc.lng >= minLng && loc.lng <= maxLng && loc.lat >= minLat && loc.lat <= maxLat)
+    .map(({ s, loc }) => ({ s, d: distanceToRoute(loc!, geom) }))
+    .sort((a, b) => a.d - b.d)
+    .map(({ s }) => s);
+
+  return withLoc.slice(0, 5);
 }
 
 // ----- Partner / local tips -----
