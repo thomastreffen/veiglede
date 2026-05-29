@@ -169,6 +169,8 @@ export interface PartnerTip {
   location: string;
   blurb: string;
   badge: "partner" | "local" | "promoted";
+  lat?: number;
+  lng?: number;
 }
 
 export interface PhotoMemory {
