@@ -33,21 +33,31 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     if (!firstStop) { toast.error("Legg til et stopp først"); return; }
     setBusy(true);
     try {
+      console.log("uploading photo...");
       const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const photoId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-      const path = `${user.id}/${tripId}/${firstStop.id}/${photoId}.${ext}`;
+      const path = `${user.id}/${tripId}/${Date.now()}_${photoId}.${ext}`;
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.storage.from("trip-photos").upload(path, file, {
         cacheControl: "3600", upsert: false, contentType: file.type || "image/jpeg",
       });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("trip-photos").getPublicUrl(path);
+      console.log(`upload complete: ${pub.publicUrl}`);
+      const { data: row, error: dbErr } = await supabase
+        .from("trip_photos")
+        .insert({ trip_id: tripId, stop_id: firstStop.id, user_id: user.id, url: pub.publicUrl, path })
+        .select("id")
+        .single();
+      if (dbErr) throw dbErr;
+      console.log(`saved to db: ${row?.id}`);
       const ok = tripsApi.addStopPhoto(firstStop.id, { id: photoId, url: pub.publicUrl, path });
       if (!ok) toast.error("Maks 5 bilder per stopp");
       else toast.success("Bilde lagt til");
       onClose();
     } catch (err) {
-      console.error(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`error: ${msg}`);
       toast.error("Kunne ikke laste opp bildet");
     } finally {
       setBusy(false);

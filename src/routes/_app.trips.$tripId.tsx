@@ -18,6 +18,7 @@ import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
 import { TripMemories } from "@/components/TripMemories";
+import { TripPhotosGallery } from "@/components/TripPhotosGallery";
 import { DetourPromptDialog } from "@/components/DetourPromptDialog";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
@@ -469,22 +470,7 @@ function TripPlanner() {
         <h2 className="mt-1 font-display text-2xl uppercase">Bilder fra ruta</h2>
         <p className="mt-1 text-xs text-muted-foreground">Senere kan bilder du tar underveis kobles automatisk til turen basert på tid og posisjon.</p>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {memories.length === 0 && (
-            <div className="col-span-3 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              Legg til fotostopp så dukker plassholdere opp her.
-            </div>
-          )}
-          {memories.map((m) => (
-            <div key={m.id} className="aspect-square rounded-xl border border-border bg-gradient-to-br from-surface to-surface-2 grid place-items-center relative overflow-hidden">
-              <span className="text-3xl">{m.emoji}</span>
-              <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-background/90 to-transparent">
-                <p className="text-[10px] uppercase tracking-wider truncate">{m.caption}</p>
-                <p className="text-[9px] text-muted-foreground truncate">{m.location}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <TripPhotosGallery tripId={tripId} />
       </section>
 
       {/* Partner tips */}
@@ -570,20 +556,31 @@ function StopPhotos({
     if (!canAdd) { toast.error("Maks 5 bilder per stopp"); return; }
     setUploading(true);
     try {
+      console.log("uploading photo...");
       const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const photoId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-      const path = `${userId}/${tripId}/${stop.id}/${photoId}.${ext}`;
+      const path = `${userId}/${tripId}/${Date.now()}_${photoId}.${ext}`;
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.storage.from("trip-photos").upload(path, file, {
         cacheControl: "3600", upsert: false, contentType: file.type || "image/jpeg",
       });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("trip-photos").getPublicUrl(path);
+      console.log(`upload complete: ${pub.publicUrl}`);
+      const { data: row, error: dbErr } = await supabase
+        .from("trip_photos")
+        .insert({ trip_id: tripId, stop_id: stop.id, user_id: userId, url: pub.publicUrl, path })
+        .select("id")
+        .single();
+      if (dbErr) throw dbErr;
+      console.log(`saved to db: ${row?.id}`);
       const ok = tripsApi.addStopPhoto(stop.id, { id: photoId, url: pub.publicUrl, path });
       if (!ok) toast.error("Maks 5 bilder per stopp");
+      else toast.success("Bilde lagt til");
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`error: ${msg}`);
       toast.error("Kunne ikke laste opp bildet");
-      console.error(err);
     } finally {
       setUploading(false);
     }
