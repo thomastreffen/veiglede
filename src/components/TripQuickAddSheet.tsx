@@ -468,3 +468,20 @@ function SubmitRow({ onCancel, onSubmit, label, disabled }: { onCancel: () => vo
     </div>
   );
 }
+
+function ChipRow({ chips, onPick }: { chips: string[]; onPick: (label: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {chips.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => onPick(c)}
+          className="rounded-full border border-border bg-background/60 hover:bg-surface-2 active:bg-surface-2 px-3 py-1.5 text-xs font-medium text-foreground"
+        >
+          {c}
+        </button>
+      ))}
+    </div>
+  );
+}
