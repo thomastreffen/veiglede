@@ -66,9 +66,16 @@ export const Route = createFileRoute("/api/public/poi-search")({
           `i kategorien "${q}" innenfor dette geografiske området ` +
           `(lat ${minLat.toFixed(3)}–${maxLat.toFixed(3)}, lng ${minLng.toFixed(3)}–${maxLng.toFixed(3)})` +
           (proximity ? `, nær punktet ${proximity} (lng,lat)` : "") +
-          `.\n\nReturner KUN gyldig JSON via verktøyet suggest_stops. ` +
-          `Bare ekte steder som faktisk finnes. Koordinater må ligge innenfor området. ` +
-          `Variér stedene; ikke gjenta navn. Hold beskrivelsen til én setning på norsk.`;
+          `.\n\nReturner KUN gyldig JSON via verktøyet suggest_stops.\n` +
+          `Krav til hvert stopp:\n` +
+          `- Kun ekte, kjente steder som faktisk finnes. Koordinatene må ligge innenfor området.\n` +
+          `- "description" skal være ÉN konkret setning på norsk som forklarer hvorfor stedet er verdt et stopp. ` +
+          `Eksempel: "Panoramautsikt over Kragerø-skjærgården — populært fotostopp langs E18". ` +
+          `Ikke bare gjenta kategorinavnet ("Viewpoint", "Cafe").\n` +
+          `- "detourMin" er realistisk omveistid t/r fra hovedruten i minutter (5–45). ` +
+          `Stopp som ligger rett ved veien skal ha 5–10. Lengre avstikker 20–45.\n` +
+          `- "location" er nærmeste tettsted/kommune i Norge.\n` +
+          `- Variér stedene; ikke gjenta navn.`;
 
         const body = {
           model: "google/gemini-3-flash-preview",
@@ -76,7 +83,7 @@ export const Route = createFileRoute("/api/public/poi-search")({
             {
               role: "system",
               content:
-                "Du er en lokalkjent norsk reiseguide. Foreslå kun ekte, kjente steder med korrekte koordinater.",
+                "Du er en lokalkjent norsk reiseguide. Foreslå kun ekte, kjente steder med korrekte koordinater og konkrete, fristende beskrivelser.",
             },
             { role: "user", content: prompt },
           ],
@@ -102,9 +109,16 @@ export const Route = createFileRoute("/api/public/poi-search")({
                           location: { type: "string", description: "Tettsted/kommune, Norge" },
                           lat: { type: "number" },
                           lng: { type: "number" },
-                          description: { type: "string" },
+                          description: {
+                            type: "string",
+                            description: "Én konkret setning på norsk som forklarer hvorfor stedet er verdt et stopp.",
+                          },
+                          detourMin: {
+                            type: "number",
+                            description: "Realistisk omveistid t/r fra hovedruten i minutter (5–45).",
+                          },
                         },
-                        required: ["name", "type", "lat", "lng"],
+                        required: ["name", "type", "lat", "lng", "description", "detourMin"],
                         additionalProperties: false,
                       },
                     },
