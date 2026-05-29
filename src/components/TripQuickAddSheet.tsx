@@ -17,10 +17,11 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
 
   if (!open) return null;
 
-  const trip = tripsApi.getTrip(tripId);
-  const days = tripsApi.getDaysForTrip(tripId);
+  const bundle = tripsApi.getTripBundle(tripId);
+  const trip = bundle.trip;
+  const days = [...bundle.days].sort((a, b) => a.dayNumber - b.dayNumber);
   const firstDay = days[0];
-  const firstStop = firstDay ? tripsApi.getStopsForDay(firstDay.id)[0] : undefined;
+  const firstStop = firstDay ? bundle.stops.filter((s) => s.dayId === firstDay.id).sort((a, b) => a.order - b.order)[0] : undefined;
 
   const close = () => { if (!busy) onClose(); };
 
