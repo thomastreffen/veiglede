@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { lookupPlace } from "@/lib/geo";
+import { lookupPlace, distanceToRoute } from "@/lib/geo";
 import { computeTimeBreakdown } from "@/lib/trip-time";
 
 export type StopType =
