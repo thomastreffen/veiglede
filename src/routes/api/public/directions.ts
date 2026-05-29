@@ -113,6 +113,7 @@ export const Route = createFileRoute("/api/public/directions")({
             ...viaCoords,
             [body.destination.lng, body.destination.lat],
           ];
+          const radiuses = coordinates.map(() => -1);
           const orsBody: Record<string, unknown> = {
             // ORS expects [lng, lat] pairs.
             coordinates,
@@ -121,12 +122,13 @@ export const Route = createFileRoute("/api/public/directions")({
             // (e.g. "MC-svingene over Gaularfjellet") fail with HTTP 404
             // "Could not find routable point within 350m" and the whole
             // request falls back to the straight-line demo geometry.
-            radiuses: coordinates.map(() => -1),
+            radiuses,
             instructions: false,
             extra_info: ["waytype"],
           };
           if (avoid.length) orsBody.options = { avoid_features: avoid };
           warnings.push(`ors-waypoint-count-${viaCoords.length + 2}`);
+          console.log("[directions] ORS request", { coordinates, radiuses });
 
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 6000);
@@ -144,9 +146,14 @@ export const Route = createFileRoute("/api/public/directions")({
             },
           );
           clearTimeout(timeout);
+          console.log("[directions] ORS response status", res.status);
 
           if (!res.ok) {
             const text = await res.text().catch(() => "");
+            console.error("[directions] ORS non-200 response", {
+              status: res.status,
+              body: text,
+            });
             warnings.push(`ors-http-${res.status}`);
             if (text) warnings.push(`ors-body-${text.slice(0, 180)}`);
             return json(demoResponse(body, warnings));
