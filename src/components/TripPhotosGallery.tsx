@@ -46,7 +46,16 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const onRefresh = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { tripId?: string } | undefined;
+      if (!detail?.tripId || detail.tripId === tripId) fetchPhotos();
+    };
+    window.addEventListener("trip-photos:refresh", onRefresh);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("trip-photos:refresh", onRefresh);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
@@ -197,7 +206,7 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
                   className="absolute inset-0 bg-black/70 backdrop-blur-sm grid place-items-center p-2"
                 >
                   <div className="text-center">
-                    <p className="text-white text-sm font-medium mb-2">Slett bilde?</p>
+                    <p className="text-white text-sm font-medium mb-2">Slett?</p>
                     <div className="flex gap-2 justify-center">
                       <button
                         type="button"
@@ -212,7 +221,7 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
                         onClick={() => setConfirmId(null)}
                         className="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-white text-xs font-medium"
                       >
-                        Avbryt
+                        Nei
                       </button>
                     </div>
                   </div>
