@@ -111,24 +111,39 @@ export const Route = createFileRoute("/api/public/directions")({
           if (body.avoidHighways) avoid.push("highways");
           if (body.avoidFerries) avoid.push("ferries");
 
+          const originPair: [number, number] = [body.origin.lng, body.origin.lat];
+          const destPair: [number, number] = [body.destination.lng, body.destination.lat];
+          const sameCoord = (a: [number, number], b: [number, number]) =>
+            Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+
           const rawVia = Array.isArray(body.waypoints) ? body.waypoints : [];
           const viaCoords: [number, number][] = [];
           rawVia.forEach((w, i) => {
-            if (isLatLng(w)) {
-              // ORS expects [lng, lat] — NOT [lat, lng].
-              viaCoords.push([w.lng, w.lat]);
-            } else {
+            if (!isLatLng(w)) {
               console.warn("[directions] skipping invalid waypoint", { index: i, value: w });
               warnings.push(`ors-skip-waypoint-${i}`);
+              return;
             }
+            const pair: [number, number] = [w.lng, w.lat];
+            // Dedupe — ORS rejects requests where origin/destination are
+            // duplicated as intermediate via-points.
+            if (sameCoord(pair, originPair)) {
+              warnings.push(`ors-dedupe-origin-waypoint-${i}`);
+              return;
+            }
+            if (sameCoord(pair, destPair)) {
+              warnings.push(`ors-dedupe-destination-waypoint-${i}`);
+              return;
+            }
+            if (viaCoords.some((existing) => sameCoord(existing, pair))) {
+              warnings.push(`ors-dedupe-waypoint-${i}`);
+              return;
+            }
+            viaCoords.push(pair);
           });
 
-          const coordinates: [number, number][] = [
-            // ORS expects [lng, lat] pairs for every point.
-            [body.origin.lng, body.origin.lat],
-            ...viaCoords,
-            [body.destination.lng, body.destination.lat],
-          ];
+          // ORS expects exactly: [origin, ...via, destination] as [lng,lat] pairs.
+          const coordinates: [number, number][] = [originPair, ...viaCoords, destPair];
           const radiuses = coordinates.map(() => -1);
           const orsBody: Record<string, unknown> = {
             coordinates,
@@ -144,6 +159,9 @@ export const Route = createFileRoute("/api/public/directions")({
           if (avoid.length) orsBody.options = { avoid_features: avoid };
           warnings.push(`ors-waypoint-count-${viaCoords.length + 2}`);
           console.log("[directions] ORS request", { coordinates, radiuses });
+          console.log(
+            `[directions] final coordinates array length=${coordinates.length} values=${JSON.stringify(coordinates)}`,
+          );
           coordinates.forEach(([lng, lat], i) => {
             const label = i === 0 ? "origin" : i === coordinates.length - 1 ? "destination" : `via-${i - 1}`;
             console.log(`[directions] coord[${i}] ${label} = [lng=${lng}, lat=${lat}]`);
