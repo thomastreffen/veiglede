@@ -128,7 +128,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           <div className="rounded-xl border border-border bg-background/60 p-2 pl-3 flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="flex-1 min-w-0 truncate text-xs font-mono">{tripLink || "Genererer lenke…"}</span>
+              <span className="flex-1 min-w-0 text-xs font-mono break-all">{tripLink || "Genererer lenke…"}</span>
             </div>
             <button
               onClick={() => tripLink && copy("trip", tripLink)}
