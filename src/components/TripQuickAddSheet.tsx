@@ -253,7 +253,9 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               onTextChange={setFuelText}
               onSelect={setFuelPlace}
               placeholder="F.eks. Circle K Lillehammer"
+              searchOptions={{ types: "poi", queryPrefix: "bensinstasjon OR Circle K OR Uno-X OR Esso OR Shell" }}
             />
+
             {fuelPlace && (
               <Field label="Estimert pris per liter (valgfritt)">
                 <input
@@ -354,7 +356,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function PlaceField({
-  label, text, place, onTextChange, onSelect, placeholder,
+  label, text, place, onTextChange, onSelect, placeholder, searchOptions,
 }: {
   label: string;
   text: string;
@@ -362,6 +364,7 @@ function PlaceField({
   onTextChange: (t: string) => void;
   onSelect: (p: ResolvedPlace | null) => void;
   placeholder?: string;
+  searchOptions?: import("@/lib/places/geocoder").SearchOptions;
 }) {
   if (place) {
     return (
@@ -393,6 +396,7 @@ function PlaceField({
         selected={null}
         onSelect={onSelect}
         placeholder={placeholder}
+        searchOptions={searchOptions}
       />
     </div>
   );

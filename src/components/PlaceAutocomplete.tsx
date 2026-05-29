@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { searchPlaces, manualPlace, type ResolvedPlace, type PlaceSource } from "@/lib/places/geocoder";
+import { searchPlaces, manualPlace, type ResolvedPlace, type PlaceSource, type SearchOptions } from "@/lib/places/geocoder";
 import { useI18n } from "@/i18n/provider";
 
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ interface Props {
   placeholder?: string;
   className?: string;
   ariaLabel?: string;
+  searchOptions?: SearchOptions;
 }
 
 interface SearchState {
@@ -47,7 +48,7 @@ function typeBadge(t: ResolvedPlace["type"], lang: string): string {
 }
 
 export function PlaceAutocomplete({
-  value, onTextChange, selected, onSelect, placeholder, className, ariaLabel,
+  value, onTextChange, selected, onSelect, placeholder, className, ariaLabel, searchOptions,
 }: Props) {
   const { t, locale } = useI18n();
   const tt = t.placeSearch;
@@ -79,14 +80,14 @@ export function PlaceAutocomplete({
       ctrlRef.current?.abort();
       const ctrl = new AbortController();
       ctrlRef.current = ctrl;
-      searchPlaces(q, ctrl.signal).then((r) => {
+      searchPlaces(q, ctrl.signal, searchOptions).then((r) => {
         if (ctrl.signal.aborted) return;
         setState({ loading: false, results: r.results, provider: r.provider, failed: r.failed });
         setActiveIdx(r.results.length > 0 ? 0 : -1);
       }).catch(() => { /* swallow */ });
     }, 300);
     return () => clearTimeout(handle);
-  }, [value]);
+  }, [value, searchOptions?.types, searchOptions?.queryPrefix]);
 
   // Click-outside closes dropdown.
   useEffect(() => {
