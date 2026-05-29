@@ -314,7 +314,13 @@ export function useTripsStore() {
 export const tripsApi = {
   createTrip(input: Omit<Trip, "id" | "createdAt" | "stopsCount"> & { stopsCount?: number }): Trip {
     ensureInit();
-    const trip: Trip = { ...input, id: uid(), stopsCount: input.stopsCount ?? 0, createdAt: Date.now() };
+    const trip: Trip = {
+      status: "draft",
+      ...input,
+      id: uid(),
+      stopsCount: input.stopsCount ?? 0,
+      createdAt: Date.now(),
+    };
 
     // Trip-planner UX v2: ALWAYS create a single Day 1 (origin → destination)
     // as a route draft. The user decides whether to split into days, add
