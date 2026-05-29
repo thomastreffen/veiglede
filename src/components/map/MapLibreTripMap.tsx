@@ -312,8 +312,8 @@ export function MapLibreTripMap({
     // legacy client-side key is present (single-segment only).
     const routeP = wps.length > 2
       ? getRoute({
-          origin: projected.origin,
-          destination: projected.destination,
+          origin: numOrigin,
+          destination: numDest,
           waypoints: stopWps.map((s) => s.loc),
           routeStyle: trip.style === "fastest" ? "fastest" : "scenic",
         }).then((r) => (r && r.geometry.length > 1 ? r : null))
