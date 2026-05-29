@@ -165,9 +165,10 @@ export interface SearchResult {
   failed: boolean;       // true if maptiler was tried and errored/timed out
 }
 
-export async function searchPlaces(q: string, signal?: AbortSignal): Promise<SearchResult> {
-  const query = q.trim();
-  if (query.length < 2) return { results: [], provider: "demo", failed: false };
+export async function searchPlaces(q: string, signal?: AbortSignal, options: SearchOptions = {}): Promise<SearchResult> {
+  const raw = q.trim();
+  if (raw.length < 2) return { results: [], provider: "demo", failed: false };
+  const query = options.queryPrefix ? `${options.queryPrefix} ${raw}` : raw;
 
   const cfg = await getRuntimeMapConfig();
   const ctrl = signal ? undefined : new AbortController();
@@ -177,7 +178,7 @@ export async function searchPlaces(q: string, signal?: AbortSignal): Promise<Sea
   let failed = false;
   if (cfg.maptilerKey) {
     try {
-      const results = await searchMapTiler(query, cfg.maptilerKey, sig);
+      const results = await searchMapTiler(query, cfg.maptilerKey, sig, options);
       clearTimeout(timeout);
       if (results.length > 0) return { results, provider: "maptiler", failed: false };
     } catch (err) {
@@ -189,7 +190,7 @@ export async function searchPlaces(q: string, signal?: AbortSignal): Promise<Sea
     }
   }
   clearTimeout(timeout);
-  return { results: searchDemoPlaces(query), provider: "demo", failed };
+  return { results: searchDemoPlaces(raw), provider: "demo", failed };
 }
 
 export function manualPlace(text: string): ResolvedPlace | null {
