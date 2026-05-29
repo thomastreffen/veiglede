@@ -296,7 +296,8 @@ function getTripIdForDay(dayId: string): string | null {
   return state.days.find((d) => d.id === dayId)?.tripId ?? null;
 }
 
-function suggestionLoc(sug: Pick<SuggestedStop, "location" | "name">) {
+function suggestionLoc(sug: Pick<SuggestedStop, "location" | "name" | "lat" | "lng">) {
+  if (typeof sug.lat === "number" && typeof sug.lng === "number") return { lat: sug.lat, lng: sug.lng };
   return lookupPlace(sug.location ?? sug.name);
 }
 
