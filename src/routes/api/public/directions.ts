@@ -145,8 +145,48 @@ export const Route = createFileRoute("/api/public/directions")({
             viaCoords.push(pair);
           });
 
+          // Pre-snap each via-point to the nearest road via ORS Snap endpoint.
+          // The hosted ORS instance enforces a 350m max snap radius on directions
+          // and ignores `radiuses: [-1]`, so waypoints far from roads (e.g.
+          // mountain passes) cause a 404. Snap with a 5km radius first.
+          const snappedVia: [number, number][] = [];
+          for (let i = 0; i < viaCoords.length; i++) {
+            const pair = viaCoords[i];
+            try {
+              const snapRes = await fetch(
+                `https://api.openrouteservice.org/v2/snap/driving-car`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: key,
+                  },
+                  body: JSON.stringify({ locations: [pair], radius: 5000 }),
+                },
+              );
+              if (!snapRes.ok) {
+                console.warn(`[directions] Skipped waypoint #${i} — snap HTTP ${snapRes.status}`);
+                warnings.push(`ors-snap-failed-waypoint-${i}`);
+                continue;
+              }
+              const snapData = await snapRes.json();
+              const loc = snapData?.locations?.[0];
+              const snappedLng = loc?.location?.[0];
+              const snappedLat = loc?.location?.[1];
+              if (typeof snappedLng !== "number" || typeof snappedLat !== "number") {
+                console.warn(`[directions] Skipped waypoint #${i} — no routable road within 5km`, pair);
+                warnings.push(`ors-snap-no-road-waypoint-${i}`);
+                continue;
+              }
+              snappedVia.push([snappedLng, snappedLat]);
+            } catch (err) {
+              console.warn(`[directions] Skipped waypoint #${i} — snap error`, err);
+              warnings.push(`ors-snap-error-waypoint-${i}`);
+            }
+          }
+
           // ORS expects exactly: [origin, ...via, destination] as [lng,lat] pairs.
-          const coordinates: [number, number][] = [originPair, ...viaCoords, destPair];
+          const coordinates: [number, number][] = [originPair, ...snappedVia, destPair];
           const radiuses = coordinates.map(() => -1);
           const orsBody: Record<string, unknown> = {
             coordinates,
@@ -155,8 +195,10 @@ export const Route = createFileRoute("/api/public/directions")({
             extra_info: ["waytype"],
           };
           if (avoid.length) orsBody.options = { avoid_features: avoid };
-          warnings.push(`ors-waypoint-count-${viaCoords.length + 2}`);
+          warnings.push(`ors-waypoint-count-${snappedVia.length + 2}`);
+          console.log(`[directions] Snapped via coordinates:`, snappedVia);
           console.log(`[directions] ORS coordinates: ${coordinates.length} points`, coordinates);
+
 
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 6000);
