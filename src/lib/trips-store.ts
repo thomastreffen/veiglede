@@ -805,79 +805,87 @@ export function getPartnerTips(trip: Trip, routePoints?: LatLng[]): PartnerTip[]
   return sorted.slice(0, 3 + (trip.distanceKm > 400 ? 1 : 0));
 }
 
-// ----- Real POI suggestions via MapTiler geocoding -----
+// ----- Real POI suggestions via Mapbox Places API (server proxy) -----
 
-interface MapTilerFeature {
+interface MapboxPoiFeature {
   id?: string;
-  text?: string;
-  place_name?: string;
-  place_type?: string[];
-  center?: [number, number];
-  geometry?: { coordinates?: [number, number] };
+  name: string;
+  place_name: string;
+  category: string;
+  lng: number;
+  lat: number;
 }
 
 interface PoiQuery {
+  /** Mapbox POI category keywords, comma-separated. */
   query: string;
   type: StopType;
   photoOp?: boolean;
+  /** Fallback description if Mapbox returns no category. */
+  fallbackDescription: string;
   reason: string;
   durationMin: number;
 }
 
 const POI_QUERIES: PoiQuery[] = [
-  { query: "utsiktspunkt", type: "viewpoint", photoOp: true, reason: "Utsiktspunkt langs ruten.", durationMin: 20 },
-  { query: "kafe",         type: "food",                     reason: "Mat- eller kaffepause langs ruten.", durationMin: 35 },
-  { query: "restaurant",   type: "food",                     reason: "Spisested langs ruten.", durationMin: 50 },
-  { query: "bensinstasjon",type: "fuel",                     reason: "Fyllestasjon langs ruten.", durationMin: 10 },
-  { query: "ladestasjon",  type: "fuel",                     reason: "Hurtiglader langs ruten.", durationMin: 25 },
-  { query: "attraksjon",   type: "attraction",               reason: "Severdighet langs ruten.", durationMin: 45 },
-  { query: "museum",       type: "attraction",               reason: "Kulturstopp langs ruten.", durationMin: 60 },
-  { query: "fotostopp",    type: "photo", photoOp: true,     reason: "Fotostopp langs ruten.", durationMin: 15 },
+  { query: "scenic lookout,viewpoint,peak", type: "viewpoint", photoOp: true,
+    fallbackDescription: "Utsiktspunkt langs ruten", reason: "Utsiktspunkt langs ruten.", durationMin: 20 },
+  { query: "cafe,restaurant,food",          type: "food",
+    fallbackDescription: "Spisested langs ruten",     reason: "Mat- eller kaffepause langs ruten.", durationMin: 40 },
+  { query: "museum,attraction,historic",    type: "attraction",
+    fallbackDescription: "Severdighet langs ruten",   reason: "Severdighet langs ruten.", durationMin: 50 },
+  { query: "fuel,gas_station",              type: "fuel",
+    fallbackDescription: "Drivstoff langs ruten",     reason: "Fyllestasjon langs ruten.", durationMin: 10 },
 ];
 
-async function searchMapTilerPoi(
+function prettyDescription(category: string, fallback: string): string {
+  const cat = category.trim();
+  if (!cat) return fallback;
+  // Take first token (Mapbox returns comma-separated categories) and capitalize.
+  const first = cat.split(",")[0]!.trim();
+  if (!first) return fallback;
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+async function searchMapboxPoi(
   q: PoiQuery,
-  apiKey: string,
   bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number },
   proximity: LatLng,
   signal: AbortSignal,
 ): Promise<SuggestedStop[]> {
-  const bboxStr = `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`;
-  const prox = `${proximity.lng},${proximity.lat}`;
-  const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(q.query)}.json`
-    + `?key=${encodeURIComponent(apiKey)}`
-    + `&country=no&language=nb&limit=10`
-    + `&bbox=${bboxStr}&proximity=${prox}`;
-  const res = await fetch(url, { signal });
+  const params = new URLSearchParams({
+    q: q.query,
+    bbox: `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`,
+    proximity: `${proximity.lng},${proximity.lat}`,
+    limit: "3",
+  });
+  const res = await fetch(`/api/public/poi-search?${params.toString()}`, { signal });
   if (!res.ok) return [];
-  const data = await res.json() as { features?: MapTilerFeature[] };
+  const data = (await res.json()) as { features?: MapboxPoiFeature[] };
   const feats = data.features ?? [];
-  return feats.map((f, i): SuggestedStop | null => {
-    const coords = f.center ?? f.geometry?.coordinates;
-    if (!coords || coords.length < 2) return null;
-    const name = f.text?.trim() || f.place_name?.split(",")[0]?.trim();
-    if (!name) return null;
-    const secondary = (f.place_name ?? "").split(",").slice(1).map((s) => s.trim()).filter(Boolean).join(", ");
+  return feats.map((f, i): SuggestedStop => {
+    const secondary = (f.place_name ?? "")
+      .split(",").slice(1).map((s) => s.trim()).filter(Boolean).join(", ");
     return {
-      id: `mt-${q.query}-${f.id ?? i}-${coords[0].toFixed(3)}-${coords[1].toFixed(3)}`,
-      name,
+      id: `mb-${q.type}-${f.id ?? `${i}-${f.lng.toFixed(3)}-${f.lat.toFixed(3)}`}`,
+      name: f.name,
       type: q.type,
       location: secondary || undefined,
-      description: `${q.query.charAt(0).toUpperCase()}${q.query.slice(1)} i nærheten av ruten.`,
+      description: prettyDescription(f.category, q.fallbackDescription),
       reason: q.reason,
       durationMin: q.durationMin,
       photoOp: q.photoOp,
       badge: "local",
-      lat: coords[1],
-      lng: coords[0],
+      lat: f.lat,
+      lng: f.lng,
     };
-  }).filter((x): x is SuggestedStop => x !== null);
+  });
 }
 
 /**
- * Fetch real points of interest along the trip route via MapTiler geocoding.
- * Returns 6–8 results sorted by distance from the route line, all inside the
- * 0.5° bounding box of the route geometry. Returns [] if no geometry or no key.
+ * Fetch real points of interest along the trip route via the Mapbox Places API
+ * (proxied through /api/public/poi-search). Results are clamped to a ±0.25°
+ * bounding box around the route geometry and sorted by distance to the route.
  */
 export async function fetchRouteSuggestions(
   trip: Trip,
@@ -886,16 +894,11 @@ export async function fetchRouteSuggestions(
 ): Promise<SuggestedStop[]> {
   const geom = trip.routeGeometry && trip.routeGeometry.length > 1 ? trip.routeGeometry : null;
   if (!geom) return [];
-  const bbox = routeBoundingBox(geom, 0.5);
+  const bbox = routeBoundingBox(geom, 0.25);
   const midLen = routeMidpointAndLengthKm(geom);
   if (!bbox || !midLen) return [];
 
-  const cfg = await getRuntimeMapConfig();
-  if (!cfg.maptilerKey) return [];
-
   // Honor "Hva vil du se langs ruta" preferences.
-  // - If interests are set, drop categories the user did not pick.
-  // - Fuel is special: if user did NOT pick fuel, only fetch it on long routes.
   const interestSet = new Set(interests ?? []);
   const wantsFuel = interestSet.has("fuel") || interestSet.size === 0;
   const FUEL_LONG_ROUTE_KM = 300;
@@ -911,30 +914,31 @@ export async function fetchRouteSuggestions(
 
   const ctrl = signal ? undefined : new AbortController();
   const sig = signal ?? ctrl!.signal;
-  const timeout = setTimeout(() => ctrl?.abort(), 6000);
+  const timeout = setTimeout(() => ctrl?.abort(), 6500);
 
   try {
     const results = await Promise.all(
       queries.map((q) =>
-        searchMapTilerPoi(q, cfg.maptilerKey!, bbox, midLen.mid, sig).catch(() => [] as SuggestedStop[]),
+        searchMapboxPoi(q, bbox, midLen.mid, sig).catch(() => [] as SuggestedStop[]),
       ),
     );
     const all = results.flat();
     const inBox = all.filter((s) =>
-      typeof s.lat === "number" && typeof s.lng === "number" && isInsideBBox({ lat: s.lat, lng: s.lng }, bbox),
+      typeof s.lat === "number" && typeof s.lng === "number" &&
+      isInsideBBox({ lat: s.lat, lng: s.lng }, bbox),
     );
+    // De-duplicate on lowercased name (never show the same place twice).
     const seen = new Set<string>();
     const unique: SuggestedStop[] = [];
     for (const s of inBox) {
-      const key = `${s.name.toLowerCase()}|${s.lat!.toFixed(2)}|${s.lng!.toFixed(2)}`;
-      if (seen.has(key)) continue;
+      const key = s.name.toLowerCase().trim();
+      if (!key || seen.has(key)) continue;
       seen.add(key);
       unique.push(s);
     }
-    // Score: distance from route + interest priority boost.
     const scored = unique.map((s) => {
       const d = distanceToRoute({ lat: s.lat!, lng: s.lng! }, geom);
-      const priority = interestSet.has(s.type) ? -50 : 0; // pull preferred categories up
+      const priority = interestSet.has(s.type) ? -50 : 0;
       const photoBoost = interestSet.has("photo") && s.photoOp ? -10 : 0;
       return { s, score: d + priority + photoBoost };
     }).sort((a, b) => a.score - b.score);
