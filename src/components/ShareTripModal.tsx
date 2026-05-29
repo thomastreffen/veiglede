@@ -84,7 +84,10 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto bg-surface border-border max-sm:max-w-none max-sm:w-screen max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:rounded-none max-sm:border-0 max-sm:p-4 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:left-0 max-sm:top-0 max-sm:gap-3">
+      <DialogContent
+        className="max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-x-hidden bg-surface border-border max-sm:p-4 max-sm:gap-3 [&>*]:max-w-full"
+        style={{ maxWidth: "min(32rem, 100vw)" }}
+      >
         
         <DialogHeader>
           <DialogTitle className="font-display text-2xl uppercase tracking-wide">
