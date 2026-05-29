@@ -1,7 +1,10 @@
 // Public POI search endpoint.
 //
-// Proxies to the Mapbox Places API (geocoding v5) so the browser does not
-// need to know MAPBOX_TOKEN. Returns a small normalized feature list.
+// Generates realistic Norwegian POIs along a route using the Lovable AI
+// Gateway (Gemini). Mapbox/MapTiler returned empty for many Norwegian POI
+// categories; an LLM produces well-known real-world places we can present
+// as suggestions. The response shape matches what the frontend already
+// consumes: { features: [{ id, name, place_name, category, lng, lat }] }.
 
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -13,12 +16,22 @@ const CORS_HEADERS = {
   "Content-Type": "application/json",
 } as const;
 
-interface MapboxFeature {
-  id?: string;
-  text?: string;
-  place_name?: string;
-  center?: [number, number];
-  properties?: { category?: string; maki?: string };
+interface AiStop {
+  name?: string;
+  type?: string;
+  location?: string;
+  lat?: number;
+  lng?: number;
+  description?: string;
+}
+
+interface ProxyFeature {
+  id: string;
+  name: string;
+  place_name: string;
+  category: string;
+  lng: number;
+  lat: number;
 }
 
 export const Route = createFileRoute("/api/public/poi-search")({
@@ -30,45 +43,158 @@ export const Route = createFileRoute("/api/public/poi-search")({
         const q = (url.searchParams.get("q") ?? "").trim().slice(0, 120);
         const bbox = (url.searchParams.get("bbox") ?? "").trim();
         const proximity = (url.searchParams.get("proximity") ?? "").trim();
-        const limit = Math.max(1, Math.min(10, Number(url.searchParams.get("limit") ?? "3") || 3));
-        if (!q) return json({ features: [] }, 400);
+        const limit = Math.max(1, Math.min(10, Number(url.searchParams.get("limit") ?? "5") || 5));
+        if (!q) return json({ debug: true, source: "ai", features: [], warning: "missing-q" }, 400);
+        if (!/^-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}$/.test(bbox)) {
+          return json({ debug: true, source: "ai", features: [], warning: "missing-or-bad-bbox" }, 400);
+        }
 
-        const token = (process.env.MAPBOX_TOKEN ?? "").trim();
-        if (!token) return json({ features: [], warning: "no-mapbox-token" });
+        const apiKey = (process.env.LOVABLE_API_KEY ?? "").trim();
+        if (!apiKey) {
+          return json({ debug: true, source: "ai", features: [], warning: "no-lovable-api-key" });
+        }
 
-        const params = new URLSearchParams();
-        params.set("types", "poi");
-        params.set("limit", String(limit));
-        params.set("language", "nb");
-        if (bbox && /^-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}$/.test(bbox)) params.set("bbox", bbox);
-        if (proximity && /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(proximity)) params.set("proximity", proximity);
-        params.set("access_token", token);
+        const [minLngS, minLatS, maxLngS, maxLatS] = bbox.split(",");
+        const minLng = Number(minLngS), minLat = Number(minLatS);
+        const maxLng = Number(maxLngS), maxLat = Number(maxLatS);
 
-        const mbUrl =
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?${params.toString()}`;
+        const prompt =
+          `Foreslå inntil ${limit} realistiske, faktiske stoppesteder i Norge ` +
+          `i kategorien "${q}" innenfor dette geografiske området ` +
+          `(lat ${minLat.toFixed(3)}–${maxLat.toFixed(3)}, lng ${minLng.toFixed(3)}–${maxLng.toFixed(3)})` +
+          (proximity ? `, nær punktet ${proximity} (lng,lat)` : "") +
+          `.\n\nReturner KUN gyldig JSON via verktøyet suggest_stops. ` +
+          `Bare ekte steder som faktisk finnes. Koordinater må ligge innenfor området. ` +
+          `Variér stedene; ikke gjenta navn. Hold beskrivelsen til én setning på norsk.`;
 
-        const redactedUrl = mbUrl.replace(token, "REDACTED");
+        const body = {
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Du er en lokalkjent norsk reiseguide. Foreslå kun ekte, kjente steder med korrekte koordinater.",
+            },
+            { role: "user", content: prompt },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "suggest_stops",
+                description: "Returner foreslåtte stoppesteder langs en rute i Norge.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    stops: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string" },
+                          type: {
+                            type: "string",
+                            enum: ["cafe", "viewpoint", "museum", "fuel", "attraction", "pause", "food"],
+                          },
+                          location: { type: "string", description: "Tettsted/kommune, Norge" },
+                          lat: { type: "number" },
+                          lng: { type: "number" },
+                          description: { type: "string" },
+                        },
+                        required: ["name", "type", "lat", "lng"],
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  required: ["stops"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "suggest_stops" } },
+        };
+
+        const aiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
         try {
-          console.log(`[poi-search] mapbox url: ${redactedUrl}`);
+          console.log(`[poi-search] ai gateway query: q="${q}" bbox=${bbox}`);
           const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 6000);
-          const res = await fetch(mbUrl, { signal: ctrl.signal });
+          const t = setTimeout(() => ctrl.abort(), 15000);
+          const res = await fetch(aiUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+            signal: ctrl.signal,
+          });
           clearTimeout(t);
-          if (!res.ok) {
-            return json({ debug: true, mapboxUrl: redactedUrl, mapboxStatus: res.status, features: [], warning: `mapbox-http-${res.status}` });
+
+          if (res.status === 429) {
+            return json({ debug: true, source: "ai", aiStatus: 429, features: [], warning: "rate-limited" });
           }
-          const data = (await res.json()) as { features?: MapboxFeature[] };
-          const features = (data.features ?? []).map((f) => ({
-            id: f.id,
-            name: f.text ?? "",
-            place_name: f.place_name ?? "",
-            category: f.properties?.category ?? f.properties?.maki ?? "",
-            lng: f.center?.[0],
-            lat: f.center?.[1],
-          })).filter((f) => f.name && typeof f.lng === "number" && typeof f.lat === "number");
-          return json({ debug: true, mapboxUrl: redactedUrl, mapboxStatus: res.status, features });
+          if (res.status === 402) {
+            return json({ debug: true, source: "ai", aiStatus: 402, features: [], warning: "payment-required" });
+          }
+          if (!res.ok) {
+            const errText = await res.text().catch(() => "");
+            return json({
+              debug: true, source: "ai", aiStatus: res.status, features: [],
+              warning: `ai-http-${res.status}`, errorPreview: errText.slice(0, 300),
+            });
+          }
+
+          const data = (await res.json()) as {
+            choices?: Array<{
+              message?: {
+                tool_calls?: Array<{ function?: { arguments?: string } }>;
+                content?: string;
+              };
+            }>;
+          };
+
+          const toolArgs = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+          let parsed: { stops?: AiStop[] } = {};
+          if (toolArgs) {
+            try { parsed = JSON.parse(toolArgs); } catch { /* ignore */ }
+          } else if (data.choices?.[0]?.message?.content) {
+            // Fallback: try to extract JSON from a content message.
+            const raw = data.choices[0]!.message!.content!.trim();
+            const m = raw.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+            if (m) {
+              try {
+                const j = JSON.parse(m[0]);
+                parsed = Array.isArray(j) ? { stops: j } : j;
+              } catch { /* ignore */ }
+            }
+          }
+
+          const features: ProxyFeature[] = (parsed.stops ?? [])
+            .map((s, i): ProxyFeature | null => {
+              const lat = Number(s.lat), lng = Number(s.lng);
+              if (!s.name || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+              // Clamp to requested bbox so suggestions stay near the route.
+              if (lat < minLat || lat > maxLat || lng < minLng || lng > maxLng) return null;
+              const loc = (s.location ?? "").trim();
+              return {
+                id: `ai-${q}-${i}-${lng.toFixed(3)}-${lat.toFixed(3)}`,
+                name: s.name.trim(),
+                place_name: loc ? `${s.name.trim()}, ${loc}` : s.name.trim(),
+                category: (s.type ?? q).trim(),
+                lng,
+                lat,
+              };
+            })
+            .filter((f): f is ProxyFeature => f !== null)
+            .slice(0, limit);
+
+          return json({ debug: true, source: "ai", aiStatus: res.status, features });
         } catch (err) {
-          return json({ debug: true, mapboxUrl: redactedUrl, mapboxStatus: 0, features: [], warning: `mapbox-error-${(err as Error)?.name ?? "unknown"}` });
+          return json({
+            debug: true, source: "ai", features: [],
+            warning: `ai-error-${(err as Error)?.name ?? "unknown"}`,
+          });
         }
       },
     },
