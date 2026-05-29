@@ -194,7 +194,7 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
                   type="button"
                   aria-label="Slett bilde"
                   onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
-                  className="absolute top-1.5 right-1.5 h-8 w-8 rounded-full bg-black/70 hover:bg-red-600 text-white grid place-items-center text-base leading-none opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  style={{ position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: "50%", background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 16, lineHeight: 1, display: "grid", placeItems: "center" }}
                 >
                   ×
                 </button>
