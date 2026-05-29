@@ -812,6 +812,8 @@ interface MapboxPoiFeature {
   name: string;
   place_name: string;
   category: string;
+  description?: string;
+  detourMin?: number;
   lng: number;
   lat: number;
 }
