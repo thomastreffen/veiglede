@@ -47,13 +47,16 @@ export const Route = createFileRoute("/api/public/poi-search")({
         const mbUrl =
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?${params.toString()}`;
 
+        const redactedUrl = mbUrl.replace(token, "REDACTED");
         try {
-          console.log(`[poi-search] mapbox url: ${mbUrl.replace(token, "***")}`);
+          console.log(`[poi-search] mapbox url: ${redactedUrl}`);
           const ctrl = new AbortController();
           const t = setTimeout(() => ctrl.abort(), 6000);
           const res = await fetch(mbUrl, { signal: ctrl.signal });
           clearTimeout(t);
-          if (!res.ok) return json({ features: [], warning: `mapbox-http-${res.status}` });
+          if (!res.ok) {
+            return json({ debug: true, mapboxUrl: redactedUrl, mapboxStatus: res.status, features: [], warning: `mapbox-http-${res.status}` });
+          }
           const data = (await res.json()) as { features?: MapboxFeature[] };
           const features = (data.features ?? []).map((f) => ({
             id: f.id,
@@ -63,9 +66,9 @@ export const Route = createFileRoute("/api/public/poi-search")({
             lng: f.center?.[0],
             lat: f.center?.[1],
           })).filter((f) => f.name && typeof f.lng === "number" && typeof f.lat === "number");
-          return json({ features });
+          return json({ debug: true, mapboxUrl: redactedUrl, mapboxStatus: res.status, features });
         } catch (err) {
-          return json({ features: [], warning: `mapbox-error-${(err as Error)?.name ?? "unknown"}` });
+          return json({ debug: true, mapboxUrl: redactedUrl, mapboxStatus: 0, features: [], warning: `mapbox-error-${(err as Error)?.name ?? "unknown"}` });
         }
       },
     },
