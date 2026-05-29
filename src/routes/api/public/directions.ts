@@ -154,9 +154,15 @@ export const Route = createFileRoute("/api/public/directions")({
               status: res.status,
               body: text,
             });
-            warnings.push(`ors-http-${res.status}`);
-            if (text) warnings.push(`ors-body-${text.slice(0, 180)}`);
-            return json(demoResponse(body, warnings));
+            // TEMPORARY DEBUG: surface raw ORS error to the client so we can
+            // inspect it in the browser network tab. Revert after debugging.
+            return json({
+              debug: true,
+              orsStatus: res.status,
+              orsBody: text,
+              sentCoordinates: coordinates,
+              sentRadiuses: radiuses,
+            });
           }
           const data = await res.json();
           const feat = data?.features?.[0];
