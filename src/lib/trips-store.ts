@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { lookupPlace, distanceToRoute, routeBoundingBox, isInsideBBox, routeMidpointAndLengthKm, type LatLng } from "@/lib/geo";
-import { getRuntimeMapConfig } from "@/lib/map/runtime-config";
+
 import { computeTimeBreakdown } from "@/lib/trip-time";
 
 export type StopType =
