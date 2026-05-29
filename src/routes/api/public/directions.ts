@@ -32,12 +32,19 @@ interface Body {
   avoidFerries?: boolean;
 }
 
+function isFiniteNum(n: unknown): n is number {
+  return typeof n === "number" && Number.isFinite(n) && n !== 0;
+}
+
 function isLatLng(v: unknown): v is LatLng {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
+  // Reject null/undefined/NaN/0 — a 0 lat/lng usually means missing data
+  // (Null Island), not a real waypoint. ORS requires real coordinates.
+  if (!isFiniteNum(o.lat) || !isFiniteNum(o.lng)) return false;
   return (
-    typeof o.lat === "number" && typeof o.lng === "number" &&
-    o.lat >= -90 && o.lat <= 90 && o.lng >= -180 && o.lng <= 180
+    (o.lat as number) >= -90 && (o.lat as number) <= 90 &&
+    (o.lng as number) >= -180 && (o.lng as number) <= 180
   );
 }
 
