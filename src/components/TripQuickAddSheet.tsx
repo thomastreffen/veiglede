@@ -1,11 +1,16 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { tripsApi } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
 import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
-import type { ResolvedPlace } from "@/lib/places/geocoder";
+import type { ResolvedPlace, SearchOptions } from "@/lib/places/geocoder";
+import { routeMidpointAndLengthKm } from "@/lib/geo";
+
+const NORWAY_BBOX = "4.0,57.0,32.0,71.5";
+const FUEL_CHIPS = ["Circle K", "Uno-X", "Shell", "Esso", "Recharge", "Mer", "Tesla"] as const;
+const LODGING_CHIPS = ["Hotell", "Hytte", "Camping", "Scandic", "Thon"] as const;
 
 interface Props {
   tripId: string;
