@@ -541,6 +541,85 @@ function TripPlanner() {
         className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm text-muted-foreground hover:text-destructive hover:border-destructive">
         <Trash2 className="h-4 w-4" /> Slett tur
       </button>
+      {lightboxUrl && (
+        <div onClick={() => setLightboxUrl(null)} className="fixed inset-0 z-50 bg-background/95 backdrop-blur grid place-items-center p-4 cursor-zoom-out">
+          <img src={lightboxUrl} alt="" className="max-h-full max-w-full rounded-2xl shadow-2xl" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StopPhotos({
+  stop, tripId, userId, onLightbox,
+}: {
+  stop: import("@/lib/trips-store").Stop;
+  tripId: string;
+  userId: string | undefined;
+  onLightbox: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const photos = stop.photos ?? [];
+  const canAdd = photos.length < 5;
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!userId) { toast.error("Logg inn for å laste opp bilder"); return; }
+    if (!canAdd) { toast.error("Maks 5 bilder per stopp"); return; }
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const photoId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      const path = `${userId}/${tripId}/${stop.id}/${photoId}.${ext}`;
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.storage.from("trip-photos").upload(path, file, {
+        cacheControl: "3600", upsert: false, contentType: file.type || "image/jpeg",
+      });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from("trip-photos").getPublicUrl(path);
+      const ok = tripsApi.addStopPhoto(stop.id, { id: photoId, url: pub.publicUrl, path });
+      if (!ok) toast.error("Maks 5 bilder per stopp");
+    } catch (err) {
+      toast.error("Kunne ikke laste opp bildet");
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDelete = async (photo: { id: string; path: string }) => {
+    if (!confirm("Slette bildet?")) return;
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      await supabase.storage.from("trip-photos").remove([photo.path]);
+    } catch { /* noop */ }
+    tripsApi.removeStopPhoto(stop.id, photo.id);
+  };
+
+  return (
+    <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+      {photos.map((p) => (
+        <div key={p.id} className="relative group">
+          <button type="button" onClick={() => onLightbox(p.url)} className="block h-14 w-14 rounded-lg overflow-hidden border border-border hover:border-primary">
+            <img src={p.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); onDelete(p); }}
+            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 text-xs leading-none"
+            aria-label="Slett bilde"
+          >×</button>
+        </div>
+      ))}
+      {canAdd && (
+        <label className={`inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border bg-background/40 px-2.5 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary cursor-pointer ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+          <Camera className="h-3.5 w-3.5" />
+          {uploading ? "Laster opp…" : "Legg til bilde"}
+          <input type="file" accept="image/*" className="hidden" onChange={onPick} disabled={uploading} />
+        </label>
+      )}
     </div>
   );
 }
