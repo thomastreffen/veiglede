@@ -276,8 +276,10 @@ export function MapLibreTripMap({
         return true;
       })
       .filter((m) => distanceKm(m.loc, projected.origin) > 1 && distanceKm(m.loc, projected.destination) > 1)
-      .map((m) => ({ loc: m.loc, name: m.stop.name }));
-    const wps: LatLng[] = [projected.origin, ...stopWps.map((s) => s.loc), projected.destination];
+      .map((m) => ({ loc: { lat: Number(m.loc.lat), lng: Number(m.loc.lng) }, name: m.stop.name }));
+    const numOrigin: LatLng = { lat: Number(projected.origin.lat), lng: Number(projected.origin.lng) };
+    const numDest: LatLng = { lat: Number(projected.destination.lat), lng: Number(projected.destination.lng) };
+    const wps: LatLng[] = [numOrigin, ...stopWps.map((s) => s.loc), numDest];
     const hash = waypointHash(wps);
     if (hash === lastHashRef.current) return;
     lastHashRef.current = hash;
