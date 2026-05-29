@@ -22,7 +22,7 @@ import { DetourPromptDialog } from "@/components/DetourPromptDialog";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
-  Navigation, CornerDownRight,
+  Navigation, CornerDownRight, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
