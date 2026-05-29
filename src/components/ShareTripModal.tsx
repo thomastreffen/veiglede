@@ -26,14 +26,24 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
   const t = useT();
   const { user } = useAuth();
   const [copied, setCopied] = useState<string | null>(null);
-  const [isPublic, setIsPublic] = useState(false);
   const [email, setEmail] = useState("");
   const [invites, setInvites] = useState<TripInvite[]>([]);
   const [creating, setCreating] = useState(false);
 
   const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
-  const tripLink = `${base}/shared/${trip.id}`;
-  const roadbookLink = `${base}/shared/${trip.id}?view=roadbook`;
+
+  // Generate a share token on first open so the link is always available.
+  useEffect(() => {
+    if (open && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+  }, [open, trip.id, trip.shareToken]);
+
+  const isPublic = trip.isPublic ?? false;
+  const shareToken = trip.shareToken ?? "";
+  const tripLink = useMemo(
+    () => (shareToken ? `${base}/shared/${shareToken}` : ""),
+    [base, shareToken],
+  );
+  const roadbookLink = tripLink ? `${tripLink}?view=roadbook` : "";
 
   useEffect(() => {
     if (!open || !user) return;
