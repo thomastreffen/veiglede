@@ -104,6 +104,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_photos: {
+        Row: {
+          created_at: string
+          id: string
+          path: string | null
+          stop_id: string | null
+          trip_id: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path?: string | null
+          stop_id?: string | null
+          trip_id: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string | null
+          stop_id?: string | null
+          trip_id?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           data: Json
