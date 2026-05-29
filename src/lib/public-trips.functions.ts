@@ -41,20 +41,29 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
 
     for (const row of rows) {
       const blob = row.data as {
-        trips?: Array<Record<string, unknown>>;
-        days?: Array<Record<string, unknown>>;
-        stops?: Array<Record<string, unknown>>;
+        trips?: Json[];
+        days?: Json[];
+        stops?: Json[];
       } | null;
       if (!blob?.trips) continue;
-      const match = blob.trips.find((t) => t["shareToken"] === token);
+      const match = blob.trips.find(
+        (t): t is { [key: string]: Json | undefined } =>
+          typeof t === "object" && t !== null && !Array.isArray(t) && (t as Record<string, Json | undefined>)["shareToken"] === token,
+      );
       if (!match) continue;
       if (match["isPublic"] !== true) {
         return { found: true, isPrivate: true };
       }
       const tripId = match["id"] as string | undefined;
-      const days = (blob.days ?? []).filter((d) => d["tripId"] === tripId);
-      const dayIds = new Set(days.map((d) => d["id"]));
-      const stops = (blob.stops ?? []).filter((s) => dayIds.has(s["dayId"]));
+      const days = (blob.days ?? []).filter(
+        (d): d is { [key: string]: Json | undefined } =>
+          typeof d === "object" && d !== null && !Array.isArray(d) && (d as Record<string, Json | undefined>)["tripId"] === tripId,
+      );
+      const dayIds = new Set(days.map((d) => d["id"] as string | undefined));
+      const stops = (blob.stops ?? []).filter(
+        (s): s is { [key: string]: Json | undefined } =>
+          typeof s === "object" && s !== null && !Array.isArray(s) && dayIds.has((s as Record<string, Json | undefined>)["dayId"] as string | undefined),
+      );
       return { found: true, trip: match, days, stops };
     }
 
