@@ -122,13 +122,15 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
         {/* Share link */}
         <div className="space-y-2">
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Delingslenke</p>
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-background/60 p-2 pl-3">
-            <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="flex-1 min-w-0 truncate text-xs font-mono">{tripLink || "Genererer lenke…"}</span>
+          <div className="rounded-xl border border-border bg-background/60 p-2 pl-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="flex-1 min-w-0 truncate text-xs font-mono">{tripLink || "Genererer lenke…"}</span>
+            </div>
             <button
               onClick={() => tripLink && copy("trip", tripLink)}
               disabled={!tripLink}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2.5 sm:py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-50 min-h-[44px] sm:min-h-0"
             >
               {copied === "trip" ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier lenke</>}
             </button>
