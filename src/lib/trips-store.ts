@@ -150,6 +150,8 @@ export interface SuggestedStop {
   promoted?: boolean;
   badge?: "partner" | "local" | "promoted";
   energy?: EnergySource; // for fuel/charging stops only
+  lat?: number;
+  lng?: number;
 }
 
 export interface SuggestedStopRouteMeta {
