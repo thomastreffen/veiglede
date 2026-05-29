@@ -456,13 +456,20 @@ function NewTripWizard() {
 
           <div className="mt-6 space-y-5">
             <Field label="Fra">
-              <PlaceAutocomplete
-                value={origin}
-                onTextChange={setOrigin}
-                selected={fromPlace}
-                onSelect={setFromPlace}
-                ariaLabel="Fra"
-              />
+              <div className="flex items-stretch gap-2">
+                <div className="flex-1 min-w-0">
+                  <PlaceAutocomplete
+                    value={origin}
+                    onTextChange={setOrigin}
+                    selected={fromPlace}
+                    onSelect={setFromPlace}
+                    ariaLabel="Fra"
+                  />
+                </div>
+                <UseMyLocationButton
+                  onResolved={(name, place) => { setOrigin(name); setFromPlace(place); }}
+                />
+              </div>
             </Field>
             <Field label="Til">
               <PlaceAutocomplete
