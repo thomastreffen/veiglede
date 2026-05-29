@@ -15,6 +15,8 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchPhotos = async () => {
