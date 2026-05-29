@@ -116,6 +116,7 @@ export function MapLibreTripMap({
   const markersRef = useRef<Marker[]>([]);
   const [ready, setReady] = useState(false);
   const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
+  const [recalculating, setRecalculating] = useState(false);
   const lastErrorRef = useRef<string | null>(null);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
@@ -280,6 +281,7 @@ export function MapLibreTripMap({
 
     let cancelled = false;
     const userChanged = prevHashRef.current !== "" && prevHashRef.current !== hash;
+    setRecalculating(true);
     // Prefer multi-waypoint server route; fall back to direct ORS if the
     // legacy client-side key is present (single-segment only).
     const routeP = wps.length > 2
@@ -295,6 +297,7 @@ export function MapLibreTripMap({
 
     routeP.then((res) => {
       if (cancelled) return;
+      setRecalculating(false);
       if (!res) {
         if (userChanged) {
           toast.error("Ruten kunne ikke beregnes på nytt. Beholder forrige rute.");
@@ -322,10 +325,14 @@ export function MapLibreTripMap({
         });
       } catch { /* noop */ }
       if (userChanged) {
-        toast.success(`Ruta er oppdatert via ${stopWps.length} via-punkt${stopWps.length === 1 ? "" : "er"} (${Math.round(res.distanceKm)} km).`);
+        if (res.provider === "fallback" || res.provider === "demo") {
+          toast.warning(`Ruta kunne ikke snappes til veinettet. Viser foreløpig estimat (${Math.round(res.distanceKm)} km).`);
+        } else {
+          toast.success(`Ruta er oppdatert via ${stopWps.length} via-punkt${stopWps.length === 1 ? "" : "er"} (${Math.round(res.distanceKm)} km).`);
+        }
       }
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; setRecalculating(false); };
   }, [projected, trip.id, trip.routeGeometry, trip.routeWaypointsHash, trip.style]);
 
   // Add/update route layer and fit bounds. Also re-runs after setStyle().
@@ -569,7 +576,15 @@ export function MapLibreTripMap({
   // intermediate wrapper, no opacity tricks, no rounded clipping that could
   // interact with the WebGL canvas during init.
   return (
-    <div ref={containerRef} className={cn("h-full w-full", className)} />
+    <div className={cn("relative h-full w-full", className)}>
+      <div ref={containerRef} className="h-full w-full" />
+      {recalculating && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2 rounded-full border border-primary/40 bg-background/90 px-3 py-1.5 text-[11px] uppercase tracking-wider text-foreground/90 shadow-md backdrop-blur">
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary mr-2 align-middle" />
+          Beregner rute på nytt…
+        </div>
+      )}
+    </div>
   );
 }
 
