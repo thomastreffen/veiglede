@@ -21,6 +21,7 @@ import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
+import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
@@ -87,6 +88,11 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicPoiSearchRoute = ApiPublicPoiSearchRouteImport.update({
+  id: '/api/public/poi-search',
+  path: '/api/public/poi-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
   id: '/api/public/map-config',
   path: '/api/public/map-config',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
+  '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
+  '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/_app/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
+  '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/trips/new'
     | '/api/public/directions'
     | '/api/public/map-config'
+    | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
   fileRoutesByTo: FileRoutesByTo
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/trips/new'
     | '/api/public/directions'
     | '/api/public/map-config'
+    | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
   id:
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/_app/trips/new'
     | '/api/public/directions'
     | '/api/public/map-config'
+    | '/api/public/poi-search'
     | '/_app/trips/$tripId/roadbook'
     | '/_app/trips/$tripId/stops/$stopId'
   fileRoutesById: FileRoutesById
@@ -250,6 +262,7 @@ export interface RootRouteChildren {
   SharedTripIdRoute: typeof SharedTripIdRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
+  ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof AppOnboardingRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/public/poi-search': {
+      id: '/api/public/poi-search'
+      path: '/api/public/poi-search'
+      fullPath: '/api/public/poi-search'
+      preLoaderRoute: typeof ApiPublicPoiSearchRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/map-config': {
       id: '/api/public/map-config'
@@ -438,6 +458,7 @@ const rootRouteChildren: RootRouteChildren = {
   SharedTripIdRoute: SharedTripIdRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
+  ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
