@@ -126,7 +126,7 @@ export const Route = createFileRoute("/api/public/directions")({
               warnings.push(`ors-skip-waypoint-${i}`);
               return;
             }
-            const pair: [number, number] = [w.lng, w.lat];
+            const pair: [number, number] = [Number(w.lng), Number(w.lat)];
             // Drop anything that is effectively the origin or destination
             // (exact match OR within 1km — covers auto-generated arrival/
             // departure stops whose coords resolve to the same town).
