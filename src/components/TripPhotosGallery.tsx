@@ -46,7 +46,16 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const onRefresh = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { tripId?: string } | undefined;
+      if (!detail?.tripId || detail.tripId === tripId) fetchPhotos();
+    };
+    window.addEventListener("trip-photos:refresh", onRefresh);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("trip-photos:refresh", onRefresh);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
