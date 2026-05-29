@@ -599,25 +599,36 @@ function StopPhotos({
   };
 
   return (
-    <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
-      {photos.map((p) => (
-        <div key={p.id} className="relative group">
-          <button type="button" onClick={() => onLightbox(p.url)} className="block h-14 w-14 rounded-lg overflow-hidden border border-border hover:border-primary">
-            <img src={p.url} alt="" className="h-full w-full object-cover" loading="lazy" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); onDelete(p); }}
-            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 text-xs leading-none"
-            aria-label="Slett bilde"
-          >×</button>
+    <div className="px-4 pb-3 space-y-2">
+      {photos.length > 0 && (
+        <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 px-1">
+          {photos.map((p) => (
+            <div key={p.id} className="relative group shrink-0">
+              <button type="button" onClick={() => onLightbox(p.url)} className="block h-16 w-16 rounded-lg overflow-hidden border border-border hover:border-primary">
+                <img src={p.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); onDelete(p); }}
+                className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive text-xs leading-none grid place-items-center"
+                aria-label="Slett bilde"
+              >×</button>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
       {canAdd && (
-        <label className={`inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border bg-background/40 px-2.5 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary cursor-pointer ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
-          <Camera className="h-3.5 w-3.5" />
-          {uploading ? "Laster opp…" : "Legg til bilde"}
-          <input type="file" accept="image/*" className="hidden" onChange={onPick} disabled={uploading} />
+        <label className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background/40 px-4 py-3 text-sm font-semibold text-muted-foreground hover:border-primary hover:text-primary cursor-pointer min-h-[44px] ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+          <Camera className="h-4 w-4" />
+          <span>📷 {uploading ? "Laster opp…" : `Legg til bilde${photos.length > 0 ? ` (${photos.length}/5)` : ""}`}</span>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={onPick}
+            disabled={uploading}
+          />
         </label>
       )}
     </div>
