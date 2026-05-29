@@ -48,6 +48,7 @@ export const Route = createFileRoute("/api/public/poi-search")({
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?${params.toString()}`;
 
         try {
+          console.log(`[poi-search] mapbox url: ${mbUrl.replace(token, "***")}`);
           const ctrl = new AbortController();
           const t = setTimeout(() => ctrl.abort(), 6000);
           const res = await fetch(mbUrl, { signal: ctrl.signal });
