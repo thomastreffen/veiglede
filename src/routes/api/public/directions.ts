@@ -111,9 +111,13 @@ export const Route = createFileRoute("/api/public/directions")({
 
           const coordinates: [number, number][] = [originPair, ...viaCoords, destPair];
           const coordStr = coordinates.map((c) => `${c[0]},${c[1]}`).join(";");
-          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full&access_token=${encodeURIComponent(token)}`;
+          const excludes: string[] = [];
+          if (avoidOptions.highways) excludes.push("motorway");
+          if (avoidOptions.ferries) excludes.push("ferry");
+          const excludeParam = excludes.length ? `&exclude=${excludes.join(",")}` : "";
+          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full${excludeParam}&access_token=${encodeURIComponent(token)}`;
 
-          console.log(`[directions] Mapbox coordinates: ${coordinates.length} points`, coordinates);
+          console.log(`[directions] Mapbox coordinates: ${coordinates.length} points, excludes: ${excludes.join(",") || "none"}`, coordinates);
 
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 6000);

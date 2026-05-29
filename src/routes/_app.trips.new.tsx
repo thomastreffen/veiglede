@@ -92,11 +92,11 @@ function clearSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
 }
 
-function createFreshSnapshot(initialVehicle: Vehicle): WizardSnapshot {
+function createFreshSnapshot(initialVehicle: Vehicle, defaultStyle?: RouteStyle): WizardSnapshot {
   return {
     step: 1,
     vehicleId: initialVehicle.id,
-    style: initialVehicle.defaultStyle,
+    style: defaultStyle ?? initialVehicle.defaultStyle,
     origin: "",
     destination: "",
     fromPlace: null,
@@ -148,20 +148,20 @@ function NewTripWizard() {
 
   const resolveSnapshot = (): WizardSnapshot => {
     if (typeof window === "undefined") {
-      return createFreshSnapshot(initialVehicle);
+      return createFreshSnapshot(initialVehicle, prefs.defaultStyle);
     }
 
     if (restoreParam === "fresh") {
       clearDraft();
       clearSession();
-      return createFreshSnapshot(initialVehicle);
+      return createFreshSnapshot(initialVehicle, prefs.defaultStyle);
     }
 
     const shouldRestore = restoreParam === "force" || hasActiveSession();
     if (!shouldRestore) {
       clearDraft();
       clearSession();
-      return createFreshSnapshot(initialVehicle);
+      return createFreshSnapshot(initialVehicle, prefs.defaultStyle);
     }
 
     return createRestoredSnapshot({
@@ -266,13 +266,20 @@ function NewTripWizard() {
       // Try real routing when we have coordinates for both endpoints.
       let route: RouteResult | null = null;
       if (fromResolved && toResolved) {
+        // Honor user profile + per-vehicle flags. Either source can request to
+        // avoid motorways or ferries; OR the values so neither is silently lost.
+        const vehicleFlags = selectedVehicle.drivingFlags ?? {};
+        const userFlags = prefs.drivingFlags ?? {};
+        const styleImpliesNoHighway = style === "scenic" || style === "curvy" || style === "tourist";
+        const avoidHighways = !!(userFlags["no-highway"] || vehicleFlags["no-highway"] || styleImpliesNoHighway);
+        const avoidFerries = !!(userFlags["no-ferry"] || vehicleFlags["no-ferry"]);
         route = await getRoute({
           origin: { lat: fromResolved.lat, lng: fromResolved.lng },
           destination: { lat: toResolved.lat, lng: toResolved.lng },
           vehicleType: vt,
           routeStyle: style,
-          avoidHighways: style === "scenic" || style === "curvy" || style === "tourist",
-          avoidFerries: false,
+          avoidHighways,
+          avoidFerries,
         });
         setLastRoute(route);
       } else {
