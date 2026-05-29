@@ -339,47 +339,55 @@ function TripPlanner() {
                       <li
                         key={stop.id}
                         id={`stop-${stop.id}`}
-                        className={`flex items-stretch transition-colors hover:bg-surface-2/40 ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
+                        className={`transition-colors hover:bg-surface-2/40 ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
                       >
-                        <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
+                        <div className="flex items-stretch">
+                          <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
 
-                          <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-semibold truncate">{stop.name}</p>
-                              <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
-                              {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
-                              {stop.promoted && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
-                            </div>
-                            {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
-                            <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                              {stop.estimatedTime && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span>}
-                              {stop.durationMin && <><span>·</span><span>{formatDuration(stop.durationMin)}</span></>}
-                              {stop.distanceFromPrevKm !== undefined && idx > 0 && <><span>·</span><span>+{stop.distanceFromPrevKm} km</span></>}
-                              {stop.location && <><span>·</span><span>{stop.location}</span></>}
-                            </p>
-                            {stop.reason && (
-                              <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
-                                <Info className="h-3 w-3 mt-0.5 shrink-0" />
-                                <span>{stop.reason}</span>
+                            <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-semibold truncate">{stop.name}</p>
+                                <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
+                                {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
+                                {stop.promoted && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
+                              </div>
+                              {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
+                              <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                                {stop.estimatedTime && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span>}
+                                {stop.durationMin && <><span>·</span><span>{formatDuration(stop.durationMin)}</span></>}
+                                {stop.distanceFromPrevKm !== undefined && idx > 0 && <><span>·</span><span>+{stop.distanceFromPrevKm} km</span></>}
+                                {stop.location && <><span>·</span><span>{stop.location}</span></>}
                               </p>
-                            )}
+                              {stop.reason && (
+                                <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
+                                  <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                                  <span>{stop.reason}</span>
+                                </p>
+                              )}
+                            </div>
+                          </Link>
+                          <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
+                            <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt opp">
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                            <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
+                              className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
-                        </Link>
-                        <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
-                          <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
-                            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt opp">
-                            <ChevronUp className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
-                            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
-                            <ChevronDown className="h-4 w-4" />
-                          </button>
-                          <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
-                            className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
                         </div>
+                        <StopPhotos
+                          stop={stop}
+                          tripId={tripId}
+                          userId={user?.id}
+                          onLightbox={setLightboxUrl}
+                        />
                       </li>
                     );
                   })}
