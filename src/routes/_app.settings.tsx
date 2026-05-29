@@ -129,6 +129,29 @@ import {
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { Moon, Sun, Check, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Pencil } from "lucide-react";
 
+function ProfileHeader() {
+  const { user } = useAuth();
+  const prefs = useDriverPrefs();
+  // Prefer the signed-in identity (Google → user_metadata.full_name); fall back
+  // to the local driver display name only when no auth user is present.
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string };
+  const displayName = meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
+  const email = user?.email ?? "Lokal demo-profil · ingen pålogging";
+  const avatar = meta.avatar_url;
+  const initial = (displayName || "?").charAt(0).toUpperCase();
+  return (
+    <div className="flex items-center gap-4">
+      <div className="h-16 w-16 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden">
+        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
+      </div>
+      <div className="min-w-0">
+        <p className="font-semibold text-lg truncate">{displayName}</p>
+        <p className="text-xs text-muted-foreground truncate">{email}</p>
+      </div>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
   component: Settings,
