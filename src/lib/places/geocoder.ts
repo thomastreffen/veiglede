@@ -138,7 +138,7 @@ async function searchMapTiler(q: string, key: string, signal: AbortSignal): Prom
       lat: coords[1],
       lng: coords[0],
       type: mapTilerType(f.place_type),
-      country: "no",
+      country: (f.context ?? []).find((c) => c.id?.startsWith("country"))?.text?.toLowerCase(),
       source: "maptiler",
     };
   }).filter((x): x is ResolvedPlace => x !== null);
