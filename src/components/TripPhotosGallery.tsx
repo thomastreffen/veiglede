@@ -206,7 +206,7 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
                   className="absolute inset-0 bg-black/70 backdrop-blur-sm grid place-items-center p-2"
                 >
                   <div className="text-center">
-                    <p className="text-white text-sm font-medium mb-2">Slett bilde?</p>
+                    <p className="text-white text-sm font-medium mb-2">Slett?</p>
                     <div className="flex gap-2 justify-center">
                       <button
                         type="button"
