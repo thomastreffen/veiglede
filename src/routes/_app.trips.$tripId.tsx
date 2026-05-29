@@ -309,8 +309,7 @@ function TripPlanner() {
                       <li
                         key={stop.id}
                         id={`stop-${stop.id}`}
-                        className={`flex items-stretch transition-colors ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
-                        onMouseEnter={() => setSelectedStopId(stop.id)}
+                        className={`flex items-stretch transition-colors hover:bg-surface-2/40 ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
                       >
                         <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
 
