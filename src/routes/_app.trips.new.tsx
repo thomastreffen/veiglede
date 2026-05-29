@@ -266,13 +266,20 @@ function NewTripWizard() {
       // Try real routing when we have coordinates for both endpoints.
       let route: RouteResult | null = null;
       if (fromResolved && toResolved) {
+        // Honor user profile + per-vehicle flags. Either source can request to
+        // avoid motorways or ferries; OR the values so neither is silently lost.
+        const vehicleFlags = selectedVehicle.drivingFlags ?? {};
+        const userFlags = prefs.drivingFlags ?? {};
+        const styleImpliesNoHighway = style === "scenic" || style === "curvy" || style === "tourist";
+        const avoidHighways = !!(userFlags["no-highway"] || vehicleFlags["no-highway"] || styleImpliesNoHighway);
+        const avoidFerries = !!(userFlags["no-ferry"] || vehicleFlags["no-ferry"]);
         route = await getRoute({
           origin: { lat: fromResolved.lat, lng: fromResolved.lng },
           destination: { lat: toResolved.lat, lng: toResolved.lng },
           vehicleType: vt,
           routeStyle: style,
-          avoidHighways: style === "scenic" || style === "curvy" || style === "tourist",
-          avoidFerries: false,
+          avoidHighways,
+          avoidFerries,
         });
         setLastRoute(route);
       } else {
