@@ -111,6 +111,33 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
     }
   };
 
+  const handleDelete = async (photo: PhotoRow) => {
+    setDeletingId(photo.id);
+    const prev = photos;
+    setPhotos((cur) => cur.filter((p) => p.id !== photo.id));
+    setConfirmId(null);
+    try {
+      if (photo.path) {
+        const { error: sErr } = await supabase.storage.from("trip-photos").remove([photo.path]);
+        if (sErr) console.warn("Storage remove error:", sErr.message);
+      }
+      const { error: dErr } = await supabase.from("trip_photos").delete().eq("id", photo.id);
+      if (dErr) {
+        console.error("DB delete error:", dErr.message);
+        setPhotos(prev);
+        toast.error("Kunne ikke slette bildet");
+        return;
+      }
+      console.log("Photo deleted:", photo.id);
+    } catch (e) {
+      console.error("Delete error:", e);
+      setPhotos(prev);
+      toast.error("Kunne ikke slette bildet");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <>
       <div className="mt-4">
@@ -141,17 +168,61 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
       ) : (
         <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
           {photos.map((p) => (
-            <button
+            <div
               key={p.id}
-              type="button"
-              onClick={() => setLightbox(p.url)}
-              className="aspect-square rounded-xl overflow-hidden border border-border hover:border-primary"
+              className="relative group aspect-square rounded-xl overflow-hidden border border-border hover:border-primary"
             >
-              <img src={p.url} alt="" loading="lazy" className="h-full w-full object-cover" />
-            </button>
+              <button
+                type="button"
+                onClick={() => setLightbox(p.url)}
+                className="block h-full w-full"
+              >
+                <img src={p.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+              </button>
+
+              {confirmId !== p.id && (
+                <button
+                  type="button"
+                  aria-label="Slett bilde"
+                  onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
+                  className="absolute top-1.5 right-1.5 h-8 w-8 rounded-full bg-black/70 hover:bg-red-600 text-white grid place-items-center text-base leading-none opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                >
+                  ×
+                </button>
+              )}
+
+              {confirmId === p.id && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute inset-0 bg-black/70 backdrop-blur-sm grid place-items-center p-2"
+                >
+                  <div className="text-center">
+                    <p className="text-white text-sm font-medium mb-2">Slett bilde?</p>
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        type="button"
+                        disabled={deletingId === p.id}
+                        onClick={() => handleDelete(p)}
+                        className="px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-medium disabled:opacity-50"
+                      >
+                        Ja
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(null)}
+                        className="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-white text-xs font-medium"
+                      >
+                        Avbryt
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
+
 
       {lightbox && (
         <div
