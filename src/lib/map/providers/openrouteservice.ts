@@ -22,6 +22,7 @@ export const orsRouting: RoutingService = {
 
     const profile = opts?.profile ?? "driving-car";
     try {
+      const coordinates = waypoints.map((w) => [w.lng, w.lat] as [number, number]);
       const res = await fetch(`${ORS_BASE}/v2/directions/${profile}/geojson`, {
         method: "POST",
         headers: {
@@ -29,7 +30,8 @@ export const orsRouting: RoutingService = {
           Authorization: key,
         },
         body: JSON.stringify({
-          coordinates: waypoints.map((w) => [w.lng, w.lat]),
+          coordinates,
+          radiuses: coordinates.map(() => -1),
           instructions: false,
         }),
       });
