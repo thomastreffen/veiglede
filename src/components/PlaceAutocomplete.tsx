@@ -80,14 +80,14 @@ export function PlaceAutocomplete({
       ctrlRef.current?.abort();
       const ctrl = new AbortController();
       ctrlRef.current = ctrl;
-      searchPlaces(q, ctrl.signal).then((r) => {
+      searchPlaces(q, ctrl.signal, searchOptions).then((r) => {
         if (ctrl.signal.aborted) return;
         setState({ loading: false, results: r.results, provider: r.provider, failed: r.failed });
         setActiveIdx(r.results.length > 0 ? 0 : -1);
       }).catch(() => { /* swallow */ });
     }, 300);
     return () => clearTimeout(handle);
-  }, [value]);
+  }, [value, searchOptions?.types, searchOptions?.queryPrefix]);
 
   // Click-outside closes dropdown.
   useEffect(() => {
