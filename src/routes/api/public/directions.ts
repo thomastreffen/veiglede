@@ -108,13 +108,20 @@ export const Route = createFileRoute("/api/public/directions")({
             ? body.waypoints.filter(isLatLng).map((w) => [w.lng, w.lat] as [number, number])
             : [];
 
+          const coordinates: [number, number][] = [
+            [body.origin.lng, body.origin.lat],
+            ...viaCoords,
+            [body.destination.lng, body.destination.lat],
+          ];
           const orsBody: Record<string, unknown> = {
             // ORS expects [lng, lat] pairs.
-            coordinates: [
-              [body.origin.lng, body.origin.lat],
-              ...viaCoords,
-              [body.destination.lng, body.destination.lat],
-            ],
+            coordinates,
+            // Snap each coordinate to the nearest routable road, no matter
+            // how far. Without this, hand-picked viewpoint coordinates
+            // (e.g. "MC-svingene over Gaularfjellet") fail with HTTP 404
+            // "Could not find routable point within 350m" and the whole
+            // request falls back to the straight-line demo geometry.
+            radiuses: coordinates.map(() => -1),
             instructions: false,
             extra_info: ["waytype"],
           };
