@@ -1,129 +1,78 @@
 
-# Brukerkontoer og lagrede turer i Veiglede
+## Context
 
-Mål: gjøre Veiglede klar for ekte brukere. App-en skal være gratis. Brukere kan utforske demo uten konto, og bli bedt om å logge inn først når de vil lagre, dele eller komme tilbake.
+The project already has overlapping share infrastructure I'll build on rather than duplicate:
+- `ShareTripModal.tsx` — existing modal triggered by "Del tur" (currently links to `/shared/{tripId}`, has a public/private toggle that is currently UI-only)
+- `src/routes/shared.$tripId.tsx` — existing public read-only trip page
+- `trip_invites` table + `get_shared_trip` RPC — per-recipient invite tokens (separate concept; will keep untouched)
+- Trips are persisted in Supabase as a single `jsonb` blob per user (`trips.data`), so trip-level fields like `shareToken` and `isPublic` are stored inside that blob, not as new SQL columns
 
-## 1. Backend (Lovable Cloud)
+Given that, I will treat the spec's `share_token` and `/shared/{share_token}` as the canonical public-share URL, separate from the existing per-recipient invite flow.
 
-Aktivér Lovable Cloud (Supabase under panseret). Setter opp:
+## 1. Share trip — token-based public link
 
-**Auth-leverandører**
-- Email + passord (default)
-- Magic link (email OTP)
-- Continue with Google (via Lovable-brokeren)
-- Continue with Apple (krever at du legger inn Apple Service ID/Team ID/Key seinere — skrur på provider, og UI viser knappen, men selve innloggingen krever Apple Developer-konfig hos deg)
+**Data model (no new column needed):**
+- Add `shareToken?: string` and `isPublic?: boolean` to `Trip` in `src/lib/trips-store.ts`
+- New `tripsApi.ensureShareToken(tripId)` generates a UUID if missing and persists
+- New `tripsApi.setTripPublic(tripId, value)`
+- Both update the local store; cloud-sync already writes the whole `data` jsonb on change
 
-**Tabeller (alle med RLS scopet til `auth.uid()`)**
+**Modal (`ShareTripModal.tsx`):**
+- "Del tur" button on the planner already opens this modal — keep it
+- Replace the current `tripLink` (which used `/shared/{tripId}`) with `/shared/{shareToken}`
+- Wire the existing "Offentlig tur" `Switch` to `trip.isPublic` (real, not local state)
+- Auto-generate the token on first open of the modal
+- Keep "Kopier lenke" and add an "Åpne Roadbook" link button (using the same token URL + `?view=roadbook`)
+- Leave invite/companions section as-is
 
-```text
-profiles            id (=auth.users.id), display_name, avatar_url,
-                    theme ('dark'|'light'|'system'), onboarded_at, created_at
+**New public route `src/routes/shared.$shareToken.tsx`:**
+- Resolves trip by `shareToken` from a new server fn `getPublicTripByToken` (uses `supabaseAdmin` to scan trips jsonb)
+- If trip not found OR `isPublic !== true` → show "Denne turen er privat" empty state
+- Render trip title, origin→destination, map, day-by-day stops, practical info — read-only (reuse the structure from the existing `shared.$tripId.tsx`)
+- Bottom CTA "Planlegg en lignende tur" → `/trips/new`
+- Veiglede logo in header (already in existing shared page)
+- Existing `shared.$tripId.tsx` stays for backward compatibility
 
-driver_prefs        user_id PK, max_driving_hours, pause_every_min,
-                    driving_flags jsonb, stop_interests text[]
+**Server fn** `src/lib/public-trips.functions.ts`:
+- `getPublicTripByToken({ token })` uses `supabaseAdmin` to find the trip in any user's `trips.data.trips[]` where `shareToken === token`. Returns trip + days + stops + photos, or `{ private: true }` if the token matches but `isPublic` is false.
 
-vehicles            id, user_id, name, type, energy, photo_url,
-                    default_style, driving_flags jsonb,
-                    stop_interests text[], is_default, created_at
+## 2. Photos per stop
 
-trips               id, user_id, title, subtitle, region, origin,
-                    destination, start_date, end_date, vehicle_id,
-                    vehicle_snapshot jsonb, style, distance_km,
-                    driving_time, cover, ai_summary, status
-                    ('idle'|'active'|'paused'|'completed'),
-                    is_public, share_slug, created_at
+**Supabase Storage:**
+- Create `trip-photos` bucket (public read), via migration
+- Path convention: `{userId}/{tripId}/{stopId}/{uuid}.{ext}`
+- RLS on `storage.objects`:
+  - Public SELECT (so shared page renders thumbs)
+  - Authenticated INSERT/DELETE limited to `(storage.foldername(name))[1] = auth.uid()::text`
 
-trip_days           id, trip_id, day_number, title, date, summary
+**Data model:**
+- Add `photos?: { id: string; url: string; path: string }[]` to `Stop`
+- New `tripsApi.addStopPhoto(stopId, photo)` / `removeStopPhoto(stopId, photoId)` (max 5 enforced in API)
 
-stops               id, day_id, name, type, location, description,
-                    reason, estimated_time, duration_min,
-                    distance_from_prev_km, notes, photo_op,
-                    promoted, "order"
+**UI in trip planner (`_app.trips.$tripId.tsx`):**
+- Each stop row in the day-by-day list gets:
+  - Small camera icon button "Legg til bilde" (hidden when 5 photos reached)
+  - Thumbnail strip of existing photos below the row
+  - Click thumb → fullscreen lightbox (simple Dialog)
+- File input `accept="image/*"`, uploads to `trip-photos` via `supabase.storage.from(...).upload(...)`
+- After upload, get public URL, call `addStopPhoto`
+- "Bilder fra ruta" section (`TripMemories` component) automatically reflects new photos since it reads from the same store
 
-trip_tracking       trip_id PK, status, visited_stop_ids text[],
-                    spontaneous_stops jsonb, started_at, completed_at
-```
+## Technical notes
 
-`vehicle_snapshot` lagrer kjøretøyets navn/type/energi på *opprettelses­tidspunktet*, slik at gamle turer fortsatt viser riktig kjøretøy selv om brukeren senere sletter eller endrer en bil.
+- Files I'll touch:
+  - `src/lib/trips-store.ts` — add fields + api methods
+  - `src/components/ShareTripModal.tsx` — wire to real shareToken/isPublic
+  - `src/routes/_app.trips.$tripId.tsx` — photo upload UI per stop + lightbox
+  - `src/components/TripMemories.tsx` — read stop.photos if present
+  - `src/routes/shared.$shareToken.tsx` — new public route (token-based)
+  - `src/lib/public-trips.functions.ts` — new server fn
+  - `src/start.ts` — verify `attachSupabaseAuth` already wired (no-op if so)
+- One SQL migration for the `trip-photos` storage bucket + policies
+- No changes to routing config, map rendering, or trip planner layout beyond the additions above
+- The existing `shared.$tripId.tsx` and `trip_invites` flow remain untouched
 
-**Storage-bucket**: `vehicle-photos` (private, signed URLs) for ekte kjøretøybilder.
+## Confirm before I build
 
-## 2. Frontend-arkitektur
-
-**Demo-modus beholdes.** All eksisterende `localStorage`-logikk (`trips-store`, `vehicles-store`, `driver-prefs`, `trip-tracking`) får et tynt repository-lag:
-
-```text
-src/lib/repo/
-  trips-repo.ts        local | cloud
-  vehicles-repo.ts     local | cloud
-  prefs-repo.ts        local | cloud
-  trip-tracking-repo.ts
-```
-
-`useAuth()` (TanStack Router context) avgjør hvilken implementasjon som brukes. Ikke-innloggede brukere kjører som i dag mot localStorage. Innloggede brukere synker mot Cloud via `createServerFn` + `requireSupabaseAuth`.
-
-**Auth-state**
-- `src/lib/auth-context.tsx` — wrapper rundt `supabase.auth`, eksponerer `{ user, isAuthenticated, signIn*, signOut }` til router-context.
-- Root registrerer `onAuthStateChange` én gang (router.invalidate + queryClient.invalidate).
-
-## 3. Nye sider/komponenter
-
-```text
-src/routes/
-  login.tsx              Email/passord, Magic link, Google, Apple
-  signup.tsx             Samme valg, "opprett konto"
-  auth.callback.tsx      OAuth/magic-link redirect handler
-  _app/onboarding.tsx    4 steg etter signup
-src/components/
-  SaveTripPrompt.tsx     Modal "Vil du lagre turen din?"
-  AuthButtons.tsx        Google/Apple/Email-knapper
-  RequireAuth.tsx        Inline-gate (ikke redirect) for handlinger
-```
-
-Eksisterende sider får små endringer:
-- **Top nav**: "Logg inn" når utlogget, avatar-meny når innlogget.
-- **Planner / Roadbook**: "Lagre tur" / "Del tur" / "Eksport" trigger `SaveTripPrompt` hvis utlogget. Lokale demo-turer migreres automatisk til kontoen etter login.
-- **Settings/Profil**: viser konto-info øverst når innlogget; logout-knapp; "Slett konto" som no-op-stub (eller skjult).
-- **Trips-listen**: badge "Demo (kun på denne enheten)" når utlogget.
-
-## 4. Onboarding etter signup
-
-Fire korte steg på `/onboarding`:
-1. Velkommen til Veiglede
-2. Legg til første kjøretøy (gjenbruker `VehicleEditor`)
-3. Velg kjørestil (gjenbruker eksisterende sliders/flags)
-4. Klar til å planlegge → CTA "Lag første tur"
-
-Hopp-over-knapp på alle steg. `profiles.onboarded_at` settes når ferdig, slik at vi ikke viser det igjen. Hvis brukeren allerede har demo-data lokalt, importeres det her (med bekreftelse).
-
-## 5. Migrasjon av demo-data ved innlogging
-
-Når en utlogget bruker logger inn / registrerer seg:
-1. Sjekk om det finnes lokale trips/vehicles/prefs.
-2. Vis liten dialog: "Vi fant en demo-tur — vil du lagre den på kontoen din?"
-3. Ved ja: bulk-insert via en `migrateDemoData` server-fn, og tøm `localStorage`-nøklene.
-
-## 6. Det vi *ikke* bygger nå
-
-- Betaling, abonnement, business-portal, ads, partner-dashbord, roller/admin.
-- Ekte GPS/Bluetooth/CarPlay (forblir konsept som før).
-- Sletting av brukerkonto (kun stub-knapp).
-
-## 7. Teknisk rekkefølge
-
-1. Aktiver Lovable Cloud.
-2. Migrasjoner: tabellene over + RLS + GRANTs + storage-bucket.
-3. `auth-context` + root `onAuthStateChange`.
-4. Login/Signup/Callback-sider med Google + Apple (via `supabase--configure_social_auth`) + email + magic link.
-5. Repo-lag (lokal vs cloud) bak eksisterende stores, uten å endre kall-stedene.
-6. ServerFns: `getMyTrips`, `saveTrip`, `getMyVehicles`, `saveVehicle`, `getPrefs`, `savePrefs`, `migrateDemoData`.
-7. `SaveTripPrompt` + integrasjon i Planner/Roadbook.
-8. Onboarding-route.
-9. Topnav avatar/login-knapp.
-10. Test demo→signup→migrasjon→innlogget bruk.
-
-## Spørsmål før jeg starter
-
-1. **Apple-pålogging**: skal jeg skru på provideren nå selv om du må legge inn Apple Service ID/Key i Cloud-innstillingene senere før den faktisk virker? (Knappen vises uansett.)
-2. **Auto-migrasjon av demo-data**: skal dialogen være "spør først" (anbefalt) eller automatisk?
-3. **Theme-preferanse**: skal den fortsatt være per-enhet (localStorage) eller flyttes til `profiles.theme` slik at den følger brukeren?
+1. OK to keep `shareToken` and `isPublic` inside the existing `trips.data` jsonb (no new SQL column needed)? The spec said "column: share_token" but the schema stores trips as jsonb blobs.
+2. OK to keep the existing `/shared/{tripId}` route alongside the new `/shared/{shareToken}` route? Or should the old one be removed?

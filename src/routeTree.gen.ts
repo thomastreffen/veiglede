@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
+import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
@@ -56,6 +57,11 @@ const IndexRoute = IndexRouteImport.update({
 const SharedTripIdRoute = SharedTripIdRouteImport.update({
   id: '/shared/$tripId',
   path: '/shared/$tripId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SharedShareTokenRoute = SharedShareTokenRouteImport.update({
+  id: '/shared/$shareToken',
+  path: '/shared/$shareToken',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/_app/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/trips'
     | '/auth/callback'
     | '/invite/$token'
+    | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
     | '/trips/new'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/trips'
     | '/auth/callback'
     | '/invite/$token'
+    | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
     | '/trips/new'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/_app/trips'
     | '/auth/callback'
     | '/invite/$token'
+    | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
@@ -307,6 +320,13 @@ declare module '@tanstack/react-router' {
       path: '/shared/$tripId'
       fullPath: '/shared/$tripId'
       preLoaderRoute: typeof SharedTripIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shared/$shareToken': {
+      id: '/shared/$shareToken'
+      path: '/shared/$shareToken'
+      fullPath: '/shared/$shareToken'
+      preLoaderRoute: typeof SharedShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invite/$token': {
@@ -455,6 +475,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   InviteTokenRoute: InviteTokenRoute,
+  SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,

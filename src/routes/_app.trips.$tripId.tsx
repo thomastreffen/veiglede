@@ -45,6 +45,7 @@ function TripPlanner() {
   const [savePromptOpen, setSavePromptOpen] = useState(false);
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const setShareOpen = (v: boolean) => { if (v && !user) { setSavePromptOpen(true); return; } setShareOpenRaw(v); };
 
   const trip = trips.find((t) => t.id === tripId);
@@ -339,47 +340,55 @@ function TripPlanner() {
                       <li
                         key={stop.id}
                         id={`stop-${stop.id}`}
-                        className={`flex items-stretch transition-colors hover:bg-surface-2/40 ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
+                        className={`transition-colors hover:bg-surface-2/40 ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
                       >
-                        <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
+                        <div className="flex items-stretch">
+                          <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
 
-                          <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-semibold truncate">{stop.name}</p>
-                              <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
-                              {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
-                              {stop.promoted && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
-                            </div>
-                            {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
-                            <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                              {stop.estimatedTime && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span>}
-                              {stop.durationMin && <><span>·</span><span>{formatDuration(stop.durationMin)}</span></>}
-                              {stop.distanceFromPrevKm !== undefined && idx > 0 && <><span>·</span><span>+{stop.distanceFromPrevKm} km</span></>}
-                              {stop.location && <><span>·</span><span>{stop.location}</span></>}
-                            </p>
-                            {stop.reason && (
-                              <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
-                                <Info className="h-3 w-3 mt-0.5 shrink-0" />
-                                <span>{stop.reason}</span>
+                            <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-semibold truncate">{stop.name}</p>
+                                <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
+                                {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
+                                {stop.promoted && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
+                              </div>
+                              {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
+                              <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                                {stop.estimatedTime && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span>}
+                                {stop.durationMin && <><span>·</span><span>{formatDuration(stop.durationMin)}</span></>}
+                                {stop.distanceFromPrevKm !== undefined && idx > 0 && <><span>·</span><span>+{stop.distanceFromPrevKm} km</span></>}
+                                {stop.location && <><span>·</span><span>{stop.location}</span></>}
                               </p>
-                            )}
+                              {stop.reason && (
+                                <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
+                                  <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                                  <span>{stop.reason}</span>
+                                </p>
+                              )}
+                            </div>
+                          </Link>
+                          <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
+                            <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt opp">
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                            <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
+                              className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
-                        </Link>
-                        <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
-                          <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
-                            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt opp">
-                            <ChevronUp className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
-                            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
-                            <ChevronDown className="h-4 w-4" />
-                          </button>
-                          <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
-                            className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
                         </div>
+                        <StopPhotos
+                          stop={stop}
+                          tripId={tripId}
+                          userId={user?.id}
+                          onLightbox={setLightboxUrl}
+                        />
                       </li>
                     );
                   })}
@@ -532,6 +541,85 @@ function TripPlanner() {
         className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm text-muted-foreground hover:text-destructive hover:border-destructive">
         <Trash2 className="h-4 w-4" /> Slett tur
       </button>
+      {lightboxUrl && (
+        <div onClick={() => setLightboxUrl(null)} className="fixed inset-0 z-50 bg-background/95 backdrop-blur grid place-items-center p-4 cursor-zoom-out">
+          <img src={lightboxUrl} alt="" className="max-h-full max-w-full rounded-2xl shadow-2xl" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StopPhotos({
+  stop, tripId, userId, onLightbox,
+}: {
+  stop: import("@/lib/trips-store").Stop;
+  tripId: string;
+  userId: string | undefined;
+  onLightbox: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const photos = stop.photos ?? [];
+  const canAdd = photos.length < 5;
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!userId) { toast.error("Logg inn for å laste opp bilder"); return; }
+    if (!canAdd) { toast.error("Maks 5 bilder per stopp"); return; }
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const photoId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      const path = `${userId}/${tripId}/${stop.id}/${photoId}.${ext}`;
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.storage.from("trip-photos").upload(path, file, {
+        cacheControl: "3600", upsert: false, contentType: file.type || "image/jpeg",
+      });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from("trip-photos").getPublicUrl(path);
+      const ok = tripsApi.addStopPhoto(stop.id, { id: photoId, url: pub.publicUrl, path });
+      if (!ok) toast.error("Maks 5 bilder per stopp");
+    } catch (err) {
+      toast.error("Kunne ikke laste opp bildet");
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDelete = async (photo: { id: string; path: string }) => {
+    if (!confirm("Slette bildet?")) return;
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      await supabase.storage.from("trip-photos").remove([photo.path]);
+    } catch { /* noop */ }
+    tripsApi.removeStopPhoto(stop.id, photo.id);
+  };
+
+  return (
+    <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+      {photos.map((p) => (
+        <div key={p.id} className="relative group">
+          <button type="button" onClick={() => onLightbox(p.url)} className="block h-14 w-14 rounded-lg overflow-hidden border border-border hover:border-primary">
+            <img src={p.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); onDelete(p); }}
+            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 text-xs leading-none"
+            aria-label="Slett bilde"
+          >×</button>
+        </div>
+      ))}
+      {canAdd && (
+        <label className={`inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border bg-background/40 px-2.5 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary cursor-pointer ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+          <Camera className="h-3.5 w-3.5" />
+          {uploading ? "Laster opp…" : "Legg til bilde"}
+          <input type="file" accept="image/*" className="hidden" onChange={onPick} disabled={uploading} />
+        </label>
+      )}
     </div>
   );
 }

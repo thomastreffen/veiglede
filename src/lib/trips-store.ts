@@ -52,6 +52,15 @@ export interface Stop {
   routeStatus?: "on-route" | "detour" | "suggestion";
   distanceFromRouteKm?: number;
   extraDistanceKm?: number;
+  /** Photos uploaded by the user, stored in Supabase Storage. Max 5 per stop. */
+  photos?: StopPhoto[];
+}
+
+export interface StopPhoto {
+  id: string;
+  url: string;
+  path: string;
+  addedAt?: number;
 }
 
 export interface TripDay {
@@ -70,6 +79,10 @@ export interface Trip {
   /** Lifecycle status. New trips default to "draft" and only show up in
    *  "Mine turer" once the user explicitly saves them. */
   status?: TripStatus;
+  /** Stable token used for public read-only sharing at /shared/{shareToken}. */
+  shareToken?: string;
+  /** Whether the public share link is active. Defaults to true once a token is generated. */
+  isPublic?: boolean;
   title: string;
   subtitle?: string;
   region?: string;
@@ -612,6 +625,63 @@ export const tripsApi = {
     });
     this.updateTrip(tripId, { destination: place, destinationLoc: loc ?? trip.destinationLoc });
     return stop;
+  },
+
+  /** Generate a stable share token for a trip (idempotent). Defaults to public ON. */
+  ensureShareToken(tripId: string): string {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    if (!trip) return "";
+    if (trip.shareToken) return trip.shareToken;
+    const token =
+      (typeof crypto !== "undefined" && "randomUUID" in crypto)
+        ? crypto.randomUUID()
+        : `${uid()}${uid()}${uid()}${uid()}`;
+    state = {
+      ...state,
+      trips: state.trips.map((t) =>
+        t.id === tripId ? { ...t, shareToken: token, isPublic: t.isPublic ?? true } : t,
+      ),
+    };
+    persist();
+    return token;
+  },
+
+  setTripPublic(tripId: string, isPublic: boolean) {
+    ensureInit();
+    state = {
+      ...state,
+      trips: state.trips.map((t) => (t.id === tripId ? { ...t, isPublic } : t)),
+    };
+    persist();
+  },
+
+  /** Add a photo to a stop. Returns false if the stop already has 5 photos. */
+  addStopPhoto(stopId: string, photo: StopPhoto): boolean {
+    ensureInit();
+    const stop = state.stops.find((s) => s.id === stopId);
+    if (!stop) return false;
+    const existing = stop.photos ?? [];
+    if (existing.length >= 5) return false;
+    state = {
+      ...state,
+      stops: state.stops.map((s) =>
+        s.id === stopId ? { ...s, photos: [...existing, { ...photo, addedAt: photo.addedAt ?? Date.now() }] } : s,
+      ),
+    };
+    persist();
+    return true;
+  },
+
+  removeStopPhoto(stopId: string, photoId: string) {
+    ensureInit();
+    state = {
+      ...state,
+      stops: state.stops.map((s) =>
+        s.id === stopId ? { ...s, photos: (s.photos ?? []).filter((p) => p.id !== photoId) } : s,
+      ),
+    };
+    persist();
   },
 
 };

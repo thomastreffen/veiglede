@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -8,7 +8,7 @@ import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
   Radio, MapPin, Camera, Users, Eye, Trash2,
 } from "lucide-react";
-import type { Trip } from "@/lib/trips-store";
+import { tripsApi, type Trip } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/i18n/provider";
 import {
@@ -26,14 +26,24 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
   const t = useT();
   const { user } = useAuth();
   const [copied, setCopied] = useState<string | null>(null);
-  const [isPublic, setIsPublic] = useState(false);
   const [email, setEmail] = useState("");
   const [invites, setInvites] = useState<TripInvite[]>([]);
   const [creating, setCreating] = useState(false);
 
   const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
-  const tripLink = `${base}/shared/${trip.id}`;
-  const roadbookLink = `${base}/shared/${trip.id}?view=roadbook`;
+
+  // Generate a share token on first open so the link is always available.
+  useEffect(() => {
+    if (open && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+  }, [open, trip.id, trip.shareToken]);
+
+  const isPublic = trip.isPublic ?? false;
+  const shareToken = trip.shareToken ?? "";
+  const tripLink = useMemo(
+    () => (shareToken ? `${base}/shared/${shareToken}` : ""),
+    [base, shareToken],
+  );
+  const roadbookLink = tripLink ? `${tripLink}?view=roadbook` : "";
 
   useEffect(() => {
     if (!open || !user) return;
@@ -92,12 +102,18 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-3">
               <p className="font-semibold text-sm">{isPublic ? "Offentlig tur" : "Privat tur"}</p>
-              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+              <Switch
+                checked={isPublic}
+                onCheckedChange={(v) => {
+                  if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+                  tripsApi.setTripPublic(trip.id, v);
+                }}
+              />
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {isPublic
                 ? "Alle med lenken kan se ruta og roadbooken."
-                : "Bare personer du inviterer kan åpne lenken."}
+                : "Lenken er deaktivert — kun du kan åpne turen."}
             </p>
           </div>
         </div>
@@ -107,29 +123,35 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Delingslenke</p>
           <div className="flex items-center gap-2 rounded-xl border border-border bg-background/60 p-2 pl-3">
             <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="flex-1 min-w-0 truncate text-xs font-mono">{tripLink}</span>
+            <span className="flex-1 min-w-0 truncate text-xs font-mono">{tripLink || "Genererer lenke…"}</span>
             <button
-              onClick={() => copy("trip", tripLink)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+              onClick={() => tripLink && copy("trip", tripLink)}
+              disabled={!tripLink}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-50"
             >
-              {copied === "trip" ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier</>}
+              {copied === "trip" ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier lenke</>}
             </button>
           </div>
-          <button
-            onClick={() => copy("roadbook", roadbookLink)}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/40 px-3 py-2.5 text-sm hover:border-primary"
-          >
-            <BookOpen className="h-4 w-4 text-primary" />
-            {copied === "roadbook" ? "Roadbook-lenke kopiert" : "Del roadbook"}
-          </button>
-          <Link
-            to="/shared/$tripId"
-            params={{ tripId: trip.id }}
-            onClick={() => onOpenChange(false)}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground hover:text-primary hover:border-primary"
-          >
-            <Eye className="h-4 w-4" /> Forhåndsvis delt versjon
-          </Link>
+          {roadbookLink && (
+            <a
+              href={roadbookLink}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/40 px-3 py-2.5 text-sm hover:border-primary"
+            >
+              <BookOpen className="h-4 w-4 text-primary" /> Åpne Roadbook
+            </a>
+          )}
+          {tripLink && (
+            <a
+              href={tripLink}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground hover:text-primary hover:border-primary"
+            >
+              <Eye className="h-4 w-4" /> Forhåndsvis delt versjon
+            </a>
+          )}
         </div>
 
         {/* Invite companions (Fellestur v1) */}
