@@ -159,6 +159,9 @@ export const Route = createFileRoute("/api/public/directions")({
           if (avoid.length) orsBody.options = { avoid_features: avoid };
           warnings.push(`ors-waypoint-count-${viaCoords.length + 2}`);
           console.log("[directions] ORS request", { coordinates, radiuses });
+          console.log(
+            `[directions] final coordinates array length=${coordinates.length} values=${JSON.stringify(coordinates)}`,
+          );
           coordinates.forEach(([lng, lat], i) => {
             const label = i === 0 ? "origin" : i === coordinates.length - 1 ? "destination" : `via-${i - 1}`;
             console.log(`[directions] coord[${i}] ${label} = [lng=${lng}, lat=${lat}]`);
