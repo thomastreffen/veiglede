@@ -220,21 +220,25 @@ export async function searchPlaces(q: string, signal?: AbortSignal, options: Sea
   let failed = false;
 
   // Mapbox provider — server-proxied; no client key needed.
+  // Mapbox v5 geocoding has thin POI coverage in Norway, so if it returns
+  // nothing we transparently fall through to MapTiler before giving up.
   if (options.provider === "mapbox") {
     try {
       const results = await searchMapbox(query, sig, options);
-      clearTimeout(timeout);
-      if (results.length > 0) return { results, provider: "maptiler", failed: false };
+      if (results.length > 0) {
+        clearTimeout(timeout);
+        return { results, provider: "maptiler", failed: false };
+      }
     } catch (err) {
-      clearTimeout(timeout);
       if ((err as { name?: string })?.name === "AbortError") {
+        clearTimeout(timeout);
         return { results: [], provider: "demo", failed: true };
       }
       failed = true;
     }
-    clearTimeout(timeout);
-    return { results: searchDemoPlaces(raw), provider: "demo", failed };
+    // Fall through to MapTiler below.
   }
+
 
   if (cfg.maptilerKey) {
     try {
