@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
-  COVERS, type CoverKey, getRouteSuggestions, getPartnerTips, getPhotoMemories,
+  COVERS, type CoverKey, fetchRouteSuggestions, getPartnerTips, getPhotoMemories,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
