@@ -268,6 +268,12 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
 
         {mode === "fuel" && (
           <FormShell title="Legg til drivstoffstopp" onBack={() => setMode("menu")}>
+            {!fuelPlace && (
+              <ChipRow
+                chips={FUEL_CHIPS as unknown as string[]}
+                onPick={(brand) => { setFuelPlace(null); setFuelText(brand); }}
+              />
+            )}
             <PlaceField
               label="Søk etter bensinstasjon / ladestasjon"
               text={fuelText}
@@ -275,7 +281,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               onTextChange={setFuelText}
               onSelect={setFuelPlace}
               placeholder="F.eks. Circle K Lillehammer"
-              searchOptions={{ types: "poi", queryPrefix: "bensinstasjon OR Circle K OR Uno-X OR Esso OR Shell" }}
+              searchOptions={fuelSearchOptions}
             />
 
             {fuelPlace && (
@@ -295,6 +301,12 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
 
         {mode === "lodging" && (
           <FormShell title="Legg til overnatting" onBack={() => setMode("menu")}>
+            {!lodgingPlace && (
+              <ChipRow
+                chips={LODGING_CHIPS as unknown as string[]}
+                onPick={(brand) => { setLodgingPlace(null); setLodgingText(brand); }}
+              />
+            )}
             <PlaceField
               label="Søk etter hotell, hytte eller camping"
               text={lodgingText}
@@ -302,7 +314,9 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               onTextChange={setLodgingText}
               onSelect={setLodgingPlace}
               placeholder="F.eks. Scandic Geilo"
+              searchOptions={lodgingSearchOptions}
             />
+
             {lodgingPlace && (
               <>
                 <Field label="Dato">
