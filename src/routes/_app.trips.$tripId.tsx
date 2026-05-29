@@ -111,13 +111,11 @@ function TripPlanner() {
   const memories = getPhotoMemories(trip, tripStops);
 
 
-  const handleSelectStop = (id: string | null) => {
-    setSelectedStopId(id);
-    if (id && typeof window !== "undefined") {
-      requestAnimationFrame(() => {
-        document.getElementById(`stop-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-    }
+  // Pin click in the map should NOT scroll the page or change list selection.
+  // The popup on the pin is the only visible feedback. Selection state is left
+  // alone so the list does not re-render or steal focus.
+  const handleSelectStop = (_id: string | null) => {
+    // intentionally no-op: see MapLibreTripMap pin click handler.
   };
 
 

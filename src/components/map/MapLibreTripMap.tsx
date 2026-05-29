@@ -603,25 +603,30 @@ export function MapLibreTripMap({
           });
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-center="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
-            try { map.flyTo({ center: [m.loc.lng, m.loc.lat], zoom: Math.max(map.getZoom(), 9), duration: 600 }); } catch { /* noop */ }
+            try {
+              map.flyTo({ center: [m.loc.lng, m.loc.lat], zoom: 12, duration: 600 });
+              map.once("moveend", () => {
+                if (!popup.isOpen()) popup.addTo(map);
+              });
+            } catch { /* noop */ }
           });
         });
       };
 
       popup.on("open", wirePopupActions);
+      popup.setLngLat([m.loc.lng, m.loc.lat]);
 
       const marker = new maplibregl.Marker({ element: el }).setLngLat([m.loc.lng, m.loc.lat]).addTo(map);
-      marker.setPopup(popup);
-      // Reliable click: always select; opening is owned by MapLibre's
-      // default click handler on the marker element. Calling togglePopup
-      // here as well would re-close a freshly-opened popup, which is the
-      // "popup gets stuck" symptom users hit.
+      // Manage popup manually (do NOT use marker.setPopup) so that clicking
+      // the same pin again keeps the popup OPEN instead of toggling it closed.
+      // stopPropagation prevents the map-click handler from immediately closing
+      // the popup it just opened.
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        onSelectStop?.(m.stop.id);
+        if (!popup.isOpen()) popup.addTo(map);
       });
       if (selected && !popup.isOpen()) {
-        marker.togglePopup();
+        popup.addTo(map);
       }
       markersRef.current.push(marker);
     });
