@@ -10,7 +10,7 @@ import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { manualPlace } from "@/lib/places/geocoder";
 import { getRoute, type RouteResult } from "@/lib/routing";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
-import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips/new")({
@@ -456,13 +456,20 @@ function NewTripWizard() {
 
           <div className="mt-6 space-y-5">
             <Field label="Fra">
-              <PlaceAutocomplete
-                value={origin}
-                onTextChange={setOrigin}
-                selected={fromPlace}
-                onSelect={setFromPlace}
-                ariaLabel="Fra"
-              />
+              <div className="flex items-stretch gap-2">
+                <div className="flex-1 min-w-0">
+                  <PlaceAutocomplete
+                    value={origin}
+                    onTextChange={setOrigin}
+                    selected={fromPlace}
+                    onSelect={setFromPlace}
+                    ariaLabel="Fra"
+                  />
+                </div>
+                <UseMyLocationButton
+                  onResolved={(name, place) => { setOrigin(name); setFromPlace(place); }}
+                />
+              </div>
             </Field>
             <Field label="Til">
               <PlaceAutocomplete
@@ -716,4 +723,60 @@ function pickCover(s: RouteStyle): CoverKey {
     case "cruise": return "valley";
     default: return "forest";
   }
+}
+
+function UseMyLocationButton({ onResolved }: { onResolved: (name: string, place: ResolvedPlace | null) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async () => {
+    setError(null);
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("Posisjon ikke tilgjengelig"); return;
+    }
+    setLoading(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }),
+      );
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const { getRuntimeMapConfig } = await import("@/lib/map/runtime-config");
+      const cfg = await getRuntimeMapConfig();
+      const key = cfg.maptilerKey;
+      if (!key) { setError("Posisjon ikke tilgjengelig"); return; }
+      const url = `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${encodeURIComponent(key)}&language=nb&limit=1`;
+      const res = await fetch(url);
+      if (!res.ok) { setError("Posisjon ikke tilgjengelig"); return; }
+      const data = await res.json() as { features?: Array<{ text?: string; place_name?: string; center?: [number, number] }> };
+      const f = data.features?.[0];
+      const name = (f?.text || f?.place_name || "").trim();
+      if (!name) { setError("Posisjon ikke tilgjengelig"); return; }
+      const place: ResolvedPlace = {
+        id: `geo-${lat.toFixed(4)},${lng.toFixed(4)}`,
+        name, label: f?.place_name || name, secondary: f?.place_name, type: "city",
+        lat, lng, source: "maptiler",
+      };
+      onResolved(name, place);
+    } catch {
+      setError("Posisjon ikke tilgjengelig");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-end">
+      <button
+        type="button"
+        onClick={run}
+        disabled={loading}
+        aria-label="Bruk min posisjon"
+        title="Bruk min posisjon"
+        className="inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground hover:text-primary hover:border-primary disabled:opacity-60"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+      </button>
+      {error && <p className="mt-1 text-[11px] text-destructive">{error}</p>}
+    </div>
+  );
 }

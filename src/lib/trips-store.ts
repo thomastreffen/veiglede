@@ -63,8 +63,13 @@ export interface TripDay {
   summary?: string;
 }
 
+export type TripStatus = "draft" | "saved";
+
 export interface Trip {
   id: string;
+  /** Lifecycle status. New trips default to "draft" and only show up in
+   *  "Mine turer" once the user explicitly saves them. */
+  status?: TripStatus;
   title: string;
   subtitle?: string;
   region?: string;
@@ -309,7 +314,13 @@ export function useTripsStore() {
 export const tripsApi = {
   createTrip(input: Omit<Trip, "id" | "createdAt" | "stopsCount"> & { stopsCount?: number }): Trip {
     ensureInit();
-    const trip: Trip = { ...input, id: uid(), stopsCount: input.stopsCount ?? 0, createdAt: Date.now() };
+    const trip: Trip = {
+      status: "draft",
+      ...input,
+      id: uid(),
+      stopsCount: input.stopsCount ?? 0,
+      createdAt: Date.now(),
+    };
 
     // Trip-planner UX v2: ALWAYS create a single Day 1 (origin → destination)
     // as a route draft. The user decides whether to split into days, add
@@ -812,30 +823,36 @@ interface MapboxPoiFeature {
   name: string;
   place_name: string;
   category: string;
+  description?: string;
+  detourMin?: number;
   lng: number;
   lat: number;
 }
 
 interface PoiQuery {
-  /** Mapbox Places search terms — each becomes a separate API call. */
+  /** Search terms — each becomes a separate AI call. */
   terms: string[];
   type: StopType;
   photoOp?: boolean;
-  /** Fallback description if Mapbox returns no category. */
+  /** Fallback description if AI returns none. */
   fallbackDescription: string;
   reason: string;
   durationMin: number;
+  /** Max suggestions per term (drives prompt + post-filter cap). */
+  perTermLimit: number;
 }
 
+// Varied mix per fetch: up to ~2 viewpoints, 1–2 cafes/restaurants,
+// 1 attraction/museum, 1 fuel stop.
 const POI_QUERIES: PoiQuery[] = [
-  { terms: ["viewpoint", "scenic lookout"], type: "viewpoint", photoOp: true,
-    fallbackDescription: "Utsiktspunkt langs ruten", reason: "Utsiktspunkt langs ruten.", durationMin: 20 },
+  { terms: ["viewpoint"], type: "viewpoint", photoOp: true,
+    fallbackDescription: "Utsiktspunkt langs ruten", reason: "Utsiktspunkt langs ruten.", durationMin: 20, perTermLimit: 2 },
   { terms: ["cafe", "restaurant"], type: "food",
-    fallbackDescription: "Spisested langs ruten",     reason: "Mat- eller kaffepause langs ruten.", durationMin: 40 },
-  { terms: ["museum", "attraction"], type: "attraction",
-    fallbackDescription: "Severdighet langs ruten",   reason: "Severdighet langs ruten.", durationMin: 50 },
+    fallbackDescription: "Spisested langs ruten",     reason: "Mat- eller kaffepause langs ruten.", durationMin: 40, perTermLimit: 1 },
+  { terms: ["museum"], type: "attraction",
+    fallbackDescription: "Severdighet langs ruten",   reason: "Severdighet langs ruten.", durationMin: 50, perTermLimit: 1 },
   { terms: ["gas station"], type: "fuel",
-    fallbackDescription: "Drivstoff langs ruten",     reason: "Fyllestasjon langs ruten.", durationMin: 10 },
+    fallbackDescription: "Drivstoff langs ruten",     reason: "Fyllestasjon langs ruten.", durationMin: 10, perTermLimit: 1 },
 ];
 
 function prettyDescription(category: string, fallback: string): string {
@@ -857,23 +874,24 @@ async function searchMapboxPoiTerm(
     q: term,
     bbox: `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`,
     proximity: `${proximity.lng},${proximity.lat}`,
-    limit: "5",
+    limit: String(q.perTermLimit),
   });
   const res = await fetch(`/api/public/poi-search?${params.toString()}`, { signal });
   if (!res.ok) return [];
   const data = (await res.json()) as { features?: MapboxPoiFeature[] };
   const feats = data.features ?? [];
-  return feats.map((f, i): SuggestedStop => {
+  return feats.slice(0, q.perTermLimit).map((f, i): SuggestedStop => {
     const secondary = (f.place_name ?? "")
       .split(",").slice(1).map((s) => s.trim()).filter(Boolean).join(", ");
+    const aiDesc = (f.description ?? "").trim();
     return {
       id: `mb-${q.type}-${f.id ?? `${i}-${f.lng.toFixed(3)}-${f.lat.toFixed(3)}`}`,
       name: f.name,
       type: q.type,
       location: secondary || undefined,
-      description: prettyDescription(f.category, q.fallbackDescription),
+      description: aiDesc || prettyDescription(f.category, q.fallbackDescription),
       reason: q.reason,
-      durationMin: q.durationMin,
+      durationMin: typeof f.detourMin === "number" ? f.detourMin : q.durationMin,
       photoOp: q.photoOp,
       badge: "local",
       lat: f.lat,

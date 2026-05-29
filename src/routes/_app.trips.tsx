@@ -12,7 +12,9 @@ export const Route = createFileRoute("/_app/trips")({
 
 function TripsDashboard() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const { trips } = useTripsStore();
+  const { trips: allTrips } = useTripsStore();
+  // Drafts only appear in "Mine turer" after the user explicitly saves them.
+  const trips = allTrips.filter((t) => t.status !== "draft");
 
   if (pathname !== "/trips") {
     return <Outlet />;
