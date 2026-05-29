@@ -129,9 +129,16 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
   const s = styleMeta(t.style);
   const tracking = useTripTracking(t.id);
   const tm = statusMeta(tracking.status);
+  const [confirming, setConfirming] = useState(false);
+
+  const stop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <li>
-      <Link to="/trips/$tripId" params={{ tripId: t.id }} className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
+      <Link to="/trips/$tripId" params={{ tripId: t.id }} className="group relative block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
         <div className={`relative h-36 bg-gradient-to-br ${COVERS[t.cover as CoverKey]}`}>
           <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
           <svg className="absolute inset-0 h-full w-full opacity-50" viewBox="0 0 200 80" preserveAspectRatio="none">
@@ -160,6 +167,42 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
             {t.startDate && <span>{formatDate(t.startDate)}</span>}
           </div>
         </div>
+
+        {!confirming && (
+          <button
+            type="button"
+            aria-label="Slett tur"
+            onClick={(e) => { stop(e); setConfirming(true); }}
+            className="absolute top-3 right-12 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur border border-border text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:border-destructive transition-opacity"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+
+        {confirming && (
+          <div
+            onClick={stop}
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/90 backdrop-blur-sm p-4 text-center"
+          >
+            <p className="font-display text-lg uppercase">Slett denne turen?</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={(e) => { stop(e); tripsApi.deleteTrip(t.id); }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-destructive px-4 py-2 text-xs font-bold uppercase tracking-wider text-destructive-foreground hover:brightness-110"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Slett
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { stop(e); setConfirming(false); }}
+                className="inline-flex items-center rounded-xl border border-border bg-surface-2 px-4 py-2 text-xs font-bold uppercase tracking-wider hover:border-primary"
+              >
+                Avbryt
+              </button>
+            </div>
+          </div>
+        )}
       </Link>
     </li>
   );
