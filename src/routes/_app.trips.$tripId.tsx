@@ -116,7 +116,7 @@ function TripPlanner() {
   const vehicleDisplay = trip.vehicleName ?? v.label;
   const totalStops = tripStops.length;
   const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
-  const partnerTips = getPartnerTips(trip);
+  const partnerTips = getPartnerTips(trip, routePoints);
   const memories = getPhotoMemories(trip, tripStops);
 
 
