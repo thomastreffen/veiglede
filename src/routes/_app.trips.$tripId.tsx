@@ -153,9 +153,29 @@ function TripPlanner() {
         ]}
       />
 
-      <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Mine turer
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Mine turer
+        </Link>
+        {trip.status === "draft" ? (
+          <button
+            type="button"
+            onClick={() => { tripsApi.updateTrip(trip.id, { status: "saved" }); toast.success("Tur lagret i Mine turer"); }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20"
+          >
+            <Check className="h-3.5 w-3.5" /> Lagre tur
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+            <Check className="h-3 w-3 text-primary" /> Lagret
+          </span>
+        )}
+      </div>
+      {trip.status === "draft" && (
+        <div className="mt-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3.5 py-2.5 text-xs text-foreground/80">
+          Dette er en kladd — lagre når du er klar. Den vises ikke i «Mine turer» før du trykker «Lagre tur».
+        </div>
+      )}
 
       {/* Hero cover */}
       <section className={`mt-4 relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${COVERS[trip.cover as CoverKey]} p-5 md:p-8`}>
