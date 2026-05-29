@@ -32,12 +32,19 @@ interface Body {
   avoidFerries?: boolean;
 }
 
+function isFiniteNum(n: unknown): n is number {
+  return typeof n === "number" && Number.isFinite(n) && n !== 0;
+}
+
 function isLatLng(v: unknown): v is LatLng {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
+  // Reject null/undefined/NaN/0 — a 0 lat/lng usually means missing data
+  // (Null Island), not a real waypoint. ORS requires real coordinates.
+  if (!isFiniteNum(o.lat) || !isFiniteNum(o.lng)) return false;
   return (
-    typeof o.lat === "number" && typeof o.lng === "number" &&
-    o.lat >= -90 && o.lat <= 90 && o.lng >= -180 && o.lng <= 180
+    (o.lat as number) >= -90 && (o.lat as number) <= 90 &&
+    (o.lng as number) >= -180 && (o.lng as number) <= 180
   );
 }
 
@@ -104,18 +111,26 @@ export const Route = createFileRoute("/api/public/directions")({
           if (body.avoidHighways) avoid.push("highways");
           if (body.avoidFerries) avoid.push("ferries");
 
-          const viaCoords = Array.isArray(body.waypoints)
-            ? body.waypoints.filter(isLatLng).map((w) => [w.lng, w.lat] as [number, number])
-            : [];
+          const rawVia = Array.isArray(body.waypoints) ? body.waypoints : [];
+          const viaCoords: [number, number][] = [];
+          rawVia.forEach((w, i) => {
+            if (isLatLng(w)) {
+              // ORS expects [lng, lat] — NOT [lat, lng].
+              viaCoords.push([w.lng, w.lat]);
+            } else {
+              console.warn("[directions] skipping invalid waypoint", { index: i, value: w });
+              warnings.push(`ors-skip-waypoint-${i}`);
+            }
+          });
 
           const coordinates: [number, number][] = [
+            // ORS expects [lng, lat] pairs for every point.
             [body.origin.lng, body.origin.lat],
             ...viaCoords,
             [body.destination.lng, body.destination.lat],
           ];
           const radiuses = coordinates.map(() => -1);
           const orsBody: Record<string, unknown> = {
-            // ORS expects [lng, lat] pairs.
             coordinates,
             // Snap each coordinate to the nearest routable road, no matter
             // how far. Without this, hand-picked viewpoint coordinates
@@ -129,6 +144,10 @@ export const Route = createFileRoute("/api/public/directions")({
           if (avoid.length) orsBody.options = { avoid_features: avoid };
           warnings.push(`ors-waypoint-count-${viaCoords.length + 2}`);
           console.log("[directions] ORS request", { coordinates, radiuses });
+          coordinates.forEach(([lng, lat], i) => {
+            const label = i === 0 ? "origin" : i === coordinates.length - 1 ? "destination" : `via-${i - 1}`;
+            console.log(`[directions] coord[${i}] ${label} = [lng=${lng}, lat=${lat}]`);
+          });
 
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 6000);

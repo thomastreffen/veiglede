@@ -248,9 +248,22 @@ export function MapLibreTripMap({
   useEffect(() => {
     // Only stops with real (non-approximated) coordinates participate in
     // routing. "detour"-typed stops are excluded — they're spurs, not via.
+    const isValidLoc = (l: LatLng | undefined | null): l is LatLng =>
+      !!l &&
+      typeof l.lat === "number" && typeof l.lng === "number" &&
+      Number.isFinite(l.lat) && Number.isFinite(l.lng) &&
+      l.lat !== 0 && l.lng !== 0;
     const stopWps = projected.mapped
       .filter((m) => !m.approximated)
       .filter((m) => (m.stop.routeStatus ?? "on-route") !== "detour")
+      .filter((m) => {
+        if (!isValidLoc(m.loc)) {
+          // eslint-disable-next-line no-console
+          console.warn("[veiglede] skipping waypoint with invalid coords", { name: m.stop.name, loc: m.loc });
+          return false;
+        }
+        return true;
+      })
       .filter((m) => distanceKm(m.loc, projected.origin) > 1 && distanceKm(m.loc, projected.destination) > 1)
       .map((m) => ({ loc: m.loc, name: m.stop.name }));
     const wps: LatLng[] = [projected.origin, ...stopWps.map((s) => s.loc), projected.destination];
