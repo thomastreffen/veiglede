@@ -84,7 +84,10 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto bg-surface border-border max-sm:max-w-none max-sm:w-screen max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:rounded-none max-sm:border-0 max-sm:p-4 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:left-0 max-sm:top-0 max-sm:gap-3">
+      <DialogContent
+        className="max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-x-hidden bg-surface border-border max-sm:p-4 max-sm:gap-3 [&>*]:max-w-full"
+        style={{ maxWidth: "min(32rem, 100vw)" }}
+      >
         
         <DialogHeader>
           <DialogTitle className="font-display text-2xl uppercase tracking-wide">
@@ -125,7 +128,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           <div className="rounded-xl border border-border bg-background/60 p-2 pl-3 flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="flex-1 min-w-0 truncate text-xs font-mono">{tripLink || "Genererer lenke…"}</span>
+              <span className="flex-1 min-w-0 text-xs font-mono break-all">{tripLink || "Genererer lenke…"}</span>
             </div>
             <button
               onClick={() => tripLink && copy("trip", tripLink)}

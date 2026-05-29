@@ -617,20 +617,38 @@ function StopPhotos({
           ))}
         </div>
       )}
-      {canAdd && (
-        <label className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background/40 px-4 py-3 text-sm font-semibold text-muted-foreground hover:border-primary hover:text-primary cursor-pointer min-h-[44px] ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
-          <Camera className="h-4 w-4" />
-          <span>📷 {uploading ? "Laster opp…" : `Legg til bilde${photos.length > 0 ? ` (${photos.length}/5)` : ""}`}</span>
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={onPick}
-            disabled={uploading}
-          />
-        </label>
-      )}
+      <label
+        style={{
+          display: "flex",
+          width: "100%",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          padding: "10px 12px",
+          marginTop: "4px",
+          border: "1px dashed rgba(148,163,184,0.35)",
+          borderRadius: "10px",
+          color: "#9ca3af",
+          fontSize: "13px",
+          fontWeight: 600,
+          cursor: canAdd ? "pointer" : "not-allowed",
+          opacity: uploading ? 0.6 : 1,
+          pointerEvents: uploading ? "none" : "auto",
+        }}
+      >
+        <Camera className="h-4 w-4" />
+        <span>
+          📷 {uploading ? "Laster opp…" : canAdd ? `Legg til bilde${photos.length > 0 ? ` (${photos.length}/5)` : ""}` : "Maks 5 bilder"}
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: "none" }}
+          onChange={onPick}
+          disabled={uploading || !canAdd}
+        />
+      </label>
     </div>
   );
 }
