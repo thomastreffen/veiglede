@@ -116,6 +116,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
                 onCheckedChange={(v) => {
                   if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
                   tripsApi.setTripPublic(trip.id, v);
+                  void flushTripsNow();
                 }}
               />
             </div>
