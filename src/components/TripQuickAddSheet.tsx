@@ -253,7 +253,9 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               onTextChange={setFuelText}
               onSelect={setFuelPlace}
               placeholder="F.eks. Circle K Lillehammer"
+              searchOptions={{ types: "poi", queryPrefix: "bensinstasjon OR Circle K OR Uno-X OR Esso OR Shell" }}
             />
+
             {fuelPlace && (
               <Field label="Estimert pris per liter (valgfritt)">
                 <input
