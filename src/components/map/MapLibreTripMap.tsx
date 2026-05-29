@@ -276,8 +276,10 @@ export function MapLibreTripMap({
         return true;
       })
       .filter((m) => distanceKm(m.loc, projected.origin) > 1 && distanceKm(m.loc, projected.destination) > 1)
-      .map((m) => ({ loc: m.loc, name: m.stop.name }));
-    const wps: LatLng[] = [projected.origin, ...stopWps.map((s) => s.loc), projected.destination];
+      .map((m) => ({ loc: { lat: Number(m.loc.lat), lng: Number(m.loc.lng) }, name: m.stop.name }));
+    const numOrigin: LatLng = { lat: Number(projected.origin.lat), lng: Number(projected.origin.lng) };
+    const numDest: LatLng = { lat: Number(projected.destination.lat), lng: Number(projected.destination.lng) };
+    const wps: LatLng[] = [numOrigin, ...stopWps.map((s) => s.loc), numDest];
     const hash = waypointHash(wps);
     if (hash === lastHashRef.current) return;
     lastHashRef.current = hash;
@@ -295,7 +297,7 @@ export function MapLibreTripMap({
       ts: new Date().toISOString(),
       waypointCount: wps.length,
       waypointNames: ["origin", ...stopWps.map((s) => s.name), "destination"],
-      waypointCoords: wps.map((w) => [w.lng.toFixed(4), w.lat.toFixed(4)]),
+      waypointCoords: wps.map((w) => [Number(w.lng), Number(w.lat)]),
     };
     // eslint-disable-next-line no-console
     console.info("[veiglede] route recalc →", debug);
@@ -310,8 +312,8 @@ export function MapLibreTripMap({
     // legacy client-side key is present (single-segment only).
     const routeP = wps.length > 2
       ? getRoute({
-          origin: projected.origin,
-          destination: projected.destination,
+          origin: numOrigin,
+          destination: numDest,
           waypoints: stopWps.map((s) => s.loc),
           routeStyle: trip.style === "fastest" ? "fastest" : "scenic",
         }).then((r) => (r && r.geometry.length > 1 ? r : null))
