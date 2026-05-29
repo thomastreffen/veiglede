@@ -69,16 +69,25 @@ function TripPlanner() {
   const mergedInterests = trip
     ? Array.from(new Set([...(getVehicleById(trip.vehicleId)?.stopInterests ?? []), ...prefs.stopInterests]))
     : [];
-  const suggestions = trip ? getRouteSuggestions(trip, mergedInterests) : [];
+  const [suggestions, setSuggestions] = useState<SuggestedStop[]>([]);
+  useEffect(() => {
+    if (!trip) { setSuggestions([]); return; }
+    const ctrl = new AbortController();
+    fetchRouteSuggestions(trip, mergedInterests, ctrl.signal)
+      .then((s) => setSuggestions(s))
+      .catch(() => setSuggestions([]));
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id, trip?.routeGeometry, mergedInterests.join(",")]);
   const enrichedSuggestions = useMemo(
-    () => suggestions.map((sug) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
+    () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
   );
   const suggestionPins = useMemo(
     () =>
       enrichedSuggestions
-        .filter((e) => e.info.loc)
-        .map((e) => ({
+        .filter((e: { info: { loc?: { lat: number; lng: number } } }) => e.info.loc)
+        .map((e: { sug: SuggestedStop; info: { loc?: { lat: number; lng: number } } }) => ({
           id: e.sug.id,
           name: e.sug.name,
           loc: e.info.loc!,
