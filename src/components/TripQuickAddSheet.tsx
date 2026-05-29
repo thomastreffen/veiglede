@@ -3,6 +3,7 @@ import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft } from "lucid
 import { toast } from "sonner";
 import { tripsApi } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
+import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 
 interface Props {
   tripId: string;
