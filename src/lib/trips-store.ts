@@ -817,8 +817,8 @@ interface MapboxPoiFeature {
 }
 
 interface PoiQuery {
-  /** Mapbox POI category keywords, comma-separated. */
-  query: string;
+  /** Mapbox Places search terms — each becomes a separate API call. */
+  terms: string[];
   type: StopType;
   photoOp?: boolean;
   /** Fallback description if Mapbox returns no category. */
@@ -828,36 +828,36 @@ interface PoiQuery {
 }
 
 const POI_QUERIES: PoiQuery[] = [
-  { query: "scenic lookout,viewpoint,peak", type: "viewpoint", photoOp: true,
+  { terms: ["viewpoint", "scenic lookout"], type: "viewpoint", photoOp: true,
     fallbackDescription: "Utsiktspunkt langs ruten", reason: "Utsiktspunkt langs ruten.", durationMin: 20 },
-  { query: "cafe,restaurant,food",          type: "food",
+  { terms: ["cafe", "restaurant"], type: "food",
     fallbackDescription: "Spisested langs ruten",     reason: "Mat- eller kaffepause langs ruten.", durationMin: 40 },
-  { query: "museum,attraction,historic",    type: "attraction",
+  { terms: ["museum", "attraction"], type: "attraction",
     fallbackDescription: "Severdighet langs ruten",   reason: "Severdighet langs ruten.", durationMin: 50 },
-  { query: "fuel,gas_station",              type: "fuel",
+  { terms: ["gas station"], type: "fuel",
     fallbackDescription: "Drivstoff langs ruten",     reason: "Fyllestasjon langs ruten.", durationMin: 10 },
 ];
 
 function prettyDescription(category: string, fallback: string): string {
   const cat = category.trim();
   if (!cat) return fallback;
-  // Take first token (Mapbox returns comma-separated categories) and capitalize.
   const first = cat.split(",")[0]!.trim();
   if (!first) return fallback;
   return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
-async function searchMapboxPoi(
+async function searchMapboxPoiTerm(
+  term: string,
   q: PoiQuery,
   bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number },
   proximity: LatLng,
   signal: AbortSignal,
 ): Promise<SuggestedStop[]> {
   const params = new URLSearchParams({
-    q: q.query,
+    q: term,
     bbox: `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`,
     proximity: `${proximity.lng},${proximity.lat}`,
-    limit: "3",
+    limit: "5",
   });
   const res = await fetch(`/api/public/poi-search?${params.toString()}`, { signal });
   if (!res.ok) return [];
@@ -880,6 +880,18 @@ async function searchMapboxPoi(
       lng: f.lng,
     };
   });
+}
+
+async function searchMapboxPoi(
+  q: PoiQuery,
+  bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number },
+  proximity: LatLng,
+  signal: AbortSignal,
+): Promise<SuggestedStop[]> {
+  const lists = await Promise.all(
+    q.terms.map((t) => searchMapboxPoiTerm(t, q, bbox, proximity, signal).catch(() => [])),
+  );
+  return lists.flat();
 }
 
 /**
