@@ -297,7 +297,7 @@ export function MapLibreTripMap({
       ts: new Date().toISOString(),
       waypointCount: wps.length,
       waypointNames: ["origin", ...stopWps.map((s) => s.name), "destination"],
-      waypointCoords: wps.map((w) => [w.lng.toFixed(4), w.lat.toFixed(4)]),
+      waypointCoords: wps.map((w) => [Number(w.lng), Number(w.lat)]),
     };
     // eslint-disable-next-line no-console
     console.info("[veiglede] route recalc →", debug);
