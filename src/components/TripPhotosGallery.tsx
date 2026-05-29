@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 
 interface PhotoRow {
   id: string;
