@@ -113,8 +113,10 @@ export const Route = createFileRoute("/api/public/directions")({
 
           const originPair: [number, number] = [body.origin.lng, body.origin.lat];
           const destPair: [number, number] = [body.destination.lng, body.destination.lat];
-          const sameCoord = (a: [number, number], b: [number, number]) =>
+          const exactSame = (a: [number, number], b: [number, number]) =>
             Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+          const nearKm = (a: [number, number], b: [number, number]) =>
+            distKm({ lng: a[0], lat: a[1] }, { lng: b[0], lat: b[1] });
 
           const rawVia = Array.isArray(body.waypoints) ? body.waypoints : [];
           const viaCoords: [number, number][] = [];
@@ -125,17 +127,18 @@ export const Route = createFileRoute("/api/public/directions")({
               return;
             }
             const pair: [number, number] = [w.lng, w.lat];
-            // Dedupe — ORS rejects requests where origin/destination are
-            // duplicated as intermediate via-points.
-            if (sameCoord(pair, originPair)) {
+            // Drop anything that is effectively the origin or destination
+            // (exact match OR within 1km — covers auto-generated arrival/
+            // departure stops whose coords resolve to the same town).
+            if (exactSame(pair, originPair) || nearKm(pair, originPair) < 1) {
               warnings.push(`ors-dedupe-origin-waypoint-${i}`);
               return;
             }
-            if (sameCoord(pair, destPair)) {
+            if (exactSame(pair, destPair) || nearKm(pair, destPair) < 1) {
               warnings.push(`ors-dedupe-destination-waypoint-${i}`);
               return;
             }
-            if (viaCoords.some((existing) => sameCoord(existing, pair))) {
+            if (viaCoords.some((existing) => exactSame(existing, pair))) {
               warnings.push(`ors-dedupe-waypoint-${i}`);
               return;
             }
@@ -147,25 +150,13 @@ export const Route = createFileRoute("/api/public/directions")({
           const radiuses = coordinates.map(() => -1);
           const orsBody: Record<string, unknown> = {
             coordinates,
-            // Snap each coordinate to the nearest routable road, no matter
-            // how far. Without this, hand-picked viewpoint coordinates
-            // (e.g. "MC-svingene over Gaularfjellet") fail with HTTP 404
-            // "Could not find routable point within 350m" and the whole
-            // request falls back to the straight-line demo geometry.
             radiuses,
             instructions: false,
             extra_info: ["waytype"],
           };
           if (avoid.length) orsBody.options = { avoid_features: avoid };
           warnings.push(`ors-waypoint-count-${viaCoords.length + 2}`);
-          console.log("[directions] ORS request", { coordinates, radiuses });
-          console.log(
-            `[directions] final coordinates array length=${coordinates.length} values=${JSON.stringify(coordinates)}`,
-          );
-          coordinates.forEach(([lng, lat], i) => {
-            const label = i === 0 ? "origin" : i === coordinates.length - 1 ? "destination" : `via-${i - 1}`;
-            console.log(`[directions] coord[${i}] ${label} = [lng=${lng}, lat=${lat}]`);
-          });
+          console.log(`[directions] ORS coordinates: ${coordinates.length} points`, coordinates);
 
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 6000);

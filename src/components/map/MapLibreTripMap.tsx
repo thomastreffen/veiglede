@@ -253,9 +253,20 @@ export function MapLibreTripMap({
       typeof l.lat === "number" && typeof l.lng === "number" &&
       Number.isFinite(l.lat) && Number.isFinite(l.lng) &&
       l.lat !== 0 && l.lng !== 0;
+    const isAutoEndpoint = (name: string) => {
+      const n = (name ?? "").toLowerCase();
+      return n.includes("ankomst") || n.includes("avgang");
+    };
     const stopWps = projected.mapped
       .filter((m) => !m.approximated)
       .filter((m) => (m.stop.routeStatus ?? "on-route") !== "detour")
+      .filter((m) => {
+        const s = m.stop as { placement?: string; type?: string; name: string };
+        if (s.placement === "origin" || s.placement === "destination") return false;
+        if (s.type === "origin" || s.type === "destination") return false;
+        if (isAutoEndpoint(s.name)) return false;
+        return true;
+      })
       .filter((m) => {
         if (!isValidLoc(m.loc)) {
           // eslint-disable-next-line no-console
