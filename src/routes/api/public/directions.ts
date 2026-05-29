@@ -111,8 +111,8 @@ export const Route = createFileRoute("/api/public/directions")({
           if (body.avoidHighways) avoid.push("highways");
           if (body.avoidFerries) avoid.push("ferries");
 
-          const originPair: [number, number] = [body.origin.lng, body.origin.lat];
-          const destPair: [number, number] = [body.destination.lng, body.destination.lat];
+          const originPair: [number, number] = [Number(body.origin.lng), Number(body.origin.lat)];
+          const destPair: [number, number] = [Number(body.destination.lng), Number(body.destination.lat)];
           const exactSame = (a: [number, number], b: [number, number]) =>
             Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
           const nearKm = (a: [number, number], b: [number, number]) =>
