@@ -881,7 +881,7 @@ async function searchMapTilerPoi(
  */
 export async function fetchRouteSuggestions(
   trip: Trip,
-  _interests?: StopType[],
+  interests?: StopType[],
   signal?: AbortSignal,
 ): Promise<SuggestedStop[]> {
   const geom = trip.routeGeometry && trip.routeGeometry.length > 1 ? trip.routeGeometry : null;
@@ -893,22 +893,36 @@ export async function fetchRouteSuggestions(
   const cfg = await getRuntimeMapConfig();
   if (!cfg.maptilerKey) return [];
 
+  // Honor "Hva vil du se langs ruta" preferences.
+  // - If interests are set, drop categories the user did not pick.
+  // - Fuel is special: if user did NOT pick fuel, only fetch it on long routes.
+  const interestSet = new Set(interests ?? []);
+  const wantsFuel = interestSet.has("fuel") || interestSet.size === 0;
+  const FUEL_LONG_ROUTE_KM = 300;
+  const queries = POI_QUERIES.filter((q) => {
+    if (q.type === "fuel") {
+      if (wantsFuel) return true;
+      return midLen.lengthKm >= FUEL_LONG_ROUTE_KM;
+    }
+    if (interestSet.size === 0) return true;
+    return interestSet.has(q.type);
+  });
+  if (queries.length === 0) return [];
+
   const ctrl = signal ? undefined : new AbortController();
   const sig = signal ?? ctrl!.signal;
   const timeout = setTimeout(() => ctrl?.abort(), 6000);
 
   try {
     const results = await Promise.all(
-      POI_QUERIES.map((q) =>
+      queries.map((q) =>
         searchMapTilerPoi(q, cfg.maptilerKey!, bbox, midLen.mid, sig).catch(() => [] as SuggestedStop[]),
       ),
     );
     const all = results.flat();
-    // Bbox enforcement (defensive — MapTiler may relax bbox for low-result queries)
     const inBox = all.filter((s) =>
       typeof s.lat === "number" && typeof s.lng === "number" && isInsideBBox({ lat: s.lat, lng: s.lng }, bbox),
     );
-    // De-duplicate by name + ~coordinate.
     const seen = new Set<string>();
     const unique: SuggestedStop[] = [];
     for (const s of inBox) {
@@ -917,13 +931,14 @@ export async function fetchRouteSuggestions(
       seen.add(key);
       unique.push(s);
     }
-    // Sort by distance from the actual route line, take top 8.
-    const sorted = unique
-      .map((s) => ({ s, d: distanceToRoute({ lat: s.lat!, lng: s.lng! }, geom) }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 8)
-      .map(({ s }) => s);
-    return sorted;
+    // Score: distance from route + interest priority boost.
+    const scored = unique.map((s) => {
+      const d = distanceToRoute({ lat: s.lat!, lng: s.lng! }, geom);
+      const priority = interestSet.has(s.type) ? -50 : 0; // pull preferred categories up
+      const photoBoost = interestSet.has("photo") && s.photoOp ? -10 : 0;
+      return { s, score: d + priority + photoBoost };
+    }).sort((a, b) => a.score - b.score);
+    return scored.slice(0, 8).map(({ s }) => s);
   } finally {
     clearTimeout(timeout);
   }
