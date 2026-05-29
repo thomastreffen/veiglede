@@ -60,44 +60,13 @@ export function TripPhotosGallery({ tripId }: { tripId: string }) {
   }, [tripId]);
 
   const handlePhotoUpload = async (file: File) => {
-    console.log("1. Starting upload", file.name, file.size);
     if (!user) { toast.error("Logg inn for å laste opp bilder"); return; }
-
     try {
-      // Storage RLS requires first folder = auth.uid(); keep that prefix.
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `${user.id}/${tripId}/${Date.now()}_${safeName}`;
-      console.log("2. Uploading to path:", path);
-
-      const { data, error } = await supabase.storage
-        .from("trip-photos")
-        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
-
-      if (error) {
-        console.error("3. Storage error:", error.message);
+      const res = await uploadTripPhoto({ file, tripId, userId: user.id });
+      if (!res) {
         toast.error("Kunne ikke laste opp bilde — prøv igjen");
         return;
       }
-
-      console.log("4. Upload success:", data.path);
-
-      const { data: urlData } = supabase.storage
-        .from("trip-photos")
-        .getPublicUrl(data.path);
-
-      console.log("5. Public URL:", urlData.publicUrl);
-
-      const { error: dbError } = await supabase
-        .from("trip_photos")
-        .insert({ trip_id: tripId, user_id: user.id, url: urlData.publicUrl, path: data.path });
-
-      if (dbError) {
-        console.error("6. DB error:", dbError.message);
-        toast.error("Kunne ikke laste opp bilde — prøv igjen");
-        return;
-      }
-
-      console.log("7. Saved to DB - refreshing photos");
       await fetchPhotos();
     } catch (e) {
       console.error("Unexpected error:", e);
