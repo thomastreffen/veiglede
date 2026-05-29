@@ -47,12 +47,12 @@ export const Route = createFileRoute("/api/public/mapbox-geocode")({
 
         const params = new URLSearchParams({
           access_token: token,
-          types,
           limit: String(limit),
           language,
           country,
           bbox,
         });
+        if (types) params.set("types", types);
         if (proximity) params.set("proximity", proximity);
         const apiUrl =
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?${params.toString()}`;
