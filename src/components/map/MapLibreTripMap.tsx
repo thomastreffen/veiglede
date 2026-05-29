@@ -483,6 +483,39 @@ export function MapLibreTripMap({
 
   useEffect(() => { addRouteAndFit(); }, [addRouteAndFit]);
 
+  // Explicit re-render on new route result. When ORS returns updated
+  // geometry after a waypoint change, push it onto the existing source
+  // via setData and refit the camera to the new path.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    if (!routeGeom || routeGeom.length < 2) return;
+    const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
+    if (!src) return; // initial add handled by addRouteAndFit
+    const coords: [number, number][] = routeGeom.map((p) => [p.lng, p.lat]);
+    const data: GeoJSON.Feature<GeoJSON.LineString> = {
+      type: "Feature",
+      properties: {},
+      geometry: { type: "LineString", coordinates: coords },
+    };
+    try {
+      src.setData(data);
+      let minLng = coords[0][0], maxLng = coords[0][0];
+      let minLat = coords[0][1], maxLat = coords[0][1];
+      for (const [lng, lat] of coords) {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      }
+      map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
+      // eslint-disable-next-line no-console
+      console.info("[veiglede] map route updated →", { pts: routeGeom.length });
+    } catch (err) {
+      lastErrorRef.current = `route-update: ${(err as Error)?.message ?? "unknown"}`;
+    }
+  }, [routeGeom, ready]);
+
   // After style swap, sources/layers are dropped — re-add.
   useEffect(() => {
     const map = mapRef.current;
@@ -493,6 +526,7 @@ export function MapLibreTripMap({
     map.on("styledata", handler);
     return () => { map.off("styledata", handler); };
   }, [addRouteAndFit]);
+
 
   // Markers (origin, destination, stops, suggestions).
   useEffect(() => {
