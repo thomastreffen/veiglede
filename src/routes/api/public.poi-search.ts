@@ -194,11 +194,18 @@ export const Route = createFileRoute("/api/public/poi-search")({
               // Clamp to requested bbox so suggestions stay near the route.
               if (lat < minLat || lat > maxLat || lng < minLng || lng > maxLng) return null;
               const loc = (s.location ?? "").trim();
+              const desc = (s.description ?? "").trim();
+              const detourRaw = Number(s.detourMin);
+              const detourMin = Number.isFinite(detourRaw)
+                ? Math.max(5, Math.min(45, Math.round(detourRaw)))
+                : undefined;
               return {
                 id: `ai-${q}-${i}-${lng.toFixed(3)}-${lat.toFixed(3)}`,
                 name: s.name.trim(),
                 place_name: loc ? `${s.name.trim()}, ${loc}` : s.name.trim(),
                 category: (s.type ?? q).trim(),
+                description: desc || undefined,
+                detourMin,
                 lng,
                 lat,
               };
