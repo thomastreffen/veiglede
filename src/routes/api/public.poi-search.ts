@@ -61,21 +61,38 @@ export const Route = createFileRoute("/api/public/poi-search")({
         const minLng = Number(minLngS), minLat = Number(minLatS);
         const maxLng = Number(maxLngS), maxLat = Number(maxLatS);
 
-        const prompt =
-          `Foreslå inntil ${limit} realistiske, faktiske stoppesteder i Norge ` +
-          `i kategorien "${q}" innenfor dette geografiske området ` +
-          `(lat ${minLat.toFixed(3)}–${maxLat.toFixed(3)}, lng ${minLng.toFixed(3)}–${maxLng.toFixed(3)})` +
-          (proximity ? `, nær punktet ${proximity} (lng,lat)` : "") +
-          `.\n\nReturner KUN gyldig JSON via verktøyet suggest_stops.\n` +
-          `Krav til hvert stopp:\n` +
-          `- Kun ekte, kjente steder som faktisk finnes. Koordinatene må ligge innenfor området.\n` +
-          `- "description" skal være ÉN konkret setning på norsk som forklarer hvorfor stedet er verdt et stopp. ` +
-          `Eksempel: "Panoramautsikt over Kragerø-skjærgården — populært fotostopp langs E18". ` +
-          `Ikke bare gjenta kategorinavnet ("Viewpoint", "Cafe").\n` +
-          `- "detourMin" er realistisk omveistid t/r fra hovedruten i minutter (5–45). ` +
-          `Stopp som ligger rett ved veien skal ha 5–10. Lengre avstikker 20–45.\n` +
-          `- "location" er nærmeste tettsted/kommune i Norge.\n` +
-          `- Variér stedene; ikke gjenta navn.`;
+        const qLower = q.toLowerCase();
+        const isCharging = /charging|ev charging|hurtiglader|lader|ladestasjon|elbil/.test(qLower);
+
+        const prompt = isCharging
+          ? `Foreslå 1–2 reelle hurtigladestasjoner for elbil i Norge ` +
+            `innenfor området (lat ${minLat.toFixed(3)}–${maxLat.toFixed(3)}, lng ${minLng.toFixed(3)}–${maxLng.toFixed(3)})` +
+            (proximity ? `, nær punktet ${proximity} (lng,lat)` : "") +
+            `.\n\nReturner KUN gyldig JSON via verktøyet suggest_stops.\n` +
+            `Krav til hvert stopp:\n` +
+            `- Bruk ekte norske hurtigladeoperatører: Recharge, Mer, Tesla Supercharger, Ionity, Circle K Charge, Eviny.\n` +
+            `- "name" skal være operatør + sted (eks: "Recharge Dombås", "Ionity Lillehammer", "Tesla Supercharger Lier").\n` +
+            `- "type" skal være "charging".\n` +
+            `- Kun reelle, kjente ladestasjoner som faktisk finnes på lokasjonen. Koordinatene må ligge innenfor området.\n` +
+            `- "description" skal være ÉN konkret setning på norsk om laderen (antall ladere, effekt i kW, fasiliteter). ` +
+            `Eksempel: "12× 300 kW lynladere ved E6, kafé og toaletter".\n` +
+            `- "detourMin" = realistisk ladetid i minutter (20–45). 20 = rask topp-opp, 45 = full ladning.\n` +
+            `- "location" = nærmeste tettsted/kommune.\n` +
+            `- Variér operatører hvis du foreslår flere.`
+          : `Foreslå inntil ${limit} realistiske, faktiske stoppesteder i Norge ` +
+            `i kategorien "${q}" innenfor dette geografiske området ` +
+            `(lat ${minLat.toFixed(3)}–${maxLat.toFixed(3)}, lng ${minLng.toFixed(3)}–${maxLng.toFixed(3)})` +
+            (proximity ? `, nær punktet ${proximity} (lng,lat)` : "") +
+            `.\n\nReturner KUN gyldig JSON via verktøyet suggest_stops.\n` +
+            `Krav til hvert stopp:\n` +
+            `- Kun ekte, kjente steder som faktisk finnes. Koordinatene må ligge innenfor området.\n` +
+            `- "description" skal være ÉN konkret setning på norsk som forklarer hvorfor stedet er verdt et stopp. ` +
+            `Eksempel: "Panoramautsikt over Kragerø-skjærgården — populært fotostopp langs E18". ` +
+            `Ikke bare gjenta kategorinavnet ("Viewpoint", "Cafe").\n` +
+            `- "detourMin" er realistisk omveistid t/r fra hovedruten i minutter (5–45). ` +
+            `Stopp som ligger rett ved veien skal ha 5–10. Lengre avstikker 20–45.\n` +
+            `- "location" er nærmeste tettsted/kommune i Norge.\n` +
+            `- Variér stedene; ikke gjenta navn.`;
 
         const body = {
           model: "google/gemini-3-flash-preview",
@@ -104,7 +121,7 @@ export const Route = createFileRoute("/api/public/poi-search")({
                           name: { type: "string" },
                           type: {
                             type: "string",
-                            enum: ["cafe", "viewpoint", "museum", "fuel", "attraction", "pause", "food"],
+                            enum: ["cafe", "viewpoint", "museum", "fuel", "charging", "attraction", "pause", "food"],
                           },
                           location: { type: "string", description: "Tettsted/kommune, Norge" },
                           lat: { type: "number" },
