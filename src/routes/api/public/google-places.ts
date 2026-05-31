@@ -59,6 +59,7 @@ export const Route = createFileRoute("/api/public/google-places")({
         // Lovable-managed key — the managed key is locked to *.lovable.app
         // and will fail browser referrer checks on custom domains.
         const mapsKey = (
+          process.env.GOOGLE_MAPS_API_KEY_2 ??
           process.env.GOOGLE_MAPS_API_KEY_1 ??
           process.env.GOOGLE_MAPS_API_KEY ??
           ""
