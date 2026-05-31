@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { searchPlaces, manualPlace, type ResolvedPlace, type PlaceSource, type SearchOptions } from "@/lib/places/geocoder";
+import { searchPlaces, manualPlace, resolveGooglePlace, type ResolvedPlace, type PlaceSource, type SearchOptions } from "@/lib/places/geocoder";
 import { useI18n } from "@/i18n/provider";
 
 import { cn } from "@/lib/utils";
@@ -87,7 +87,7 @@ export function PlaceAutocomplete({
       }).catch(() => { /* swallow */ });
     }, 300);
     return () => clearTimeout(handle);
-  }, [value, searchOptions?.types, searchOptions?.queryPrefix, searchOptions?.provider, searchOptions?.proximity?.lng, searchOptions?.proximity?.lat, searchOptions?.bbox, searchOptions?.fsqCategories, searchOptions?.fsqRadius]);
+  }, [value, searchOptions?.category, searchOptions?.queryPrefix, searchOptions?.proximity?.lng, searchOptions?.proximity?.lat]);
 
   // Click-outside closes dropdown.
   useEffect(() => {
@@ -99,12 +99,22 @@ export function PlaceAutocomplete({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  const pick = (p: ResolvedPlace) => {
+  const pick = async (p: ResolvedPlace) => {
     skipNextSearch.current = true;
     onTextChange(p.name);
-    onSelect(p);
     setOpen(false);
     setActiveIdx(-1);
+    // Google autocomplete suggestions need a Place Details call for lat/lng.
+    if (p.needsDetails) {
+      onSelect(p); // optimistic
+      const resolved = await resolveGooglePlace(p);
+      if (resolved) {
+        onTextChange(resolved.name);
+        onSelect(resolved);
+      }
+    } else {
+      onSelect(p);
+    }
   };
 
   const useAnyway = () => {

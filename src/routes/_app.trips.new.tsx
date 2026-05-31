@@ -464,7 +464,7 @@ function NewTripWizard() {
                     selected={fromPlace}
                     onSelect={setFromPlace}
                     ariaLabel="Fra"
-                    searchOptions={{ provider: "foursquare" }}
+                  
                   />
                 </div>
                 <UseMyLocationButton
@@ -479,7 +479,7 @@ function NewTripWizard() {
                 selected={toPlace}
                 onSelect={setToPlace}
                 ariaLabel="Til"
-                searchOptions={{ provider: "foursquare" }}
+                
               />
             </Field>
             <Field label="Dato">
@@ -756,7 +756,7 @@ function UseMyLocationButton({ onResolved }: { onResolved: (name: string, place:
       const place: ResolvedPlace = {
         id: `geo-${lat.toFixed(4)},${lng.toFixed(4)}`,
         name, label: f?.place_name || name, secondary: f?.place_name, type: "city",
-        lat, lng, source: "maptiler",
+        lat, lng, source: "manual",
       };
       onResolved(name, place);
     } catch {
