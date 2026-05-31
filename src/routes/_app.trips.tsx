@@ -1,9 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTripsStore, tripsApi, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, VEHICLES, type CoverKey } from "@/lib/trips-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
-import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
+import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
