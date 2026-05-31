@@ -890,7 +890,7 @@ function PlannerActions({
               <button
                 key={chip}
                 type="button"
-                onClick={() => { setLodgingPlace(null); setLodgingText(chip); }}
+                onClick={() => { setLodgingPlace(null); setLodgingText((prev) => { const e = (prev ?? "").trim(); if (!e) return chip; if (e.toLowerCase().includes(chip.toLowerCase())) return e; return `${chip} ${e}`; }); }}
                 className="rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-primary hover:bg-surface-2"
               >
                 {chip}
