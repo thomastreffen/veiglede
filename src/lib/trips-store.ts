@@ -920,6 +920,8 @@ interface PoiQuery {
   /** Search terms — each becomes a separate AI call. */
   terms: string[];
   type: StopType;
+  /** Energy tag for fuel suggestions — used by stopDisplayMeta. */
+  energy?: EnergySource;
   photoOp?: boolean;
   /** Fallback description if AI returns none. */
   fallbackDescription: string;
@@ -929,18 +931,44 @@ interface PoiQuery {
   perTermLimit: number;
 }
 
-// Varied mix per fetch: up to ~2 viewpoints, 1–2 cafes/restaurants,
-// 1 attraction/museum, 1 fuel stop.
-const POI_QUERIES: PoiQuery[] = [
+const POI_QUERIES_BASE: PoiQuery[] = [
   { terms: ["viewpoint"], type: "viewpoint", photoOp: true,
     fallbackDescription: "Utsiktspunkt langs ruten", reason: "Utsiktspunkt langs ruten.", durationMin: 20, perTermLimit: 2 },
   { terms: ["cafe", "restaurant"], type: "food",
     fallbackDescription: "Spisested langs ruten",     reason: "Mat- eller kaffepause langs ruten.", durationMin: 40, perTermLimit: 1 },
   { terms: ["museum"], type: "attraction",
     fallbackDescription: "Severdighet langs ruten",   reason: "Severdighet langs ruten.", durationMin: 50, perTermLimit: 1 },
-  { terms: ["gas station"], type: "fuel",
-    fallbackDescription: "Drivstoff langs ruten",     reason: "Fyllestasjon langs ruten.", durationMin: 10, perTermLimit: 1 },
 ];
+
+/** Build POI queries with fuel/charging adapted to the trip's energy type. */
+function poiQueriesFor(fuelKind: "petrol" | "diesel" | "electric" | "hybrid" | "other"): PoiQuery[] {
+  const fuelQueries: PoiQuery[] = [];
+  if (fuelKind === "electric") {
+    fuelQueries.push({
+      terms: ["electric vehicle charging station", "ev charging"],
+      type: "fuel", energy: "electric",
+      fallbackDescription: "Hurtiglader langs ruten",
+      reason: "Ladestopp langs ruten.",
+      durationMin: 25, perTermLimit: 1,
+    });
+  } else if (fuelKind === "hybrid") {
+    fuelQueries.push(
+      { terms: ["gas station"], type: "fuel", energy: "petrol",
+        fallbackDescription: "Drivstoff langs ruten", reason: "Fyllestasjon langs ruten.", durationMin: 10, perTermLimit: 1 },
+      { terms: ["electric vehicle charging station"], type: "fuel", energy: "electric",
+        fallbackDescription: "Hurtiglader langs ruten", reason: "Ladestopp langs ruten.", durationMin: 25, perTermLimit: 1 },
+    );
+  } else {
+    fuelQueries.push({
+      terms: ["gas station"], type: "fuel",
+      energy: fuelKind === "diesel" ? "diesel" : "petrol",
+      fallbackDescription: "Drivstoff langs ruten",
+      reason: "Fyllestasjon langs ruten.",
+      durationMin: 10, perTermLimit: 1,
+    });
+  }
+  return [...POI_QUERIES_BASE, ...fuelQueries];
+}
 
 function prettyDescription(category: string, fallback: string): string {
   const cat = category.trim();
