@@ -194,21 +194,31 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {t.invite.modalBody}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.invite.emailOptional}
+                  placeholder="Inviter via e-post"
                   className="flex-1 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as InviteRole)}
+                  className="rounded-xl border border-border bg-background/60 px-2 py-2.5 text-xs"
+                >
+                  <option value="viewer">Kan se</option>
+                  <option value="editor">Kan redigere</option>
+                </select>
                 <button
                   onClick={handleCreateInvite}
                   disabled={creating}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-60"
                 >
-                  <UserPlus className="h-3.5 w-3.5" /> {creating ? t.invite.creating : t.invite.create}
+                  <UserPlus className="h-3.5 w-3.5" /> {creating ? "Inviterer…" : "Inviter"}
                 </button>
               </div>
+              {inviteMsg && <p className="text-[11px] text-muted-foreground">{inviteMsg}</p>}
 
               {invites.length === 0 ? (
                 <p className="pt-1 text-xs text-muted-foreground">{t.invite.noInvites}</p>
