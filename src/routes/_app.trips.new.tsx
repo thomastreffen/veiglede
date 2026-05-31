@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
-import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
+import { useVehicles, energyMeta, energyTypeToSource, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { TripMap } from "@/components/TripMap";
 import { DemoDebugPanel, useDebugMode } from "@/components/DemoDebugPanel";

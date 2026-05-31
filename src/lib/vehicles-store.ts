@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
-import type { VehicleType, RouteStyle, StopType } from "./trips-store";
+import type { VehicleType, RouteStyle, StopType, EnergySource } from "./trips-store";
+
 
 export type EnergyType =
   | "petrol"
@@ -55,6 +56,15 @@ export function fuelKindOf(e: EnergyType | undefined): FuelKind {
     default: return "petrol";
   }
 }
+
+/** Narrow EnergyType back into the EnergySource union persisted on a Trip. */
+export function energyTypeToSource(e: EnergyType | undefined): EnergySource | undefined {
+  if (!e) return undefined;
+  if (e === "petrol" || e === "diesel" || e === "electric") return e;
+  if (e === "other") return undefined;
+  return "hybrid"; // hybrid, hybrid-petrol, hybrid-diesel
+}
+
 
 
 export function defaultsFor(type: VehicleType, energy: EnergyType): {
