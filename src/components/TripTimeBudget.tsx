@@ -183,3 +183,51 @@ function LodgingCostBreakdown({ stops }: { stops: Stop[] }) {
   );
 }
 
+/** Defaults per fuel kind. Used when the user hasn't set price/consumption on the trip. */
+const ENERGY_DEFAULTS = {
+  petrol:   { consumption: 7.5, price: 21, unit: "l",   label: "Bensin",  icon: "fuel" as const },
+  diesel:   { consumption: 6.5, price: 19, unit: "l",   label: "Diesel",  icon: "fuel" as const },
+  electric: { consumption: 18,  price: 5,  unit: "kWh", label: "Lading",  icon: "zap"  as const },
+  hybrid:   { consumption: 5.5, price: 21, unit: "l",   label: "Hybrid",  icon: "fuel" as const },
+  other:    null,
+};
+
+function EnergyCostBreakdown({ trip }: { trip: Trip }) {
+  const kind = tripFuelKind(trip);
+  const def = ENERGY_DEFAULTS[kind];
+  if (!def) return null;
+  if (!trip.distanceKm || trip.distanceKm <= 0) return null;
+
+  const consumption = trip.consumptionPer100Km ?? def.consumption;
+  const price = trip.fuelPricePerUnit ?? def.price;
+  const usingDefaults = trip.consumptionPer100Km == null || trip.fuelPricePerUnit == null;
+  const totalUnits = (trip.distanceKm * consumption) / 100;
+  const totalCost = totalUnits * price;
+  const Icon = def.icon === "zap" ? Zap : Fuel;
+
+  return (
+    <div className="mt-4 pt-3 border-t border-border/60">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 inline-flex items-center gap-1.5">
+        <Icon className="h-3 w-3" /> {def.label} (kostnad)
+      </p>
+      <ul className="space-y-1.5">
+        <li className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">
+            ca. {totalUnits.toFixed(totalUnits >= 10 ? 0 : 1)} {def.unit} · {consumption} {def.unit}/100 km
+          </span>
+          <span className="font-mono tabular-nums text-foreground">{(consumption * price / 100).toFixed(2)} kr/km</span>
+        </li>
+        <li className="flex items-center justify-between text-xs font-semibold pt-1.5 mt-1 border-t border-border/40">
+          <span>Estimert total</span>
+          <span className="font-mono tabular-nums text-primary">{totalCost.toFixed(0)} kr</span>
+        </li>
+        {usingDefaults && (
+          <li className="text-[10px] text-muted-foreground pt-1">
+            Estimat basert på {price} kr/{def.unit}. Sett egne verdier på kjøretøy/turen for nøyaktig pris.
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
