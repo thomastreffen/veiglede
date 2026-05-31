@@ -785,6 +785,36 @@ function PlannerActions({
   const [destOpen, setDestOpen] = useState(false);
   const [destText, setDestText] = useState("");
   const [destPlace, setDestPlace] = useState<ResolvedPlace | null>(null);
+  const [lodgingOpen, setLodgingOpen] = useState(false);
+  const [lodgingText, setLodgingText] = useState("");
+  const [lodgingPlace, setLodgingPlace] = useState<ResolvedPlace | null>(null);
+
+  const lastDayId = tripDays.length > 0 ? tripDays[tripDays.length - 1].id : null;
+
+  const addLodging = (p: ResolvedPlace) => {
+    if (!lastDayId) return;
+    tripsApi.addStop(lastDayId, {
+      name: p.name,
+      type: "lodging",
+      location: p.secondary ?? p.label ?? p.name,
+      description: p.secondary ? `Overnatting · ${p.secondary}` : "Overnatting før neste etappe.",
+      reason: "Naturlig stopp for natten.",
+      durationMin: 720,
+      lat: p.lat,
+      lng: p.lng,
+    });
+    setLodgingText("");
+    setLodgingPlace(null);
+    setLodgingOpen(false);
+  };
+
+  const onLodgingSelect = (p: ResolvedPlace | null) => {
+    setLodgingPlace(p);
+    if (p && !p.needsDetails && (p.lat || p.lng)) {
+      addLodging(p);
+    }
+  };
+
   const durationMin = trip.routeDurationMin ?? 0;
   const isLongLeg = durationMin > 0 && durationMin > maxDrivingHours * 60;
 
@@ -798,7 +828,7 @@ function PlannerActions({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              onClick={() => { tripsApi.splitIntoDays(trip.id, 2); tripsApi.addOvernight(trip.id); }}
+              onClick={() => { tripsApi.splitIntoDays(trip.id, 2); setLodgingOpen(true); }}
               className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-950 hover:brightness-110"
             >
               Ja, foreslå overnatting
@@ -814,7 +844,7 @@ function PlannerActions({
       )}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         <PlannerBtn label="Del opp i flere dager" onClick={() => tripsApi.splitIntoDays(trip.id, tripDays.length + 1)} />
-        <PlannerBtn label="Legg til overnatting" onClick={() => tripsApi.addOvernight(trip.id)} />
+        <PlannerBtn label="Legg til overnatting" onClick={() => setLodgingOpen(true)} />
         <PlannerBtn label="+ Legg til neste destinasjon" onClick={() => setDestOpen(true)} />
       </div>
       {destOpen && (
@@ -845,6 +875,43 @@ function PlannerActions({
                 Legg til
               </button>
               <button onClick={() => { setDestOpen(false); setDestText(""); setDestPlace(null); }} className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+                Avbryt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {lodgingOpen && (
+        <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+          <p className="text-sm font-semibold">Legg til overnatting</p>
+          <p className="mt-1 text-xs text-muted-foreground">Søk etter hotell, hytte eller camping</p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {["Hotell", "Hytte", "Camping", "Scandic", "Thon", "Nordic Choice", "Airbnb"].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => { setLodgingPlace(null); setLodgingText(chip); }}
+                className="rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-primary hover:bg-surface-2"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 space-y-2" onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}>
+            <PlaceAutocomplete
+              value={lodgingText}
+              onTextChange={setLodgingText}
+              selected={lodgingPlace}
+              onSelect={onLodgingSelect}
+              placeholder="F.eks. Scandic Geilo"
+              ariaLabel="Overnatting"
+              searchOptions={{ category: "lodging" }}
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={() => { setLodgingOpen(false); setLodgingText(""); setLodgingPlace(null); }}
+                className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+              >
                 Avbryt
               </button>
             </div>
