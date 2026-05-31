@@ -274,7 +274,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
             {!fuelPlace && (
               <ChipRow
                 chips={FUEL_CHIPS as unknown as string[]}
-                onPick={(brand) => { setFuelPlace(null); setFuelText(brand); }}
+                onPick={(brand) => { setFuelPlace(null); setFuelText((prev) => combineChip(brand, prev)); }}
               />
             )}
             <PlaceField
@@ -307,7 +307,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
             {!lodgingPlace && (
               <ChipRow
                 chips={LODGING_CHIPS as unknown as string[]}
-                onPick={(brand) => { setLodgingPlace(null); setLodgingText(brand); }}
+                onPick={(brand) => { setLodgingPlace(null); setLodgingText((prev) => combineChip(brand, prev)); }}
               />
             )}
             <PlaceField
@@ -487,4 +487,14 @@ function ChipRow({ chips, onPick }: { chips: string[]; onPick: (label: string) =
       ))}
     </div>
   );
+}
+
+// Combine a quick-chip brand/type with any text the user has already typed,
+// so tapping "Scandic" after typing "risør" searches "Scandic risør".
+function combineChip(chip: string, prev: string): string {
+  const existing = (prev ?? "").trim();
+  if (!existing) return chip;
+  const lcExisting = existing.toLowerCase();
+  if (lcExisting.includes(chip.toLowerCase())) return existing;
+  return `${chip} ${existing}`;
 }
