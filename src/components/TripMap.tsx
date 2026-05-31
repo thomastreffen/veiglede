@@ -3,7 +3,7 @@ import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState } from "reac
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
-import { stopMeta } from "@/lib/trips-store";
+import { stopDisplayMeta } from "@/lib/trips-store";
 import { useRuntimeMapConfig } from "@/lib/map/runtime-config";
 import { useDebugMode } from "@/components/DemoDebugPanel";
 import { cn } from "@/lib/utils";
@@ -412,7 +412,7 @@ function SvgTripMap({
         {/* Stop pins */}
         {projected.mapped.map((m) => {
           const pt = project(m.loc);
-          const meta = stopMeta(m.stop.type);
+          const meta = stopDisplayMeta(m.stop);
           const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
           const selected = selectedStopId === m.stop.id;
           const r = selected ? 16 : compact ? 9 : 12;

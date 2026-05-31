@@ -10,7 +10,7 @@ import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
-import { stopMeta, tripsApi } from "@/lib/trips-store";
+import { stopDisplayMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { distanceKm, nearestPointOnRoute, projectTrip } from "@/lib/geo";
 import { getCachedRoute, mapConfig } from "@/lib/map";
@@ -550,7 +550,7 @@ export function MapLibreTripMap({
     addMarker(projected.destination, destEl);
 
     projected.mapped.forEach((m) => {
-      const meta = stopMeta(m.stop.type);
+      const meta = stopDisplayMeta(m.stop);
       const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
       const selected = selectedStopId === m.stop.id;
       const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");

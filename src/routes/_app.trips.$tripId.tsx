@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  useTripsStore, tripsApi, stopMeta, STOP_TYPES, vehicleMeta, styleMeta,
+  useTripsStore, tripsApi, stopMeta, stopDisplayMeta, STOP_TYPES, vehicleMeta, styleMeta,
   COVERS, type CoverKey, fetchRouteSuggestions, getPartnerTips, getPhotoMemories,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
@@ -339,7 +339,7 @@ function TripPlanner() {
 
                 <ul className="divide-y divide-border/60">
                   {dayStops.map((stop, idx) => {
-                    const meta = stopMeta(stop.type);
+                    const meta = stopDisplayMeta(stop);
                     return (
                       <li
                         key={stop.id}
