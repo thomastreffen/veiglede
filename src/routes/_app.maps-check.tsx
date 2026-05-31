@@ -98,7 +98,18 @@ function MapsCheckPage() {
   const runServerCheck = async () => {
     setServerCheck({ status: "running", title: "Tester server-proxy..." });
     try {
-      const res = await fetch("/api/public/google-places?action=autocomplete&input=oslo");
+      const url = new URL("/api/public/google-places", window.location.origin);
+      url.searchParams.set("action", "autocomplete");
+      url.searchParams.set("input", "oslo");
+      url.searchParams.set("_t", String(Date.now()));
+
+      const res = await fetch(url.toString(), {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
       const data = (await res.json()) as { results?: unknown[]; warning?: string; detail?: string; error?: string };
       if (res.ok && Array.isArray(data.results) && data.results.length > 0 && !data.warning) {
         setServerCheck({
