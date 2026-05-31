@@ -23,6 +23,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
+import { Route as ApiPublicPlacesSearchRouteImport } from './routes/api/public.places-search'
 import { Route as ApiPublicMapboxGeocodeRouteImport } from './routes/api/public.mapbox-geocode'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
@@ -100,6 +101,11 @@ const ApiPublicPoiSearchRoute = ApiPublicPoiSearchRouteImport.update({
   path: '/api/public/poi-search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPlacesSearchRoute = ApiPublicPlacesSearchRouteImport.update({
+  id: '/api/public/places-search',
+  path: '/api/public/places-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMapboxGeocodeRoute = ApiPublicMapboxGeocodeRouteImport.update({
   id: '/api/public/mapbox-geocode',
   path: '/api/public/mapbox-geocode',
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
+  '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
+  '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
+  '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/api/public/directions'
     | '/api/public/map-config'
     | '/api/public/mapbox-geocode'
+    | '/api/public/places-search'
     | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/api/public/directions'
     | '/api/public/map-config'
     | '/api/public/mapbox-geocode'
+    | '/api/public/places-search'
     | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/api/public/directions'
     | '/api/public/map-config'
     | '/api/public/mapbox-geocode'
+    | '/api/public/places-search'
     | '/api/public/poi-search'
     | '/_app/trips/$tripId/roadbook'
     | '/_app/trips/$tripId/stops/$stopId'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicMapboxGeocodeRoute: typeof ApiPublicMapboxGeocodeRoute
+  ApiPublicPlacesSearchRoute: typeof ApiPublicPlacesSearchRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
 }
 
@@ -389,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/poi-search'
       fullPath: '/api/public/poi-search'
       preLoaderRoute: typeof ApiPublicPoiSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/places-search': {
+      id: '/api/public/places-search'
+      path: '/api/public/places-search'
+      fullPath: '/api/public/places-search'
+      preLoaderRoute: typeof ApiPublicPlacesSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/mapbox-geocode': {
@@ -500,6 +520,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicMapboxGeocodeRoute: ApiPublicMapboxGeocodeRoute,
+  ApiPublicPlacesSearchRoute: ApiPublicPlacesSearchRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
 }
 export const routeTree = rootRouteImport
