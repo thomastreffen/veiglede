@@ -881,6 +881,43 @@ function PlannerActions({
           </div>
         </div>
       )}
+      {lodgingOpen && (
+        <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+          <p className="text-sm font-semibold">Legg til overnatting</p>
+          <p className="mt-1 text-xs text-muted-foreground">Søk etter hotell, hytte eller camping</p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {["Hotell", "Hytte", "Camping", "Scandic", "Thon", "Nordic Choice", "Airbnb"].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => { setLodgingPlace(null); setLodgingText(chip); }}
+                className="rounded-full border border-border bg-surface px-3 py-1 text-xs hover:border-primary hover:bg-surface-2"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 space-y-2" onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}>
+            <PlaceAutocomplete
+              value={lodgingText}
+              onTextChange={setLodgingText}
+              selected={lodgingPlace}
+              onSelect={onLodgingSelect}
+              placeholder="F.eks. Scandic Geilo"
+              ariaLabel="Overnatting"
+              searchOptions={{ category: "lodging" }}
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={() => { setLodgingOpen(false); setLodgingText(""); setLodgingPlace(null); }}
+                className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+              >
+                Avbryt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
