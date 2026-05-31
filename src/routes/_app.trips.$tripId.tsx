@@ -1201,3 +1201,79 @@ function DetourTotals({
   );
 }
 
+function VehiclePickerBadge({
+  tripId, currentVehicleId, vehicleEmoji, vehicleLabel, energyEmoji, energyLabel,
+}: {
+  tripId: string;
+  currentVehicleId?: string;
+  vehicleEmoji: string;
+  vehicleLabel: string;
+  energyEmoji?: string;
+  energyLabel?: string;
+}) {
+  const { vehicles } = useVehicles();
+  const [open, setOpen] = useState(false);
+
+  const onPick = (vid: string) => {
+    const veh = vehicles.find((x) => x.id === vid);
+    if (!veh) return;
+    tripsApi.updateTrip(tripId, {
+      vehicleId: veh.id,
+      vehicleName: veh.name,
+      vehicle: veh.type,
+      energy: energyTypeToSource(veh.energy),
+    });
+    setOpen(false);
+    toast.success(`Kjøretøy byttet til ${veh.name}`);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs hover:bg-background/80 hover:border-primary/50 transition"
+          aria-label="Bytt kjøretøy"
+        >
+          {vehicleEmoji} {vehicleLabel}
+          {energyEmoji && <span className="opacity-70">· {energyEmoji} {energyLabel}</span>}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-2">
+        <p className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+          Velg kjøretøy
+        </p>
+        <div className="flex flex-col gap-1">
+          {vehicles.map((veh) => {
+            const em = energyMeta(veh.energy);
+            const active = veh.id === currentVehicleId;
+            return (
+              <button
+                key={veh.id}
+                type="button"
+                onClick={() => onPick(veh.id)}
+                className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-sm transition ${
+                  active ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
+                }`}
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="text-base">{vehicleMeta(veh.type).emoji}</span>
+                  <span className="min-w-0">
+                    <span className="block font-semibold truncate">{veh.name}</span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {em.emoji} {em.label}
+                    </span>
+                  </span>
+                </span>
+                {active && <Check className="h-4 w-4 text-primary shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
