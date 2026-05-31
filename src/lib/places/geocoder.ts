@@ -123,12 +123,16 @@ export interface SearchOptions {
   types?: string;
   /** Optional query prefix prepended to user input (e.g. brand keywords for fuel). */
   queryPrefix?: string;
-  /** Override the default provider. "mapbox" routes via the server proxy. */
-  provider?: "maptiler" | "mapbox";
-  /** Proximity bias for Mapbox provider (lng/lat). */
+  /** Override the default provider. "mapbox"/"foursquare" route via server proxies. */
+  provider?: "maptiler" | "mapbox" | "foursquare";
+  /** Proximity bias for Mapbox/Foursquare provider (lng/lat). */
   proximity?: { lng: number; lat: number };
   /** Bounding box for Mapbox provider, "minLng,minLat,maxLng,maxLat". */
   bbox?: string;
+  /** Comma-separated Foursquare category IDs (e.g. "17114" for fuel). */
+  fsqCategories?: string;
+  /** Foursquare radius in metres (default 50000). */
+  fsqRadius?: number;
 }
 
 async function searchMapTiler(q: string, key: string, signal: AbortSignal, opts: SearchOptions = {}): Promise<ResolvedPlace[]> {
