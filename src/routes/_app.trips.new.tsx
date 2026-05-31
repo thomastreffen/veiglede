@@ -247,7 +247,7 @@ function NewTripWizard() {
     void (async () => {
       const s = styleMeta(style);
       const vt = selectedVehicle.type;
-      const energy = selectedVehicle.energy;
+      const energy = energyTypeToSource(selectedVehicle.energy);
       const ai = buildAiSummary({
         origin, destination, vehicle: vt, style,
         energy, vehicleName: selectedVehicle.name,
