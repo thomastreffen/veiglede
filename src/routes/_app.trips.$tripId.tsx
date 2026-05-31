@@ -15,6 +15,7 @@ import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { TripCompanions } from "@/components/TripCompanions";
+import { TripMembers } from "@/components/TripMembers";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
@@ -206,6 +207,7 @@ function TripPlanner() {
             </span>
             {trip.region && <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{trip.region}</span>}
             <span className={`inline-flex items-center gap-1.5 rounded-full backdrop-blur border px-3 py-1 text-xs font-semibold bg-background/60 ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
+            <TripMembers tripId={trip.id} onOpenShare={() => setShareOpen(true)} />
           </div>
           <h1 className="mt-5 font-display text-4xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
           {trip.subtitle && <p className="mt-2 text-sm md:text-base text-foreground/80">{trip.subtitle}</p>}
