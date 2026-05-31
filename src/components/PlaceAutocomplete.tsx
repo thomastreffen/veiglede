@@ -87,7 +87,7 @@ export function PlaceAutocomplete({
       }).catch(() => { /* swallow */ });
     }, 300);
     return () => clearTimeout(handle);
-  }, [value, searchOptions?.types, searchOptions?.queryPrefix, searchOptions?.provider, searchOptions?.proximity?.lng, searchOptions?.proximity?.lat, searchOptions?.bbox]);
+  }, [value, searchOptions?.types, searchOptions?.queryPrefix, searchOptions?.provider, searchOptions?.proximity?.lng, searchOptions?.proximity?.lat, searchOptions?.bbox, searchOptions?.fsqCategories, searchOptions?.fsqRadius]);
 
   // Click-outside closes dropdown.
   useEffect(() => {
