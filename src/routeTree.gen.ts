@@ -16,6 +16,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
+import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
@@ -64,6 +65,11 @@ const SharedTripIdRoute = SharedTripIdRouteImport.update({
 const SharedShareTokenRoute = SharedShareTokenRouteImport.update({
   id: '/shared/$shareToken',
   path: '/shared/$shareToken',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinTokenRoute = JoinTokenRouteImport.update({
+  id: '/join/$token',
+  path: '/join/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join/$token': typeof JoinTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join/$token': typeof JoinTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/_app/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join/$token': typeof JoinTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/trips'
     | '/auth/callback'
     | '/invite/$token'
+    | '/join/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/trips'
     | '/auth/callback'
     | '/invite/$token'
+    | '/join/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/_app/trips'
     | '/auth/callback'
     | '/invite/$token'
+    | '/join/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/_app/trips/$tripId'
@@ -295,6 +307,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  JoinTokenRoute: typeof JoinTokenRoute
   SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/shared/$shareToken'
       fullPath: '/shared/$shareToken'
       preLoaderRoute: typeof SharedShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join/$token': {
+      id: '/join/$token'
+      path: '/join/$token'
+      fullPath: '/join/$token'
+      preLoaderRoute: typeof JoinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invite/$token': {
@@ -516,6 +536,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   InviteTokenRoute: InviteTokenRoute,
+  JoinTokenRoute: JoinTokenRoute,
   SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
@@ -526,3 +547,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
