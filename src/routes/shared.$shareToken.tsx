@@ -7,6 +7,7 @@ import {
 } from "@/lib/trips-store";
 import { getPublicTripByToken } from "@/lib/public-trips.functions";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { TripComments } from "@/components/TripComments";
 import {
   MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass,
 } from "lucide-react";
