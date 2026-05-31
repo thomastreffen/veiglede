@@ -173,6 +173,8 @@ function SharedTripByToken() {
           </section>
         )}
 
+        <TripComments tripId={trip.id} />
+
         <section className="mt-8 rounded-2xl border border-dashed border-border p-5 text-center">
           <p className="text-xs text-muted-foreground">Inspirert? Lag din egen versjon.</p>
           <Link
