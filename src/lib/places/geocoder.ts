@@ -123,12 +123,16 @@ export interface SearchOptions {
   types?: string;
   /** Optional query prefix prepended to user input (e.g. brand keywords for fuel). */
   queryPrefix?: string;
-  /** Override the default provider. "mapbox" routes via the server proxy. */
-  provider?: "maptiler" | "mapbox";
-  /** Proximity bias for Mapbox provider (lng/lat). */
+  /** Override the default provider. "mapbox"/"foursquare" route via server proxies. */
+  provider?: "maptiler" | "mapbox" | "foursquare";
+  /** Proximity bias for Mapbox/Foursquare provider (lng/lat). */
   proximity?: { lng: number; lat: number };
   /** Bounding box for Mapbox provider, "minLng,minLat,maxLng,maxLat". */
   bbox?: string;
+  /** Comma-separated Foursquare category IDs (e.g. "17114" for fuel). */
+  fsqCategories?: string;
+  /** Foursquare radius in metres (default 50000). */
+  fsqRadius?: number;
 }
 
 async function searchMapTiler(q: string, key: string, signal: AbortSignal, opts: SearchOptions = {}): Promise<ResolvedPlace[]> {
@@ -201,6 +205,33 @@ async function searchMapbox(q: string, signal: AbortSignal, opts: SearchOptions)
   }).filter((x): x is ResolvedPlace => x !== null);
 }
 
+interface FsqResult {
+  id: string; name: string; address: string; city: string; country: string;
+  lat: number; lng: number; category: string;
+}
+
+async function searchFoursquare(q: string, signal: AbortSignal, opts: SearchOptions): Promise<ResolvedPlace[]> {
+  const params = new URLSearchParams({ query: q, limit: "8" });
+  if (opts.proximity) params.set("ll", `${opts.proximity.lat},${opts.proximity.lng}`);
+  if (opts.fsqRadius) params.set("radius", String(opts.fsqRadius));
+  if (opts.fsqCategories) params.set("categories", opts.fsqCategories);
+  const res = await fetch(`/api/public/places-search?${params.toString()}`, { signal });
+  if (!res.ok) throw new Error(`foursquare ${res.status}`);
+  const data = (await res.json()) as { results?: FsqResult[] };
+  const items = data.results ?? [];
+  return items.map((r, i): ResolvedPlace => ({
+    id: `fsq-${r.id ?? i}`,
+    label: r.address ? `${r.name}, ${r.address}` : r.name,
+    name: r.name,
+    secondary: r.address || [r.city, r.country].filter(Boolean).join(", ") || undefined,
+    lat: r.lat,
+    lng: r.lng,
+    type: "poi",
+    country: r.country?.toLowerCase(),
+    source: "maptiler",
+  }));
+}
+
 export interface SearchResult {
   results: ResolvedPlace[];
   provider: PlaceSource; // which provider produced results
@@ -218,6 +249,27 @@ export async function searchPlaces(q: string, signal?: AbortSignal, options: Sea
   const timeout = setTimeout(() => ctrl?.abort(), 4000);
 
   let failed = false;
+
+  // Foursquare provider — server-proxied; best for POIs in Norway.
+  if (options.provider === "foursquare") {
+    try {
+      const results = await searchFoursquare(query, sig, options);
+      if (results.length > 0) {
+        clearTimeout(timeout);
+        console.log(`Places: foursquare ${results.length} results`);
+        return { results, provider: "maptiler", failed: false };
+      }
+      console.log("Places: maptiler fallback (foursquare 0)");
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") {
+        clearTimeout(timeout);
+        return { results: [], provider: "demo", failed: true };
+      }
+      console.log("Places: maptiler fallback (foursquare error)");
+      failed = true;
+    }
+    // Fall through to MapTiler below.
+  }
 
   // Mapbox provider — server-proxied; no client key needed.
   // Mapbox v5 geocoding has thin POI coverage in Norway, so if it returns

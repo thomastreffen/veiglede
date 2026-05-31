@@ -464,6 +464,7 @@ function NewTripWizard() {
                     selected={fromPlace}
                     onSelect={setFromPlace}
                     ariaLabel="Fra"
+                    searchOptions={{ provider: "foursquare" }}
                   />
                 </div>
                 <UseMyLocationButton
@@ -478,6 +479,7 @@ function NewTripWizard() {
                 selected={toPlace}
                 onSelect={setToPlace}
                 ariaLabel="Til"
+                searchOptions={{ provider: "foursquare" }}
               />
             </Field>
             <Field label="Dato">
