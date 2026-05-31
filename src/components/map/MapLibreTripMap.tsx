@@ -550,7 +550,7 @@ export function MapLibreTripMap({
     addMarker(projected.destination, destEl);
 
     projected.mapped.forEach((m) => {
-      const meta = stopMeta(m.stop.type);
+      const meta = stopDisplayMeta(m.stop);
       const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
       const selected = selectedStopId === m.stop.id;
       const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
