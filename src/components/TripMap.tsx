@@ -3,7 +3,7 @@ import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState } from "reac
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { projectTrip, lookupPlace } from "@/lib/geo";
-import { stopMeta, stopDisplayMeta } from "@/lib/trips-store";
+import { stopDisplayMeta } from "@/lib/trips-store";
 import { useRuntimeMapConfig } from "@/lib/map/runtime-config";
 import { useDebugMode } from "@/components/DemoDebugPanel";
 import { cn } from "@/lib/utils";
