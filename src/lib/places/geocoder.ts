@@ -205,6 +205,33 @@ async function searchMapbox(q: string, signal: AbortSignal, opts: SearchOptions)
   }).filter((x): x is ResolvedPlace => x !== null);
 }
 
+interface FsqResult {
+  id: string; name: string; address: string; city: string; country: string;
+  lat: number; lng: number; category: string;
+}
+
+async function searchFoursquare(q: string, signal: AbortSignal, opts: SearchOptions): Promise<ResolvedPlace[]> {
+  const params = new URLSearchParams({ query: q, limit: "8" });
+  if (opts.proximity) params.set("ll", `${opts.proximity.lat},${opts.proximity.lng}`);
+  if (opts.fsqRadius) params.set("radius", String(opts.fsqRadius));
+  if (opts.fsqCategories) params.set("categories", opts.fsqCategories);
+  const res = await fetch(`/api/public/places-search?${params.toString()}`, { signal });
+  if (!res.ok) throw new Error(`foursquare ${res.status}`);
+  const data = (await res.json()) as { results?: FsqResult[] };
+  const items = data.results ?? [];
+  return items.map((r, i): ResolvedPlace => ({
+    id: `fsq-${r.id ?? i}`,
+    label: r.address ? `${r.name}, ${r.address}` : r.name,
+    name: r.name,
+    secondary: r.address || [r.city, r.country].filter(Boolean).join(", ") || undefined,
+    lat: r.lat,
+    lng: r.lng,
+    type: "poi",
+    country: r.country?.toLowerCase(),
+    source: "maptiler",
+  }));
+}
+
 export interface SearchResult {
   results: ResolvedPlace[];
   provider: PlaceSource; // which provider produced results
