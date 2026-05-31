@@ -6,7 +6,8 @@ import {
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
-import { getVehicleById, energyMeta } from "@/lib/vehicles-store";
+import { getVehicleById, energyMeta, useVehicles, energyTypeToSource } from "@/lib/vehicles-store";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { TripMap } from "@/components/TripMap";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
