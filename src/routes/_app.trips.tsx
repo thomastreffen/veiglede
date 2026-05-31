@@ -227,6 +227,80 @@ function formatDate(d: string) {
   try { return new Date(d).toLocaleDateString("nb-NO", { day: "numeric", month: "short" }); } catch { return d; }
 }
 
+function FollowedTripsSection() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<FollowedTrip[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) { setItems([]); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    listFollowedTrips()
+      .then((rows) => { if (!cancelled) setItems(rows); })
+      .catch(() => { if (!cancelled) setItems([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (loading || items.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Turer jeg følger</h2>
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{items.length} {items.length === 1 ? "tur" : "turer"}</span>
+      </div>
+      <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((f, i) => {
+          const t = f.trip as Record<string, unknown>;
+          const id = String(t.id ?? "");
+          const cover = (t.cover as CoverKey) ?? "fjord";
+          const title = String(t.title ?? "Tur");
+          const origin = String(t.origin ?? "");
+          const destination = String(t.destination ?? "");
+          const region = String(t.region ?? "");
+          const km = Number(t.distanceKm ?? 0);
+          const drivingTime = String(t.drivingTime ?? "");
+          const stopsCount = Number(t.stopsCount ?? 0);
+          return (
+            <li key={`${id}-${i}`}>
+              <Link
+                to="/trips/$tripId"
+                params={{ tripId: id }}
+                className="group relative block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors"
+              >
+                <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
+                  <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">
+                    <Users className="h-3 w-3 text-primary" /> Reisefølge
+                  </span>
+                  <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider border border-border">
+                    {f.role === "editor" ? "Kan redigere" : "Kan se"}
+                  </span>
+                </div>
+                <div className="p-4 md:p-5">
+                  {region && <p className="text-[10px] uppercase tracking-wider text-primary">{region}</p>}
+                  <h3 className="mt-1 font-display text-xl uppercase leading-tight group-hover:text-primary transition-colors">{title}</h3>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                    <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${km} km`} />
+                    <Stat icon={<Clock className="h-3.5 w-3.5" />} v={drivingTime} />
+                    <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${stopsCount} stopp`} />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
+                    <span className="inline-flex items-center gap-1 truncate"><MapPin className="h-3 w-3" /> {origin} → {destination}</span>
+                    {f.owner_name && <span className="truncate">av {f.owner_name}</span>}
+                  </div>
+                </div>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function EmptyState() {
   return (
     <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
