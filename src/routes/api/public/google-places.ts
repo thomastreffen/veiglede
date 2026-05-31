@@ -127,7 +127,7 @@ export const Route = createFileRoute("/api/public/google-places")({
           includedRegionCodes: ["no", "se", "dk", "de"],
           locationBias: {
             circle: {
-              center: { latitude: Number.isFinite(lat) ? lat : 61.0, longitude: Number.isFinite(lng) ? lng : 9.0 },
+              center: { latitude: Number.isFinite(lat) ? lat : 59.9, longitude: Number.isFinite(lng) ? lng : 10.75 },
               radius,
             },
           },
