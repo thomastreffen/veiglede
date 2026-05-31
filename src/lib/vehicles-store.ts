@@ -1,7 +1,18 @@
 import { useSyncExternalStore } from "react";
 import type { VehicleType, RouteStyle, StopType } from "./trips-store";
 
-export type EnergyType = "petrol" | "diesel" | "electric" | "hybrid";
+export type EnergyType =
+  | "petrol"
+  | "diesel"
+  | "electric"
+  | "hybrid-petrol"
+  | "hybrid-diesel"
+  /** Legacy generic hybrid — kept for back-compat with seeded trips. */
+  | "hybrid"
+  | "other";
+
+/** Coarse fuel kind used to drive UX (search categories, AI prompts, costs). */
+export type FuelKind = "petrol" | "diesel" | "electric" | "hybrid" | "other";
 
 export interface Vehicle {
   id: string;
@@ -17,15 +28,34 @@ export interface Vehicle {
 }
 
 export const ENERGIES: { value: EnergyType; label: string; emoji: string }[] = [
-  { value: "petrol",   label: "Bensin",    emoji: "⛽" },
-  { value: "diesel",   label: "Diesel",    emoji: "🛢️" },
-  { value: "electric", label: "Elektrisk", emoji: "🔌" },
-  { value: "hybrid",   label: "Hybrid",    emoji: "♻️" },
+  { value: "petrol",         label: "Bensin",          emoji: "⛽" },
+  { value: "diesel",         label: "Diesel",          emoji: "🛢️" },
+  { value: "electric",       label: "Elektrisk",       emoji: "⚡" },
+  { value: "hybrid-petrol",  label: "Hybrid (bensin)", emoji: "🔋" },
+  { value: "hybrid-diesel",  label: "Hybrid (diesel)", emoji: "🔋" },
+  { value: "other",          label: "Annet",           emoji: "🚲" },
 ];
 
 export function energyMeta(e: EnergyType) {
+  // Legacy "hybrid" maps to the petrol-hybrid label for display.
+  if (e === "hybrid") return { value: "hybrid" as EnergyType, label: "Hybrid", emoji: "🔋" };
   return ENERGIES.find((x) => x.value === e) ?? ENERGIES[0];
 }
+
+/** Map any EnergyType to the coarse FuelKind that downstream UX cares about. */
+export function fuelKindOf(e: EnergyType | undefined): FuelKind {
+  switch (e) {
+    case "electric": return "electric";
+    case "diesel": return "diesel";
+    case "petrol": return "petrol";
+    case "hybrid":
+    case "hybrid-petrol":
+    case "hybrid-diesel": return "hybrid";
+    case "other": return "other";
+    default: return "petrol";
+  }
+}
+
 
 export function defaultsFor(type: VehicleType, energy: EnergyType): {
   defaultStyle: RouteStyle;
