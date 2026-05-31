@@ -94,10 +94,12 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
   };
 
   const statusLabel = (s: TripInvite["status"]) =>
-    s === "invited" ? t.invite.statusInvited
-    : s === "opened" ? t.invite.statusOpened
-    : s === "joined" ? t.invite.statusJoined
-    : t.invite.statusRevoked;
+    s === "invited" ? "Venter på svar"
+    : s === "opened" ? "Åpnet lenke"
+    : s === "joined" ? "Godtatt ✓"
+    : "Avslått";
+
+  const roleLabel = (r: InviteRole) => (r === "editor" ? "Kan redigere" : "Kan se");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
