@@ -1048,7 +1048,7 @@ export async function fetchRouteSuggestions(
   const interestSet = new Set(interests ?? []);
   const wantsFuel = interestSet.has("fuel") || interestSet.size === 0;
   const FUEL_LONG_ROUTE_KM = 300;
-  const queries = POI_QUERIES.filter((q) => {
+  const queries = poiQueriesFor(tripFuelKind(trip)).filter((q) => {
     if (q.type === "fuel") {
       if (wantsFuel) return true;
       return midLen.lengthKm >= FUEL_LONG_ROUTE_KM;
