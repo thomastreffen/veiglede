@@ -65,12 +65,22 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
 
   const handleCreateInvite = async () => {
     if (!user) return;
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setInviteMsg("Skriv inn en gyldig e-postadresse");
+      return;
+    }
+    setInviteMsg(null);
     setCreating(true);
     try {
-      const inv = await createInvite(trip.id, email || null);
+      const inv = await createInvite(trip.id, cleanEmail, role);
       setInvites((p) => [inv, ...p]);
       setEmail("");
+      setRole("viewer");
       await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
+      setInviteMsg("Invitasjonslenke kopiert — send den til " + cleanEmail);
+    } catch (e) {
+      setInviteMsg(e instanceof Error ? e.message : "Kunne ikke lage invitasjon");
     } finally {
       setCreating(false);
     }
