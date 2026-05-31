@@ -28,8 +28,10 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
   const { user } = useAuth();
   const [copied, setCopied] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<InviteRole>("viewer");
   const [invites, setInvites] = useState<TripInvite[]>([]);
   const [creating, setCreating] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
 
   const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
 
