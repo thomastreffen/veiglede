@@ -42,9 +42,11 @@ interface GPlace {
 }
 
 const TYPES_FOR_CATEGORY: Record<string, string[]> = {
-  fuel: ["gas_station", "electric_vehicle_charging_station"],
+  fuel: ["gas_station"],
+  charging: ["electric_vehicle_charging_station"],
   lodging: ["lodging"],
 };
+
 
 export const Route = createFileRoute("/api/public/google-places")({
   server: {
@@ -203,10 +205,16 @@ function normalizeQuery(input: string, category: string): string {
     );
   } else if (category === "fuel") {
     patterns.push(
-      /\b(bensinstasjon|bensin|drivstoff|ladestasjon|lader|lading)\s+i\s+/g,
-      /\b(bensinstasjon|bensin|drivstoff|ladestasjon|lader|lading)\b/g,
+      /\b(bensinstasjon|bensin|drivstoff)\s+i\s+/g,
+      /\b(bensinstasjon|bensin|drivstoff)\b/g,
+    );
+  } else if (category === "charging") {
+    patterns.push(
+      /\b(ladestasjon|lader|lading|hurtiglader|ladepunkt)\s+i\s+/g,
+      /\b(ladestasjon|lader|lading|hurtiglader|ladepunkt)\b/g,
     );
   }
+
   for (const p of patterns) q = q.replace(p, " ");
   q = q.replace(/^\s*i\s+/g, " ").replace(/\s+i\s+/g, " ");
   q = q.replace(/\s+/g, " ").trim();
