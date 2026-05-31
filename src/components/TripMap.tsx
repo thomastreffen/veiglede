@@ -412,7 +412,7 @@ function SvgTripMap({
         {/* Stop pins */}
         {projected.mapped.map((m) => {
           const pt = project(m.loc);
-          const meta = stopMeta(m.stop.type);
+          const meta = stopDisplayMeta(m.stop);
           const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
           const selected = selectedStopId === m.stop.id;
           const r = selected ? 16 : compact ? 9 : 12;
