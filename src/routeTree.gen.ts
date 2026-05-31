@@ -28,6 +28,7 @@ import { Route as ApiPublicGooglePlacesRouteImport } from './routes/api/public/g
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
 import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
+import { Route as AppSettingsMapsCheckRouteImport } from './routes/_app.settings.maps-check'
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
 import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.trips.$tripId.stops.$stopId'
 
@@ -125,6 +126,11 @@ const AppTripsTripIdRoute = AppTripsTripIdRouteImport.update({
   path: '/$tripId',
   getParentRoute: () => AppTripsRoute,
 } as any)
+const AppSettingsMapsCheckRoute = AppSettingsMapsCheckRouteImport.update({
+  id: '/maps-check',
+  path: '/maps-check',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppTripsTripIdRoadbookRoute = AppTripsTripIdRoadbookRouteImport.update({
   id: '/roadbook',
   path: '/roadbook',
@@ -144,12 +150,13 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
-  '/settings': typeof AppSettingsRoute
+  '/settings': typeof AppSettingsRouteWithChildren
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
+  '/settings/maps-check': typeof AppSettingsMapsCheckRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -166,12 +173,13 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
-  '/settings': typeof AppSettingsRoute
+  '/settings': typeof AppSettingsRouteWithChildren
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
+  '/settings/maps-check': typeof AppSettingsMapsCheckRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -190,12 +198,13 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/roadbook': typeof AppRoadbookRoute
-  '/_app/settings': typeof AppSettingsRoute
+  '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/invite/$token': typeof InviteTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
+  '/_app/settings/maps-check': typeof AppSettingsMapsCheckRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
+    | '/settings/maps-check'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
+    | '/settings/maps-check'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
+    | '/_app/settings/maps-check'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
     | '/api/public/directions'
@@ -426,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTripsTripIdRouteImport
       parentRoute: typeof AppTripsRoute
     }
+    '/_app/settings/maps-check': {
+      id: '/_app/settings/maps-check'
+      path: '/maps-check'
+      fullPath: '/settings/maps-check'
+      preLoaderRoute: typeof AppSettingsMapsCheckRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/trips/$tripId/roadbook': {
       id: '/_app/trips/$tripId/roadbook'
       path: '/roadbook'
@@ -442,6 +461,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AppSettingsRouteChildren {
+  AppSettingsMapsCheckRoute: typeof AppSettingsMapsCheckRoute
+}
+
+const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsMapsCheckRoute: AppSettingsMapsCheckRoute,
+}
+
+const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
+  AppSettingsRouteChildren,
+)
 
 interface AppTripsTripIdRouteChildren {
   AppTripsTripIdRoadbookRoute: typeof AppTripsTripIdRoadbookRoute
@@ -474,14 +505,14 @@ const AppTripsRouteWithChildren = AppTripsRoute._addFileChildren(
 interface AppRouteChildren {
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppRoadbookRoute: typeof AppRoadbookRoute
-  AppSettingsRoute: typeof AppSettingsRoute
+  AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppTripsRoute: typeof AppTripsRouteWithChildren
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppOnboardingRoute: AppOnboardingRoute,
   AppRoadbookRoute: AppRoadbookRoute,
-  AppSettingsRoute: AppSettingsRoute,
+  AppSettingsRoute: AppSettingsRouteWithChildren,
   AppTripsRoute: AppTripsRouteWithChildren,
 }
 
@@ -505,13 +536,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
