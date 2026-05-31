@@ -47,10 +47,13 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   }, [trip?.routeGeometry, firstStop?.lat, firstStop?.lng]);
 
   const fuelSearchOptions = useMemo<SearchOptions>(() => ({
-    provider: "mapbox", proximity, bbox: NORWAY_BBOX,
+    provider: "foursquare", proximity, bbox: NORWAY_BBOX, fsqCategories: FSQ_FUEL, fsqRadius: 80000,
   }), [proximity]);
   const lodgingSearchOptions = useMemo<SearchOptions>(() => ({
-    provider: "mapbox", proximity, bbox: NORWAY_BBOX,
+    provider: "foursquare", proximity, bbox: NORWAY_BBOX, fsqCategories: FSQ_LODGING, fsqRadius: 80000,
+  }), [proximity]);
+  const stopSearchOptions = useMemo<SearchOptions>(() => ({
+    provider: "foursquare", proximity, bbox: NORWAY_BBOX, fsqRadius: 80000,
   }), [proximity]);
 
   // Stop form
