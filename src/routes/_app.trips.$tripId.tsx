@@ -821,28 +821,33 @@ function PlannerActions({
         <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
           <p className="text-sm font-semibold">Neste destinasjon etter {trip.destination}</p>
           <p className="mt-1 text-xs text-muted-foreground">F.eks. Ålesund, Geiranger, eller et hotell. Kartet oppdateres ved neste rutegenerering.</p>
-          <div className="mt-3 flex gap-2">
-            <input
+          <div className="mt-3 space-y-2" onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}>
+            <PlaceAutocomplete
               value={destText}
-              onChange={(e) => setDestText(e.target.value)}
+              onTextChange={setDestText}
+              selected={destPlace}
+              onSelect={setDestPlace}
               placeholder="Sted eller hotell"
-              className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-primary"
+              ariaLabel="Neste destinasjon"
             />
-            <button
-              onClick={() => {
-                const place = destText.trim();
-                if (!place) return;
-                tripsApi.addDestination(trip.id, place);
-                setDestText("");
-                setDestOpen(false);
-              }}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110"
-            >
-              Legg til
-            </button>
-            <button onClick={() => { setDestOpen(false); setDestText(""); }} className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
-              Avbryt
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const place = (destPlace?.name ?? destText).trim();
+                  if (!place) return;
+                  tripsApi.addDestination(trip.id, place);
+                  setDestText("");
+                  setDestPlace(null);
+                  setDestOpen(false);
+                }}
+                className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110"
+              >
+                Legg til
+              </button>
+              <button onClick={() => { setDestOpen(false); setDestText(""); setDestPlace(null); }} className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+                Avbryt
+              </button>
+            </div>
           </div>
         </div>
       )}
