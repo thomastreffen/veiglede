@@ -118,7 +118,7 @@ export const Route = createFileRoute("/api/public/google-places")({
         const category = (url.searchParams.get("category") ?? "").trim();
         const lng = Number(url.searchParams.get("lng") ?? "9.0");
         const lat = Number(url.searchParams.get("lat") ?? "61.0");
-        const radius = Math.max(1000, Math.min(500000, Number(url.searchParams.get("radius") ?? "500000") || 500000));
+        const radius = Math.max(1000, Math.min(50000, Number(url.searchParams.get("radius") ?? "50000") || 50000));
 
         const body: Record<string, unknown> = {
           input,
