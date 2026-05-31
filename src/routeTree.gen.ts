@@ -23,8 +23,6 @@ import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
-import { Route as ApiPublicPlacesSearchRouteImport } from './routes/api/public.places-search'
-import { Route as ApiPublicMapboxGeocodeRouteImport } from './routes/api/public.mapbox-geocode'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
 import { Route as ApiPublicGooglePlacesRouteImport } from './routes/api/public/google-places'
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
@@ -102,16 +100,6 @@ const ApiPublicPoiSearchRoute = ApiPublicPoiSearchRouteImport.update({
   path: '/api/public/poi-search',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicPlacesSearchRoute = ApiPublicPlacesSearchRouteImport.update({
-  id: '/api/public/places-search',
-  path: '/api/public/places-search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicMapboxGeocodeRoute = ApiPublicMapboxGeocodeRouteImport.update({
-  id: '/api/public/mapbox-geocode',
-  path: '/api/public/mapbox-geocode',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
   id: '/api/public/map-config',
   path: '/api/public/map-config',
@@ -167,8 +155,6 @@ export interface FileRoutesByFullPath {
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
-  '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
-  '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -191,8 +177,6 @@ export interface FileRoutesByTo {
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
-  '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
-  '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -217,8 +201,6 @@ export interface FileRoutesById {
   '/api/public/directions': typeof ApiPublicDirectionsRoute
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
-  '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
-  '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
@@ -243,8 +225,6 @@ export interface FileRouteTypes {
     | '/api/public/directions'
     | '/api/public/google-places'
     | '/api/public/map-config'
-    | '/api/public/mapbox-geocode'
-    | '/api/public/places-search'
     | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
@@ -267,8 +247,6 @@ export interface FileRouteTypes {
     | '/api/public/directions'
     | '/api/public/google-places'
     | '/api/public/map-config'
-    | '/api/public/mapbox-geocode'
-    | '/api/public/places-search'
     | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
     | '/trips/$tripId/stops/$stopId'
@@ -292,8 +270,6 @@ export interface FileRouteTypes {
     | '/api/public/directions'
     | '/api/public/google-places'
     | '/api/public/map-config'
-    | '/api/public/mapbox-geocode'
-    | '/api/public/places-search'
     | '/api/public/poi-search'
     | '/_app/trips/$tripId/roadbook'
     | '/_app/trips/$tripId/stops/$stopId'
@@ -312,8 +288,6 @@ export interface RootRouteChildren {
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
   ApiPublicGooglePlacesRoute: typeof ApiPublicGooglePlacesRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
-  ApiPublicMapboxGeocodeRoute: typeof ApiPublicMapboxGeocodeRoute
-  ApiPublicPlacesSearchRoute: typeof ApiPublicPlacesSearchRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
 }
 
@@ -415,20 +389,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/poi-search'
       fullPath: '/api/public/poi-search'
       preLoaderRoute: typeof ApiPublicPoiSearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/places-search': {
-      id: '/api/public/places-search'
-      path: '/api/public/places-search'
-      fullPath: '/api/public/places-search'
-      preLoaderRoute: typeof ApiPublicPlacesSearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/mapbox-geocode': {
-      id: '/api/public/mapbox-geocode'
-      path: '/api/public/mapbox-geocode'
-      fullPath: '/api/public/mapbox-geocode'
-      preLoaderRoute: typeof ApiPublicMapboxGeocodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/map-config': {
@@ -540,10 +500,18 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
   ApiPublicGooglePlacesRoute: ApiPublicGooglePlacesRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
-  ApiPublicMapboxGeocodeRoute: ApiPublicMapboxGeocodeRoute,
-  ApiPublicPlacesSearchRoute: ApiPublicPlacesSearchRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
