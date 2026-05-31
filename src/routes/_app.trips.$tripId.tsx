@@ -15,6 +15,7 @@ import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { TripCompanions } from "@/components/TripCompanions";
+import { TripMembers } from "@/components/TripMembers";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
