@@ -785,6 +785,36 @@ function PlannerActions({
   const [destOpen, setDestOpen] = useState(false);
   const [destText, setDestText] = useState("");
   const [destPlace, setDestPlace] = useState<ResolvedPlace | null>(null);
+  const [lodgingOpen, setLodgingOpen] = useState(false);
+  const [lodgingText, setLodgingText] = useState("");
+  const [lodgingPlace, setLodgingPlace] = useState<ResolvedPlace | null>(null);
+
+  const lastDayId = tripDays.length > 0 ? tripDays[tripDays.length - 1].id : null;
+
+  const addLodging = (p: ResolvedPlace) => {
+    if (!lastDayId) return;
+    tripsApi.addStop(lastDayId, {
+      name: p.name,
+      type: "lodging",
+      location: p.secondary ?? p.label ?? p.name,
+      description: p.secondary ? `Overnatting · ${p.secondary}` : "Overnatting før neste etappe.",
+      reason: "Naturlig stopp for natten.",
+      durationMin: 720,
+      lat: p.lat,
+      lng: p.lng,
+    });
+    setLodgingText("");
+    setLodgingPlace(null);
+    setLodgingOpen(false);
+  };
+
+  const onLodgingSelect = (p: ResolvedPlace | null) => {
+    setLodgingPlace(p);
+    if (p && !p.needsDetails && (p.lat || p.lng)) {
+      addLodging(p);
+    }
+  };
+
   const durationMin = trip.routeDurationMin ?? 0;
   const isLongLeg = durationMin > 0 && durationMin > maxDrivingHours * 60;
 
