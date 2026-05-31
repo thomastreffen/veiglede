@@ -8,12 +8,8 @@ import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { ResolvedPlace, SearchOptions } from "@/lib/places/geocoder";
 import { routeMidpointAndLengthKm } from "@/lib/geo";
 
-const NORWAY_BBOX = "4.0,57.0,32.0,71.5";
 const FUEL_CHIPS = ["Circle K", "Uno-X", "Shell", "Esso", "Recharge", "Mer", "Tesla"] as const;
 const LODGING_CHIPS = ["Hotell", "Hytte", "Camping", "Scandic", "Thon", "Nordic Choice"] as const;
-// Foursquare category IDs
-const FSQ_FUEL = "17114"; // Gas Station
-const FSQ_LODGING = "19014,19020,19009,16039"; // Hotel, Motel, B&B, Campground
 
 interface Props {
   tripId: string;
@@ -47,13 +43,13 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   }, [trip?.routeGeometry, firstStop?.lat, firstStop?.lng]);
 
   const fuelSearchOptions = useMemo<SearchOptions>(() => ({
-    provider: "foursquare", proximity, bbox: NORWAY_BBOX, fsqCategories: FSQ_FUEL, fsqRadius: 80000,
+    category: "fuel", proximity,
   }), [proximity]);
   const lodgingSearchOptions = useMemo<SearchOptions>(() => ({
-    provider: "foursquare", proximity, bbox: NORWAY_BBOX, fsqCategories: FSQ_LODGING, fsqRadius: 80000,
+    category: "lodging", proximity,
   }), [proximity]);
   const stopSearchOptions = useMemo<SearchOptions>(() => ({
-    provider: "foursquare", proximity, bbox: NORWAY_BBOX, fsqRadius: 80000,
+    proximity,
   }), [proximity]);
 
   // Stop form
