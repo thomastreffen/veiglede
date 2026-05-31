@@ -99,12 +99,22 @@ export function PlaceAutocomplete({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  const pick = (p: ResolvedPlace) => {
+  const pick = async (p: ResolvedPlace) => {
     skipNextSearch.current = true;
     onTextChange(p.name);
-    onSelect(p);
     setOpen(false);
     setActiveIdx(-1);
+    // Google autocomplete suggestions need a Place Details call for lat/lng.
+    if (p.needsDetails) {
+      onSelect(p); // optimistic
+      const resolved = await resolveGooglePlace(p);
+      if (resolved) {
+        onTextChange(resolved.name);
+        onSelect(resolved);
+      }
+    } else {
+      onSelect(p);
+    }
   };
 
   const useAnyway = () => {
