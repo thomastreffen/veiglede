@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, XCircle, Loader2, AlertTriangle, ArrowLeft, RefreshCw, Copy } from "lucide-react";
 
-export const Route = createFileRoute("/_app/settings/maps-check")({
+export const Route = createFileRoute("/_app/maps-check")({
   component: MapsCheckPage,
 });
 
