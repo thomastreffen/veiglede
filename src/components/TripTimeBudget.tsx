@@ -86,6 +86,9 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
         ) : null}
       </ul>
 
+      <LodgingCostBreakdown stops={stops} />
+
+
       {drivingHelper && (
         <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{drivingHelper}</p>
       )}
