@@ -54,6 +54,15 @@ export interface Stop {
   extraDistanceKm?: number;
   /** Photos uploaded by the user, stored in Supabase Storage. Max 5 per stop. */
   photos?: StopPhoto[];
+  /** Lodging-only booking context (optional, only relevant when type === "lodging"). */
+  booking?: {
+    checkinDate?: string;   // ISO yyyy-mm-dd
+    checkoutDate?: string;  // ISO yyyy-mm-dd
+    nights?: number;
+    guests?: number;
+    pricePerNight?: number; // NOK
+    status?: "none" | "booked" | "paid";
+  };
 }
 
 export interface StopPhoto {
@@ -438,6 +447,8 @@ export const tripsApi = {
       routeStatus: input.routeStatus,
       distanceFromRouteKm: input.distanceFromRouteKm,
       extraDistanceKm: input.extraDistanceKm,
+      photos: input.photos,
+      booking: input.booking,
       order,
     };
     state = { ...state, stops: [...state.stops, stop] };
