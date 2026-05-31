@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
-import { useVehicles, energyMeta, type Vehicle } from "@/lib/vehicles-store";
+import { useVehicles, energyMeta, energyTypeToSource, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { TripMap } from "@/components/TripMap";
 import { DemoDebugPanel, useDebugMode } from "@/components/DemoDebugPanel";
@@ -247,7 +247,7 @@ function NewTripWizard() {
     void (async () => {
       const s = styleMeta(style);
       const vt = selectedVehicle.type;
-      const energy = selectedVehicle.energy;
+      const energy = energyTypeToSource(selectedVehicle.energy);
       const ai = buildAiSummary({
         origin, destination, vehicle: vt, style,
         energy, vehicleName: selectedVehicle.name,

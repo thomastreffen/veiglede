@@ -64,7 +64,7 @@ export function searchDemoPlaces(q: string, limit = 6): ResolvedPlace[] {
 
 export interface SearchOptions {
   /** Semantic category — restricts Google place types. */
-  category?: "fuel" | "lodging";
+  category?: "fuel" | "charging" | "lodging";
   /** Optional brand/keyword prefix prepended to the user's text. */
   queryPrefix?: string;
   /** Proximity bias (e.g. trip route midpoint). */

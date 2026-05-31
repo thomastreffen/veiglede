@@ -180,8 +180,8 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
                 ))}
               </div>
             </Field>
-            <Field label="Drivstoff">
-              <div className="grid grid-cols-2 gap-1.5">
+            <Field label="Drivstoff *">
+              <div className="grid grid-cols-3 gap-1.5">
                 {ENERGIES.map((e) => (
                   <button
                     key={e.value}
@@ -189,12 +189,13 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
                     className={`rounded-xl border px-2 py-2 text-left transition-colors ${energy === e.value ? "border-primary bg-primary/10" : "border-border bg-surface hover:border-border/80"}`}
                   >
                     <span className="text-base">{e.emoji}</span>
-                    <p className="text-[11px] mt-0.5">{e.label}</p>
+                    <p className="text-[11px] mt-0.5 leading-tight">{e.label}</p>
                   </button>
                 ))}
               </div>
             </Field>
           </div>
+
 
           {/* Default style */}
           <Field label="Standard rutestil">

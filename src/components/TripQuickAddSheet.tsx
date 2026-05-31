@@ -1,15 +1,17 @@
 import { useMemo, useRef, useState } from "react";
-import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft } from "lucide-react";
+import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { tripsApi } from "@/lib/trips-store";
+import { tripsApi, tripFuelKind } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
 import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { ResolvedPlace, SearchOptions } from "@/lib/places/geocoder";
 import { routeMidpointAndLengthKm } from "@/lib/geo";
 
-const FUEL_CHIPS = ["Circle K", "Uno-X", "Shell", "Esso", "Recharge", "Mer", "Tesla"] as const;
+const PETROL_CHIPS = ["Circle K", "Uno-X", "Shell", "Esso", "Best"] as const;
+const CHARGING_CHIPS = ["Recharge", "Mer", "Tesla", "Ionity", "Asko", "Fortum"] as const;
 const LODGING_CHIPS = ["Hotell", "Hytte", "Camping", "Scandic", "Thon", "Nordic Choice"] as const;
+
 
 interface Props {
   tripId: string;
@@ -42,15 +44,27 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     return { lng: 9.0, lat: 61.0 };
   }, [trip?.routeGeometry, firstStop?.lat, firstStop?.lng]);
 
+  // Trip fuel kind drives whether we search for gas stations, chargers, or both.
+  const tripKind = trip ? tripFuelKind(trip) : "other";
+  const [fuelSubMode, setFuelSubMode] = useState<"petrol" | "charging">(
+    tripKind === "electric" ? "charging" : "petrol"
+  );
+  // When hybrid, user can toggle; otherwise forced by tripKind.
+  const effectiveFuelMode: "petrol" | "charging" =
+    tripKind === "electric" ? "charging" :
+    tripKind === "hybrid" ? fuelSubMode : "petrol";
+
   const fuelSearchOptions = useMemo<SearchOptions>(() => ({
-    category: "fuel", proximity,
-  }), [proximity]);
+    category: effectiveFuelMode === "charging" ? "charging" : "fuel",
+    proximity,
+  }), [proximity, effectiveFuelMode]);
   const lodgingSearchOptions = useMemo<SearchOptions>(() => ({
     category: "lodging", proximity,
   }), [proximity]);
   const stopSearchOptions = useMemo<SearchOptions>(() => ({
     proximity,
   }), [proximity]);
+
 
   // Stop form
   const [stopText, setStopText] = useState("");
@@ -141,21 +155,25 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     if (!firstDay) { toast.error("Ingen dag tilgjengelig"); return; }
     if (!fuelPlace) { toast.error("Velg et sted fra listen"); return; }
     const price = fuelPrice.trim() ? Number(fuelPrice.replace(",", ".")) : null;
+    const isCharging = effectiveFuelMode === "charging";
+    const unitLabel = isCharging ? "kr/kWh" : "kr/l";
     const desc = price && !Number.isNaN(price)
-      ? `Tanking / lading. Estimert pris: ${price.toFixed(2)} kr/l.`
-      : "Tanking / lading.";
+      ? `${isCharging ? "Lading" : "Tanking"}. Estimert pris: ${price.toFixed(2)} ${unitLabel}.`
+      : isCharging ? "Lading." : "Tanking.";
     tripsApi.addStop(firstDay.id, {
       name: fuelPlace.name,
       type: "fuel",
+      energy: isCharging ? "electric" : (tripKind === "diesel" ? "diesel" : "petrol"),
       location: fuelPlace.secondary ?? fuelPlace.label,
       lat: fuelPlace.lat, lng: fuelPlace.lng,
       description: desc,
       reason: "Lagt til via hurtigvalg.",
-      durationMin: 10,
+      durationMin: isCharging ? 25 : 10,
     });
-    toast.success(`Drivstoffstopp lagt til: ${fuelPlace.name}`);
+    toast.success(`${isCharging ? "Ladestopp" : "Drivstoffstopp"} lagt til: ${fuelPlace.name}`);
     close();
   };
+
 
   const submitLodging = () => {
     if (!lastDay) { toast.error("Ingen dag tilgjengelig"); return; }
@@ -178,7 +196,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     { icon: <Camera className="h-5 w-5" />, label: "📷 Ta bilde / Last opp bilde", onClick: () => fileRef.current?.click() },
     { icon: <MapPin className="h-5 w-5" />, label: "📍 Legg til stopp", onClick: () => setMode("stop") },
     { icon: <StickyNote className="h-5 w-5" />, label: "📝 Legg til notat", onClick: addNote },
-    { icon: <Fuel className="h-5 w-5" />, label: "⛽ Legg til drivstoffstopp", onClick: () => setMode("fuel") },
+    { icon: tripKind === "electric" ? <Zap className="h-5 w-5" /> : <Fuel className="h-5 w-5" />, label: tripKind === "electric" ? "⚡ Legg til ladestopp" : tripKind === "hybrid" ? "⛽⚡ Legg til drivstoff / lading" : "⛽ Legg til drivstoffstopp", onClick: () => setMode("fuel") },
     { icon: <BedDouble className="h-5 w-5" />, label: "🏨 Legg til overnatting", onClick: () => setMode("lodging") },
   ];
 
@@ -270,36 +288,63 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
         )}
 
         {mode === "fuel" && (
-          <FormShell title="Legg til drivstoffstopp" onBack={() => setMode("menu")}>
+          <FormShell
+            title={effectiveFuelMode === "charging" ? "Legg til ladestopp" : "Legg til drivstoffstopp"}
+            onBack={() => setMode("menu")}
+          >
+            {tripKind === "hybrid" && !fuelPlace && (
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setFuelSubMode("petrol")}
+                  className={`flex-1 min-h-9 rounded-full border px-3 text-xs font-medium ${effectiveFuelMode === "petrol" ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface text-muted-foreground"}`}
+                >
+                  ⛽ Drivstoff
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFuelSubMode("charging")}
+                  className={`flex-1 min-h-9 rounded-full border px-3 text-xs font-medium ${effectiveFuelMode === "charging" ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface text-muted-foreground"}`}
+                >
+                  ⚡ Lading
+                </button>
+              </div>
+            )}
             {!fuelPlace && (
               <ChipRow
-                chips={FUEL_CHIPS as unknown as string[]}
+                chips={(effectiveFuelMode === "charging" ? CHARGING_CHIPS : PETROL_CHIPS) as unknown as string[]}
                 onPick={(brand) => { setFuelPlace(null); setFuelText((prev) => combineChip(brand, prev)); }}
               />
             )}
             <PlaceField
-              label="Søk etter bensinstasjon / ladestasjon"
+              label={effectiveFuelMode === "charging" ? "Søk etter ladestasjon" : "Søk etter bensinstasjon"}
               text={fuelText}
               place={fuelPlace}
               onTextChange={setFuelText}
               onSelect={setFuelPlace}
-              placeholder="F.eks. Circle K Lillehammer"
+              placeholder={effectiveFuelMode === "charging" ? "F.eks. Recharge Dombås" : "F.eks. Circle K Lillehammer"}
               searchOptions={fuelSearchOptions}
             />
 
             {fuelPlace && (
-              <Field label="Estimert pris per liter (valgfritt)">
+              <Field label={effectiveFuelMode === "charging" ? "Pris per kWh (valgfritt)" : "Pris per liter (valgfritt)"}>
                 <input
                   type="number" inputMode="decimal" step="0.01"
                   value={fuelPrice}
                   onChange={(e) => setFuelPrice(e.target.value)}
-                  placeholder="F.eks. 21.90"
+                  placeholder={effectiveFuelMode === "charging" ? "F.eks. 5.90" : "F.eks. 21.90"}
                   className="form-input"
                 />
               </Field>
             )}
-            <SubmitRow onCancel={close} onSubmit={submitFuel} label="Legg til drivstoffstopp" disabled={!fuelPlace} />
+            <SubmitRow
+              onCancel={close}
+              onSubmit={submitFuel}
+              label={effectiveFuelMode === "charging" ? "Legg til ladestopp" : "Legg til drivstoffstopp"}
+              disabled={!fuelPlace}
+            />
           </FormShell>
+
         )}
 
         {mode === "lodging" && (
