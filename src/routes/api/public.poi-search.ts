@@ -121,7 +121,7 @@ export const Route = createFileRoute("/api/public/poi-search")({
                           name: { type: "string" },
                           type: {
                             type: "string",
-                            enum: ["cafe", "viewpoint", "museum", "fuel", "attraction", "pause", "food"],
+                            enum: ["cafe", "viewpoint", "museum", "fuel", "charging", "attraction", "pause", "food"],
                           },
                           location: { type: "string", description: "Tettsted/kommune, Norge" },
                           lat: { type: "number" },
