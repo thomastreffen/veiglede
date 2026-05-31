@@ -241,6 +241,7 @@ function TripPlanner() {
       {/* Planning actions — flexible trip model */}
       <PlannerActions trip={trip} tripDays={tripDays} maxDrivingHours={prefs.maxDrivingHours} />
 
+
       {/* Time budget */}
       <section className="mt-4">
         <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
