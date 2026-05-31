@@ -488,3 +488,13 @@ function ChipRow({ chips, onPick }: { chips: string[]; onPick: (label: string) =
     </div>
   );
 }
+
+// Combine a quick-chip brand/type with any text the user has already typed,
+// so tapping "Scandic" after typing "risør" searches "Scandic risør".
+function combineChip(chip: string, prev: string): string {
+  const existing = (prev ?? "").trim();
+  if (!existing) return chip;
+  const lcExisting = existing.toLowerCase();
+  if (lcExisting.includes(chip.toLowerCase())) return existing;
+  return `${chip} ${existing}`;
+}
