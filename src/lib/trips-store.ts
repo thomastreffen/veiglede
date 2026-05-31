@@ -452,6 +452,7 @@ export const tripsApi = {
       extraDistanceKm: input.extraDistanceKm,
       photos: input.photos,
       booking: input.booking,
+      energy: input.energy,
       order,
     };
     state = { ...state, stops: [...state.stops, stop] };
