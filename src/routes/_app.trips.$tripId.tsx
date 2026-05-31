@@ -784,6 +784,7 @@ function PlannerActions({
 }) {
   const [destOpen, setDestOpen] = useState(false);
   const [destText, setDestText] = useState("");
+  const [destPlace, setDestPlace] = useState<ResolvedPlace | null>(null);
   const durationMin = trip.routeDurationMin ?? 0;
   const isLongLeg = durationMin > 0 && durationMin > maxDrivingHours * 60;
 
