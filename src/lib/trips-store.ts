@@ -137,6 +137,9 @@ export interface Trip {
   // The UI recomputes live from current stops so it stays accurate when the
   // user edits — this snapshot is kept for debug / future analytics.
   timeBreakdown?: TripTimeBreakdownSnapshot;
+  // Trip economy v1 — user-supplied fuel/energy price for turregnskap.
+  fuelPricePerUnit?: number; // NOK per liter (petrol/diesel) or per kWh (electric)
+  consumptionPer100Km?: number; // l/100km or kWh/100km override
 }
 
 export interface TripTimeBreakdownSnapshot {
@@ -1175,6 +1178,33 @@ export const STOP_TYPES: { value: StopType; label: string; emoji: string }[] = [
 export function stopMeta(t: StopType) {
   return STOP_TYPES.find((s) => s.value === t) ?? STOP_TYPES[STOP_TYPES.length - 1];
 }
+
+/**
+ * Display meta for a stop in lists/markers. Differs from `stopMeta` only for
+ * fuel stops: an electric "fuel" stop shows as "⚡ Ladestopp" and a
+ * petrol/diesel one as "⛽ Drivstoffstopp".
+ */
+export function stopDisplayMeta(stop: { type: StopType; energy?: EnergySource }) {
+  if (stop.type === "fuel") {
+    if (stop.energy === "electric") return { value: "fuel" as StopType, label: "Ladestopp", emoji: "⚡" };
+    if (stop.energy === "petrol" || stop.energy === "diesel" || stop.energy === "hybrid") {
+      return { value: "fuel" as StopType, label: "Drivstoffstopp", emoji: "⛽" };
+    }
+  }
+  return stopMeta(stop.type);
+}
+
+/** Coarse fuel kind for a trip, derived from its persisted EnergySource. */
+export function tripFuelKind(trip: Pick<Trip, "energy">): "petrol" | "diesel" | "electric" | "hybrid" | "other" {
+  switch (trip.energy) {
+    case "electric": return "electric";
+    case "diesel": return "diesel";
+    case "petrol": return "petrol";
+    case "hybrid": return "hybrid";
+    default: return "other";
+  }
+}
+
 
 export const VEHICLES: { value: VehicleType; label: string; emoji: string; sub: string }[] = [
   { value: "motorcycle", label: "Motorsykkel", emoji: "🏍️", sub: "Tur-MC · ADV · Sport · Vintage" },
