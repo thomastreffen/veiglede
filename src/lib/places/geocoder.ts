@@ -250,6 +250,27 @@ export async function searchPlaces(q: string, signal?: AbortSignal, options: Sea
 
   let failed = false;
 
+  // Foursquare provider — server-proxied; best for POIs in Norway.
+  if (options.provider === "foursquare") {
+    try {
+      const results = await searchFoursquare(query, sig, options);
+      if (results.length > 0) {
+        clearTimeout(timeout);
+        console.log(`Places: foursquare ${results.length} results`);
+        return { results, provider: "maptiler", failed: false };
+      }
+      console.log("Places: maptiler fallback (foursquare 0)");
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") {
+        clearTimeout(timeout);
+        return { results: [], provider: "demo", failed: true };
+      }
+      console.log("Places: maptiler fallback (foursquare error)");
+      failed = true;
+    }
+    // Fall through to MapTiler below.
+  }
+
   // Mapbox provider — server-proxied; no client key needed.
   // Mapbox v5 geocoding has thin POI coverage in Norway, so if it returns
   // nothing we transparently fall through to MapTiler before giving up.
