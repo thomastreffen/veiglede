@@ -274,7 +274,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
             {!fuelPlace && (
               <ChipRow
                 chips={FUEL_CHIPS as unknown as string[]}
-                onPick={(brand) => { setFuelPlace(null); setFuelText(brand); }}
+                onPick={(brand) => { setFuelPlace(null); setFuelText((prev) => combineChip(brand, prev)); }}
               />
             )}
             <PlaceField
