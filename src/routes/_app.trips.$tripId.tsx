@@ -828,7 +828,7 @@ function PlannerActions({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              onClick={() => { tripsApi.splitIntoDays(trip.id, 2); tripsApi.addOvernight(trip.id); }}
+              onClick={() => { tripsApi.splitIntoDays(trip.id, 2); setLodgingOpen(true); }}
               className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-950 hover:brightness-110"
             >
               Ja, foreslå overnatting
