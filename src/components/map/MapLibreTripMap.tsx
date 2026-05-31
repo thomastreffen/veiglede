@@ -10,7 +10,7 @@ import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
-import { stopMeta, stopDisplayMeta, tripsApi } from "@/lib/trips-store";
+import { stopDisplayMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
 import { distanceKm, nearestPointOnRoute, projectTrip } from "@/lib/geo";
 import { getCachedRoute, mapConfig } from "@/lib/map";
