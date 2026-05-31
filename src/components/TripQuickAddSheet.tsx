@@ -44,15 +44,27 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     return { lng: 9.0, lat: 61.0 };
   }, [trip?.routeGeometry, firstStop?.lat, firstStop?.lng]);
 
+  // Trip fuel kind drives whether we search for gas stations, chargers, or both.
+  const tripKind = trip ? tripFuelKind(trip) : "other";
+  const [fuelSubMode, setFuelSubMode] = useState<"petrol" | "charging">(
+    tripKind === "electric" ? "charging" : "petrol"
+  );
+  // When hybrid, user can toggle; otherwise forced by tripKind.
+  const effectiveFuelMode: "petrol" | "charging" =
+    tripKind === "electric" ? "charging" :
+    tripKind === "hybrid" ? fuelSubMode : "petrol";
+
   const fuelSearchOptions = useMemo<SearchOptions>(() => ({
-    category: "fuel", proximity,
-  }), [proximity]);
+    category: effectiveFuelMode === "charging" ? "charging" : "fuel",
+    proximity,
+  }), [proximity, effectiveFuelMode]);
   const lodgingSearchOptions = useMemo<SearchOptions>(() => ({
     category: "lodging", proximity,
   }), [proximity]);
   const stopSearchOptions = useMemo<SearchOptions>(() => ({
     proximity,
   }), [proximity]);
+
 
   // Stop form
   const [stopText, setStopText] = useState("");
@@ -143,21 +155,25 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     if (!firstDay) { toast.error("Ingen dag tilgjengelig"); return; }
     if (!fuelPlace) { toast.error("Velg et sted fra listen"); return; }
     const price = fuelPrice.trim() ? Number(fuelPrice.replace(",", ".")) : null;
+    const isCharging = effectiveFuelMode === "charging";
+    const unitLabel = isCharging ? "kr/kWh" : "kr/l";
     const desc = price && !Number.isNaN(price)
-      ? `Tanking / lading. Estimert pris: ${price.toFixed(2)} kr/l.`
-      : "Tanking / lading.";
+      ? `${isCharging ? "Lading" : "Tanking"}. Estimert pris: ${price.toFixed(2)} ${unitLabel}.`
+      : isCharging ? "Lading." : "Tanking.";
     tripsApi.addStop(firstDay.id, {
       name: fuelPlace.name,
       type: "fuel",
+      energy: isCharging ? "electric" : (tripKind === "diesel" ? "diesel" : "petrol"),
       location: fuelPlace.secondary ?? fuelPlace.label,
       lat: fuelPlace.lat, lng: fuelPlace.lng,
       description: desc,
       reason: "Lagt til via hurtigvalg.",
-      durationMin: 10,
+      durationMin: isCharging ? 25 : 10,
     });
-    toast.success(`Drivstoffstopp lagt til: ${fuelPlace.name}`);
+    toast.success(`${isCharging ? "Ladestopp" : "Drivstoffstopp"} lagt til: ${fuelPlace.name}`);
     close();
   };
+
 
   const submitLodging = () => {
     if (!lastDay) { toast.error("Ingen dag tilgjengelig"); return; }
