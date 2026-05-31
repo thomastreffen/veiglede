@@ -193,14 +193,14 @@ function TripPlanner() {
         </svg>
         <div className="relative">
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">
-              {v.emoji} {vehicleDisplay}
-            </span>
-            {em && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">
-                {em.emoji} {em.label}
-              </span>
-            )}
+            <VehiclePickerBadge
+              tripId={trip.id}
+              currentVehicleId={trip.vehicleId}
+              vehicleEmoji={v.emoji}
+              vehicleLabel={vehicleDisplay}
+              energyEmoji={em?.emoji}
+              energyLabel={em?.label}
+            />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">
               {s.emoji} {s.label}
             </span>
