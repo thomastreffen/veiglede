@@ -307,7 +307,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
             {!lodgingPlace && (
               <ChipRow
                 chips={LODGING_CHIPS as unknown as string[]}
-                onPick={(brand) => { setLodgingPlace(null); setLodgingText(brand); }}
+                onPick={(brand) => { setLodgingPlace(null); setLodgingText((prev) => combineChip(brand, prev)); }}
               />
             )}
             <PlaceField
