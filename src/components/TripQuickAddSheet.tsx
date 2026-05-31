@@ -1,15 +1,17 @@
 import { useMemo, useRef, useState } from "react";
-import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft } from "lucide-react";
+import { Camera, MapPin, StickyNote, Fuel, BedDouble, X, ArrowLeft, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { tripsApi } from "@/lib/trips-store";
+import { tripsApi, tripFuelKind } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
 import { uploadTripPhoto } from "@/lib/trip-photo-upload";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { ResolvedPlace, SearchOptions } from "@/lib/places/geocoder";
 import { routeMidpointAndLengthKm } from "@/lib/geo";
 
-const FUEL_CHIPS = ["Circle K", "Uno-X", "Shell", "Esso", "Recharge", "Mer", "Tesla"] as const;
+const PETROL_CHIPS = ["Circle K", "Uno-X", "Shell", "Esso", "Best"] as const;
+const CHARGING_CHIPS = ["Recharge", "Mer", "Tesla", "Ionity", "Asko", "Fortum"] as const;
 const LODGING_CHIPS = ["Hotell", "Hytte", "Camping", "Scandic", "Thon", "Nordic Choice"] as const;
+
 
 interface Props {
   tripId: string;
