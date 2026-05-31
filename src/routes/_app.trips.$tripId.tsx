@@ -779,7 +779,7 @@ function PlacementBtn({ label, onClick }: { label: string; onClick: () => void }
 function PlannerActions({
   trip, tripDays, maxDrivingHours,
 }: {
-  trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string };
+  trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string; startDate?: string };
   tripDays: { id: string; dayNumber: number }[];
   maxDrivingHours: number;
 }) {
@@ -790,31 +790,76 @@ function PlannerActions({
   const [lodgingText, setLodgingText] = useState("");
   const [lodgingPlace, setLodgingPlace] = useState<ResolvedPlace | null>(null);
 
+  // Booking context (populated after a lodging place is selected).
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultCheckin = trip.startDate ?? today;
+  const defaultCheckout = (() => {
+    const d = new Date(defaultCheckin);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
+  const [checkin, setCheckin] = useState(defaultCheckin);
+  const [checkout, setCheckout] = useState(defaultCheckout);
+  const [guests, setGuests] = useState(2);
+  const [priceText, setPriceText] = useState("");
+  const [bookingStatus, setBookingStatus] = useState<"none" | "booked" | "paid">("none");
+
   const lastDayId = tripDays.length > 0 ? tripDays[tripDays.length - 1].id : null;
 
-  const addLodging = (p: ResolvedPlace) => {
-    if (!lastDayId) return;
+  const resetLodging = () => {
+    setLodgingText(""); setLodgingPlace(null); setLodgingOpen(false);
+    setCheckin(defaultCheckin); setCheckout(defaultCheckout);
+    setGuests(2); setPriceText(""); setBookingStatus("none");
+  };
+
+  const nightsBetween = (a: string, b: string) => {
+    const ms = new Date(b).getTime() - new Date(a).getTime();
+    return Math.max(1, Math.round(ms / 86400000));
+  };
+
+  const commitLodging = (mode: "overnight" | "stop") => {
+    if (!lastDayId || !lodgingPlace) return;
+    const p = lodgingPlace;
+    if (mode === "stop") {
+      tripsApi.addStop(lastDayId, {
+        name: p.name,
+        type: "attraction",
+        location: p.secondary ?? p.label ?? p.name,
+        description: p.secondary ? `Stopp · ${p.secondary}` : "Stopp langs ruta.",
+        durationMin: 30,
+        lat: p.lat, lng: p.lng,
+      });
+      resetLodging();
+      return;
+    }
+    const nights = nightsBetween(checkin, checkout);
+    const price = priceText.trim() ? Number(priceText.replace(",", ".")) : undefined;
+    const validPrice = price != null && !Number.isNaN(price) && price > 0 ? price : undefined;
     tripsApi.addStop(lastDayId, {
       name: p.name,
       type: "lodging",
       location: p.secondary ?? p.label ?? p.name,
-      description: p.secondary ? `Overnatting · ${p.secondary}` : "Overnatting før neste etappe.",
-      reason: "Naturlig stopp for natten.",
-      durationMin: 720,
-      lat: p.lat,
-      lng: p.lng,
+      description: `Overnatting · ${nights} ${nights === 1 ? "natt" : "netter"}${validPrice ? ` · ${validPrice.toFixed(0)} kr/natt` : ""}.`,
+      reason: "Booking lagt inn fra planlegger.",
+      durationMin: 720 * nights,
+      lat: p.lat, lng: p.lng,
+      booking: {
+        checkinDate: checkin,
+        checkoutDate: checkout,
+        nights,
+        guests,
+        pricePerNight: validPrice,
+        status: bookingStatus,
+      },
     });
-    setLodgingText("");
-    setLodgingPlace(null);
-    setLodgingOpen(false);
+    resetLodging();
   };
 
   const onLodgingSelect = (p: ResolvedPlace | null) => {
     setLodgingPlace(p);
-    if (p && !p.needsDetails && (p.lat || p.lng)) {
-      addLodging(p);
-    }
+    // Do NOT auto-add — show booking context panel inline below.
   };
+
 
   const durationMin = trip.routeDurationMin ?? 0;
   const isLongLeg = durationMin > 0 && durationMin > maxDrivingHours * 60;
