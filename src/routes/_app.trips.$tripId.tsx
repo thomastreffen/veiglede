@@ -953,16 +953,134 @@ function PlannerActions({
               ariaLabel="Overnatting"
               searchOptions={{ category: "lodging" }}
             />
-            <div className="flex justify-end">
-              <button
-                onClick={() => { setLodgingOpen(false); setLodgingText(""); setLodgingPlace(null); }}
-                className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-              >
-                Avbryt
-              </button>
-            </div>
+            {!lodgingPlace && (
+              <div className="flex justify-end">
+                <button
+                  onClick={resetLodging}
+                  className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Avbryt
+                </button>
+              </div>
+            )}
           </div>
+
+          {lodgingPlace && (
+            <div className="mt-4 rounded-2xl border border-border bg-surface p-4 space-y-4">
+              <div className="flex items-start gap-2">
+                <span aria-hidden className="text-lg leading-none">🏨</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">{lodgingPlace.name}</p>
+                  {lodgingPlace.secondary && (
+                    <p className="text-xs text-muted-foreground truncate">{lodgingPlace.secondary}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setLodgingPlace(null); }}
+                  className="text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                >
+                  Endre
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Innsjekk</span>
+                  <input
+                    type="date"
+                    value={checkin}
+                    onChange={(e) => { const v = e.target.value; setCheckin(v); if (new Date(v) >= new Date(checkout)) { const d = new Date(v); d.setDate(d.getDate() + 1); setCheckout(d.toISOString().slice(0, 10)); } }}
+                    className="w-full min-h-10 rounded-lg border border-border bg-background/60 px-2 text-sm"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Utsjekk</span>
+                  <input
+                    type="date"
+                    value={checkout}
+                    min={checkin}
+                    onChange={(e) => setCheckout(e.target.value)}
+                    className="w-full min-h-10 rounded-lg border border-border bg-background/60 px-2 text-sm"
+                  />
+                </label>
+              </div>
+
+              <div>
+                <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Gjester</span>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setGuests(n)}
+                      className={`min-w-10 h-10 px-3 rounded-lg border text-sm font-medium ${guests === n ? "border-primary bg-primary/15 text-primary" : "border-border bg-background/60 text-foreground hover:border-primary/50"}`}
+                    >
+                      {n === 4 ? "4+" : n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="block">
+                <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Pris per natt (valgfritt)</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number" inputMode="decimal" min={0} step="1"
+                    value={priceText}
+                    onChange={(e) => setPriceText(e.target.value)}
+                    placeholder="0"
+                    className="flex-1 min-h-10 rounded-lg border border-border bg-background/60 px-2 text-sm"
+                  />
+                  <span className="text-xs text-muted-foreground">kr</span>
+                </div>
+                {priceText.trim() && !Number.isNaN(Number(priceText.replace(",", "."))) && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Totalt: {(Number(priceText.replace(",", ".")) * nightsBetween(checkin, checkout)).toFixed(0)} kr ({nightsBetween(checkin, checkout)} {nightsBetween(checkin, checkout) === 1 ? "natt" : "netter"})
+                  </p>
+                )}
+              </label>
+
+              <div>
+                <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Bookingstatus</span>
+                <div className="space-y-1.5">
+                  {([
+                    { v: "none", label: "Ikke booket ennå" },
+                    { v: "booked", label: "Booket ✓" },
+                    { v: "paid", label: "Betalt ✓" },
+                  ] as const).map((opt) => (
+                    <label key={opt.v} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bookingStatus"
+                        checked={bookingStatus === opt.v}
+                        onChange={() => setBookingStatus(opt.v)}
+                        className="accent-primary"
+                      />
+                      <span>{opt.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <button
+                  onClick={() => commitLodging("overnight")}
+                  className="flex-[2] min-h-11 rounded-xl bg-primary px-4 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+                >
+                  Legg til overnatting
+                </button>
+                <button
+                  onClick={() => commitLodging("stop")}
+                  className="flex-1 min-h-11 rounded-xl border border-border bg-surface px-3 text-sm text-foreground hover:bg-surface-2"
+                >
+                  Bare som stopp
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+
       )}
     </section>
   );
