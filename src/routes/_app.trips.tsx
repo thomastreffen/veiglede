@@ -67,6 +67,8 @@ function TripsDashboard() {
         </ul>
       )}
 
+      <FollowedTripsSection />
+
       {/* Vehicle summary */}
       {trips.length > 0 && (
         <section className="mt-10">
