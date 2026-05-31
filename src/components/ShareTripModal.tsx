@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/auth";
 import { useT } from "@/i18n/provider";
 import {
   createInvite, listInvitesForTrip, deleteInvite, inviteUrl,
-  type TripInvite,
+  type TripInvite, type InviteRole,
 } from "@/lib/trip-invites";
 import { flushTripsNow } from "@/lib/cloud-sync";
 
