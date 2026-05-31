@@ -86,6 +86,9 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
         ) : null}
       </ul>
 
+      <LodgingCostBreakdown stops={stops} />
+
+
       {drivingHelper && (
         <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{drivingHelper}</p>
       )}
@@ -144,3 +147,35 @@ export function TripDayTimeRow({ trip, days, stops, dayId, startTime }: DayRowPr
     </div>
   );
 }
+
+function LodgingCostBreakdown({ stops }: { stops: Stop[] }) {
+  const items = stops
+    .filter((s) => s.type === "lodging" && s.booking?.pricePerNight && (s.booking?.nights ?? 0) > 0)
+    .map((s) => {
+      const nights = s.booking!.nights ?? 1;
+      const price = s.booking!.pricePerNight!;
+      return { id: s.id, name: s.name, nights, total: price * nights };
+    });
+  if (items.length === 0) return null;
+  const grandTotal = items.reduce((sum, it) => sum + it.total, 0);
+  return (
+    <div className="mt-4 pt-3 border-t border-border/60">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 inline-flex items-center gap-1.5">
+        <Bed className="h-3 w-3" /> Overnatting (kostnad)
+      </p>
+      <ul className="space-y-1.5">
+        {items.map((it) => (
+          <li key={it.id} className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground truncate pr-2">{it.name} · {it.nights} {it.nights === 1 ? "natt" : "netter"}</span>
+            <span className="font-mono tabular-nums text-foreground">{it.total.toFixed(0)} kr</span>
+          </li>
+        ))}
+        <li className="flex items-center justify-between text-xs font-semibold pt-1.5 mt-1 border-t border-border/40">
+          <span>Total overnatting</span>
+          <span className="font-mono tabular-nums text-primary">{grandTotal.toFixed(0)} kr</span>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
