@@ -63,6 +63,8 @@ export interface Stop {
     pricePerNight?: number; // NOK
     status?: "none" | "booked" | "paid";
   };
+  /** Fuel/charging stop only — what kind of energy this stop provides. */
+  energy?: EnergySource;
 }
 
 export interface StopPhoto {
