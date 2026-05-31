@@ -1003,6 +1003,7 @@ async function searchMapboxPoiTerm(
       id: `mb-${q.type}-${f.id ?? `${i}-${f.lng.toFixed(3)}-${f.lat.toFixed(3)}`}`,
       name: f.name,
       type: q.type,
+      energy: q.energy,
       location: secondary || undefined,
       description: aiDesc || prettyDescription(f.category, q.fallbackDescription),
       reason: q.reason,
