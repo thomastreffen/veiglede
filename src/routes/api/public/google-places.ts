@@ -55,7 +55,14 @@ export const Route = createFileRoute("/api/public/google-places")({
         const action = (url.searchParams.get("action") ?? "autocomplete").trim();
 
         const lovableKey = (process.env.LOVABLE_API_KEY ?? "").trim();
-        const mapsKey = (process.env.GOOGLE_MAPS_API_KEY ?? "").trim();
+        // Prefer the user-supplied custom connection (suffix _1) over the
+        // Lovable-managed key — the managed key is locked to *.lovable.app
+        // and will fail browser referrer checks on custom domains.
+        const mapsKey = (
+          process.env.GOOGLE_MAPS_API_KEY_1 ??
+          process.env.GOOGLE_MAPS_API_KEY ??
+          ""
+        ).trim();
         if (!lovableKey || !mapsKey) {
           return json({ error: "google-maps-not-configured" }, 503);
         }
