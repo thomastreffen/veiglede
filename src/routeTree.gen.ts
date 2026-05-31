@@ -26,6 +26,7 @@ import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-
 import { Route as ApiPublicPlacesSearchRouteImport } from './routes/api/public.places-search'
 import { Route as ApiPublicMapboxGeocodeRouteImport } from './routes/api/public.mapbox-geocode'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
+import { Route as ApiPublicGooglePlacesRouteImport } from './routes/api/public/google-places'
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
 import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
@@ -116,6 +117,11 @@ const ApiPublicMapConfigRoute = ApiPublicMapConfigRouteImport.update({
   path: '/api/public/map-config',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicGooglePlacesRoute = ApiPublicGooglePlacesRouteImport.update({
+  id: '/api/public/google-places',
+  path: '/api/public/google-places',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicDirectionsRoute = ApiPublicDirectionsRouteImport.update({
   id: '/api/public/directions',
   path: '/api/public/directions',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
+  '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
   '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
+  '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
   '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
+  '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/mapbox-geocode': typeof ApiPublicMapboxGeocodeRoute
   '/api/public/places-search': typeof ApiPublicPlacesSearchRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
+    | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/mapbox-geocode'
     | '/api/public/places-search'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
+    | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/mapbox-geocode'
     | '/api/public/places-search'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
     | '/api/public/directions'
+    | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/mapbox-geocode'
     | '/api/public/places-search'
@@ -298,6 +310,7 @@ export interface RootRouteChildren {
   SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
+  ApiPublicGooglePlacesRoute: typeof ApiPublicGooglePlacesRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicMapboxGeocodeRoute: typeof ApiPublicMapboxGeocodeRoute
   ApiPublicPlacesSearchRoute: typeof ApiPublicPlacesSearchRoute
@@ -425,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMapConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/google-places': {
+      id: '/api/public/google-places'
+      path: '/api/public/google-places'
+      fullPath: '/api/public/google-places'
+      preLoaderRoute: typeof ApiPublicGooglePlacesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/directions': {
       id: '/api/public/directions'
       path: '/api/public/directions'
@@ -518,6 +538,7 @@ const rootRouteChildren: RootRouteChildren = {
   SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
+  ApiPublicGooglePlacesRoute: ApiPublicGooglePlacesRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicMapboxGeocodeRoute: ApiPublicMapboxGeocodeRoute,
   ApiPublicPlacesSearchRoute: ApiPublicPlacesSearchRoute,
@@ -526,3 +547,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
