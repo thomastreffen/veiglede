@@ -230,9 +230,9 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
                       <li key={inv.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/40 p-2 pl-3 text-xs">
                         <Users className="h-3.5 w-3.5 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="truncate font-mono">{url}</p>
+                          <p className="truncate text-xs font-semibold">{inv.invited_email ?? "Lenkeinvitasjon"}</p>
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {inv.invited_email ? `${inv.invited_email} · ` : ""}{statusLabel(inv.status)}
+                            {statusLabel(inv.status)} · {roleLabel(inv.role)}
                           </p>
                         </div>
                         <button
