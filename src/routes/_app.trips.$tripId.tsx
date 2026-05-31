@@ -339,7 +339,7 @@ function TripPlanner() {
 
                 <ul className="divide-y divide-border/60">
                   {dayStops.map((stop, idx) => {
-                    const meta = stopMeta(stop.type);
+                    const meta = stopDisplayMeta(stop);
                     return (
                       <li
                         key={stop.id}
