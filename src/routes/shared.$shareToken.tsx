@@ -7,6 +7,7 @@ import {
 } from "@/lib/trips-store";
 import { getPublicTripByToken } from "@/lib/public-trips.functions";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { TripComments } from "@/components/TripComments";
 import {
   MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass,
 } from "lucide-react";
@@ -172,6 +173,8 @@ function SharedTripByToken() {
             </div>
           </section>
         )}
+
+        <TripComments tripId={trip.id} />
 
         <section className="mt-8 rounded-2xl border border-dashed border-border p-5 text-center">
           <p className="text-xs text-muted-foreground">Inspirert? Lag din egen versjon.</p>
