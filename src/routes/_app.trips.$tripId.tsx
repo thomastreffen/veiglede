@@ -20,6 +20,8 @@ import { TripTracker } from "@/components/TripTracker";
 import { TripMemories } from "@/components/TripMemories";
 import { TripPhotosGallery } from "@/components/TripPhotosGallery";
 import { DetourPromptDialog } from "@/components/DetourPromptDialog";
+import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import type { ResolvedPlace } from "@/lib/places/geocoder";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
