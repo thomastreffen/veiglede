@@ -241,6 +241,7 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               onTextChange={setStopText}
               onSelect={setStopPlace}
               placeholder="By, attraksjon eller adresse"
+              searchOptions={stopSearchOptions}
             />
             {stopPlace && (
               <div className="space-y-2 pt-1">
