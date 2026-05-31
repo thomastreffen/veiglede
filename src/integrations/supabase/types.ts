@@ -65,6 +65,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          trip_id: string
+          user_avatar_url: string | null
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          trip_id: string
+          user_avatar_url?: string | null
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          trip_id?: string
+          user_avatar_url?: string | null
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       trip_invites: {
         Row: {
           created_at: string
@@ -75,6 +105,7 @@ export type Database = {
           joined_user_id: string | null
           opened_at: string | null
           owner_user_id: string
+          role: string
           status: string
           trip_id: string
         }
@@ -87,6 +118,7 @@ export type Database = {
           joined_user_id?: string | null
           opened_at?: string | null
           owner_user_id: string
+          role?: string
           status?: string
           trip_id: string
         }
@@ -99,6 +131,7 @@ export type Database = {
           joined_user_id?: string | null
           opened_at?: string | null
           owner_user_id?: string
+          role?: string
           status?: string
           trip_id?: string
         }
@@ -181,9 +214,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decline_invite: { Args: { p_token: string }; Returns: undefined }
       delete_my_account: { Args: never; Returns: undefined }
+      get_invite_preview: { Args: { p_token: string }; Returns: Json }
       get_shared_trip: { Args: { p_token: string }; Returns: Json }
+      is_trip_member: {
+        Args: { _trip_id: string; _user_id: string }
+        Returns: boolean
+      }
       join_trip_with_token: { Args: { p_token: string }; Returns: Json }
+      list_followed_trips: { Args: never; Returns: Json }
+      list_trip_members: { Args: { p_trip_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
