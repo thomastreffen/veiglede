@@ -286,10 +286,7 @@ function FollowedTripCard({ f }: { f: FollowedTrip }) {
     </li>
   );
 }
-      </ul>
-    </section>
-  );
-}
+
 
 function EmptyState() {
   return (
