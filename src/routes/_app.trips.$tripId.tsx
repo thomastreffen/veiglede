@@ -296,6 +296,7 @@ function TripPlanner() {
       </section>
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
+      <EditTripSheet trip={trip} open={editOpen} onOpenChange={setEditOpen} />
       <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title="Lagre og del turen din" description="Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter." redirectTo={`/trips/${tripId}`} />
 
       <section className="mt-4">
