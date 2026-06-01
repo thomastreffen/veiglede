@@ -446,15 +446,15 @@ function TripPlanner() {
                           </Link>
                           <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
                             <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
-                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt opp">
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label={td.moveUp}>
                               <ChevronUp className="h-4 w-4" />
                             </button>
                             <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
-                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label={td.moveDown}>
                               <ChevronDown className="h-4 w-4" />
                             </button>
-                            <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
-                              className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
+                            <button onClick={(e) => { e.preventDefault(); if (confirm(td.removeStopConfirm(stop.name))) tripsApi.deleteStop(stop.id); }}
+                              className="p-1.5 text-muted-foreground hover:text-destructive" aria-label={td.removeStop}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
@@ -469,20 +469,20 @@ function TripPlanner() {
                     );
                   })}
                   {dayStops.length === 0 && (
-                    <li className="px-5 py-6 text-sm text-muted-foreground italic">Ingen stopp på denne dagen enda.</li>
+                    <li className="px-5 py-6 text-sm text-muted-foreground italic">{td.noStopsToday}</li>
                   )}
                 </ul>
 
 
                 <div className="p-3 bg-background/40 border-t border-border/60 flex gap-2 overflow-x-auto">
-                  {STOP_TYPES.slice(0, 8).map((t) => (
-                    <button key={t.value}
+                  {STOP_TYPES.slice(0, 8).map((typ) => (
+                    <button key={typ.value}
                       onClick={() => {
-                        const stop = tripsApi.addStop(day.id, { type: t.value, name: `Nytt ${t.label.toLowerCase()}` });
+                        const stop = tripsApi.addStop(day.id, { type: typ.value, name: td.newStopPrefix(typ.label) });
                         navigate({ to: "/trips/$tripId/stops/$stopId", params: { tripId, stopId: stop.id } });
                       }}
                       className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-surface border border-border px-3 py-1.5 text-xs hover:border-primary">
-                      <span>{t.emoji}</span> {t.label}
+                      <span>{typ.emoji}</span> {typ.label}
                     </button>
                   ))}
                 </div>
