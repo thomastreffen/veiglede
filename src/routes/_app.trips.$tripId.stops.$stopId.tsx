@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useTripsStore, tripsApi, STOP_TYPES, type StopType } from "@/lib/trips-store";
 import { ArrowLeft, Trash2, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BookingEditor } from "@/components/BookingEditor";
 
 export const Route = createFileRoute("/_app/trips/$tripId/stops/$stopId")({
   head: () => ({ meta: [{ title: "Stopp — Veiglede" }] }),
