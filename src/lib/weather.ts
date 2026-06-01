@@ -1,5 +1,25 @@
 import { useEffect, useState } from "react";
 import { fetchWeatherForecast, type WeatherForecast } from "@/lib/weather.functions";
+import { lookupPlace, type LatLng } from "@/lib/geo";
+import type { Trip, TripDay, Stop } from "@/lib/trips-store";
+
+/** Compute the ISO date (YYYY-MM-DD) for a given trip day, falling back to trip.startDate + offset. */
+export function dayDate(trip: Trip, day: TripDay): string | undefined {
+  if (day.date) return day.date.slice(0, 10);
+  if (!trip.startDate) return undefined;
+  const base = new Date(trip.startDate);
+  if (Number.isNaN(base.getTime())) return undefined;
+  base.setDate(base.getDate() + (day.dayNumber - 1));
+  return base.toISOString().slice(0, 10);
+}
+
+/** Pick coords for a day: first stop with lat/lng, else trip.originLoc, else geocoded origin. */
+export function dayCoords(trip: Trip, dayStops: Stop[]): LatLng | undefined {
+  const stopHit = dayStops.find((s) => s.lat != null && s.lng != null);
+  if (stopHit) return { lat: stopHit.lat!, lng: stopHit.lng! };
+  if (trip.originLoc) return trip.originLoc;
+  return lookupPlace(trip.origin);
+}
 
 /** Map MET symbol_code → emoji. Handles `_day`/`_night`/`_polartwilight` suffixes. */
 export function symbolToEmoji(symbol?: string): string {
