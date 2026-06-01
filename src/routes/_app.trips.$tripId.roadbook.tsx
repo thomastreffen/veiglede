@@ -144,7 +144,7 @@ function Roadbook() {
         {tripDays.map((day) => {
           const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
           return (
-            <section key={day.id} className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+            <section key={day.id} className="print-day rounded-2xl border border-border bg-surface p-5 md:p-6">
               <div className="flex items-baseline gap-3">
                 <span className="font-display text-3xl uppercase text-primary">Dag {day.dayNumber}</span>
                 {day.date && <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{day.date}</span>}
