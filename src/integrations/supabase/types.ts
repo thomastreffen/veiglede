@@ -188,6 +188,167 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_accounts: {
+        Row: {
+          business_name: string
+          category: string
+          contact_name: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          org_number: string | null
+          partner_id: string | null
+          status: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          business_name: string
+          category: string
+          contact_name: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          org_number?: string | null
+          partner_id?: string | null
+          status?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          business_name?: string
+          category?: string
+          contact_name?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          org_number?: string | null
+          partner_id?: string | null
+          status?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_accounts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_campaigns: {
+        Row: {
+          budget_nok: number
+          cpm_rate: number
+          created_at: string
+          ends_at: string
+          id: string
+          name: string
+          partner_account_id: string
+          partner_id: string | null
+          pricing_model: string
+          starts_at: string
+          status: string
+        }
+        Insert: {
+          budget_nok: number
+          cpm_rate?: number
+          created_at?: string
+          ends_at: string
+          id?: string
+          name: string
+          partner_account_id: string
+          partner_id?: string | null
+          pricing_model?: string
+          starts_at: string
+          status?: string
+        }
+        Update: {
+          budget_nok?: number
+          cpm_rate?: number
+          created_at?: string
+          ends_at?: string
+          id?: string
+          name?: string
+          partner_account_id?: string
+          partner_id?: string | null
+          pricing_model?: string
+          starts_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_campaigns_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_campaigns_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_invoices: {
+        Row: {
+          amount_nok: number
+          campaign_id: string | null
+          clicks: number
+          created_at: string
+          id: string
+          impressions: number
+          partner_account_id: string
+          period_end: string
+          period_start: string
+          status: string
+        }
+        Insert: {
+          amount_nok?: number
+          campaign_id?: string | null
+          clicks?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          partner_account_id: string
+          period_end: string
+          period_start: string
+          status?: string
+        }
+        Update: {
+          amount_nok?: number
+          campaign_id?: string | null
+          clicks?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          partner_account_id?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_invoices_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "partner_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partners: {
         Row: {
           category: string
