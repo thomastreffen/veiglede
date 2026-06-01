@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { amIAdminFn } from "@/lib/admin.functions";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
-import { BarChart3, Users, Map, Handshake, Megaphone, Settings as SettingsIcon, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Veiglede" }, { name: "robots", content: "noindex" }] }),
