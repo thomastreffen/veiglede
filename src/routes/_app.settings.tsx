@@ -207,6 +207,10 @@ function Settings() {
             Standardkjøretøy: <span className="text-foreground font-medium">{vehicleMeta(defaultVehicle.type).emoji} {defaultVehicle.name}</span>
           </p>
         )}
+
+        <div className="mt-5 pt-5 border-t border-border/60">
+          <UsernameField />
+        </div>
       </Section>
 
       {/* 2 — My vehicles */}
