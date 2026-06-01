@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Compass, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Sparkles, Share2, Users,
 } from "lucide-react";
+import { TripReactionsRow } from "@/components/TripReactionsRow";
+import { SaveTripButton } from "@/components/SaveTripButton";
 
 const ExploreSearch = z.object({
   tab: z.enum(["turer", "brukere"]).optional(),
@@ -300,7 +302,15 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
           <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground border-t border-border/60 pt-3">
             <span className="inline-flex items-center gap-1 truncate min-w-0"><MapPin className="h-3 w-3 shrink-0" /> {t.origin} → {t.destination}</span>
           </div>
-          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
+          <div className="mt-3" onClick={(e) => e.preventDefault()}>
+            <TripReactionsRow tripId={t.id} />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]" onClick={(e) => e.preventDefault()}>
+            <SaveTripButton payload={{
+              sourceTripId: t.id, title: t.title, subtitle: t.subtitle, region: t.region,
+              origin: t.origin, destination: t.destination, distanceKm: t.distanceKm,
+              drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
+            }} />
             <span className="text-muted-foreground truncate">{t.ownerName ? `av ${t.ownerName}` : "av en reisende"}</span>
             <span className="inline-flex items-center gap-1 text-primary group-hover:translate-x-0.5 transition-transform">Se tur <ArrowRight className="h-3 w-3" /></span>
           </div>

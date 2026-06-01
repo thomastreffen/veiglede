@@ -6,6 +6,9 @@ import { COVERS, vehicleMeta, styleMeta, type CoverKey, type VehicleType, type R
 import { energyMeta, type EnergyType } from "@/lib/vehicles-store";
 import { Route as RouteIcon, Clock, Camera, MapPin, ArrowRight, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { FollowBlock } from "@/components/FollowBlock";
+import { TripReactionsRow } from "@/components/TripReactionsRow";
+import { SaveTripButton } from "@/components/SaveTripButton";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params, loaderData }: { params: { username: string }; loaderData?: PublicProfilePayload }) => {
@@ -84,6 +87,9 @@ function PublicProfilePage() {
                 {stats.tripsCount} turer planlagt · {stats.totalKm.toLocaleString("nb-NO")} km totalt
               </p>
             )}
+            <div className="mt-3">
+              <FollowBlock userId={profile.id} username={profile.username} />
+            </div>
           </div>
         </header>
 
@@ -186,7 +192,17 @@ function ProfileTripCard({ t, ownerName }: { t: PublicProfileTrip; ownerName: st
           <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground truncate">
             <MapPin className="h-3 w-3 shrink-0" /> {t.origin} → {t.destination}
           </p>
-          <span className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary">Se tur <ArrowRight className="h-3 w-3" /></span>
+          <div className="mt-3" onClick={(e) => e.preventDefault()}>
+            <TripReactionsRow tripId={t.id} />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2" onClick={(e) => e.preventDefault()}>
+            <SaveTripButton payload={{
+              sourceTripId: t.id, title: t.title, subtitle: t.subtitle, region: t.region,
+              origin: t.origin, destination: t.destination, distanceKm: t.distanceKm,
+              drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
+            }} />
+            <span className="inline-flex items-center gap-1 text-[11px] text-primary">Se tur <ArrowRight className="h-3 w-3" /></span>
+          </div>
         </div>
       </Link>
     </li>

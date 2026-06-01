@@ -230,6 +230,27 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_trips: {
+        Row: {
+          created_at: string
+          id: string
+          source_trip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_trip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_trip_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sent_trip_reminders: {
         Row: {
           owner_user_id: string
@@ -422,6 +443,30 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          reaction: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reaction: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reaction?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           data: Json
@@ -440,6 +485,24 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
         }
         Relationships: []
       }
