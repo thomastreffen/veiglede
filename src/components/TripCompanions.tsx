@@ -105,9 +105,12 @@ export function TripCompanions({ tripId, onInvite }: Props) {
         )}
       </div>
 
-      <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {t.invite.liveLater}
-      </p>
+      <a
+        href="#track"
+        className="mt-3 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-primary hover:underline"
+      >
+        {t.invite.liveLater} <span aria-hidden>→</span>
+      </a>
     </section>
   );
 }
