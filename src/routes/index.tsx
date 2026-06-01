@@ -473,46 +473,64 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ HVA ER VEIGLEDE ============ */}
+      {/* ============ FOR ALLE SOM KJØRER (audiences) ============ */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
         <div className="text-center">
-          <p className="text-[11px] uppercase tracking-[0.32em] text-[#1a1a1a]/50">
-            {t.what.eyebrow}
-          </p>
-          <span className="mx-auto mt-3 block h-0.5 w-12 bg-primary/70" />
+          <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.audiences.eyebrow}</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">{t.audiences.title}</h2>
+          <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {t.what.cards.map((c, i) => {
-            const Icon = WHAT_ICONS[i];
-            const img = WHAT_IMAGES[i];
-            return (
-              <article
-                key={c.title}
-                className="group rounded-3xl border border-black/5 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all"
+          {t.audiences.cards.map((c, i) => (
+            <article
+              key={c.title}
+              className="group relative isolate overflow-hidden rounded-3xl aspect-[4/5] flex flex-col justify-end p-6 text-white shadow-lg hover:-translate-y-1 transition-all"
+            >
+              <img
+                src={AUDIENCE_IMAGES[i]}
+                alt=""
+                aria-hidden
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+              <div className="relative">
+                <div className="text-4xl leading-none">{AUDIENCE_EMOJIS[i]}</div>
+                <h3 className="mt-3 font-display text-2xl uppercase tracking-wide">{c.title}</h3>
+                <p className="mt-2 text-sm text-white/90 leading-relaxed">{c.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ============ TESTIMONIALS ============ */}
+      <section className="bg-white border-y border-black/5">
+        <div className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
+          <div className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.testimonials.eyebrow}</p>
+            <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">{t.testimonials.title}</h2>
+            <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {t.testimonials.items.map((q, i) => (
+              <figure
+                key={q.author}
+                className="rounded-3xl border border-black/5 bg-[#FAFAF8] p-7 flex flex-col"
               >
-                <div className="p-6 md:p-7">
-                  <Icon className="h-7 w-7 text-primary" />
-                  <h3 className="mt-4 font-display text-xl uppercase tracking-wide">
-                    {c.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-[#1a1a1a]/65 leading-relaxed">{c.body}</p>
-                </div>
-                <div className="mt-auto px-5 pb-5">
-                  <div className="overflow-hidden rounded-2xl aspect-[16/9]">
-                    <img
-                      src={img}
-                      alt=""
-                      aria-hidden
-                      width={1024}
-                      height={576}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+                <div className="text-3xl leading-none">{TESTIMONIAL_EMOJIS[i]}</div>
+                <blockquote className="mt-4 text-base md:text-lg leading-relaxed text-[#1a1a1a]/85">
+                  &ldquo;{q.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-5 pt-4 border-t border-black/5 text-xs uppercase tracking-wider text-[#1a1a1a]/60">
+                  {q.author}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+          <p className="mt-8 text-center text-xs text-[#1a1a1a]/50 italic">
+            {t.testimonials.disclaimer}
+          </p>
         </div>
       </section>
 
