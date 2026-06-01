@@ -164,7 +164,7 @@ export const en: Dict = {
     joinTrip: "Join trip",
     sharedTrip: "Shared trip",
     companions: "Travel companions",
-    liveLater: "Live sharing coming later",
+    liveLater: "Share live position",
     modalTitle: "Invite companions",
     modalBody: "Share the trip with friends. Companions can view the roadbook and follow the same plan.",
     linkLabel: "Invite link",

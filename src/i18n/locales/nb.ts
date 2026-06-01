@@ -163,7 +163,7 @@ export const nb = {
     joinTrip: "Bli med på turen",
     sharedTrip: "Delt tur",
     companions: "Reisefølge",
-    liveLater: "Live-deling kommer senere",
+    liveLater: "Del posisjon live",
     modalTitle: "Inviter reisefølge",
     modalBody: "Del turen med venner. Reisefølget kan se roadbooken og følge samme plan.",
     linkLabel: "Invitasjonslenke",

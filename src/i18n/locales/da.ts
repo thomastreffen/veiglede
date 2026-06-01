@@ -163,7 +163,7 @@ export const da: Dict = {
     joinTrip: "Deltag i turen",
     sharedTrip: "Delt tur",
     companions: "Rejseselskab",
-    liveLater: "Live-deling kommer senere",
+    liveLater: "Del position live",
     modalTitle: "Inviter selskab",
     modalBody: "Del turen med venner. Selskabet kan se roadbooken og følge samme plan.",
     linkLabel: "Invitationslink",

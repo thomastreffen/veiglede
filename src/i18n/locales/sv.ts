@@ -163,7 +163,7 @@ export const sv: Dict = {
     joinTrip: "Gå med på resan",
     sharedTrip: "Delad resa",
     companions: "Resesällskap",
-    liveLater: "Live-delning kommer senare",
+    liveLater: "Dela position live",
     modalTitle: "Bjud in sällskap",
     modalBody: "Dela resan med vänner. Sällskapet kan se roadbooket och följa samma plan.",
     linkLabel: "Inbjudningslänk",

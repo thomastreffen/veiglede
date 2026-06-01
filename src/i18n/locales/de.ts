@@ -164,7 +164,7 @@ export const de: Dict = {
     joinTrip: "Der Reise beitreten",
     sharedTrip: "Geteilte Reise",
     companions: "Mitreisende",
-    liveLater: "Live-Teilen kommt später",
+    liveLater: "Position live teilen",
     modalTitle: "Mitreisende einladen",
     modalBody: "Teile die Tour mit Freunden. Mitreisende können das Roadbook sehen und demselben Plan folgen.",
     linkLabel: "Einladungslink",

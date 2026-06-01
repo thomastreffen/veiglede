@@ -163,7 +163,7 @@ export const nl: Dict = {
     joinTrip: "Meedoen met de reis",
     sharedTrip: "Gedeelde reis",
     companions: "Reisgenoten",
-    liveLater: "Live delen komt later",
+    liveLater: "Deel positie live",
     modalTitle: "Reisgenoten uitnodigen",
     modalBody: "Deel de reis met vrienden. Reisgenoten kunnen het roadbook bekijken en hetzelfde plan volgen.",
     linkLabel: "Uitnodigingslink",
