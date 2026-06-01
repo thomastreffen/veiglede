@@ -14,6 +14,8 @@ import { TripMap } from "@/components/TripMap";
 import { TripTimeBudget, TripDayTimeRow } from "@/components/TripTimeBudget";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { BookingInfo, BookingBadge } from "@/components/BookingInfo";
+import { DayWeather } from "@/components/DayWeather";
+import { dayDate, dayCoords } from "@/lib/weather";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
@@ -151,6 +153,10 @@ function Roadbook() {
               </div>
               <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">{day.title}</h2>
               {day.summary && <p className="mt-2 text-sm text-muted-foreground">{day.summary}</p>}
+              {(() => {
+                const coords = dayCoords(trip, dayStops);
+                return <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="mt-3" />;
+              })()}
               <TripDayTimeRow trip={trip} days={tripDays} stops={tripStops} dayId={day.id} startTime={dayStops[0]?.estimatedTime} />
 
               <ol className="mt-6 relative border-l-2 border-border ml-3 space-y-6">
