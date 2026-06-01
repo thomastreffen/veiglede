@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Car, Share2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, Car, Share2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useTripsStore } from "@/lib/trips-store";
+import { useTripsStore, vehicleMeta, type VehicleType } from "@/lib/trips-store";
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { VehicleCard } from "@/components/VehicleCard";
 import { VehiclePhotoStrip } from "@/components/VehiclePhotoStrip";
+import { PublicUserCard } from "@/components/PublicUserCard";
+import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
 
 export const Route = createFileRoute("/_app/garage")({
   head: () => ({ meta: [{ title: "Min garasje — Veiglede" }] }),
