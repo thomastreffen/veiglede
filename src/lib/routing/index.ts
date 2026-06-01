@@ -130,6 +130,7 @@ export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
       rawDurationSeconds: data.rawDurationSeconds,
       ferryDistanceKm: data.ferryDistanceKm,
       ferryDurationMin: data.ferryDurationMin,
+      ferrySegments: (data as { ferrySegments?: FerrySegmentInfo[] }).ferrySegments,
       fallbackEstimateKm: est.km,
       fallbackEstimateMin: est.min,
     };
@@ -137,3 +138,4 @@ export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
     return fallbackRoute(input, `error-${(err as Error)?.name ?? "unknown"}`);
   }
 }
+
