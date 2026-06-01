@@ -368,7 +368,7 @@ function Landing() {
             <Link
               key={r.name}
               to="/explore"
-              search={{ region: r.name } as never}
+              
               className="group relative isolate overflow-hidden rounded-2xl aspect-[4/5] flex flex-col justify-end p-6 text-white shadow-lg hover:-translate-y-1 transition-all"
               style={{ background: r.color }}
             >
