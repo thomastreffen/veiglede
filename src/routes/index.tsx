@@ -344,23 +344,35 @@ function Landing() {
       {/* ============ SOCIAL PROOF STRIP (dark band) ============ */}
       <SocialProofStrip />
 
-      {/* ============ FEATURE STRIP ============ */}
+      {/* ============ FEATURE GRID — ALT DU TRENGER ============ */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 -mt-12 md:-mt-16 relative z-10">
-        <div className="rounded-2xl border border-black/5 bg-white shadow-xl shadow-black/10 px-4 md:px-6 py-7 md:py-8 grid gap-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-          {t.features.map((f, i) => {
-            const Icon = FEATURE_ICONS[i];
-            return (
-              <div key={f.title} className="text-center">
-                <Icon className="mx-auto h-7 w-7 text-primary" />
-                <h3 className="mt-3 font-display text-sm uppercase tracking-wide text-[#1a1a1a]">
-                  {f.title}
-                </h3>
-                <p className="mt-1.5 text-xs text-[#1a1a1a]/60 leading-relaxed whitespace-pre-line">
-                  {f.body}
+        <div className="rounded-3xl border border-black/5 bg-white shadow-xl shadow-black/10 p-6 md:p-10">
+          <div className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.featureGrid.eyebrow}</p>
+            <h2 className="mt-3 font-display text-2xl md:text-4xl uppercase">{t.featureGrid.title}</h2>
+            <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
+          </div>
+          <div className="mt-10 space-y-10">
+            {t.featureGrid.rows.map((row, ri) => (
+              <div key={row.category}>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-[#1a1a1a]/50 mb-4">
+                  {String(ri + 1).padStart(2, "0")} · {row.category}
                 </p>
+                <div className="grid gap-5 md:grid-cols-3">
+                  {row.items.map((it, ii) => (
+                    <div
+                      key={it.title}
+                      className="rounded-2xl border border-black/5 bg-[#FAFAF8] p-5 hover:border-primary/30 hover:-translate-y-0.5 transition-all"
+                    >
+                      <div className="text-3xl leading-none">{ROW_EMOJIS[ri]?.[ii]}</div>
+                      <h3 className="mt-3 font-display text-base uppercase tracking-wide">{it.title}</h3>
+                      <p className="mt-2 text-sm text-[#1a1a1a]/65 leading-relaxed">{it.body}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </section>
 
