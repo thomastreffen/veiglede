@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { getOnboardingStatus } from "@/lib/account";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useBrowserNotifications } from "@/lib/useBrowserNotifications";
 
 const nav = [
   { to: "/", label: "Hjem", icon: Home },
@@ -24,6 +26,7 @@ export function AppShell() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { notify } = useBrowserNotifications();
 
   // Onboarding gate: send freshly-logged-in users who haven't onboarded
   // to /onboarding once.
@@ -68,9 +71,12 @@ export function AppShell() {
               <Plus className="h-4 w-4" /> Ny tur
             </Link>
             {user ? (
-              <Link to="/settings" className="ml-1 grid place-items-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-sm font-semibold" title={user.email ?? ""}>
-                {(user.email ?? "?").charAt(0).toUpperCase()}
-              </Link>
+              <>
+                <NotificationBell onIncoming={notify} />
+                <Link to="/settings" className="ml-1 grid place-items-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-sm font-semibold" title={user.email ?? ""}>
+                  {(user.email ?? "?").charAt(0).toUpperCase()}
+                </Link>
+              </>
             ) : (
               <>
                 <span
