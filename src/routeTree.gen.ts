@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
@@ -16,6 +17,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
+import { Route as RestoreTokenRouteImport } from './routes/restore.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
@@ -38,6 +40,11 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
 import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.trips.$tripId.stops.$stopId'
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -70,6 +77,11 @@ const SharedTripIdRoute = SharedTripIdRouteImport.update({
 const SharedShareTokenRoute = SharedShareTokenRouteImport.update({
   id: '/shared/$shareToken',
   path: '/shared/$shareToken',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RestoreTokenRoute = RestoreTokenRouteImport.update({
+  id: '/restore/$token',
+  path: '/restore/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinTokenRoute = JoinTokenRouteImport.update({
@@ -187,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -196,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -216,6 +230,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -225,6 +240,7 @@ export interface FileRoutesByTo {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -247,6 +263,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_app/maps-check': typeof AppMapsCheckRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/roadbook': typeof AppRoadbookRoute
@@ -256,6 +273,7 @@ export interface FileRoutesById {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -278,6 +296,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/signup'
+    | '/unsubscribe'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
@@ -287,6 +306,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
@@ -307,6 +327,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/signup'
+    | '/unsubscribe'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
@@ -316,6 +337,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
@@ -337,6 +359,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/signup'
+    | '/unsubscribe'
     | '/_app/maps-check'
     | '/_app/onboarding'
     | '/_app/roadbook'
@@ -346,6 +369,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/_app/trips/$tripId'
@@ -368,10 +392,12 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
   SignupRoute: typeof SignupRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
+  RestoreTokenRoute: typeof RestoreTokenRoute
   SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
@@ -386,6 +412,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -433,6 +466,13 @@ declare module '@tanstack/react-router' {
       path: '/shared/$shareToken'
       fullPath: '/shared/$shareToken'
       preLoaderRoute: typeof SharedShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/restore/$token': {
+      id: '/restore/$token'
+      path: '/restore/$token'
+      fullPath: '/restore/$token'
+      preLoaderRoute: typeof RestoreTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join/$token': {
@@ -637,10 +677,12 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
   SignupRoute: SignupRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
+  RestoreTokenRoute: RestoreTokenRoute,
   SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
