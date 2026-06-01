@@ -97,8 +97,11 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
         recipientEmail: cleanEmail,
         idempotencyKey: `invite-${inv.id}`,
         templateData: {
-          inviteUrl: inviteUrl(inv.invite_token),
-          tripName: trip.title ?? "tur",
+          joinUrl: inviteUrl(inv.invite_token),
+          tripTitle: trip.title ?? "Veiglede-tur",
+          origin: trip.origin,
+          destination: trip.destination,
+          dateLabel: trip.startDate,
           inviterName: user.email,
           role,
         },
