@@ -185,6 +185,30 @@ export type Database = {
         }
         Relationships: []
       }
+      sent_trip_reminders: {
+        Row: {
+          owner_user_id: string
+          recipient_email: string
+          sent_at: string
+          start_date: string
+          trip_id: string
+        }
+        Insert: {
+          owner_user_id: string
+          recipient_email: string
+          sent_at?: string
+          start_date: string
+          trip_id: string
+        }
+        Update: {
+          owner_user_id?: string
+          recipient_email?: string
+          sent_at?: string
+          start_date?: string
+          trip_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
