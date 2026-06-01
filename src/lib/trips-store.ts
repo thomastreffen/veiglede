@@ -1388,7 +1388,9 @@ export const STOP_TYPES: { value: StopType; label: string; emoji: string }[] = [
   { value: "city", label: "By", emoji: "🏘️" },
   { value: "experience", label: "Opplevelse", emoji: "🎒" },
   { value: "detour", label: "Detour", emoji: "↪️" },
+  { value: "ferry", label: "Ferje", emoji: "⛴️" },
 ];
+
 export function stopMeta(t: StopType) {
   return STOP_TYPES.find((s) => s.value === t) ?? STOP_TYPES[STOP_TYPES.length - 1];
 }
