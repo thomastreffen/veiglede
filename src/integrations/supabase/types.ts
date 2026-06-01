@@ -301,36 +301,51 @@ export type Database = {
           campaign_id: string | null
           clicks: number
           created_at: string
+          email_sent_at: string | null
           id: string
           impressions: number
+          paid_at: string | null
+          paid_method: string | null
           partner_account_id: string
           period_end: string
           period_start: string
           status: string
+          stripe_receipt_url: string | null
+          stripe_session_id: string | null
         }
         Insert: {
           amount_nok?: number
           campaign_id?: string | null
           clicks?: number
           created_at?: string
+          email_sent_at?: string | null
           id?: string
           impressions?: number
+          paid_at?: string | null
+          paid_method?: string | null
           partner_account_id: string
           period_end: string
           period_start: string
           status?: string
+          stripe_receipt_url?: string | null
+          stripe_session_id?: string | null
         }
         Update: {
           amount_nok?: number
           campaign_id?: string | null
           clicks?: number
           created_at?: string
+          email_sent_at?: string | null
           id?: string
           impressions?: number
+          paid_at?: string | null
+          paid_method?: string | null
           partner_account_id?: string
           period_end?: string
           period_start?: string
           status?: string
+          stripe_receipt_url?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: [
           {
