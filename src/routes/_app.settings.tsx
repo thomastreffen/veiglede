@@ -124,10 +124,11 @@ import {
   DRIVING_FLAGS, STOP_INTERESTS,
 } from "@/lib/driver-prefs";
 import {
-  useVehicles, vehiclesApi, energyMeta, type Vehicle,
+  useVehicles, vehiclesApi, type Vehicle,
 } from "@/lib/vehicles-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
-import { Moon, Sun, Check, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Pencil } from "lucide-react";
+import { VehicleCard } from "@/components/VehicleCard";
+import { Moon, Sun, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus } from "lucide-react";
 
 function ProfileHeader() {
   const { user } = useAuth();
