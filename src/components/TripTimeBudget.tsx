@@ -88,8 +88,7 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
         ) : null}
       </ul>
 
-      <LodgingCostBreakdown stops={stops} />
-      <EnergyCostBreakdown trip={trip} />
+      <CostCalculator trip={trip} stops={stops} />
 
 
 
