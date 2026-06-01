@@ -131,7 +131,7 @@ import {
 } from "@/lib/vehicles-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { VehicleCard } from "@/components/VehicleCard";
-import { Moon, Sun, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus } from "lucide-react";
+import { Moon, Sun, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Globe, Eye, BarChart3, Car as CarIcon } from "lucide-react";
 
 function ProfileHeader() {
   const { user } = useAuth();
