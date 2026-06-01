@@ -342,14 +342,13 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           )}
         </div>
 
-
         {/* Live sharing toggle */}
         <LiveSharingSection tripId={trip.id} />
-        </div>
       </DialogContent>
     </Dialog>
   );
 }
+
 
 function LiveSharingSection({ tripId }: { tripId: string }) {
   const [liveOn, setLiveOn] = useLiveOptIn(tripId);
