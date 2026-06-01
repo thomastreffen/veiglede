@@ -10,6 +10,10 @@ import {
   adminDeletePartnerFn,
 } from "@/lib/admin.functions";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import { MapPreview } from "@/components/MapPreview";
+import type { ResolvedPlace } from "@/lib/places/geocoder";
+
 
 type Partner = {
   id: string;
