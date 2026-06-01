@@ -38,6 +38,21 @@ export function TripTracker({
     }
   }, [t.status, liveOn, tripId, user?.id]);
 
+  // Persist actualDistanceKm to the trip once on completion.
+  const persistedRef = useRef(false);
+  useEffect(() => {
+    if (t.status !== "completed") {
+      persistedRef.current = false;
+      return;
+    }
+    if (persistedRef.current) return;
+    persistedRef.current = true;
+    const km = t.actualDistanceKm ?? 0;
+    if (km > 0) {
+      tripsApi.updateTrip(tripId, { actualDistanceKm: Math.round(km * 10) / 10 });
+    }
+  }, [t.status, t.actualDistanceKm, tripId]);
+
   const elapsed = t.startedAt
     ? Math.max(0, (t.completedAt ?? Date.now()) - t.startedAt)
     : 0;
