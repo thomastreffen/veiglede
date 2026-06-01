@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInteres
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { useTripsStore } from "@/lib/trips-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
+import { UsernamePicker } from "@/components/UsernamePicker";
 import { Check, ArrowRight, Sparkles, Info } from "lucide-react";
 
 export const Route = createFileRoute("/_app/onboarding")({
