@@ -418,8 +418,8 @@ function TripPlanner() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-semibold truncate">{stop.name}</p>
                                 <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
-                                {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
-                                {stop.promoted && !stop.isPartner && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
+                                {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> {td.photoBadge}</span>}
+                                {stop.promoted && !stop.isPartner && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">{td.partnerBadge}</span>}
                               </div>
                               {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
                               {stop.type === "lodging" && stop.booking && <BookingInfo booking={stop.booking} />}
