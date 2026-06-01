@@ -51,7 +51,7 @@ export interface PublicProfilePayload {
     showTrips: boolean;
     showStats: boolean;
   };
-  stats?: { tripsCount: number; totalKm: number };
+  stats?: { tripsCount: number; totalKm: number; drivenKm: number };
   vehicles?: PublicProfileVehicle[];
   trips?: PublicProfileTrip[];
 }
