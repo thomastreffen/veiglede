@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { consumeProfileDeletedNotice } from "@/lib/account";
 import { useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInterest, DRIVING_FLAGS, STOP_INTERESTS } from "@/lib/driver-prefs";
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
+import { useTripsStore } from "@/lib/trips-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { Check, ArrowRight, Sparkles, Info } from "lucide-react";
 
@@ -21,6 +22,7 @@ function Onboarding() {
   const [freshAfterDelete, setFreshAfterDelete] = useState(false);
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
+  const { trips } = useTripsStore();
 
   // Read the post-deletion notice exactly once, before any other effect can
   // clear localStorage.
@@ -213,10 +215,23 @@ function Onboarding() {
             <button onClick={() => finish()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Sparkles className="h-4 w-4" /> Planlegg min første tur
             </button>
-            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext("/trips")); }}
+            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext(trips.length === 0 ? "/garage" : "/trips")); }}
               className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm hover:bg-surface-2">
-              Til mine turer
+              {trips.length === 0 ? "Til min garasje" : "Til mine turer"}
             </button>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface/50 p-4">
+            <p className="text-sm font-medium text-foreground">Hva skjer nå?</p>
+            <p className="mt-1 text-xs text-muted-foreground">Du er klar. Start din første tur, eller utforsk ruter andre har delt.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110">
+                Planlegg min første tur <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link to="/explore" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
+                Utforsk turer <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
         </Card>
       )}

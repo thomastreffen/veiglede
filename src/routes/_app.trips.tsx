@@ -2,7 +2,6 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { useEffect, useMemo, useState } from "react";
 import { useTripsStore, tripsApi, COVERS, VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta, FEATURED_ROUTES, type CoverKey, type VehicleType, type RouteStyle } from "@/lib/trips-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
-import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { useAuth } from "@/lib/auth";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
 import { useVehicles } from "@/lib/vehicles-store";
@@ -30,16 +29,6 @@ function TripsDashboard() {
 
   return (
     <div className="py-5 md:py-8">
-      <DemoDebugPanel
-        title="Flow start"
-        items={[
-          { label: "Current route", value: "/trips" },
-          { label: "Primary CTA", value: "Ny tur" },
-          { label: "Trips", value: trips.length },
-        ]}
-        className="mb-4"
-      />
-
       {/* Stats strip */}
       <section className="grid grid-cols-4 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
         {[

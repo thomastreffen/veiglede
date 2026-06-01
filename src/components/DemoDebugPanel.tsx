@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
-const KEY = "veiglede.debug";
+const KEY = "veiglede_debug";
 const listeners = new Set<() => void>();
 
 function subscribe(l: () => void) {
