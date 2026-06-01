@@ -21,9 +21,16 @@ function Onboarding() {
   const [step, setStep] = useState(1);
   const [editorOpen, setEditorOpen] = useState(false);
   const [freshAfterDelete, setFreshAfterDelete] = useState(false);
+  const [username, setUsername] = useState("");
+  const [usernameOk, setUsernameOk] = useState(false);
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
   const { trips } = useTripsStore();
+
+  const onUsernameChange = useCallback((v: string, ok: boolean) => {
+    setUsername(v);
+    setUsernameOk(ok);
+  }, []);
 
   // Read the post-deletion notice exactly once, before any other effect can
   // clear localStorage.
