@@ -863,6 +863,14 @@ function PlannerActions({
   const [lodgingOpen, setLodgingOpen] = useState(false);
   const [lodgingText, setLodgingText] = useState("");
   const [lodgingPlace, setLodgingPlace] = useState<ResolvedPlace | null>(null);
+  const [isSplitting, setIsSplitting] = useState(false);
+
+  const handleSplit = () => {
+    if (isSplitting) return;
+    setIsSplitting(true);
+    tripsApi.splitIntoDays(trip.id, tripDays.length + 1);
+    window.setTimeout(() => setIsSplitting(false), 1000);
+  };
 
   // Booking context (populated after a lodging place is selected).
   const today = new Date().toISOString().slice(0, 10);
