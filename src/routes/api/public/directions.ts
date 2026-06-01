@@ -170,7 +170,17 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
         Authorization: `Bearer ${lovableKey}`,
         "X-Connection-Api-Key": mapsKey,
         "Content-Type": "application/json",
-        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
+        "X-Goog-FieldMask": [
+          "routes.duration",
+          "routes.distanceMeters",
+          "routes.polyline.encodedPolyline",
+          "routes.legs.steps.travelMode",
+          "routes.legs.steps.staticDuration",
+          "routes.legs.steps.distanceMeters",
+          "routes.legs.steps.navigationInstruction",
+          "routes.legs.steps.startLocation.latLng",
+          "routes.legs.steps.endLocation.latLng",
+        ].join(","),
       },
       body: JSON.stringify(reqBody),
     });
@@ -203,6 +213,51 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
     const baseMinutes = rawDurationSeconds ? rawDurationSeconds / 60 : 0;
     const durationMin = Math.round(baseMinutes * (isRv ? 1 / 0.85 : 1));
 
+    // Extract ferry segments from leg steps when travelMode === "FERRY".
+    type FerrySegment = {
+      fromLabel?: string;
+      toLabel?: string;
+      durationMin: number;
+      distanceKm: number;
+      start?: { lat: number; lng: number };
+      end?: { lat: number; lng: number };
+    };
+    const ferrySegments: FerrySegment[] = [];
+    let ferryDistanceMeters = 0;
+    let ferryDurationSec = 0;
+    interface StepShape {
+      travelMode?: string;
+      staticDuration?: string;
+      distanceMeters?: number;
+      navigationInstruction?: { instructions?: string };
+      startLocation?: { latLng?: { latitude?: number; longitude?: number } };
+      endLocation?: { latLng?: { latitude?: number; longitude?: number } };
+    }
+    const legs: Array<{ steps?: StepShape[] }> = Array.isArray(route?.legs) ? route.legs : [];
+    for (const leg of legs) {
+      const steps: StepShape[] = Array.isArray(leg?.steps) ? leg.steps! : [];
+      for (const step of steps) {
+        if (step?.travelMode !== "FERRY") continue;
+        const sd = typeof step.staticDuration === "string" ? Number(step.staticDuration.replace(/s$/, "")) : 0;
+        const dm = typeof step.distanceMeters === "number" ? step.distanceMeters : 0;
+        ferryDistanceMeters += dm;
+        ferryDurationSec += sd || 0;
+        const text: string = step?.navigationInstruction?.instructions ?? "";
+        // Try to parse "Take ferry from X to Y"
+        const m = text.match(/(?:from|fra)\s+(.+?)\s+(?:to|til)\s+(.+?)(?:\.|$)/i);
+        const startLL = step?.startLocation?.latLng;
+        const endLL = step?.endLocation?.latLng;
+        ferrySegments.push({
+          fromLabel: m?.[1]?.trim(),
+          toLabel: m?.[2]?.trim(),
+          durationMin: Math.max(5, Math.round((sd || 0) / 60)),
+          distanceKm: dm ? Math.round(dm / 100) / 10 : 0,
+          start: startLL ? { lat: Number(startLL.latitude), lng: Number(startLL.longitude) } : undefined,
+          end: endLL ? { lat: Number(endLL.latitude), lng: Number(endLL.longitude) } : undefined,
+        });
+      }
+    }
+
     return json({
       distanceKm: rawDistanceMeters ? Math.round(rawDistanceMeters / 100) / 10 : 0,
       durationMin,
@@ -212,6 +267,9 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
       avoidOptions: { highways: prefs.avoidHighways, ferries: prefs.avoidFerries },
       rawDistanceMeters,
       rawDurationSeconds,
+      ferryDistanceKm: ferryDistanceMeters ? Math.round(ferryDistanceMeters / 100) / 10 : undefined,
+      ferryDurationMin: ferryDurationSec ? Math.round(ferryDurationSec / 60) : undefined,
+      ferrySegments: ferrySegments.length ? ferrySegments : undefined,
       warnings: warnings.length ? warnings : undefined,
     });
   } catch (err) {
@@ -219,6 +277,7 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
     return null;
   }
 }
+
 
 async function tryMapbox(body: Body, warnings: string[]): Promise<Response | null> {
   const token = (process.env.MAPBOX_TOKEN ?? "").trim();

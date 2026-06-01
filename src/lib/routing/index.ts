@@ -16,6 +16,15 @@ export interface GetRouteInput {
   avoidFerries?: boolean;
 }
 
+export interface FerrySegmentInfo {
+  fromLabel?: string;
+  toLabel?: string;
+  durationMin: number;
+  distanceKm: number;
+  start?: LatLng;
+  end?: LatLng;
+}
+
 export interface RouteResult {
   distanceKm: number;
   durationMin: number;
@@ -31,11 +40,14 @@ export interface RouteResult {
   rawDurationSeconds?: number;
   ferryDistanceKm?: number;
   ferryDurationMin?: number;
+  /** Ferry segments detected on the route (when provider returned step-level data). */
+  ferrySegments?: FerrySegmentInfo[];
   /** Straight-line haversine km × 1.25 road factor (for fallback comparison only). */
   fallbackEstimateKm?: number;
   /** Straight-line based duration estimate at cruise speed (for comparison only). */
   fallbackEstimateMin?: number;
 }
+
 
 // Haversine distance in km
 function distKm(a: LatLng, b: LatLng): number {
@@ -118,6 +130,7 @@ export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
       rawDurationSeconds: data.rawDurationSeconds,
       ferryDistanceKm: data.ferryDistanceKm,
       ferryDurationMin: data.ferryDurationMin,
+      ferrySegments: (data as { ferrySegments?: FerrySegmentInfo[] }).ferrySegments,
       fallbackEstimateKm: est.km,
       fallbackEstimateMin: est.min,
     };
@@ -125,3 +138,4 @@ export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
     return fallbackRoute(input, `error-${(err as Error)?.name ?? "unknown"}`);
   }
 }
+

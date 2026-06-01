@@ -13,7 +13,9 @@ export type StopType =
   | "rest"
   | "city"
   | "experience"
-  | "detour";
+  | "detour"
+  | "ferry";
+
 
 export type VehicleType = "motorcycle" | "car" | "rv";
 export type RouteStyle = "fastest" | "scenic" | "curvy" | "photo" | "tourist" | "cruise";
@@ -71,7 +73,14 @@ export interface Stop {
   };
   /** Fuel/charging stop only — what kind of energy this stop provides. */
   energy?: EnergySource;
+  /** Auto-detected by the routing provider (e.g. ferry segment from Google Routes). */
+  isAutoDetected?: boolean;
+  /** Per-ferry ticket cost in NOK (user-editable, only meaningful for ferry stops). */
+  ferryCostNok?: number;
+  /** Optional ferry route hint (e.g. "Lavik → Oppedal") shown on ferry stops. */
+  ferryRouteHint?: string;
 }
+
 
 export interface StopPhoto {
   id: string;
@@ -168,7 +177,10 @@ export interface Trip {
   packingList?: PackingItem[];
   // Trip economy v2 — full cost calculator settings.
   costSettings?: CostSettings;
+  /** Route hash of the last ferrySegments[] applied — prevents duplicate auto-inserts. */
+  ferryDetectionHash?: string;
 }
+
 
 export interface CostSettings {
   fuelPricePerLiter?: number;       // NOK
@@ -857,7 +869,56 @@ export const tripsApi = {
     persist();
   },
 
+  /**
+   * Apply ferry segments detected by the routing provider. Inserts a
+   * `type: "ferry"` stop on the first day per segment if not already present
+   * (idempotent via `ferryDetectionHash` + name match). Returns number of
+   * stops actually inserted.
+   */
+  applyFerrySegments(
+    tripId: string,
+    segments: Array<{ fromLabel?: string; toLabel?: string; durationMin: number; distanceKm: number }>,
+  ): number {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    if (!trip || segments.length === 0) return 0;
+    const hash = segments.map((s) => `${s.fromLabel ?? "?"}>${s.toLabel ?? "?"}:${s.durationMin}`).join("|");
+    if (trip.ferryDetectionHash === hash) return 0;
+    const firstDay = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber)[0];
+    if (!firstDay) return 0;
+    const existingFerryHints = new Set(
+      state.stops
+        .filter((s) => s.dayId === firstDay.id && s.type === "ferry")
+        .map((s) => `${s.ferryRouteHint ?? s.name}`.toLowerCase()),
+    );
+    let inserted = 0;
+    for (const seg of segments) {
+      const hint = `${seg.fromLabel ?? "?"} → ${seg.toLabel ?? "?"}`;
+      if (existingFerryHints.has(hint.toLowerCase())) continue;
+      const name = seg.fromLabel && seg.toLabel ? `Ferje: ${seg.fromLabel} → ${seg.toLabel}` : "Ferje";
+      this.addStop(firstDay.id, {
+        name,
+        type: "ferry",
+        durationMin: seg.durationMin,
+        distanceFromPrevKm: Math.round(seg.distanceKm),
+        isAutoDetected: true,
+        ferryRouteHint: hint,
+        reason: "Automatisk oppdaget ferge langs ruta.",
+      });
+      inserted++;
+    }
+    if (inserted > 0) {
+      state = {
+        ...state,
+        trips: state.trips.map((t) => (t.id === tripId ? { ...t, ferryDetectionHash: hash } : t)),
+      };
+      persist();
+    }
+    return inserted;
+  },
+
 };
+
 
 function shiftDate(start: string | undefined, days: number): string | undefined {
   if (!start) return undefined;
@@ -1376,7 +1437,9 @@ export const STOP_TYPES: { value: StopType; label: string; emoji: string }[] = [
   { value: "city", label: "By", emoji: "🏘️" },
   { value: "experience", label: "Opplevelse", emoji: "🎒" },
   { value: "detour", label: "Detour", emoji: "↪️" },
+  { value: "ferry", label: "Ferje", emoji: "⛴️" },
 ];
+
 export function stopMeta(t: StopType) {
   return STOP_TYPES.find((s) => s.value === t) ?? STOP_TYPES[STOP_TYPES.length - 1];
 }

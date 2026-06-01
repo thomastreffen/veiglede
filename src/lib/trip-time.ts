@@ -33,14 +33,16 @@ export const DEFAULT_STOP_DURATION_MIN: Record<StopType, number> = {
   experience: 60,
   detour: 30,
   lodging: 0, // overnight handled separately — does not inflate active day time
+  ferry: 30,
 };
+
 
 const FERRY_DEFAULT_MIN = 30;
 
 /** Map a stop type → its time category for budgeting. */
 export function inferTimeCategory(stop: Pick<Stop, "type" | "name">): TimeCategory {
   const name = (stop.name ?? "").toLowerCase();
-  if (/ferge|ferje|ferry/.test(name)) return "ferry";
+  if (stop.type === "ferry" || /ferge|ferje|ferry/.test(name)) return "ferry";
   switch (stop.type) {
     case "fuel": {
       // Cheap heuristic: a "lading" / "charging" stop should count as charging.
@@ -59,6 +61,7 @@ export function inferTimeCategory(stop: Pick<Stop, "type" | "name">): TimeCatego
     default: return "other";
   }
 }
+
 
 /** Resolve a stop's planned duration in minutes (explicit > default). */
 export function inferStopDuration(stop: Stop): number {
