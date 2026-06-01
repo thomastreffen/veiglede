@@ -153,6 +153,10 @@ function Roadbook() {
               </div>
               <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">{day.title}</h2>
               {day.summary && <p className="mt-2 text-sm text-muted-foreground">{day.summary}</p>}
+              {(() => {
+                const coords = dayCoords(trip, dayStops);
+                return <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="mt-3" />;
+              })()}
               <TripDayTimeRow trip={trip} days={tripDays} stops={tripStops} dayId={day.id} startTime={dayStops[0]?.estimatedTime} />
 
               <ol className="mt-6 relative border-l-2 border-border ml-3 space-y-6">
