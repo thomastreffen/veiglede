@@ -392,12 +392,12 @@ function Settings() {
       </Section>
 
       {/* 5b — Public profile privacy */}
-      <Section title="Personvern" caption="Din offentlige profil">
+      <Section id="personvern" title="Personvern" caption="Din offentlige profil">
         <PrivacyControls />
       </Section>
 
       {/* 6 — Appearance */}
-      <Section title="Utseende" caption="Tema">
+      <Section id="utseende" title="Utseende" caption="Tema">
         <div className="inline-flex rounded-2xl border border-border bg-background p-1">
           <ThemeOption current={theme} value="dark" label="Mørk" icon={<Moon className="h-4 w-4" />} />
           <ThemeOption current={theme} value="light" label="Lys" icon={<Sun className="h-4 w-4" />} />
