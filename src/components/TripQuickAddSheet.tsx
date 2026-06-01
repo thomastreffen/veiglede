@@ -76,10 +76,20 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   const [fuelPrice, setFuelPrice] = useState("");
 
   // Lodging form
+  const defaultLodgingDate = trip?.startDate ?? new Date().toISOString().slice(0, 10);
+  const addDaysIso = (iso: string, days: number) => {
+    const d = new Date(iso);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
   const [lodgingText, setLodgingText] = useState("");
   const [lodgingPlace, setLodgingPlace] = useState<ResolvedPlace | null>(null);
-  const [lodgingDate, setLodgingDate] = useState(trip?.startDate ?? new Date().toISOString().slice(0, 10));
+  const [lodgingDate, setLodgingDate] = useState(defaultLodgingDate);
+  const [lodgingCheckout, setLodgingCheckout] = useState(addDaysIso(defaultLodgingDate, 1));
   const [lodgingNights, setLodgingNights] = useState("1");
+  const [lodgingGuests, setLodgingGuests] = useState("2");
+  const [lodgingPrice, setLodgingPrice] = useState("");
+  const [lodgingStatus, setLodgingStatus] = useState<"none" | "booked" | "paid">("none");
 
   if (!open) return null;
 
@@ -87,7 +97,10 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     setMode("menu");
     setStopText(""); setStopPlace(null);
     setFuelText(""); setFuelPlace(null); setFuelPrice("");
-    setLodgingText(""); setLodgingPlace(null); setLodgingNights("1");
+    setLodgingText(""); setLodgingPlace(null);
+    setLodgingDate(defaultLodgingDate);
+    setLodgingCheckout(addDaysIso(defaultLodgingDate, 1));
+    setLodgingNights("1"); setLodgingGuests("2"); setLodgingPrice(""); setLodgingStatus("none");
   };
   const close = () => { if (!busy) { reset(); onClose(); } };
 
@@ -179,18 +192,31 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     if (!lastDay) { toast.error("Ingen dag tilgjengelig"); return; }
     if (!lodgingPlace) { toast.error("Velg et sted fra listen"); return; }
     const nights = Math.max(1, Number(lodgingNights) || 1);
+    const guests = lodgingGuests.trim() ? Math.max(1, Number(lodgingGuests) || 1) : undefined;
+    const price = lodgingPrice.trim() ? Number(lodgingPrice.replace(",", ".")) : undefined;
+    const validPrice = price != null && !Number.isNaN(price) && price > 0 ? price : undefined;
+    const checkout = lodgingCheckout || addDaysIso(lodgingDate, nights);
     tripsApi.addStop(lastDay.id, {
       name: lodgingPlace.name,
       type: "lodging",
       location: lodgingPlace.secondary ?? lodgingPlace.label,
       lat: lodgingPlace.lat, lng: lodgingPlace.lng,
-      description: `Overnatting${nights > 1 ? ` (${nights} netter)` : ""}.${lodgingDate ? ` Innsjekk ${lodgingDate}.` : ""}`,
+      description: `Overnatting${nights > 1 ? ` (${nights} netter)` : ""}.${lodgingDate ? ` Innsjekk ${lodgingDate}.` : ""}${validPrice ? ` ${validPrice.toFixed(0)} kr/natt.` : ""}`,
       reason: "Lagt til via hurtigvalg.",
       durationMin: 720 * nights,
+      booking: {
+        checkinDate: lodgingDate,
+        checkoutDate: checkout,
+        nights,
+        guests,
+        pricePerNight: validPrice,
+        status: lodgingStatus,
+      },
     });
     toast.success(`Overnatting lagt til: ${lodgingPlace.name}`);
     close();
   };
+
 
   const items: { icon: React.ReactNode; label: string; onClick: () => void }[] = [
     { icon: <Camera className="h-5 w-5" />, label: "📷 Ta bilde / Last opp bilde", onClick: () => fileRef.current?.click() },
@@ -367,21 +393,96 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
 
             {lodgingPlace && (
               <>
-                <Field label="Dato">
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Innsjekk">
+                    <input
+                      type="date"
+                      value={lodgingDate}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setLodgingDate(v);
+                        const n = Math.max(1, Number(lodgingNights) || 1);
+                        setLodgingCheckout(addDaysIso(v, n));
+                      }}
+                      className="form-input"
+                    />
+                  </Field>
+                  <Field label="Utsjekk">
+                    <input
+                      type="date"
+                      value={lodgingCheckout}
+                      min={lodgingDate}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setLodgingCheckout(v);
+                        const ms = new Date(v).getTime() - new Date(lodgingDate).getTime();
+                        const n = Math.max(1, Math.round(ms / 86400000));
+                        if (!Number.isNaN(n)) setLodgingNights(String(n));
+                      }}
+                      className="form-input"
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Antall netter">
+                    <input
+                      type="number" inputMode="numeric" min={1}
+                      value={lodgingNights}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setLodgingNights(raw);
+                        const n = Math.max(1, Number(raw) || 1);
+                        setLodgingCheckout(addDaysIso(lodgingDate, n));
+                      }}
+                      className="form-input"
+                    />
+                  </Field>
+                  <Field label="Gjester">
+                    <input
+                      type="number" inputMode="numeric" min={1}
+                      value={lodgingGuests}
+                      onChange={(e) => setLodgingGuests(e.target.value)}
+                      className="form-input"
+                    />
+                  </Field>
+                </div>
+                <Field label="Pris per natt (NOK, valgfritt)">
                   <input
-                    type="date"
-                    value={lodgingDate}
-                    onChange={(e) => setLodgingDate(e.target.value)}
+                    type="number" inputMode="decimal" min={0} step="1"
+                    value={lodgingPrice}
+                    onChange={(e) => setLodgingPrice(e.target.value)}
+                    placeholder="F.eks. 1490"
                     className="form-input"
                   />
+                  {lodgingPrice.trim() && !Number.isNaN(Number(lodgingPrice.replace(",", "."))) && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Totalt: {(Number(lodgingPrice.replace(",", ".")) * Math.max(1, Number(lodgingNights) || 1)).toFixed(0)} kr
+                    </p>
+                  )}
                 </Field>
-                <Field label="Antall netter">
-                  <input
-                    type="number" inputMode="numeric" min={1}
-                    value={lodgingNights}
-                    onChange={(e) => setLodgingNights(e.target.value)}
-                    className="form-input"
-                  />
+                <Field label="Bookingstatus">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(
+                      [
+                        { v: "none", label: "Ikke booket" },
+                        { v: "booked", label: "Booket" },
+                        { v: "paid", label: "Betalt" },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setLodgingStatus(opt.v)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                          lodgingStatus === opt.v
+                            ? "border-primary bg-primary/15 text-primary"
+                            : "border-border bg-background/60 text-muted-foreground"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </Field>
               </>
             )}

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useTripsStore, tripsApi, STOP_TYPES, type StopType } from "@/lib/trips-store";
 import { ArrowLeft, Trash2, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BookingEditor } from "@/components/BookingInfo";
 
 export const Route = createFileRoute("/_app/trips/$tripId/stops/$stopId")({
   head: () => ({ meta: [{ title: "Stopp — Veiglede" }] }),
@@ -89,6 +90,9 @@ function StopEdit() {
         <Field label="Notater">
           <textarea rows={4} value={stop.notes ?? ""} placeholder="Hva er verdt å huske…" onChange={(e) => tripsApi.updateStop(stop.id, { notes: e.target.value })} className={input} />
         </Field>
+
+        {stop.type === "lodging" && <BookingEditor stop={stop} />}
+
 
         <div className="pt-2 flex justify-between gap-3">
           <button onClick={() => navigate({ to: "/trips/$tripId", params: { tripId } })} className="rounded-2xl bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground">Ferdig</button>

@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { TripMap } from "@/components/TripMap";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
+import { BookingInfo } from "@/components/BookingInfo";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
@@ -361,6 +362,7 @@ function TripPlanner() {
                                 {stop.promoted && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
                               </div>
                               {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
+                              {stop.type === "lodging" && stop.booking && <BookingInfo booking={stop.booking} />}
                               <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                                 {stop.estimatedTime && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span>}
                                 {stop.durationMin && <><span>·</span><span>{formatDuration(stop.durationMin)}</span></>}
