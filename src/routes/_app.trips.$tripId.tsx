@@ -18,6 +18,7 @@ import { ShareTripModal } from "@/components/ShareTripModal";
 import { TripCompanions } from "@/components/TripCompanions";
 import { TripMembers } from "@/components/TripMembers";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
+import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
 import { TripMemories } from "@/components/TripMemories";
