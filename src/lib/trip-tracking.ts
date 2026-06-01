@@ -38,6 +38,10 @@ export function useTripTracking(tripId: string): TripTracking {
   return s[tripId] ?? DEFAULT;
 }
 
+export function getTracking(tripId: string): TripTracking {
+  return snap()[tripId] ?? DEFAULT;
+}
+
 function update(tripId: string, patch: Partial<TripTracking>) {
   const cur = snap();
   cache = { ...cur, [tripId]: { ...DEFAULT, ...cur[tripId], ...patch } };
