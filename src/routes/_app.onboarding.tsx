@@ -22,6 +22,7 @@ function Onboarding() {
   const [freshAfterDelete, setFreshAfterDelete] = useState(false);
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
+  const { trips } = useTripsStore();
 
   // Read the post-deletion notice exactly once, before any other effect can
   // clear localStorage.
