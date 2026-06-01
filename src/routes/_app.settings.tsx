@@ -588,9 +588,9 @@ function PrivacyControls() {
 
 
 
-function Section({ title, caption, action, children }: { title: string; caption?: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Section({ id, title, caption, action, children }: { id?: string; title: string; caption?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+    <section id={id} className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 md:p-6">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-xl uppercase">{title}</h2>
         <div className="flex items-center gap-3">
