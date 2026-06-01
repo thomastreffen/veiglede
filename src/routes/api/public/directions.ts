@@ -1,9 +1,13 @@
 // Public routing endpoint.
 //
-// Proxies to the Mapbox Directions API. Returns a normalized route shape
-// so the rest of the app does not need to know about the provider.
+// Primary: Google Routes API (computeRoutes) via Lovable connector gateway.
+// Honors routeStyle, vehicleType and avoidHighways/avoidFerries flags.
+// Falls back to Mapbox Directions if Google fails, then to a demo straight
+// line if neither provider is available.
 
 import { createFileRoute } from "@tanstack/react-router";
+
+const GOOGLE_GATEWAY_URL = "https://connector-gateway.lovable.dev/google_maps";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -57,18 +61,224 @@ function interpolate(a: LatLng, b: LatLng, steps = 32): LatLng[] {
   return pts;
 }
 
+// Decode a Google encoded polyline string into [lat,lng] points.
+function decodePolyline(str: string): LatLng[] {
+  const points: LatLng[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < str.length) {
+    let b: number;
+    let shift = 0;
+    let result = 0;
+    do {
+      b = str.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dLat = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lat += dLat;
+    shift = 0;
+    result = 0;
+    do {
+      b = str.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dLng = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lng += dLng;
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return points;
+}
+
+// Map our routeStyle to Google routing preferences + modifiers.
+function googleRoutingPrefs(body: Body): {
+  routingPreference: "TRAFFIC_AWARE" | "TRAFFIC_AWARE_OPTIMAL" | "FUEL_EFFICIENT" | "TRAFFIC_UNAWARE";
+  avoidHighways: boolean;
+  avoidFerries: boolean;
+} {
+  const style = body.routeStyle ?? "fastest";
+  let routingPreference: "TRAFFIC_AWARE" | "FUEL_EFFICIENT" = "TRAFFIC_AWARE";
+  let avoidHighways = !!body.avoidHighways;
+  const avoidFerries = !!body.avoidFerries;
+
+  if (body.vehicleType === "rv" || style === "cruise") {
+    routingPreference = "FUEL_EFFICIENT";
+  }
+  if (style === "scenic" || style === "curvy" || style === "photo" || style === "tourist") {
+    avoidHighways = true; // honest: prefer non-motorway corridors
+  }
+  return { routingPreference, avoidHighways, avoidFerries };
+}
+
 function demoResponse(body: Body, warnings: string[]) {
   const km = Math.round(distKm(body.origin!, body.destination!) * 1.25);
   const speed = body.routeStyle === "fastest" ? 75 : 60;
+  const isRv = body.vehicleType === "rv";
   return {
     distanceKm: km,
-    durationMin: Math.round((km / speed) * 60),
+    durationMin: Math.round((km / speed) * 60 * (isRv ? 1 / 0.85 : 1)),
     geometry: interpolate(body.origin!, body.destination!, 32),
     provider: "demo" as const,
     profile: "driving",
     avoidOptions: { highways: !!body.avoidHighways, ferries: !!body.avoidFerries },
     warnings: warnings.length ? warnings : undefined,
   };
+}
+
+async function tryGoogle(body: Body, warnings: string[]): Promise<Response | null> {
+  const lovableKey = (process.env.LOVABLE_API_KEY ?? "").trim();
+  const mapsKey = (
+    process.env.GOOGLE_MAPS_API_KEY_2 ??
+    process.env.GOOGLE_MAPS_API_KEY_1 ??
+    process.env.GOOGLE_MAPS_API_KEY ??
+    ""
+  ).trim();
+  if (!lovableKey || !mapsKey) {
+    warnings.push("no-google-key");
+    return null;
+  }
+
+  const prefs = googleRoutingPrefs(body);
+  const intermediates = (body.waypoints ?? [])
+    .filter(isLatLng)
+    .map((w) => ({ location: { latLng: { latitude: w.lat, longitude: w.lng } } }));
+
+  const reqBody = {
+    origin: { location: { latLng: { latitude: body.origin!.lat, longitude: body.origin!.lng } } },
+    destination: { location: { latLng: { latitude: body.destination!.lat, longitude: body.destination!.lng } } },
+    intermediates,
+    travelMode: "DRIVE",
+    routingPreference: prefs.routingPreference,
+    routeModifiers: {
+      avoidHighways: prefs.avoidHighways,
+      avoidFerries: prefs.avoidFerries,
+    },
+    polylineQuality: "OVERVIEW",
+    languageCode: "no",
+    regionCode: "NO",
+  };
+
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 7000);
+    const res = await fetch(`${GOOGLE_GATEWAY_URL}/routes/directions/v2:computeRoutes`, {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": mapsKey,
+        "Content-Type": "application/json",
+        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
+      },
+      body: JSON.stringify(reqBody),
+    });
+    clearTimeout(t);
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("[directions] Google routes non-200", { status: res.status, body: text.slice(0, 300) });
+      warnings.push(`google-http-${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    const route = data?.routes?.[0];
+    const encoded: string = route?.polyline?.encodedPolyline ?? "";
+    if (!encoded) {
+      warnings.push("google-no-geometry");
+      return null;
+    }
+    const geom = decodePolyline(encoded);
+    if (geom.length < 2) {
+      warnings.push("google-bad-geometry");
+      return null;
+    }
+    const rawDistanceMeters = typeof route.distanceMeters === "number" ? route.distanceMeters : 0;
+    // duration is an ISO duration string like "1234s"
+    const durRaw: string = typeof route.duration === "string" ? route.duration : "0s";
+    const rawDurationSeconds = Number(durRaw.replace(/s$/, "")) || 0;
+
+    const isRv = body.vehicleType === "rv";
+    const baseMinutes = rawDurationSeconds ? rawDurationSeconds / 60 : 0;
+    const durationMin = Math.round(baseMinutes * (isRv ? 1 / 0.85 : 1));
+
+    return json({
+      distanceKm: rawDistanceMeters ? Math.round(rawDistanceMeters / 100) / 10 : 0,
+      durationMin,
+      geometry: geom,
+      provider: "google" as const,
+      profile: prefs.routingPreference,
+      avoidOptions: { highways: prefs.avoidHighways, ferries: prefs.avoidFerries },
+      rawDistanceMeters,
+      rawDurationSeconds,
+      warnings: warnings.length ? warnings : undefined,
+    });
+  } catch (err) {
+    warnings.push(`google-error-${(err as Error)?.name ?? "unknown"}`);
+    return null;
+  }
+}
+
+async function tryMapbox(body: Body, warnings: string[]): Promise<Response | null> {
+  const token = (process.env.MAPBOX_TOKEN ?? "").trim();
+  if (!token) {
+    warnings.push("no-mapbox-token");
+    return null;
+  }
+  try {
+    const originPair: [number, number] = [body.origin!.lng, body.origin!.lat];
+    const destPair: [number, number] = [body.destination!.lng, body.destination!.lat];
+    const rawVia = Array.isArray(body.waypoints) ? body.waypoints : [];
+    const viaCoords: [number, number][] = [];
+    rawVia.forEach((w, i) => {
+      if (!isLatLng(w)) { warnings.push(`mapbox-skip-waypoint-${i}`); return; }
+      viaCoords.push([w.lng, w.lat]);
+    });
+    const coordinates: [number, number][] = [originPair, ...viaCoords, destPair];
+    const coordStr = coordinates.map((c) => `${c[0]},${c[1]}`).join(";");
+    const excludes: string[] = [];
+    if (body.avoidHighways) excludes.push("motorway");
+    if (body.avoidFerries) excludes.push("ferry");
+    const excludeParam = excludes.length ? `&exclude=${excludes.join(",")}` : "";
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full${excludeParam}&access_token=${encodeURIComponent(token)}`;
+
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) {
+      warnings.push(`mapbox-http-${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    const route = data?.routes?.[0];
+    const coords: [number, number][] = route?.geometry?.coordinates ?? [];
+    if (!coords.length) {
+      warnings.push("mapbox-no-geometry");
+      return null;
+    }
+    const rawDistanceMeters = typeof route.distance === "number" ? route.distance : 0;
+    const rawDurationSeconds = typeof route.duration === "number" ? route.duration : 0;
+    const isRv = body.vehicleType === "rv";
+    const baseMinutes = rawDurationSeconds ? rawDurationSeconds / 60 : 0;
+    const durationMin = Math.round(baseMinutes * (isRv ? 1 / 0.85 : 1));
+
+    return json({
+      distanceKm: rawDistanceMeters ? Math.round(rawDistanceMeters / 100) / 10 : 0,
+      durationMin,
+      geometry: coords.map(([lng, lat]) => ({ lat, lng })),
+      provider: "mapbox" as const,
+      profile: "driving",
+      avoidOptions: { highways: !!body.avoidHighways, ferries: !!body.avoidFerries },
+      rawDistanceMeters,
+      rawDurationSeconds,
+      warnings: warnings.length ? warnings : undefined,
+    });
+  } catch (err) {
+    warnings.push(`mapbox-error-${(err as Error)?.name ?? "unknown"}`);
+    return null;
+  }
 }
 
 export const Route = createFileRoute("/api/public/directions")({
@@ -84,79 +294,15 @@ export const Route = createFileRoute("/api/public/directions")({
           return json({ error: "invalid-coordinates" }, 400);
         }
 
-        const token = (process.env.MAPBOX_TOKEN ?? "").trim();
         const warnings: string[] = [];
-        const avoidOptions = {
-          highways: !!body.avoidHighways,
-          ferries: !!body.avoidFerries,
-        };
 
-        if (!token) {
-          return json(demoResponse(body, ["no-mapbox-token"]));
-        }
+        const google = await tryGoogle(body, warnings);
+        if (google) return google;
 
-        try {
-          const originPair: [number, number] = [Number(body.origin.lng), Number(body.origin.lat)];
-          const destPair: [number, number] = [Number(body.destination.lng), Number(body.destination.lat)];
+        const mapbox = await tryMapbox(body, warnings);
+        if (mapbox) return mapbox;
 
-          const rawVia = Array.isArray(body.waypoints) ? body.waypoints : [];
-          const viaCoords: [number, number][] = [];
-          rawVia.forEach((w, i) => {
-            if (!isLatLng(w)) {
-              warnings.push(`mapbox-skip-waypoint-${i}`);
-              return;
-            }
-            viaCoords.push([Number(w.lng), Number(w.lat)]);
-          });
-
-          const coordinates: [number, number][] = [originPair, ...viaCoords, destPair];
-          const coordStr = coordinates.map((c) => `${c[0]},${c[1]}`).join(";");
-          const excludes: string[] = [];
-          if (avoidOptions.highways) excludes.push("motorway");
-          if (avoidOptions.ferries) excludes.push("ferry");
-          const excludeParam = excludes.length ? `&exclude=${excludes.join(",")}` : "";
-          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full${excludeParam}&access_token=${encodeURIComponent(token)}`;
-
-          console.log(`[directions] Mapbox coordinates: ${coordinates.length} points, excludes: ${excludes.join(",") || "none"}`, coordinates);
-
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 6000);
-          const res = await fetch(url, { signal: controller.signal });
-          clearTimeout(timeout);
-
-          if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            console.error("[directions] Mapbox non-200 response", { status: res.status, body: text });
-            warnings.push(`mapbox-http-${res.status}`);
-            return json(demoResponse(body, warnings));
-          }
-
-          const data = await res.json();
-          const route = data?.routes?.[0];
-          const coords: [number, number][] = route?.geometry?.coordinates ?? [];
-          if (!coords.length) {
-            warnings.push("mapbox-no-geometry");
-            return json(demoResponse(body, warnings));
-          }
-
-          const rawDistanceMeters = typeof route.distance === "number" ? route.distance : 0;
-          const rawDurationSeconds = typeof route.duration === "number" ? route.duration : 0;
-
-          return json({
-            distanceKm: rawDistanceMeters ? Math.round(rawDistanceMeters / 100) / 10 : 0,
-            durationMin: rawDurationSeconds ? Math.round(rawDurationSeconds / 60) : 0,
-            geometry: coords.map(([lng, lat]) => ({ lat, lng })),
-            provider: "mapbox" as const,
-            profile: "driving",
-            avoidOptions,
-            rawDistanceMeters,
-            rawDurationSeconds,
-            warnings: warnings.length ? warnings : undefined,
-          });
-        } catch (err) {
-          warnings.push(`mapbox-error-${(err as Error)?.name ?? "unknown"}`);
-          return json(demoResponse(body, warnings));
-        }
+        return json(demoResponse(body, warnings));
       },
     },
   },

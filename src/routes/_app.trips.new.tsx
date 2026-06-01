@@ -418,6 +418,10 @@ function NewTripWizard() {
               </button>
             ))}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+            ℹ️ Rutestilen påvirker vegvalg (motorvei/ferge) og hvilke stopp AI foreslår.
+          </p>
+
         </>
       )}
 
