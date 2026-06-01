@@ -80,12 +80,12 @@ const POPULAR_ROUTES = [
 ];
 
 const REGIONS = [
-  { name: "Vestlandet", tag: "Fjorder, fjell og nasjonale turistveier", km: "300–900 km turer", img: routeHardanger, color: "#1e3a5f" },
-  { name: "Nord-Norge", tag: "Midnattssol, Lofoten og Nordkapp", km: "500–1500 km turer", img: routeLofoten, color: "#0c2340" },
-  { name: "Fjell-Norge", tag: "Jotunheimen, Rondane og høyfjellet", km: "200–600 km turer", img: routeSognefjellet, color: "#2d5a3d" },
-  { name: "Østlandet", tag: "Skog, innsjøer og kulturlandskap", km: "150–500 km turer", img: groupMotorcycles, color: "#4a5568" },
-  { name: "Trøndelag", tag: "Kyst, fjell og historiske veier", km: "300–700 km turer", img: routeTrollstigen, color: "#6b3a2a" },
-  { name: "Sørlandet", tag: "Hvite hus, skjærgård og solfylte kyststier", km: "200–600 km turer", img: routeAtlanterhavsveien, color: "#c9a84c" },
+  { name: "Vestlandet", km: "300–900 km", img: routeHardanger, color: "#1e3a5f" },
+  { name: "Nord-Norge", km: "500–1500 km", img: routeLofoten, color: "#0c2340" },
+  { name: "Fjell-Norge", km: "200–600 km", img: routeSognefjellet, color: "#2d5a3d" },
+  { name: "Østlandet", km: "150–500 km", img: groupMotorcycles, color: "#4a5568" },
+  { name: "Trøndelag", km: "300–700 km", img: routeTrollstigen, color: "#6b3a2a" },
+  { name: "Sørlandet", km: "200–600 km", img: routeAtlanterhavsveien, color: "#c9a84c" },
 ];
 
 const SCENIC_ROUTES = [
