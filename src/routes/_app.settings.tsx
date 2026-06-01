@@ -459,6 +459,96 @@ function UsernameField() {
 }
 
 
+type PrivacyFlags = { is_public: boolean; show_garage: boolean; show_trips: boolean; show_stats: boolean };
+
+function PrivacyControls() {
+  const { user } = useAuth();
+  const [flags, setFlags] = useState<PrivacyFlags | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("profiles")
+      .select("username, is_public, show_garage, show_trips, show_stats")
+      .eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setUsername((data.username as string | null) ?? null);
+        setFlags({
+          is_public: data.is_public !== false,
+          show_garage: data.show_garage !== false,
+          show_trips: data.show_trips !== false,
+          show_stats: data.show_stats !== false,
+        });
+      });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (!user) return <p className="text-sm text-muted-foreground">Logg inn for å justere personvern.</p>;
+  if (!flags) return <p className="text-sm text-muted-foreground">Laster…</p>;
+
+  const patch = async (next: Partial<PrivacyFlags>) => {
+    const merged = { ...flags, ...next };
+    setFlags(merged);
+    const { error } = await supabase.from("profiles").update(next).eq("id", user.id);
+    if (error) {
+      toast.error("Kunne ikke lagre");
+      setFlags(flags);
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <ToggleRow
+        icon={<Globe className="h-4 w-4" />}
+        label="Offentlig profil"
+        help="Når på er profilen din synlig på veiglede.no/u/[brukernavn]."
+        on={flags.is_public}
+        onChange={(on) => patch({ is_public: on })}
+      />
+      {flags.is_public && (
+        <div className="pl-4 border-l-2 border-primary/30 ml-1 mt-2 space-y-1">
+          <ToggleRow
+            icon={<CarIcon className="h-4 w-4" />}
+            label="Vis garasje og kjøretøy"
+            help="Vis kjøretøyene dine på profilen."
+            on={flags.show_garage}
+            onChange={(on) => patch({ show_garage: on })}
+          />
+          <ToggleRow
+            icon={<Eye className="h-4 w-4" />}
+            label="Vis mine offentlige turer"
+            help="Vis turer du har gjort offentlige."
+            on={flags.show_trips}
+            onChange={(on) => patch({ show_trips: on })}
+          />
+          <ToggleRow
+            icon={<BarChart3 className="h-4 w-4" />}
+            label="Vis statistikk (km og antall turer)"
+            help="Vis totalsummer på profilen din."
+            on={flags.show_stats}
+            onChange={(on) => patch({ show_stats: on })}
+          />
+        </div>
+      )}
+      {flags.is_public && username && (
+        <a
+          href={`/u/${username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+        >
+          Se hvordan profilen din ser ut <ExternalLink className="h-3 w-3" /> →
+        </a>
+      )}
+    </div>
+  );
+}
+
+
+
+
 function Section({ title, caption, action, children }: { title: string; caption?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
