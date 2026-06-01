@@ -499,12 +499,12 @@ function TripPlanner() {
       <section id="along" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foreslått</p>
-            <h2 className="mt-1 font-display text-2xl uppercase">Langs ruta</h2>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{td.suggestedEyebrow}</p>
+            <h2 className="mt-1 font-display text-2xl uppercase">{td.alongRouteTitle}</h2>
           </div>
-          <p className="text-[11px] text-muted-foreground">Trykk for å legge til</p>
+          <p className="text-[11px] text-muted-foreground">{td.tapToAdd}</p>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Tilpasset {vehicleDisplay}{em ? ` (${em.label.toLowerCase()})` : ""} · {s.label.toLowerCase()} · interesser fra profil og kjøretøy.</p>
+        <p className="mt-1 text-xs text-muted-foreground">{td.tailoredFor(vehicleDisplay, em ? em.label.toLowerCase() : "", s.label.toLowerCase())}</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {enrichedSuggestions.map(({ sug, info }: { sug: SuggestedStop; info: ReturnType<typeof suggestionRouteInfo> }) => (
@@ -544,9 +544,9 @@ function TripPlanner() {
 
       {/* Photo memories concept */}
       <section id="photos" className="mt-10 scroll-mt-24">
-        <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foto</p>
-        <h2 className="mt-1 font-display text-2xl uppercase">Bilder fra ruta</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Senere kan bilder du tar underveis kobles automatisk til turen basert på tid og posisjon.</p>
+        <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{td.photoEyebrow}</p>
+        <h2 className="mt-1 font-display text-2xl uppercase">{td.photosFromRoute}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{td.photosLater}</p>
 
         <TripPhotosGallery tripId={tripId} />
       </section>
@@ -555,11 +555,11 @@ function TripPlanner() {
       <section id="tips" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Partnertips</p>
-            <h2 className="mt-1 font-display text-2xl uppercase">Lokalt langs ruta</h2>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{td.partnerTipsEyebrow}</p>
+            <h2 className="mt-1 font-display text-2xl uppercase">{td.localAlongRoute}</h2>
           </div>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Veiglede er gratis. Lokale tips og partnere vises bare når de passer ruten din.</p>
+        <p className="mt-1 text-xs text-muted-foreground">{td.freeTipsNote}</p>
 
         <div className="mt-4 space-y-3">
           {partnerTips.map((tip) => <PartnerCard key={tip.id} tip={tip} />)}
