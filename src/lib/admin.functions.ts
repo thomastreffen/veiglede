@@ -142,11 +142,45 @@ export const adminListUsersFn = createServerFn({ method: "GET" })
       // ignore
     }
 
+    // Subscriptions (plan per user)
+    const plans = new Map<string, { plan: string; period_end: string | null; status: string }>();
+    {
+      const { data: subs } = await supabaseAdmin
+        .from("subscriptions")
+        .select("user_id, plan, current_period_end, status")
+        .in("user_id", ids);
+      for (const s of subs ?? []) {
+        plans.set(s.user_id as string, {
+          plan: (s.plan as string) ?? "free",
+          period_end: (s.current_period_end as string | null) ?? null,
+          status: (s.status as string) ?? "active",
+        });
+      }
+    }
+
+    // Last active = most recent updated_at on trips row
+    const lastActive = new Map<string, string>();
+    {
+      const { data: rows } = await supabaseAdmin
+        .from("trips")
+        .select("user_id, updated_at")
+        .in("user_id", ids);
+      for (const r of rows ?? []) {
+        const uid = r.user_id as string;
+        const ts = r.updated_at as string;
+        const prev = lastActive.get(uid);
+        if (!prev || ts > prev) lastActive.set(uid, ts);
+      }
+    }
+
     return {
       users: (rows ?? []).map((r) => ({
         ...r,
         email: emails.get(r.id) ?? null,
         tripCount: tripCounts.get(r.id) ?? 0,
+        plan: plans.get(r.id)?.plan ?? "free",
+        plan_period_end: plans.get(r.id)?.period_end ?? null,
+        last_active: lastActive.get(r.id) ?? null,
       })),
     };
   });
@@ -166,6 +200,13 @@ export const adminSetUserRoleFn = createServerFn({ method: "POST" })
       .update({ role: data.role })
       .eq("id", data.userId);
     if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("admin_audit_log").insert({
+      admin_id: context.userId,
+      action: data.role === "admin" ? "add_admin" : "remove_admin",
+      target_user_id: data.userId,
+      metadata: { role: data.role },
+    });
     return { ok: true };
   });
 
@@ -181,8 +222,137 @@ export const adminSetUserActiveFn = createServerFn({ method: "POST" })
       .update({ is_active: data.isActive })
       .eq("id", data.userId);
     if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("admin_audit_log").insert({
+      admin_id: context.userId,
+      action: data.isActive ? "activate" : "deactivate",
+      target_user_id: data.userId,
+    });
     return { ok: true };
   });
+
+/* ---------- user details + audit log ---------- */
+
+export const adminGetUserDetailsFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string }) =>
+    z.object({ userId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const uid = data.userId;
+
+    const [{ data: profile }, { data: sub }, { data: tripsRow }, { data: vehRow }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("*").eq("id", uid).maybeSingle(),
+      supabaseAdmin.from("subscriptions").select("*").eq("user_id", uid).maybeSingle(),
+      supabaseAdmin.from("trips").select("data, updated_at").eq("user_id", uid).maybeSingle(),
+      supabaseAdmin.from("vehicles").select("data").eq("id", uid).maybeSingle(),
+    ]);
+
+    let email: string | null = null;
+    try {
+      const { data: u } = await supabaseAdmin.auth.admin.getUserById(uid);
+      email = u?.user?.email ?? null;
+    } catch { /* ignore */ }
+
+    const tBlob = (tripsRow?.data ?? null) as { trips?: Array<Record<string, unknown>> } | null;
+    const allTrips = tBlob?.trips ?? [];
+    let totalKm = 0;
+    let drivenKm = 0;
+    for (const t of allTrips) {
+      totalKm += Number(t.distanceKm ?? 0);
+      drivenKm += Number(t.actualDistanceKm ?? 0);
+    }
+
+    const vBlob = (vehRow?.data ?? null) as { vehicles?: Array<Record<string, unknown>> } | null;
+    const vehicles = (vBlob?.vehicles ?? []).map((v) => ({
+      id: String(v.id ?? ""),
+      name: String(v.name ?? "Kjøretøy"),
+      type: String(v.type ?? "car"),
+      energy: String(v.energy ?? "petrol"),
+    }));
+
+    return {
+      profile: profile
+        ? {
+            id: profile.id as string,
+            display_name: (profile.display_name as string | null) ?? null,
+            username: (profile.username as string | null) ?? null,
+            avatar_url: (profile.avatar_url as string | null) ?? null,
+            bio: (profile.bio as string | null) ?? null,
+            role: (profile.role as string | null) ?? "user",
+            is_active: profile.is_active !== false,
+            created_at: profile.created_at as string,
+          }
+        : null,
+      email,
+      subscription: sub
+        ? {
+            plan: sub.plan as string,
+            status: sub.status as string,
+            current_period_end: (sub.current_period_end as string | null) ?? null,
+          }
+        : { plan: "free", status: "active", current_period_end: null as string | null },
+      stats: {
+        tripsCount: allTrips.length,
+        totalKm: Math.round(totalKm),
+        drivenKm: Math.round(drivenKm),
+        lastActive: (tripsRow?.updated_at as string | null) ?? null,
+      },
+      vehicles,
+    };
+  });
+
+export const adminListAuditLogFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { limit?: number } | undefined) =>
+    z.object({ limit: z.number().min(1).max(200).optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const limit = data.limit ?? 50;
+    const { data: rows, error } = await supabaseAdmin
+      .from("admin_audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+
+    const userIds = new Set<string>();
+    for (const r of rows ?? []) {
+      if (r.admin_id) userIds.add(r.admin_id as string);
+      if (r.target_user_id) userIds.add(r.target_user_id as string);
+    }
+    const names = new Map<string, { display_name: string | null; username: string | null }>();
+    if (userIds.size > 0) {
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("id, display_name, username")
+        .in("id", [...userIds]);
+      for (const p of profs ?? []) {
+        names.set(p.id as string, {
+          display_name: (p.display_name as string | null) ?? null,
+          username: (p.username as string | null) ?? null,
+        });
+      }
+    }
+
+    return {
+      entries: (rows ?? []).map((r) => ({
+        id: r.id as string,
+        admin_id: r.admin_id as string,
+        action: r.action as string,
+        target_user_id: (r.target_user_id as string | null) ?? null,
+        note: (r.note as string | null) ?? null,
+        metadata: (r.metadata as Record<string, unknown> | null) ?? null,
+        created_at: r.created_at as string,
+        admin_name: names.get(r.admin_id as string)?.display_name ?? null,
+        target_name: r.target_user_id ? names.get(r.target_user_id as string)?.display_name ?? null : null,
+        target_username: r.target_user_id ? names.get(r.target_user_id as string)?.username ?? null : null,
+      })),
+    };
+  });
+
 
 /* ---------- trips ---------- */
 
