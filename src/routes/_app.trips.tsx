@@ -55,6 +55,7 @@ function TripsDashboard() {
       {/* Featured routes */}
 
       <FollowedTripsSection />
+      <FeedFromFollowsSection />
 
       {/* Featured routes */}
       <section className="mt-12">
