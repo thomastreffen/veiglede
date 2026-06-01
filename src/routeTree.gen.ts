@@ -33,6 +33,7 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTripsRouteImport } from './routes/admin.trips'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPartnersRouteImport } from './routes/admin.partners'
 import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
@@ -181,6 +182,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
 const AdminTripsRoute = AdminTripsRouteImport.update({
   id: '/trips',
   path: '/trips',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -364,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/trips': typeof AdminTripsRoute
   '/admin/users': typeof AdminUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/trips': typeof AdminTripsRoute
   '/admin/users': typeof AdminUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -473,6 +481,7 @@ export interface FileRoutesById {
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/trips': typeof AdminTripsRoute
   '/admin/users': typeof AdminUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -530,6 +539,7 @@ export interface FileRouteTypes {
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
+    | '/admin/subscriptions'
     | '/admin/trips'
     | '/admin/users'
     | '/auth/callback'
@@ -583,6 +593,7 @@ export interface FileRouteTypes {
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
+    | '/admin/subscriptions'
     | '/admin/trips'
     | '/admin/users'
     | '/auth/callback'
@@ -638,6 +649,7 @@ export interface FileRouteTypes {
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
+    | '/admin/subscriptions'
     | '/admin/trips'
     | '/admin/users'
     | '/auth/callback'
@@ -874,6 +886,13 @@ declare module '@tanstack/react-router' {
       path: '/trips'
       fullPath: '/admin/trips'
       preLoaderRoute: typeof AdminTripsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/settings': {
@@ -1144,6 +1163,7 @@ interface AdminRouteChildren {
   AdminInvoicesRoute: typeof AdminInvoicesRoute
   AdminPartnersRoute: typeof AdminPartnersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminTripsRoute: typeof AdminTripsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1154,6 +1174,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminInvoicesRoute: AdminInvoicesRoute,
   AdminPartnersRoute: AdminPartnersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminTripsRoute: AdminTripsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,

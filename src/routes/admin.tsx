@@ -18,6 +18,7 @@ const NAV: { to: string; label: string; emoji: string; exact?: boolean }[] = [
   { to: "/admin/trips", label: "Turer", emoji: "🗺️" },
   { to: "/admin/partners", label: "Partnere", emoji: "🤝" },
   { to: "/admin/advertisers", label: "Annonsører", emoji: "📢" },
+  { to: "/admin/subscriptions", label: "Abonnementer", emoji: "💳" },
   { to: "/admin/settings", label: "Innstillinger", emoji: "⚙️" },
 ];
 
