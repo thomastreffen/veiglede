@@ -263,9 +263,9 @@ function TripPlanner() {
 
       {/* Stat row */}
       <section className="mt-4 grid grid-cols-3 gap-3">
-        <BigStat icon={<RouteIcon className="h-4 w-4" />} label="Distanse" value={`${trip.distanceKm} km`} />
-        <BigStat icon={<Clock className="h-4 w-4" />} label="Kjøretid" value={trip.drivingTime} />
-        <BigStat icon={<Camera className="h-4 w-4" />} label="Stopp" value={String(totalStops)} />
+        <BigStat icon={<RouteIcon className="h-4 w-4" />} label={td.distance} value={`${trip.distanceKm} km`} />
+        <BigStat icon={<Clock className="h-4 w-4" />} label={td.drivingTime} value={trip.drivingTime} />
+        <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
       </section>
 
       {/* Map */}
@@ -281,7 +281,7 @@ function TripPlanner() {
           height="h-72 md:h-[520px]"
         />
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
-          Beregnet av rutemotor. Kan avvike fra Google Maps, trafikk, ferge og lokale forhold.
+          {td.mapDisclaimer}
         </p>
         <DetourTotals trip={trip} stops={tripStops} />
       </section>
@@ -293,7 +293,7 @@ function TripPlanner() {
 
       {/* Time budget */}
       <section className="mt-4">
-        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title={td.tripBudget} />
       </section>
 
 
@@ -303,10 +303,10 @@ function TripPlanner() {
         <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-              <Sparkles className="h-4 w-4" /> AI ko-pilot
+              <Sparkles className="h-4 w-4" /> {td.aiCopilot}
             </p>
             <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-primary">
-              Tilpasset profilen din · {prefs.stopInterests.length} interesser
+              {td.profileMatched(prefs.stopInterests.length)}
             </span>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-foreground/90">{trip.aiSummary}</p>
@@ -317,12 +317,12 @@ function TripPlanner() {
       <section className="mt-4 grid grid-cols-2 gap-3">
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-          <BookOpen className="h-4 w-4" /> Åpne roadbook
+          <BookOpen className="h-4 w-4" /> {td.openRoadbook}
         </Link>
         <button
           onClick={() => setShareOpen(true)}
           className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2 hover:border-primary">
-          <Share2 className="h-4 w-4" /> Del tur
+          <Share2 className="h-4 w-4" /> {td.shareTrip}
         </button>
         <OpenInMaps origin={trip.origin} destination={trip.destination} />
       </section>
@@ -335,7 +335,7 @@ function TripPlanner() {
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
       <EditTripSheet trip={trip} open={editOpen} onOpenChange={setEditOpen} />
-      <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title="Lagre og del turen din" description="Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter." redirectTo={`/trips/${tripId}`} />
+      <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title={td.saveAndSharePromptTitle} description={td.saveAndSharePromptBody} redirectTo={`/trips/${tripId}`} />
 
       <section className="mt-4">
         <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
