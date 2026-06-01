@@ -721,6 +721,8 @@ function Landing() {
           </div>
         </div>
       </footer>
+
+      <CookieBanner />
     </div>
   );
 }
