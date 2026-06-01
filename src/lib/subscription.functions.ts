@@ -305,15 +305,27 @@ export const adminSubscriptionStatsFn = createServerFn({ method: "GET" })
 
 export const adminSetUserPlanFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userId: string; plan: Plan }) =>
+  .inputValidator((input: { userId: string; plan: Plan; validUntil?: string | null; note?: string | null }) =>
     z.object({
       userId: z.string().uuid(),
       plan: z.enum(["free", "pro", "gruppe"]),
+      validUntil: z.string().datetime().nullable().optional(),
+      note: z.string().max(500).nullable().optional(),
     }).parse(input),
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const periodEnd = data.plan === "free" ? null : new Date(Date.now() + 30 * 86400_000).toISOString();
+
+    // Read previous plan for audit metadata
+    const { data: prev } = await supabaseAdmin
+      .from("subscriptions").select("plan").eq("user_id", data.userId).maybeSingle();
+
+    const periodEnd = data.validUntil
+      ? data.validUntil
+      : data.plan === "free"
+        ? null
+        : new Date(Date.now() + 30 * 86400_000).toISOString();
+
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .upsert(
@@ -335,5 +347,15 @@ export const adminSetUserPlanFn = createServerFn({ method: "POST" })
           { onConflict: "gruppe_id,user_id" },
         );
     }
+
+    await supabaseAdmin.from("admin_audit_log").insert({
+      admin_id: context.userId,
+      action: "set_plan",
+      target_user_id: data.userId,
+      note: data.note ?? null,
+      metadata: { from: prev?.plan ?? null, to: data.plan, validUntil: periodEnd },
+    });
+
     return { ok: true };
   });
+
