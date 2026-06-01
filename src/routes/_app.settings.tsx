@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useAuth, signOut } from "@/lib/auth";
 import { deleteMyAccount } from "@/lib/account";
 import { supabase } from "@/integrations/supabase/client";
 import { UsernamePicker } from "@/components/UsernamePicker";
+import { getFollowStatsFn } from "@/lib/social.functions";
 import { toast } from "sonner";
 import { LogOut, LogIn, Trash2, AlertTriangle, ExternalLink } from "lucide-react";
 
