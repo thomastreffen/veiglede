@@ -24,6 +24,7 @@ import { TripMemories } from "@/components/TripMemories";
 import { TripPhotosGallery } from "@/components/TripPhotosGallery";
 import { DetourPromptDialog } from "@/components/DetourPromptDialog";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import { PackingList } from "@/components/PackingList";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { EditTripSheet } from "@/components/EditTripSheet";
 import {
