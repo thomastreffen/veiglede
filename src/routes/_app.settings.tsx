@@ -349,7 +349,7 @@ function Settings() {
 
         <label className="mt-4 flex items-center justify-between gap-3 cursor-pointer">
           <div className="text-sm">
-            <p className="font-medium">Vis debug-paneler</p>
+            <p className="font-medium">Vis debug-info</p>
             <p className="text-xs text-muted-foreground">Skjult i normal demo.</p>
           </div>
           <span
@@ -360,12 +360,14 @@ function Settings() {
           </span>
         </label>
 
-        <button
-          onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); localStorage.removeItem("veiglede.v3"); localStorage.removeItem("veiglede.v4"); localStorage.removeItem("veiglede.profile.v1"); location.reload(); } }}
-          className="mt-4 w-full rounded-2xl border border-border bg-background py-2.5 text-xs uppercase tracking-wider hover:border-primary"
-        >
-          Tilbakestill demo-data
-        </button>
+        {debug && (
+          <button
+            onClick={() => { if (confirm("Tilbakestille demo-data?")) { localStorage.removeItem("veiglede.v2"); localStorage.removeItem("veiglede.v3"); localStorage.removeItem("veiglede.v4"); localStorage.removeItem("veiglede.profile.v1"); location.reload(); } }}
+            className="mt-4 w-full rounded-2xl border border-border bg-background py-2.5 text-xs uppercase tracking-wider hover:border-primary"
+          >
+            Tilbakestill demo-data
+          </button>
+        )}
       </section>
 
       <DangerZone />

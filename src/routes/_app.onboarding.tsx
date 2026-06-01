@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { consumeProfileDeletedNotice } from "@/lib/account";
 import { useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInterest, DRIVING_FLAGS, STOP_INTERESTS } from "@/lib/driver-prefs";
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
+import { useTripsStore } from "@/lib/trips-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { Check, ArrowRight, Sparkles, Info } from "lucide-react";
 
