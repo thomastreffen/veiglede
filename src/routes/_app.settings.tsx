@@ -385,6 +385,75 @@ function Settings() {
 
 /* ---------- helpers ---------- */
 
+function UsernameField() {
+  const { user } = useAuth();
+  const [current, setCurrent] = useState<string | null>(null);
+  const [pending, setPending] = useState("");
+  const [pendingOk, setPendingOk] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setCurrent((data?.username as string | null) ?? null); });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const onChange = useCallback((v: string, ok: boolean) => {
+    setPending(v);
+    setPendingOk(ok);
+  }, []);
+
+  if (!user) return null;
+
+  const dirty = pendingOk && !!pending && pending !== current;
+
+  const save = async () => {
+    if (!dirty) return;
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({ username: pending }).eq("id", user.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Kunne ikke lagre brukernavn");
+      return;
+    }
+    setCurrent(pending);
+    toast.success("Brukernavn lagret");
+  };
+
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Offentlig profil</p>
+      <UsernamePicker
+        initialValue={current ?? ""}
+        ownUserId={user.id}
+        onChange={onChange}
+      />
+      <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+        {current ? (
+          <a
+            href={`/u/${current}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            👤 Se min offentlige profil <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : <span />}
+        <button
+          onClick={save}
+          disabled={!dirty || saving}
+          className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
+        >
+          {saving ? "Lagrer…" : "Lagre brukernavn"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 function Section({ title, caption, action, children }: { title: string; caption?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
