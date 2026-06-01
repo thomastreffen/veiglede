@@ -33,7 +33,7 @@ export function AppShell() {
   const amIAdmin = useServerFn(amIAdminFn);
   const { data: adminInfo } = useQuery({
     queryKey: ["am-i-admin", user?.id ?? "anon"],
-    queryFn: () => amIAdmin({}),
+    queryFn: () => amIAdmin(),
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
