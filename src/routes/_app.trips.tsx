@@ -295,3 +295,148 @@ function EmptyState() {
     </div>
   );
 }
+
+type SortOption = "newest" | "oldest" | "longest" | "shortest";
+
+function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsStore>["trips"] }) {
+  const [query, setQuery] = useState("");
+  const [vehicleFilter, setVehicleFilter] = useState<"all" | VehicleType>("all");
+  const [styleFilter, setStyleFilter] = useState<"all" | RouteStyle>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+
+  const q = query.trim().toLowerCase();
+  const activeCount = (q ? 1 : 0) + (vehicleFilter !== "all" ? 1 : 0) + (styleFilter !== "all" ? 1 : 0);
+
+  const filtered = useMemo(() => {
+    let result = allTrips.filter((t) => {
+      if (q) {
+        const haystack = `${t.title} ${t.subtitle ?? ""} ${t.origin} ${t.destination} ${t.region ?? ""}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (vehicleFilter !== "all" && t.vehicle !== vehicleFilter) return false;
+      if (styleFilter !== "all" && t.style !== styleFilter) return false;
+      return true;
+    });
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest": return b.createdAt - a.createdAt;
+        case "oldest": return a.createdAt - b.createdAt;
+        case "longest": return b.distanceKm - a.distanceKm;
+        case "shortest": return a.distanceKm - b.distanceKm;
+        default: return 0;
+      }
+    });
+
+    return result;
+  }, [allTrips, q, vehicleFilter, styleFilter, sortBy]);
+
+  return (
+    <>
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Søk i turer…"
+          className="pl-9 pr-9 rounded-xl"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Tøm søk"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Filter row */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={vehicleFilter} onValueChange={(v) => setVehicleFilter(v as "all" | VehicleType)}>
+          <SelectTrigger className="w-[150px] rounded-xl text-xs">
+            <SelectValue placeholder="Kjøretøy" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle kjøretøy</SelectItem>
+            {VEHICLES.map((v) => (
+              <SelectItem key={v.value} value={v.value}>{v.emoji} {v.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={styleFilter} onValueChange={(v) => setStyleFilter(v as "all" | RouteStyle)}>
+          <SelectTrigger className="w-[170px] rounded-xl text-xs">
+            <SelectValue placeholder="Stil" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle stiler</SelectItem>
+            {ROUTE_STYLES.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.emoji} {s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+          <SelectTrigger className="w-[160px] rounded-xl text-xs">
+            <SelectValue placeholder="Sorter" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Nyeste først</SelectItem>
+            <SelectItem value="oldest">Eldste først</SelectItem>
+            <SelectItem value="longest">Lengste tur</SelectItem>
+            <SelectItem value="shortest">Kortest tur</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {activeCount > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider">
+            {activeCount} {activeCount === 1 ? "aktivt filter" : "aktive filter"}
+            <button
+              type="button"
+              onClick={() => { setQuery(""); setVehicleFilter("all"); setStyleFilter("all"); setSortBy("newest"); }}
+              className="ml-0.5 hover:text-destructive"
+              aria-label="Nullstill filter"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        )}
+      </div>
+
+      {/* Header + CTA */}
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Mine turer</p>
+          <h1 className="mt-1 font-display text-3xl md:text-5xl uppercase">{filtered.length} turer</h1>
+        </div>
+        <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20">
+          <Plus className="h-4 w-4" strokeWidth={3} /> Ny tur
+        </Link>
+      </div>
+
+      {allTrips.length === 0 ? (
+        <EmptyState />
+      ) : filtered.length === 0 ? (
+        <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
+          <p className="font-display text-2xl uppercase">Ingen turer matcher søket</p>
+          <p className="mt-2 text-sm text-muted-foreground">Prøv å justere filtere eller søkeord.</p>
+          <button
+            type="button"
+            onClick={() => { setQuery(""); setVehicleFilter("all"); setStyleFilter("all"); setSortBy("newest"); }}
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground"
+          >
+            Nullstill filter
+          </button>
+        </div>
+      ) : (
+        <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((t) => <TripCard key={t.id} t={t} />)}
+        </ul>
+      )}
+    </>
+  );
+}
