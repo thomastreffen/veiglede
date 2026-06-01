@@ -37,6 +37,8 @@ import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscript
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPartnersRouteImport } from './routes/admin.partners'
 import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
+import { Route as AdminBenefitsRouteImport } from './routes/admin.benefits'
+import { Route as AdminAudienceRouteImport } from './routes/admin.audience'
 import { Route as AdminAdvertisersRouteImport } from './routes/admin.advertisers'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
@@ -44,9 +46,11 @@ import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppMapsCheckRouteImport } from './routes/_app.maps-check'
 import { Route as AppGarageRouteImport } from './routes/_app.garage'
+import { Route as AppFordelerRouteImport } from './routes/_app.fordeler'
 import { Route as AppExploreRouteImport } from './routes/_app.explore'
 import { Route as PartnerDashboardIndexRouteImport } from './routes/partner.dashboard.index'
 import { Route as PartnerDashboardInvoicesRouteImport } from './routes/partner.dashboard.invoices'
+import { Route as PartnerDashboardBenefitsRouteImport } from './routes/partner.dashboard.benefits'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
@@ -204,6 +208,16 @@ const AdminInvoicesRoute = AdminInvoicesRouteImport.update({
   path: '/invoices',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBenefitsRoute = AdminBenefitsRouteImport.update({
+  id: '/benefits',
+  path: '/benefits',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAudienceRoute = AdminAudienceRouteImport.update({
+  id: '/audience',
+  path: '/audience',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdvertisersRoute = AdminAdvertisersRouteImport.update({
   id: '/advertisers',
   path: '/advertisers',
@@ -239,6 +253,11 @@ const AppGarageRoute = AppGarageRouteImport.update({
   path: '/garage',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFordelerRoute = AppFordelerRouteImport.update({
+  id: '/fordeler',
+  path: '/fordeler',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppExploreRoute = AppExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
@@ -253,6 +272,12 @@ const PartnerDashboardInvoicesRoute =
   PartnerDashboardInvoicesRouteImport.update({
     id: '/invoices',
     path: '/invoices',
+    getParentRoute: () => PartnerDashboardRoute,
+  } as any)
+const PartnerDashboardBenefitsRoute =
+  PartnerDashboardBenefitsRouteImport.update({
+    id: '/benefits',
+    path: '/benefits',
     getParentRoute: () => PartnerDashboardRoute,
   } as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
@@ -360,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/explore': typeof AppExploreRoute
+  '/fordeler': typeof AppFordelerRoute
   '/garage': typeof AppGarageRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
@@ -367,6 +393,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
   '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/audience': typeof AdminAudienceRoute
+  '/admin/benefits': typeof AdminBenefitsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -393,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
   '/partner/dashboard/': typeof PartnerDashboardIndexRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
@@ -414,6 +443,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/explore': typeof AppExploreRoute
+  '/fordeler': typeof AppFordelerRoute
   '/garage': typeof AppGarageRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
@@ -421,6 +451,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
   '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/audience': typeof AdminAudienceRoute
+  '/admin/benefits': typeof AdminBenefitsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -446,6 +478,7 @@ export interface FileRoutesByTo {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
   '/partner/dashboard': typeof PartnerDashboardIndexRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
@@ -471,6 +504,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/_app/explore': typeof AppExploreRoute
+  '/_app/fordeler': typeof AppFordelerRoute
   '/_app/garage': typeof AppGarageRoute
   '/_app/maps-check': typeof AppMapsCheckRoute
   '/_app/onboarding': typeof AppOnboardingRoute
@@ -478,6 +512,8 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/trips': typeof AppTripsRouteWithChildren
   '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/audience': typeof AdminAudienceRoute
+  '/admin/benefits': typeof AdminBenefitsRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -504,6 +540,7 @@ export interface FileRoutesById {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
   '/partner/dashboard/': typeof PartnerDashboardIndexRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
@@ -529,6 +566,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/unsubscribe'
     | '/explore'
+    | '/fordeler'
     | '/garage'
     | '/maps-check'
     | '/onboarding'
@@ -536,6 +574,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/trips'
     | '/admin/advertisers'
+    | '/admin/audience'
+    | '/admin/benefits'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -562,6 +602,7 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
+    | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
     | '/partner/dashboard/'
     | '/trips/$tripId/roadbook'
@@ -583,6 +624,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/unsubscribe'
     | '/explore'
+    | '/fordeler'
     | '/garage'
     | '/maps-check'
     | '/onboarding'
@@ -590,6 +632,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/trips'
     | '/admin/advertisers'
+    | '/admin/audience'
+    | '/admin/benefits'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -615,6 +659,7 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
+    | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
     | '/partner/dashboard'
     | '/trips/$tripId/roadbook'
@@ -639,6 +684,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/unsubscribe'
     | '/_app/explore'
+    | '/_app/fordeler'
     | '/_app/garage'
     | '/_app/maps-check'
     | '/_app/onboarding'
@@ -646,6 +692,8 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/trips'
     | '/admin/advertisers'
+    | '/admin/audience'
+    | '/admin/benefits'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -672,6 +720,7 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
+    | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
     | '/partner/dashboard/'
     | '/_app/trips/$tripId/roadbook'
@@ -916,6 +965,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInvoicesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/benefits': {
+      id: '/admin/benefits'
+      path: '/benefits'
+      fullPath: '/admin/benefits'
+      preLoaderRoute: typeof AdminBenefitsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audience': {
+      id: '/admin/audience'
+      path: '/audience'
+      fullPath: '/admin/audience'
+      preLoaderRoute: typeof AdminAudienceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/advertisers': {
       id: '/admin/advertisers'
       path: '/advertisers'
@@ -965,6 +1028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGarageRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/fordeler': {
+      id: '/_app/fordeler'
+      path: '/fordeler'
+      fullPath: '/fordeler'
+      preLoaderRoute: typeof AppFordelerRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/explore': {
       id: '/_app/explore'
       path: '/explore'
@@ -984,6 +1054,13 @@ declare module '@tanstack/react-router' {
       path: '/invoices'
       fullPath: '/partner/dashboard/invoices'
       preLoaderRoute: typeof PartnerDashboardInvoicesRouteImport
+      parentRoute: typeof PartnerDashboardRoute
+    }
+    '/partner/dashboard/benefits': {
+      id: '/partner/dashboard/benefits'
+      path: '/benefits'
+      fullPath: '/partner/dashboard/benefits'
+      preLoaderRoute: typeof PartnerDashboardBenefitsRouteImport
       parentRoute: typeof PartnerDashboardRoute
     }
     '/lovable/email/suppression': {
@@ -1138,6 +1215,7 @@ const AppTripsRouteWithChildren = AppTripsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppExploreRoute: typeof AppExploreRoute
+  AppFordelerRoute: typeof AppFordelerRoute
   AppGarageRoute: typeof AppGarageRoute
   AppMapsCheckRoute: typeof AppMapsCheckRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
@@ -1148,6 +1226,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppExploreRoute: AppExploreRoute,
+  AppFordelerRoute: AppFordelerRoute,
   AppGarageRoute: AppGarageRoute,
   AppMapsCheckRoute: AppMapsCheckRoute,
   AppOnboardingRoute: AppOnboardingRoute,
@@ -1160,6 +1239,8 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface AdminRouteChildren {
   AdminAdvertisersRoute: typeof AdminAdvertisersRoute
+  AdminAudienceRoute: typeof AdminAudienceRoute
+  AdminBenefitsRoute: typeof AdminBenefitsRoute
   AdminInvoicesRoute: typeof AdminInvoicesRoute
   AdminPartnersRoute: typeof AdminPartnersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -1171,6 +1252,8 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdvertisersRoute: AdminAdvertisersRoute,
+  AdminAudienceRoute: AdminAudienceRoute,
+  AdminBenefitsRoute: AdminBenefitsRoute,
   AdminInvoicesRoute: AdminInvoicesRoute,
   AdminPartnersRoute: AdminPartnersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
@@ -1183,6 +1266,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface PartnerDashboardRouteChildren {
+  PartnerDashboardBenefitsRoute: typeof PartnerDashboardBenefitsRoute
   PartnerDashboardInvoicesRoute: typeof PartnerDashboardInvoicesRoute
   PartnerDashboardIndexRoute: typeof PartnerDashboardIndexRoute
   PartnerDashboardCampaignIdRoute: typeof PartnerDashboardCampaignIdRoute
@@ -1190,6 +1274,7 @@ interface PartnerDashboardRouteChildren {
 }
 
 const PartnerDashboardRouteChildren: PartnerDashboardRouteChildren = {
+  PartnerDashboardBenefitsRoute: PartnerDashboardBenefitsRoute,
   PartnerDashboardInvoicesRoute: PartnerDashboardInvoicesRoute,
   PartnerDashboardIndexRoute: PartnerDashboardIndexRoute,
   PartnerDashboardCampaignIdRoute: PartnerDashboardCampaignIdRoute,
