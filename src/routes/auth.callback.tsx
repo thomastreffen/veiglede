@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getOnboardingStatus } from "@/lib/account";
+import { sendTransactionalEmail } from "@/lib/email/send";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -29,6 +30,28 @@ function AuthCallback() {
       // Default to sending the user into the app. Only divert to onboarding
       // when we are CERTAIN this user has never onboarded.
       if (status.kind === "new") {
+        // Best-effort welcome email — dedupe via profiles.welcome_email_sent_at
+        try {
+          const userId = data.session.user.id;
+          const email = data.session.user.email;
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("display_name, welcome_email_sent_at")
+            .eq("id", userId)
+            .maybeSingle();
+          if (email && !prof?.welcome_email_sent_at) {
+            await sendTransactionalEmail({
+              templateName: "welcome",
+              recipientEmail: email,
+              idempotencyKey: `welcome-${userId}`,
+              templateData: { name: prof?.display_name ?? undefined },
+            });
+            await supabase
+              .from("profiles")
+              .update({ welcome_email_sent_at: new Date().toISOString() })
+              .eq("id", userId);
+          }
+        } catch { /* noop */ }
         navigate({ to: "/onboarding", search: { next }, replace: true } as never);
       } else {
         window.location.replace(next);

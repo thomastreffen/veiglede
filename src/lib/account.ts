@@ -1,4 +1,35 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email/send";
+
+/**
+ * Soft-delete: record a deletion request with a 30-day restore window
+ * and send an email with the restore link. Signs the user out.
+ */
+export async function requestAccountDeletion(): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) throw new Error("Not authenticated");
+  const email = user.email || "";
+
+  const { data, error } = await supabase
+    .from("account_deletion_requests")
+    .insert({ user_id: user.id, user_email: email })
+    .select("restore_token")
+    .single();
+  if (error) throw error;
+
+  const token = (data as { restore_token: string }).restore_token;
+  const restoreUrl = `https://veiglede.no/restore/${token}`;
+  if (email) {
+    await sendTransactionalEmail({
+      templateName: "account-deletion",
+      recipientEmail: email,
+      idempotencyKey: `account-deletion-${token}`,
+      templateData: { restoreUrl },
+    });
+  }
+  try { await supabase.auth.signOut(); } catch { /* noop */ }
+}
 
 export type OnboardingStatus =
   | { kind: "onboarded" }

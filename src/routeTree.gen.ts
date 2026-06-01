@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
@@ -16,24 +17,34 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
+import { Route as RestoreTokenRouteImport } from './routes/restore.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppMapsCheckRouteImport } from './routes/_app.maps-check'
+import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
 import { Route as ApiPublicGooglePlacesRouteImport } from './routes/api/public/google-places'
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
 import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
+import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
 import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.trips.$tripId.stops.$stopId'
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -68,6 +79,11 @@ const SharedShareTokenRoute = SharedShareTokenRouteImport.update({
   path: '/shared/$shareToken',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RestoreTokenRoute = RestoreTokenRouteImport.update({
+  id: '/restore/$token',
+  path: '/restore/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JoinTokenRoute = JoinTokenRouteImport.update({
   id: '/join/$token',
   path: '/join/$token',
@@ -76,6 +92,11 @@ const JoinTokenRoute = JoinTokenRouteImport.update({
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
+  id: '/email/unsubscribe',
+  path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -108,6 +129,11 @@ const AppMapsCheckRoute = AppMapsCheckRouteImport.update({
   path: '/maps-check',
   getParentRoute: () => AppRoute,
 } as any)
+const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
+  id: '/lovable/email/suppression',
+  path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPoiSearchRoute = ApiPublicPoiSearchRouteImport.update({
   id: '/api/public/poi-search',
   path: '/api/public/poi-search',
@@ -138,6 +164,18 @@ const AppTripsTripIdRoute = AppTripsTripIdRouteImport.update({
   path: '/$tripId',
   getParentRoute: () => AppTripsRoute,
 } as any)
+const LovableEmailTransactionalSendRoute =
+  LovableEmailTransactionalSendRouteImport.update({
+    id: '/lovable/email/transactional/send',
+    path: '/lovable/email/transactional/send',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -161,14 +199,17 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -177,8 +218,11 @@ export interface FileRoutesByFullPath {
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesByTo {
@@ -186,14 +230,17 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -202,8 +249,11 @@ export interface FileRoutesByTo {
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesById {
@@ -213,14 +263,17 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_app/maps-check': typeof AppMapsCheckRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/roadbook': typeof AppRoadbookRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/trips': typeof AppTripsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
@@ -229,8 +282,11 @@ export interface FileRoutesById {
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRouteTypes {
@@ -240,14 +296,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/signup'
+    | '/unsubscribe'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
     | '/settings'
     | '/trips'
     | '/auth/callback'
+    | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
@@ -256,8 +315,11 @@ export interface FileRouteTypes {
     | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/poi-search'
+    | '/lovable/email/suppression'
     | '/trips/$tripId/roadbook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/trips/$tripId/stops/$stopId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -265,14 +327,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/signup'
+    | '/unsubscribe'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
     | '/settings'
     | '/trips'
     | '/auth/callback'
+    | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/trips/$tripId'
@@ -281,8 +346,11 @@ export interface FileRouteTypes {
     | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/poi-search'
+    | '/lovable/email/suppression'
     | '/trips/$tripId/roadbook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/trips/$tripId/stops/$stopId'
   id:
     | '__root__'
@@ -291,14 +359,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/signup'
+    | '/unsubscribe'
     | '/_app/maps-check'
     | '/_app/onboarding'
     | '/_app/roadbook'
     | '/_app/settings'
     | '/_app/trips'
     | '/auth/callback'
+    | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/_app/trips/$tripId'
@@ -307,8 +378,11 @@ export interface FileRouteTypes {
     | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/poi-search'
+    | '/lovable/email/suppression'
     | '/_app/trips/$tripId/roadbook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/_app/trips/$tripId/stops/$stopId'
   fileRoutesById: FileRoutesById
 }
@@ -318,20 +392,33 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
   SignupRoute: typeof SignupRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
+  RestoreTokenRoute: typeof RestoreTokenRoute
   SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
   ApiPublicGooglePlacesRoute: typeof ApiPublicGooglePlacesRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
+  LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
+  LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -381,6 +468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SharedShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/restore/$token': {
+      id: '/restore/$token'
+      path: '/restore/$token'
+      fullPath: '/restore/$token'
+      preLoaderRoute: typeof RestoreTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/join/$token': {
       id: '/join/$token'
       path: '/join/$token'
@@ -393,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/invite/$token'
       fullPath: '/invite/$token'
       preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email/unsubscribe': {
+      id: '/email/unsubscribe'
+      path: '/email/unsubscribe'
+      fullPath: '/email/unsubscribe'
+      preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -437,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMapsCheckRouteImport
       parentRoute: typeof AppRoute
     }
+    '/lovable/email/suppression': {
+      id: '/lovable/email/suppression'
+      path: '/lovable/email/suppression'
+      fullPath: '/lovable/email/suppression'
+      preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/poi-search': {
       id: '/api/public/poi-search'
       path: '/api/public/poi-search'
@@ -478,6 +586,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/trips/$tripId'
       preLoaderRoute: typeof AppTripsTripIdRouteImport
       parentRoute: typeof AppTripsRoute
+    }
+    '/lovable/email/transactional/send': {
+      id: '/lovable/email/transactional/send'
+      path: '/lovable/email/transactional/send'
+      fullPath: '/lovable/email/transactional/send'
+      preLoaderRoute: typeof LovableEmailTransactionalSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
@@ -555,16 +677,22 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
   SignupRoute: SignupRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
+  RestoreTokenRoute: RestoreTokenRoute,
   SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
   ApiPublicGooglePlacesRoute: ApiPublicGooglePlacesRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
+  LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
+  LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
