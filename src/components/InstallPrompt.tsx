@@ -41,6 +41,13 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    if (window.location.search.includes("pwa=reset")) {
+      localStorage.removeItem(VISIT_KEY);
+      localStorage.removeItem(DISMISS_KEY);
+      localStorage.removeItem(INSTALLED_KEY);
+    }
+
     if (isStandalone()) {
       localStorage.setItem(INSTALLED_KEY, "1");
       return;
