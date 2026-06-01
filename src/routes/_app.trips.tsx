@@ -237,6 +237,7 @@ function FollowedTripsSection() {
 }
 
 function FollowedTripCard({ f }: { f: FollowedTrip }) {
+  const tr = useT();
   const t = f.trip as Record<string, unknown>;
   const id = String(t.id ?? "");
   const cover = (t.cover as CoverKey) ?? "fjord";
@@ -256,15 +257,15 @@ function FollowedTripCard({ f }: { f: FollowedTrip }) {
           <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
             <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
             <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">
-              <Users className="h-3 w-3 text-primary" /> Reisefølge
+              <Users className="h-3 w-3 text-primary" /> {tr.app.trips.companions}
             </span>
             {live && (
               <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-primary/90 text-primary-foreground px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold">
-                <span className="h-1.5 w-1.5 rounded-full bg-background animate-pulse" /> Live
+                <span className="h-1.5 w-1.5 rounded-full bg-background animate-pulse" /> {tr.app.trips.live}
               </span>
             )}
             <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider border border-border">
-              {f.role === "editor" ? "Kan redigere" : "Kan se"}
+              {f.role === "editor" ? tr.app.trips.canEdit : tr.app.trips.canView}
             </span>
           </div>
           <div className="p-4 md:p-5">
@@ -273,11 +274,11 @@ function FollowedTripCard({ f }: { f: FollowedTrip }) {
             <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
               <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${km} km`} />
               <Stat icon={<Clock className="h-3.5 w-3.5" />} v={drivingTime} />
-              <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${stopsCount} stopp`} />
+              <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${stopsCount} ${tr.app.trips.stopsLabel}`} />
             </div>
             <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
               <span className="inline-flex items-center gap-1 truncate"><MapPin className="h-3 w-3" /> {origin} → {destination}</span>
-              {f.owner_name && <span className="truncate">av {f.owner_name}</span>}
+              {f.owner_name && <span className="truncate">{tr.app.trips.by} {f.owner_name}</span>}
             </div>
           </div>
         </Link>
@@ -287,7 +288,7 @@ function FollowedTripCard({ f }: { f: FollowedTrip }) {
             params={{ token: session.live_share_token }}
             className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
           >
-            <Radio className="h-3 w-3 animate-pulse" /> Følg live
+            <Radio className="h-3 w-3 animate-pulse" /> {tr.app.trips.followLive}
           </Link>
         )}
       </div>
