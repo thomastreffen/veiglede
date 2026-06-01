@@ -214,10 +214,23 @@ function Onboarding() {
             <button onClick={() => finish()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Sparkles className="h-4 w-4" /> Planlegg min første tur
             </button>
-            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext("/trips")); }}
+            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext(useTripsStore.getState().trips.length === 0 ? "/garage" : "/trips")); }}
               className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm hover:bg-surface-2">
-              Til mine turer
+              {useTripsStore.getState().trips.length === 0 ? "Til min garasje" : "Til mine turer"}
             </button>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface/50 p-4">
+            <p className="text-sm font-medium text-foreground">Hva skjer nå?</p>
+            <p className="mt-1 text-xs text-muted-foreground">Du er klar. Start din første tur, eller utforsk ruter andre har delt.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110">
+                Planlegg min første tur <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link to="/explore" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
+                Utforsk turer <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
         </Card>
       )}
