@@ -76,10 +76,20 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
   const [fuelPrice, setFuelPrice] = useState("");
 
   // Lodging form
+  const defaultLodgingDate = trip?.startDate ?? new Date().toISOString().slice(0, 10);
+  const addDaysIso = (iso: string, days: number) => {
+    const d = new Date(iso);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
   const [lodgingText, setLodgingText] = useState("");
   const [lodgingPlace, setLodgingPlace] = useState<ResolvedPlace | null>(null);
-  const [lodgingDate, setLodgingDate] = useState(trip?.startDate ?? new Date().toISOString().slice(0, 10));
+  const [lodgingDate, setLodgingDate] = useState(defaultLodgingDate);
+  const [lodgingCheckout, setLodgingCheckout] = useState(addDaysIso(defaultLodgingDate, 1));
   const [lodgingNights, setLodgingNights] = useState("1");
+  const [lodgingGuests, setLodgingGuests] = useState("2");
+  const [lodgingPrice, setLodgingPrice] = useState("");
+  const [lodgingStatus, setLodgingStatus] = useState<"none" | "booked" | "paid">("none");
 
   if (!open) return null;
 
@@ -87,7 +97,10 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     setMode("menu");
     setStopText(""); setStopPlace(null);
     setFuelText(""); setFuelPlace(null); setFuelPrice("");
-    setLodgingText(""); setLodgingPlace(null); setLodgingNights("1");
+    setLodgingText(""); setLodgingPlace(null);
+    setLodgingDate(defaultLodgingDate);
+    setLodgingCheckout(addDaysIso(defaultLodgingDate, 1));
+    setLodgingNights("1"); setLodgingGuests("2"); setLodgingPrice(""); setLodgingStatus("none");
   };
   const close = () => { if (!busy) { reset(); onClose(); } };
 
