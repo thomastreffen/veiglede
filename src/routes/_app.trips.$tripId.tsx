@@ -359,6 +359,12 @@ function TripPlanner() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
+                {(() => {
+                  const coords = dayCoords(trip, dayStops);
+                  return (
+                    <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="px-4 md:px-5 pt-3" />
+                  );
+                })()}
 
                 <ul className="divide-y divide-border/60">
                   {dayStops.map((stop, idx) => {
