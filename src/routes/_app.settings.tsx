@@ -214,7 +214,24 @@ function Settings() {
   const openEdit = (v: Vehicle) => { setEditing(v); setEditorOpen(true); };
 
   return (
-    <div className="py-5 md:py-8 max-w-2xl mx-auto space-y-6">
+    <div className="py-5 md:py-8 max-w-6xl mx-auto px-2 md:px-4">
+      <header className="mb-6 md:mb-8">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Din profil</p>
+        <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Førerprofil</h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-2xl">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre — og hvilket kjøretøy du tar med.</p>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        {/* Sidebar (desktop) / inline top (mobile) */}
+        <aside className="md:col-span-1">
+          <div className="md:sticky md:top-20 space-y-4">
+            <SidebarProfile />
+            <AccountCard />
+            <SectionNav />
+          </div>
+        </aside>
+
+        <div className="md:col-span-2 space-y-6">
       <header>
         <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Din profil</p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Førerprofil</h1>
