@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useTripsStore, tripsApi, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, VEHICLES, type CoverKey } from "@/lib/trips-store";
+import { useTripsStore, tripsApi, COVERS, vehicleMeta, styleMeta, FEATURED_ROUTES, type CoverKey } from "@/lib/trips-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { useAuth } from "@/lib/auth";
