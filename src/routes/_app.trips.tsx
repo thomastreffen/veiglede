@@ -298,6 +298,7 @@ function FollowedTripCard({ f }: { f: FollowedTrip }) {
 
 function FeedFromFollowsSection() {
   const { user } = useAuth();
+  const tr = useT();
   const fetcher = useServerFn(feedFromFollowsFn);
   const { data, isLoading } = useQuery({
     queryKey: ["feed-from-follows", user?.id],
@@ -311,8 +312,8 @@ function FeedFromFollowsSection() {
   return (
     <section className="mt-10">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Fra folk du følger</h2>
-        <Link to="/explore" className="text-xs text-primary hover:underline">Se alle på Utforsk →</Link>
+        <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">{tr.app.trips.fromFollows}</h2>
+        <Link to="/explore" className="text-xs text-primary hover:underline">{tr.app.trips.seeAllExplore}</Link>
       </div>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.slice(0, 6).map((t) => (
@@ -326,6 +327,7 @@ function FeedFromFollowsSection() {
 }
 
 function FeedTripCard({ t }: { t: FeedTrip }) {
+  const tr = useT();
   const v = vehicleMeta(t.vehicle as VehicleType);
   const s = styleMeta(t.style as RouteStyle);
   const cover = (t.cover as CoverKey) ?? "fjord";
@@ -344,11 +346,11 @@ function FeedTripCard({ t }: { t: FeedTrip }) {
         <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
           <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
           <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
-          <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} stopp`} />
+          <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} ${tr.app.trips.stopsLabel}`} />
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
           <span className="inline-flex items-center gap-1 truncate"><MapPin className="h-3 w-3" /> {t.origin} → {t.destination}</span>
-          {t.ownerName && <span className="truncate">av {t.ownerName}</span>}
+          {t.ownerName && <span className="truncate">{tr.app.trips.by} {t.ownerName}</span>}
         </div>
       </div>
     </Link>
@@ -357,12 +359,13 @@ function FeedTripCard({ t }: { t: FeedTrip }) {
 
 
 function EmptyState() {
+  const tr = useT();
   return (
     <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
-      <p className="font-display text-2xl uppercase">Ingen turer enda</p>
-      <p className="mt-2 text-sm text-muted-foreground">Planlegg din første tur på under et minutt.</p>
+      <p className="font-display text-2xl uppercase">{tr.app.trips.emptyTitle}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{tr.app.trips.emptyBody}</p>
       <Link to="/trips/new" className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground">
-        Start ny tur <ArrowRight className="h-4 w-4" />
+        {tr.app.trips.emptyCta} <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );
