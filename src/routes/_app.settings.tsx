@@ -795,7 +795,7 @@ function SectionNav() {
 
 function StatsStrip() {
   const { user } = useAuth();
-  const { trips } = useTripsStore();
+  const { trips: allTrips } = useTripsStore();
   const { vehicles } = useVehicles();
   const fetchStats = useServerFn(getFollowStatsFn);
   const { data: follow } = useQuery({
@@ -805,23 +805,43 @@ function StatsStrip() {
     staleTime: 60_000,
   });
 
-  const km = trips.reduce((a, t) => a + (t.distanceKm ?? 0), 0);
-  const cells = [
-    { n: String(trips.length), l: "turer" },
-    { n: km.toLocaleString("nb-NO"), l: "km" },
-    { n: String(vehicles.length), l: "kjøretøy" },
-    { n: String(follow?.followers ?? 0), l: "følgere" },
-  ];
+  const trips = allTrips.filter((t) => t.status !== "draft");
+  const plannedKm = trips.reduce((a, t) => a + (t.distanceKm ?? 0), 0);
+  const drivenKm = trips.reduce(
+    (a, t) => a + (typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0 ? t.actualDistanceKm : 0),
+    0,
+  );
 
   return (
-    <div className="grid grid-cols-4 gap-2 md:gap-3 rounded-2xl border border-border bg-surface p-3 md:p-4">
-      {cells.map((c) => (
-        <div key={c.l} className="text-center">
-          <p className="font-display text-2xl md:text-3xl">{c.n}</p>
-          <p className="text-[10px] md:text-xs uppercase tracking-wider text-muted-foreground">{c.l}</p>
-        </div>
-      ))}
+    <div className="grid grid-cols-4 md:grid-cols-5 gap-2 md:gap-3 rounded-2xl border border-border bg-surface p-3 md:p-4">
+      <Cell n={String(trips.length)} l="turer" />
+      {/* Combined km cell on mobile, two cells on desktop */}
+      <div className="md:hidden text-center">
+        <p className="font-display text-base leading-tight">
+          {plannedKm.toLocaleString("nb-NO")}
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">planlagt</span>
+        </p>
+        <p className="font-display text-base leading-tight mt-0.5">
+          {Math.round(drivenKm).toLocaleString("nb-NO")}
+          <span className="text-[9px] uppercase tracking-wider text-primary ml-1">kjørt</span>
+        </p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">km</p>
+      </div>
+      <Cell className="hidden md:block" n={plannedKm.toLocaleString("nb-NO")} l="km planlagt" />
+      <Cell className="hidden md:block" n={Math.round(drivenKm).toLocaleString("nb-NO")} l="km kjørt" accent />
+      <Cell n={String(vehicles.length)} l="kjøretøy" />
+      <Cell n={String(follow?.followers ?? 0)} l="følgere" />
     </div>
   );
 }
+
+function Cell({ n, l, accent, className }: { n: string; l: string; accent?: boolean; className?: string }) {
+  return (
+    <div className={`text-center ${className ?? ""}`}>
+      <p className={`font-display text-2xl md:text-3xl ${accent ? "text-primary" : ""}`}>{n}</p>
+      <p className="text-[10px] md:text-xs uppercase tracking-wider text-muted-foreground">{l}</p>
+    </div>
+  );
+}
+
 
