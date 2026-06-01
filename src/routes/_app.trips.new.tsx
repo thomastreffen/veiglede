@@ -342,6 +342,17 @@ function NewTripWizard() {
         routeFerryDurationMin: route?.ferryDurationMin,
         routeFallbackEstimateMin: route?.fallbackEstimateMin,
       });
+      // Ferry auto-detection — insert any ferry segments returned by the routing provider
+      // as ⛴️ stops on day 1 (idempotent via ferryDetectionHash).
+      if (route?.ferrySegments && route.ferrySegments.length > 0) {
+        try {
+          const n = tripsApi.applyFerrySegments(trip.id, route.ferrySegments);
+          if (n > 0 && import.meta.env.DEV) console.debug(`[wizard] auto-inserted ${n} ferry stop(s)`);
+        } catch (err) {
+          if (import.meta.env.DEV) console.debug("[wizard] ferry detection failed", err);
+        }
+      }
+
       // Inject up to 2 nearby active partners as suggestion stops on the
       // first day of the trip. Honestly labeled — see Stop.isPartner.
       try {
