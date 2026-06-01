@@ -69,40 +69,6 @@ function TripsDashboard() {
 
       <FollowedTripsSection />
 
-      {/* Vehicle summary */}
-      {trips.length > 0 && (
-        <section className="mt-10">
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Min garasje</h2>
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Totalt per kjøretøy</span>
-          </div>
-          <ul className="mt-4 grid gap-3 sm:grid-cols-3">
-            {VEHICLES.map((vh) => {
-              const list = trips.filter((t) => t.vehicle === vh.value);
-              const km = list.reduce((a, t) => a + t.distanceKm, 0);
-              return (
-                <li key={vh.value} className="rounded-2xl border border-border bg-surface p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{vh.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display text-lg uppercase">{vh.label}</p>
-                      <p className="text-[11px] text-muted-foreground">{list.length} {list.length === 1 ? "tur" : "turer"}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-end justify-between">
-                    <div>
-                      <p className="font-display text-2xl">{km.toLocaleString("nb-NO")} km</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">planlagt totalt</p>
-                    </div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground italic max-w-[120px] text-right">Senere: faktisk kjørt km logges per tur</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
       {/* Featured routes */}
       <section className="mt-12">
         <div className="flex items-baseline justify-between">
