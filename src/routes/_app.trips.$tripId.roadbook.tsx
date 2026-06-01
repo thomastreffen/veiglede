@@ -82,7 +82,7 @@ function Roadbook() {
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
-      <section className="mt-4 max-w-2xl mx-auto">
+      <section className="mt-4 max-w-2xl mx-auto print:hidden">
         <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
       </section>
 
