@@ -77,8 +77,8 @@ function TripsDashboard() {
       {/* Featured routes */}
       <section className="mt-12">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Foreslåtte ruter</h2>
-          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Norge</span>
+          <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">{t.app.trips.suggestedRoutes}</h2>
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{t.app.trips.norway}</span>
         </div>
         <ul className="mt-4 grid gap-3 sm:grid-cols-3">
           {FEATURED_ROUTES.map((r) => (
@@ -90,7 +90,7 @@ function TripsDashboard() {
                   <p className="mt-3 text-[11px] uppercase tracking-wider text-foreground/80">{r.region}</p>
                   <h3 className="mt-1 font-display text-xl uppercase">{r.title}</h3>
                   <p className="mt-2 text-xs text-foreground/80">{r.km} km · {styleMeta(r.style).label}</p>
-                  <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary">Planlegg <ArrowRight className="h-3 w-3" /></p>
+                  <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary">{t.app.trips.plan} <ArrowRight className="h-3 w-3" /></p>
                 </div>
               </Link>
             </li>
