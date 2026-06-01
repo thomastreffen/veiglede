@@ -869,7 +869,56 @@ export const tripsApi = {
     persist();
   },
 
+  /**
+   * Apply ferry segments detected by the routing provider. Inserts a
+   * `type: "ferry"` stop on the first day per segment if not already present
+   * (idempotent via `ferryDetectionHash` + name match). Returns number of
+   * stops actually inserted.
+   */
+  applyFerrySegments(
+    tripId: string,
+    segments: Array<{ fromLabel?: string; toLabel?: string; durationMin: number; distanceKm: number }>,
+  ): number {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    if (!trip || segments.length === 0) return 0;
+    const hash = segments.map((s) => `${s.fromLabel ?? "?"}>${s.toLabel ?? "?"}:${s.durationMin}`).join("|");
+    if (trip.ferryDetectionHash === hash) return 0;
+    const firstDay = state.days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber)[0];
+    if (!firstDay) return 0;
+    const existingFerryHints = new Set(
+      state.stops
+        .filter((s) => s.dayId === firstDay.id && s.type === "ferry")
+        .map((s) => `${s.ferryRouteHint ?? s.name}`.toLowerCase()),
+    );
+    let inserted = 0;
+    for (const seg of segments) {
+      const hint = `${seg.fromLabel ?? "?"} → ${seg.toLabel ?? "?"}`;
+      if (existingFerryHints.has(hint.toLowerCase())) continue;
+      const name = seg.fromLabel && seg.toLabel ? `Ferje: ${seg.fromLabel} → ${seg.toLabel}` : "Ferje";
+      this.addStop(firstDay.id, {
+        name,
+        type: "ferry",
+        durationMin: seg.durationMin,
+        distanceFromPrevKm: Math.round(seg.distanceKm),
+        isAutoDetected: true,
+        ferryRouteHint: hint,
+        reason: "Automatisk oppdaget ferge langs ruta.",
+      });
+      inserted++;
+    }
+    if (inserted > 0) {
+      state = {
+        ...state,
+        trips: state.trips.map((t) => (t.id === tripId ? { ...t, ferryDetectionHash: hash } : t)),
+      };
+      persist();
+    }
+    return inserted;
+  },
+
 };
+
 
 function shiftDate(start: string | undefined, days: number): string | undefined {
   if (!start) return undefined;
