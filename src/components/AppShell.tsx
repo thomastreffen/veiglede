@@ -51,18 +51,18 @@ export function AppShell() {
         <div className="mx-auto max-w-5xl flex items-center justify-between px-4 md:px-6 py-3.5">
           <Link to="/"><VeigledeMark /></Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">
-            {nav.map((n) => {
-              const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
-              return (
-                <Link key={n.to} to={n.to}
-                  className={cn(
-                    "px-3.5 py-1.5 rounded-full transition-colors",
-                    active ? "bg-surface-2 text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}>
-                  {n.label}
-                </Link>
-              );
-            })}
+            {nav.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                activeOptions={{ exact: true }}
+                activeProps={{ className: "bg-surface-2 text-foreground" }}
+                inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
+                className="px-3.5 py-1.5 rounded-full transition-colors"
+              >
+                {n.label}
+              </Link>
+            ))}
             <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Plus className="h-4 w-4" /> Ny tur
             </Link>
