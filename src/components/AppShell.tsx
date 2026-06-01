@@ -81,6 +81,15 @@ export function AppShell() {
             <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Plus className="h-4 w-4" /> Ny tur
             </Link>
+            {user && isAdmin && (
+              <Link
+                to="/admin"
+                className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-2"
+                title="Admin panel"
+              >
+                <Shield className="h-4 w-4" /> Admin
+              </Link>
+            )}
             {user ? (
               <>
                 <NotificationBell onIncoming={notify} />
