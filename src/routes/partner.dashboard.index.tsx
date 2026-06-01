@@ -131,12 +131,20 @@ function PartnerDashboard() {
         )}
       </div>
 
-      <Link
-        to="/partner/dashboard/invoices"
-        className="inline-flex items-center gap-2 text-sm text-[#1a1a1a]/65 hover:text-[#1a1a1a]"
-      >
-        <FileText className="h-4 w-4" /> Se fakturaer
-      </Link>
+      <div className="flex gap-4 flex-wrap">
+        <Link
+          to="/partner/dashboard/invoices"
+          className="inline-flex items-center gap-2 text-sm text-[#1a1a1a]/65 hover:text-[#1a1a1a]"
+        >
+          <FileText className="h-4 w-4" /> Se fakturaer
+        </Link>
+        <Link
+          to="/partner/dashboard/benefits"
+          className="inline-flex items-center gap-2 text-sm text-[#1a1a1a]/65 hover:text-[#1a1a1a]"
+        >
+          🎁 Fordeler
+        </Link>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { Home, Map, User, Plus, LogIn, Car, Compass, Shield } from "lucide-react";
+import { Home, Map, User, Plus, LogIn, Car, Compass, Shield, Gift } from "lucide-react";
 import { TripQuickAddSheet } from "@/components/TripQuickAddSheet";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -12,9 +12,13 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useBrowserNotifications } from "@/lib/useBrowserNotifications";
 import { amIAdminFn } from "@/lib/admin.functions";
 
+const FORDELER_LAUNCH = new Date("2026-06-01").getTime();
+const isFordelerNew = () => Date.now() - FORDELER_LAUNCH < 30 * 24 * 60 * 60 * 1000;
+
 const nav = [
   { to: "/", label: "Hjem", icon: Home },
   { to: "/explore", label: "Utforsk", icon: Compass },
+  { to: "/fordeler", label: "Fordeler", icon: Gift, badge: "NY" as const },
   { to: "/trips", label: "Mine turer", icon: Map },
   { to: "/garage", label: "Min garasje", icon: Car },
   { to: "/settings", label: "Profil", icon: User },
@@ -73,9 +77,12 @@ export function AppShell() {
                 activeOptions={{ exact: true }}
                 activeProps={{ className: "bg-surface-2 text-foreground" }}
                 inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
-                className="px-3.5 py-1.5 rounded-full transition-colors"
+                className="px-3.5 py-1.5 rounded-full transition-colors inline-flex items-center gap-1.5"
               >
                 {n.label}
+                {n.badge && isFordelerNew() && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">{n.badge}</span>
+                )}
               </Link>
             ))}
             <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
@@ -134,8 +141,8 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
   return (
     <>
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border/60 bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
-        <ul className="grid grid-cols-5 items-end">
-          {nav.slice(0, 2).map((n) => <NavItem key={n.to} n={n} />)}
+        <ul className="grid grid-cols-6 items-end">
+          {nav.slice(0, 3).map((n) => <NavItem key={n.to} n={n} />)}
           <li className="flex justify-center -mt-6">
             {insideTrip ? (
               <button
@@ -152,7 +159,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
               </Link>
             )}
           </li>
-          {nav.slice(2).map((n) => <NavItem key={n.to} n={n} />)}
+          {nav.slice(3).map((n) => <NavItem key={n.to} n={n} />)}
         </ul>
       </nav>
       {currentTripId && (
