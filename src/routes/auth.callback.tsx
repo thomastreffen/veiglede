@@ -53,9 +53,19 @@ function AuthCallback() {
               .eq("id", userId);
           }
         } catch { /* noop */ }
-        navigate({ to: "/onboarding", search: { next }, replace: true } as never);
+        const pendingInvite = consumePendingInvite();
+        if (pendingInvite) {
+          navigate({ to: "/join/$token", params: { token: pendingInvite }, replace: true });
+        } else {
+          navigate({ to: "/onboarding", search: { next }, replace: true } as never);
+        }
       } else {
-        window.location.replace(next);
+        const pendingInvite = consumePendingInvite();
+        if (pendingInvite) {
+          window.location.replace(`/join/${pendingInvite}`);
+        } else {
+          window.location.replace(next);
+        }
       }
       return true;
     };
