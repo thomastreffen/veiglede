@@ -971,7 +971,7 @@ function PlannerActions({
         </div>
       )}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        <PlannerBtn label="Del opp i flere dager" onClick={() => tripsApi.splitIntoDays(trip.id, tripDays.length + 1)} />
+        <PlannerBtn label={isSplitting ? "Deler opp…" : "Del opp i flere dager"} onClick={handleSplit} disabled={isSplitting} />
         <PlannerBtn label="Legg til overnatting" onClick={() => setLodgingOpen(true)} />
         <PlannerBtn label="+ Legg til neste destinasjon" onClick={() => setDestOpen(true)} />
       </div>
