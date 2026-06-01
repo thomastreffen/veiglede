@@ -222,50 +222,70 @@ function FollowedTripsSection() {
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{items.length} {items.length === 1 ? "tur" : "turer"}</span>
       </div>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((f, i) => {
-          const t = f.trip as Record<string, unknown>;
-          const id = String(t.id ?? "");
-          const cover = (t.cover as CoverKey) ?? "fjord";
-          const title = String(t.title ?? "Tur");
-          const origin = String(t.origin ?? "");
-          const destination = String(t.destination ?? "");
-          const region = String(t.region ?? "");
-          const km = Number(t.distanceKm ?? 0);
-          const drivingTime = String(t.drivingTime ?? "");
-          const stopsCount = Number(t.stopsCount ?? 0);
-          return (
-            <li key={`${id}-${i}`}>
-              <Link
-                to="/trips/$tripId"
-                params={{ tripId: id }}
-                className="group relative block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors"
-              >
-                <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
-                  <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
-                  <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">
-                    <Users className="h-3 w-3 text-primary" /> Reisefølge
-                  </span>
-                  <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider border border-border">
-                    {f.role === "editor" ? "Kan redigere" : "Kan se"}
-                  </span>
-                </div>
-                <div className="p-4 md:p-5">
-                  {region && <p className="text-[10px] uppercase tracking-wider text-primary">{region}</p>}
-                  <h3 className="mt-1 font-display text-xl uppercase leading-tight group-hover:text-primary transition-colors">{title}</h3>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-                    <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${km} km`} />
-                    <Stat icon={<Clock className="h-3.5 w-3.5" />} v={drivingTime} />
-                    <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${stopsCount} stopp`} />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
-                    <span className="inline-flex items-center gap-1 truncate"><MapPin className="h-3 w-3" /> {origin} → {destination}</span>
-                    {f.owner_name && <span className="truncate">av {f.owner_name}</span>}
-                  </div>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
+        {items.map((f, i) => <FollowedTripCard key={`${String((f.trip as Record<string, unknown>).id ?? "")}-${i}`} f={f} />)}
+      </ul>
+    </section>
+  );
+}
+
+function FollowedTripCard({ f }: { f: FollowedTrip }) {
+  const t = f.trip as Record<string, unknown>;
+  const id = String(t.id ?? "");
+  const cover = (t.cover as CoverKey) ?? "fjord";
+  const title = String(t.title ?? "Tur");
+  const origin = String(t.origin ?? "");
+  const destination = String(t.destination ?? "");
+  const region = String(t.region ?? "");
+  const km = Number(t.distanceKm ?? 0);
+  const drivingTime = String(t.drivingTime ?? "");
+  const stopsCount = Number(t.stopsCount ?? 0);
+  const session = useLiveSession(id);
+  const live = isLiveActive(session);
+  return (
+    <li>
+      <div className="group relative block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
+        <Link to="/trips/$tripId" params={{ tripId: id }}>
+          <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
+            <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
+            <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">
+              <Users className="h-3 w-3 text-primary" /> Reisefølge
+            </span>
+            {live && (
+              <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-primary/90 text-primary-foreground px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold">
+                <span className="h-1.5 w-1.5 rounded-full bg-background animate-pulse" /> Live
+              </span>
+            )}
+            <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider border border-border">
+              {f.role === "editor" ? "Kan redigere" : "Kan se"}
+            </span>
+          </div>
+          <div className="p-4 md:p-5">
+            {region && <p className="text-[10px] uppercase tracking-wider text-primary">{region}</p>}
+            <h3 className="mt-1 font-display text-xl uppercase leading-tight group-hover:text-primary transition-colors">{title}</h3>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+              <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${km} km`} />
+              <Stat icon={<Clock className="h-3.5 w-3.5" />} v={drivingTime} />
+              <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${stopsCount} stopp`} />
+            </div>
+            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
+              <span className="inline-flex items-center gap-1 truncate"><MapPin className="h-3 w-3" /> {origin} → {destination}</span>
+              {f.owner_name && <span className="truncate">av {f.owner_name}</span>}
+            </div>
+          </div>
+        </Link>
+        {live && (
+          <Link
+            to="/live/$tripId"
+            params={{ tripId: id }}
+            className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+          >
+            <Radio className="h-3 w-3 animate-pulse" /> Følg live
+          </Link>
+        )}
+      </div>
+    </li>
+  );
+}
       </ul>
     </section>
   );
