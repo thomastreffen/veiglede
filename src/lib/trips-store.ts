@@ -1224,7 +1224,18 @@ export function buildAiSummary(input: {
     }
   }
 
-  parts.push("Lokale tips og partnerstopp dukker bare opp når de faktisk passer ruten.");
+  const partners = input.nearbyPartners ?? [];
+  if (partners.length > 0) {
+    const picks = partners.slice(0, 2);
+    const phrases = picks.map((p) => {
+      const where = p.region ? ` i ${p.region}` : "";
+      const why = p.description ? ` — ${p.description}` : "";
+      return `${p.name} (${p.category})${where}${why}`;
+    });
+    parts.push(`Anbefalte partnere langs ruten: ${phrases.join("; ")}. Disse er tydelig merket som «Anbefalt partner».`);
+  } else {
+    parts.push("Lokale tips og partnerstopp dukker bare opp når de faktisk passer ruten.");
+  }
   if (input.userPrompt) parts.push(`Ekstra hensyn: «${input.userPrompt}».`);
   return parts.join(" ");
 }
