@@ -305,6 +305,45 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_live_sessions: {
+        Row: {
+          heading: number | null
+          id: string
+          last_stop_name: string | null
+          lat: number
+          lng: number
+          speed: number | null
+          status: string
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          heading?: number | null
+          id?: string
+          last_stop_name?: string | null
+          lat: number
+          lng: number
+          speed?: number | null
+          status?: string
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          heading?: number | null
+          id?: string
+          last_stop_name?: string | null
+          lat?: number
+          lng?: number
+          speed?: number | null
+          status?: string
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trip_photos: {
         Row: {
           created_at: string

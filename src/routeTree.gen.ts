@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
 import { Route as RestoreTokenRouteImport } from './routes/restore.$token'
+import { Route as LiveTripIdRouteImport } from './routes/live.$tripId'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
@@ -84,6 +85,11 @@ const SharedShareTokenRoute = SharedShareTokenRouteImport.update({
 const RestoreTokenRoute = RestoreTokenRouteImport.update({
   id: '/restore/$token',
   path: '/restore/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveTripIdRoute = LiveTripIdRouteImport.update({
+  id: '/live/$tripId',
+  path: '/live/$tripId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinTokenRoute = JoinTokenRouteImport.update({
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/live/$tripId': typeof LiveTripIdRoute
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/live/$tripId': typeof LiveTripIdRoute
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
@@ -291,6 +299,7 @@ export interface FileRoutesById {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/live/$tripId': typeof LiveTripIdRoute
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
@@ -326,6 +335,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/live/$tripId'
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/live/$tripId'
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
@@ -393,6 +404,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/join/$token'
+    | '/live/$tripId'
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
@@ -422,6 +434,7 @@ export interface RootRouteChildren {
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
+  LiveTripIdRoute: typeof LiveTripIdRoute
   RestoreTokenRoute: typeof RestoreTokenRoute
   SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
@@ -499,6 +512,13 @@ declare module '@tanstack/react-router' {
       path: '/restore/$token'
       fullPath: '/restore/$token'
       preLoaderRoute: typeof RestoreTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live/$tripId': {
+      id: '/live/$tripId'
+      path: '/live/$tripId'
+      fullPath: '/live/$tripId'
+      preLoaderRoute: typeof LiveTripIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join/$token': {
@@ -724,6 +744,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
+  LiveTripIdRoute: LiveTripIdRoute,
   RestoreTokenRoute: RestoreTokenRoute,
   SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
@@ -740,13 +761,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

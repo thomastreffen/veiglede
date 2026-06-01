@@ -1,15 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trackingApi, useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import type { Stop } from "@/lib/trips-store";
-import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles } from "lucide-react";
+import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import {
+  useLiveBroadcaster, useLiveOptIn, endLiveSession,
+} from "@/lib/live-tracking";
 
 export function TripTracker({
   tripId, tripStops, vehicleLabel,
 }: { tripId: string; tripStops: Stop[]; vehicleLabel: string }) {
   const t = useTripTracking(tripId);
   const meta = statusMeta(t.status);
+  const { user } = useAuth();
   const [spontInput, setSpontInput] = useState("");
+  const [liveOn, setLiveOn] = useLiveOptIn(tripId);
   const visitedCount = t.visitedStopIds.length;
+
+  const lastVisited = t.visitedStopIds.length
+    ? tripStops.find((s) => s.id === t.visitedStopIds[t.visitedStopIds.length - 1])?.name ?? null
+    : null;
+
+  const { permState } = useLiveBroadcaster({
+    tripId,
+    userId: user?.id ?? null,
+    enabled: liveOn,
+    status: t.status as "idle" | "active" | "paused" | "completed",
+    lastStopName: lastVisited,
+  });
+
+  // Clean up live session when trip is completed/reset or toggle is turned off.
+  useEffect(() => {
+    if (!user?.id) return;
+    if (t.status === "completed" || t.status === "idle") {
+      if (liveOn) void endLiveSession({ tripId, userId: user.id });
+    }
+  }, [t.status, liveOn, tripId, user?.id]);
 
   const elapsed = t.startedAt
     ? Math.max(0, (t.completedAt ?? Date.now()) - t.startedAt)
@@ -64,6 +90,36 @@ export function TripTracker({
           </Action>
         )}
       </div>
+
+      {/* Live position sharing toggle */}
+      <div className="rounded-xl border border-border bg-background/40 p-3">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={liveOn}
+            onChange={(e) => setLiveOn(e.target.checked)}
+            disabled={!user}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <div className="flex-1">
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+              <Radio className={`h-3.5 w-3.5 ${liveOn ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
+              Del posisjon live
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              {!user
+                ? "Logg inn for å dele posisjon live."
+                : liveOn
+                  ? (permState === "denied"
+                      ? "Posisjonstilgang blokkert. Aktiver i nettleseren for å dele."
+                      : "Reisefølget kan se hvor du er. Oppdateres hvert 30. sekund.")
+                  : "Av som standard. Slå på for å la reisefølget følge ruta i sanntid."}
+            </p>
+          </div>
+        </label>
+      </div>
+
+
 
       {/* Live stats */}
       {t.status !== "idle" && (
