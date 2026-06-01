@@ -277,4 +277,34 @@ export const nl: Dict = {
       resetFiltersAria: "Filters wissen",
     },
   },
+  landing: {
+    regions: {
+      label: "Regio's",
+      title: "Noorwegen op de weg",
+      subtitle: "Van Lindesnes tot de Noordkaap — beleef het land vanachter het stuur.",
+      kmTrips: "km trips",
+      explore: "Ontdek routes",
+      tags: {
+        Vestlandet: "Fjorden, bergen en panoramawegen",
+        "Nord-Norge": "Middernachtzon, Lofoten en Noordkaap",
+        "Fjell-Norge": "Jotunheimen, Rondane en het hooggebergte",
+        Østlandet: "Meren, bosroutes en historische steden",
+        Trøndelag: "Kustlijn, eilanden en Trondheim",
+        Sørlandet: "Witte stranden, scheren en zomerwegen",
+      },
+    },
+    scenicRoutes: {
+      title: "Nationale panoramaroutes",
+      headlineLine1: "18 routes.",
+      headlineLine2: "Allemaal gedekt.",
+      body: "Noorwegen heeft 18 officiële nationale panoramaroutes — geselecteerde trajecten met architectuur, uitzichten en stops van wereldklasse. Veiglede dekt alle 18.",
+      cta: "Plan jouw panoramaroute",
+      badge: "Panoramaroute",
+      descriptions: {
+        Atlanterhavsveien: "Noorwegens meest dramatische kustroute",
+        Trollstigen: "11 haarspeldbochten omhoog de bergwand",
+        Sognefjellet: "Noord-Europa's hoogste bergpas",
+      },
+    },
+  },
 };
