@@ -10,6 +10,15 @@ const VISIT_KEY = "veiglede.pwa.visits";
 const DISMISS_KEY = "veiglede.pwa.dismissedUntil";
 const INSTALLED_KEY = "veiglede.pwa.installed";
 
+let globalDeferredPrompt: BIPEvent | null = null;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    globalDeferredPrompt = e as BIPEvent;
+  });
+}
+
 function isStandalone() {
   if (typeof window === "undefined") return false;
   return (
@@ -27,7 +36,7 @@ function isIos() {
 
 export function InstallPrompt() {
   const [visible, setVisible] = useState(false);
-  const [deferred, setDeferred] = useState<BIPEvent | null>(null);
+  const [deferred, setDeferred] = useState<BIPEvent | null>(globalDeferredPrompt);
   const [showIosHelp, setShowIosHelp] = useState(false);
 
   useEffect(() => {
@@ -47,8 +56,14 @@ export function InstallPrompt() {
     if (Date.now() < dismissed) return;
     if (count < 2) return;
 
+    if (globalDeferredPrompt) {
+      setDeferred(globalDeferredPrompt);
+      setVisible(true);
+    }
+
     const onBIP = (e: Event) => {
       e.preventDefault();
+      globalDeferredPrompt = e as BIPEvent;
       setDeferred(e as BIPEvent);
       setVisible(true);
     };
@@ -78,11 +93,13 @@ export function InstallPrompt() {
   };
 
   const install = async () => {
-    if (deferred) {
-      await deferred.prompt();
-      const { outcome } = await deferred.userChoice;
+    const prompt = deferred ?? globalDeferredPrompt;
+    if (prompt) {
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
         localStorage.setItem(INSTALLED_KEY, "1");
+        globalDeferredPrompt = null;
       }
       setDeferred(null);
       setVisible(false);
