@@ -54,6 +54,19 @@ function NotFound() {
   );
 }
 
+function PrivateProfile({ name }: { name: string }) {
+  return (
+    <div className="min-h-screen grid place-items-center p-8 text-center">
+      <div>
+        <div className="mx-auto h-16 w-16 rounded-2xl bg-surface-2 grid place-items-center text-3xl mb-4">🔒</div>
+        <p className="font-display text-3xl uppercase">Denne profilen er privat</p>
+        <p className="mt-2 text-sm text-muted-foreground">{name} har valgt å skjule profilen sin på Veiglede.</p>
+        <Link to="/explore" className="mt-5 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Utforsk turer</Link>
+      </div>
+    </div>
+  );
+}
+
 function PublicProfilePage() {
   const params = Route.useParams();
   const initial = Route.useLoaderData();
