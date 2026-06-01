@@ -6,7 +6,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
-  Radio, MapPin, Camera, Users, Eye, Trash2,
+  Radio, MapPin, Camera, Users, Eye, Trash2, Send,
 } from "lucide-react";
 import { tripsApi, type Trip } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +16,17 @@ import {
   type TripInvite, type InviteRole,
 } from "@/lib/trip-invites";
 import { flushTripsNow } from "@/lib/cloud-sync";
+import { sendTransactionalEmail } from "@/lib/email/send";
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.max(1, Math.floor(diff / 60000));
+  if (m < 60) return `Invitert for ${m} minutt${m === 1 ? "" : "er"} siden`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `Invitert for ${h} time${h === 1 ? "" : "r"} siden`;
+  const d = Math.floor(h / 24);
+  return `Invitert for ${d} dag${d === 1 ? "" : "er"} siden`;
+}
 
 interface Props {
   trip: Trip;
@@ -70,6 +81,10 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
       setInviteMsg("Skriv inn en gyldig e-postadresse");
       return;
     }
+    if (cleanEmail.toLowerCase() === (user.email ?? "").toLowerCase()) {
+      setInviteMsg("Det er deg! Del lenken med andre for å invitere reisefølge.");
+      return;
+    }
     setInviteMsg(null);
     setCreating(true);
     try {
@@ -77,14 +92,52 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
       setInvites((p) => [inv, ...p]);
       setEmail("");
       setRole("viewer");
-      await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
-      setInviteMsg("Invitasjonslenke kopiert — send den til " + cleanEmail);
+      const send = await sendTransactionalEmail({
+        templateName: "trip-invitation",
+        recipientEmail: cleanEmail,
+        idempotencyKey: `invite-${inv.id}`,
+        templateData: {
+          inviteUrl: inviteUrl(inv.invite_token),
+          tripName: trip.title ?? "tur",
+          inviterName: user.email,
+          role,
+        },
+      });
+      if (send.ok) {
+        setInviteMsg(`✓ Invitasjon sendt til ${cleanEmail}`);
+      } else {
+        await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
+        setInviteMsg(`Invitasjonslenke klar — del den manuelt med ${cleanEmail}`);
+      }
     } catch (e) {
       setInviteMsg(e instanceof Error ? e.message : "Kunne ikke lage invitasjon");
     } finally {
       setCreating(false);
     }
   };
+
+  const handleResend = async (inv: TripInvite) => {
+    if (!inv.invited_email) return;
+    setInviteMsg(null);
+    const send = await sendTransactionalEmail({
+      templateName: "trip-invitation",
+      recipientEmail: inv.invited_email,
+      idempotencyKey: `invite-${inv.id}-resend-${Date.now()}`,
+      templateData: {
+        inviteUrl: inviteUrl(inv.invite_token),
+        tripName: trip.title ?? "tur",
+        inviterName: user?.email,
+        role: inv.role,
+      },
+    });
+    if (send.ok) {
+      setInviteMsg(`✓ Invitasjon sendt på nytt til ${inv.invited_email}`);
+    } else {
+      await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
+      setInviteMsg(`Lenke kopiert — send den manuelt til ${inv.invited_email}`);
+    }
+  };
+
 
   const handleRemove = async (id: string) => {
     try {
@@ -226,15 +279,36 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
                 <ul className="space-y-1.5 pt-2">
                   {invites.map((inv) => {
                     const url = inviteUrl(inv.invite_token);
+                    const pending = inv.status === "invited" || inv.status === "opened";
+                    const statusText = pending
+                      ? relativeTime(inv.created_at)
+                      : statusLabel(inv.status);
                     return (
-                      <li key={inv.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/40 p-2 pl-3 text-xs">
+                      <li key={inv.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/40 p-2 pl-3 text-xs flex-wrap">
                         <Users className="h-3.5 w-3.5 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="truncate text-xs font-semibold">{inv.invited_email ?? "Lenkeinvitasjon"}</p>
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {statusLabel(inv.status)} · {roleLabel(inv.role)}
+                            {statusText}
                           </p>
                         </div>
+                        <span
+                          className={
+                            inv.role === "editor"
+                              ? "inline-flex items-center rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400 border border-amber-500/40"
+                              : "inline-flex items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border border-border"
+                          }
+                        >
+                          {roleLabel(inv.role)}
+                        </span>
+                        {pending && inv.invited_email && (
+                          <button
+                            onClick={() => handleResend(inv)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-1 text-[10px] font-bold uppercase tracking-wider hover:border-primary"
+                          >
+                            <Send className="h-3 w-3" /> Send på nytt
+                          </button>
+                        )}
                         <button
                           onClick={() => copy(`inv-${inv.id}`, url)}
                           className="inline-flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-1 hover:border-primary"
@@ -252,6 +326,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
                       </li>
                     );
                   })}
+
                 </ul>
               )}
               <p className="pt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
