@@ -73,7 +73,14 @@ export interface Stop {
   };
   /** Fuel/charging stop only — what kind of energy this stop provides. */
   energy?: EnergySource;
+  /** Auto-detected by the routing provider (e.g. ferry segment from Google Routes). */
+  isAutoDetected?: boolean;
+  /** Per-ferry ticket cost in NOK (user-editable, only meaningful for ferry stops). */
+  ferryCostNok?: number;
+  /** Optional ferry route hint (e.g. "Lavik → Oppedal") shown on ferry stops. */
+  ferryRouteHint?: string;
 }
+
 
 export interface StopPhoto {
   id: string;
