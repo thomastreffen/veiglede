@@ -250,6 +250,15 @@ function PartnerEditor({ partner, onClose, onSave }: { partner: Partner | null; 
 
 const inputCls = "w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary";
 
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-lg bg-slate-900/60 border border-slate-800 py-1.5">
+      <p className="font-semibold text-sm tabular-nums">{value}</p>
+      <p className="text-[9px] uppercase tracking-wider text-slate-500">{label}</p>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
