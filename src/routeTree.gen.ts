@@ -11,16 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PartnerIndexRouteImport } from './routes/partner.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
 import { Route as RestoreTokenRouteImport } from './routes/restore.$token'
+import { Route as PartnerRegisterRouteImport } from './routes/partner.register'
+import { Route as PartnerDashboardRouteImport } from './routes/partner.dashboard'
 import { Route as LiveTokenRouteImport } from './routes/live.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -38,6 +42,8 @@ import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppMapsCheckRouteImport } from './routes/_app.maps-check'
 import { Route as AppGarageRouteImport } from './routes/_app.garage'
 import { Route as AppExploreRouteImport } from './routes/_app.explore'
+import { Route as PartnerDashboardIndexRouteImport } from './routes/partner.dashboard.index'
+import { Route as PartnerDashboardInvoicesRouteImport } from './routes/partner.dashboard.invoices'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
@@ -45,11 +51,14 @@ import { Route as ApiPublicGooglePlacesRouteImport } from './routes/api/public/g
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
 import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
+import { Route as PartnerDashboardCampaignNewRouteImport } from './routes/partner.dashboard.campaign.new'
+import { Route as PartnerDashboardCampaignIdRouteImport } from './routes/partner.dashboard.campaign.$id'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicHooksTripRemindersRouteImport } from './routes/api/public/hooks/trip-reminders'
 import { Route as ApiPublicHooksPartnersMonthlyResetRouteImport } from './routes/api/public/hooks/partners-monthly-reset'
+import { Route as ApiPublicCronGeneratePartnerInvoicesRouteImport } from './routes/api/public/cron/generate-partner-invoices'
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
 import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.trips.$tripId.stops.$stopId'
 
@@ -61,6 +70,11 @@ const UnsubscribeRoute = UnsubscribeRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerRoute = PartnerRouteImport.update({
+  id: '/partner',
+  path: '/partner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapTestRoute = MapTestRouteImport.update({
@@ -87,6 +101,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PartnerIndexRoute = PartnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -111,6 +130,16 @@ const RestoreTokenRoute = RestoreTokenRouteImport.update({
   id: '/restore/$token',
   path: '/restore/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerRegisterRoute = PartnerRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerDashboardRoute = PartnerDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => PartnerRoute,
 } as any)
 const LiveTokenRoute = LiveTokenRouteImport.update({
   id: '/live/$token',
@@ -197,6 +226,17 @@ const AppExploreRoute = AppExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => AppRoute,
 } as any)
+const PartnerDashboardIndexRoute = PartnerDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PartnerDashboardRoute,
+} as any)
+const PartnerDashboardInvoicesRoute =
+  PartnerDashboardInvoicesRouteImport.update({
+    id: '/invoices',
+    path: '/invoices',
+    getParentRoute: () => PartnerDashboardRoute,
+  } as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
@@ -232,6 +272,18 @@ const AppTripsTripIdRoute = AppTripsTripIdRouteImport.update({
   path: '/$tripId',
   getParentRoute: () => AppTripsRoute,
 } as any)
+const PartnerDashboardCampaignNewRoute =
+  PartnerDashboardCampaignNewRouteImport.update({
+    id: '/campaign/new',
+    path: '/campaign/new',
+    getParentRoute: () => PartnerDashboardRoute,
+  } as any)
+const PartnerDashboardCampaignIdRoute =
+  PartnerDashboardCampaignIdRouteImport.update({
+    id: '/campaign/$id',
+    path: '/campaign/$id',
+    getParentRoute: () => PartnerDashboardRoute,
+  } as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -262,6 +314,12 @@ const ApiPublicHooksPartnersMonthlyResetRoute =
     path: '/api/public/hooks/partners-monthly-reset',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronGeneratePartnerInvoicesRoute =
+  ApiPublicCronGeneratePartnerInvoicesRouteImport.update({
+    id: '/api/public/cron/generate-partner-invoices',
+    path: '/api/public/cron/generate-partner-invoices',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppTripsTripIdRoadbookRoute = AppTripsTripIdRoadbookRouteImport.update({
   id: '/roadbook',
   path: '/roadbook',
@@ -279,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
+  '/partner': typeof PartnerRouteWithChildren
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/explore': typeof AppExploreRoute
@@ -298,11 +357,14 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/live/$token': typeof LiveTokenRoute
+  '/partner/dashboard': typeof PartnerDashboardRouteWithChildren
+  '/partner/register': typeof PartnerRegisterRoute
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
+  '/partner/': typeof PartnerIndexRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -310,12 +372,17 @@ export interface FileRoutesByFullPath {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
+  '/partner/dashboard/': typeof PartnerDashboardIndexRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/partner/dashboard/campaign/$id': typeof PartnerDashboardCampaignIdRoute
+  '/partner/dashboard/campaign/new': typeof PartnerDashboardCampaignNewRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesByTo {
@@ -341,11 +408,13 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/live/$token': typeof LiveTokenRoute
+  '/partner/register': typeof PartnerRegisterRoute
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
   '/admin': typeof AdminIndexRoute
+  '/partner': typeof PartnerIndexRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -353,12 +422,17 @@ export interface FileRoutesByTo {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
+  '/partner/dashboard': typeof PartnerDashboardIndexRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/partner/dashboard/campaign/$id': typeof PartnerDashboardCampaignIdRoute
+  '/partner/dashboard/campaign/new': typeof PartnerDashboardCampaignNewRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesById {
@@ -368,6 +442,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
+  '/partner': typeof PartnerRouteWithChildren
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/_app/explore': typeof AppExploreRoute
@@ -387,11 +462,14 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/live/$token': typeof LiveTokenRoute
+  '/partner/dashboard': typeof PartnerDashboardRouteWithChildren
+  '/partner/register': typeof PartnerRegisterRoute
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
+  '/partner/': typeof PartnerIndexRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -399,12 +477,17 @@ export interface FileRoutesById {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
+  '/partner/dashboard/': typeof PartnerDashboardIndexRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/partner/dashboard/campaign/$id': typeof PartnerDashboardCampaignIdRoute
+  '/partner/dashboard/campaign/new': typeof PartnerDashboardCampaignNewRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRouteTypes {
@@ -414,6 +497,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map-test'
+    | '/partner'
     | '/signup'
     | '/unsubscribe'
     | '/explore'
@@ -433,11 +517,14 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/join/$token'
     | '/live/$token'
+    | '/partner/dashboard'
+    | '/partner/register'
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/u/$username'
     | '/admin/'
+    | '/partner/'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -445,12 +532,17 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
+    | '/partner/dashboard/invoices'
+    | '/partner/dashboard/'
     | '/trips/$tripId/roadbook'
+    | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/partner/dashboard/campaign/$id'
+    | '/partner/dashboard/campaign/new'
     | '/trips/$tripId/stops/$stopId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -476,11 +568,13 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/join/$token'
     | '/live/$token'
+    | '/partner/register'
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/u/$username'
     | '/admin'
+    | '/partner'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -488,12 +582,17 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
+    | '/partner/dashboard/invoices'
+    | '/partner/dashboard'
     | '/trips/$tripId/roadbook'
+    | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/partner/dashboard/campaign/$id'
+    | '/partner/dashboard/campaign/new'
     | '/trips/$tripId/stops/$stopId'
   id:
     | '__root__'
@@ -502,6 +601,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map-test'
+    | '/partner'
     | '/signup'
     | '/unsubscribe'
     | '/_app/explore'
@@ -521,11 +621,14 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/join/$token'
     | '/live/$token'
+    | '/partner/dashboard'
+    | '/partner/register'
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/u/$username'
     | '/admin/'
+    | '/partner/'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
     | '/api/public/directions'
@@ -533,12 +636,17 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
+    | '/partner/dashboard/invoices'
+    | '/partner/dashboard/'
     | '/_app/trips/$tripId/roadbook'
+    | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/partner/dashboard/campaign/$id'
+    | '/partner/dashboard/campaign/new'
     | '/_app/trips/$tripId/stops/$stopId'
   fileRoutesById: FileRoutesById
 }
@@ -548,6 +656,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
+  PartnerRoute: typeof PartnerRouteWithChildren
   SignupRoute: typeof SignupRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -564,6 +673,7 @@ export interface RootRouteChildren {
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicCronGeneratePartnerInvoicesRoute: typeof ApiPublicCronGeneratePartnerInvoicesRoute
   ApiPublicHooksPartnersMonthlyResetRoute: typeof ApiPublicHooksPartnersMonthlyResetRoute
   ApiPublicHooksTripRemindersRoute: typeof ApiPublicHooksTripRemindersRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -585,6 +695,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner': {
+      id: '/partner'
+      path: '/partner'
+      fullPath: '/partner'
+      preLoaderRoute: typeof PartnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map-test': {
@@ -622,6 +739,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/partner/': {
+      id: '/partner/'
+      path: '/'
+      fullPath: '/partner/'
+      preLoaderRoute: typeof PartnerIndexRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -656,6 +780,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/restore/$token'
       preLoaderRoute: typeof RestoreTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/partner/register': {
+      id: '/partner/register'
+      path: '/register'
+      fullPath: '/partner/register'
+      preLoaderRoute: typeof PartnerRegisterRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/dashboard': {
+      id: '/partner/dashboard'
+      path: '/dashboard'
+      fullPath: '/partner/dashboard'
+      preLoaderRoute: typeof PartnerDashboardRouteImport
+      parentRoute: typeof PartnerRoute
     }
     '/live/$token': {
       id: '/live/$token'
@@ -776,6 +914,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppExploreRouteImport
       parentRoute: typeof AppRoute
     }
+    '/partner/dashboard/': {
+      id: '/partner/dashboard/'
+      path: '/'
+      fullPath: '/partner/dashboard/'
+      preLoaderRoute: typeof PartnerDashboardIndexRouteImport
+      parentRoute: typeof PartnerDashboardRoute
+    }
+    '/partner/dashboard/invoices': {
+      id: '/partner/dashboard/invoices'
+      path: '/invoices'
+      fullPath: '/partner/dashboard/invoices'
+      preLoaderRoute: typeof PartnerDashboardInvoicesRouteImport
+      parentRoute: typeof PartnerDashboardRoute
+    }
     '/lovable/email/suppression': {
       id: '/lovable/email/suppression'
       path: '/lovable/email/suppression'
@@ -825,6 +977,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTripsTripIdRouteImport
       parentRoute: typeof AppTripsRoute
     }
+    '/partner/dashboard/campaign/new': {
+      id: '/partner/dashboard/campaign/new'
+      path: '/campaign/new'
+      fullPath: '/partner/dashboard/campaign/new'
+      preLoaderRoute: typeof PartnerDashboardCampaignNewRouteImport
+      parentRoute: typeof PartnerDashboardRoute
+    }
+    '/partner/dashboard/campaign/$id': {
+      id: '/partner/dashboard/campaign/$id'
+      path: '/campaign/$id'
+      fullPath: '/partner/dashboard/campaign/$id'
+      preLoaderRoute: typeof PartnerDashboardCampaignIdRouteImport
+      parentRoute: typeof PartnerDashboardRoute
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -858,6 +1024,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/partners-monthly-reset'
       fullPath: '/api/public/hooks/partners-monthly-reset'
       preLoaderRoute: typeof ApiPublicHooksPartnersMonthlyResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/generate-partner-invoices': {
+      id: '/api/public/cron/generate-partner-invoices'
+      path: '/api/public/cron/generate-partner-invoices'
+      fullPath: '/api/public/cron/generate-partner-invoices'
+      preLoaderRoute: typeof ApiPublicCronGeneratePartnerInvoicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/trips/$tripId/roadbook': {
@@ -947,12 +1120,45 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface PartnerDashboardRouteChildren {
+  PartnerDashboardInvoicesRoute: typeof PartnerDashboardInvoicesRoute
+  PartnerDashboardIndexRoute: typeof PartnerDashboardIndexRoute
+  PartnerDashboardCampaignIdRoute: typeof PartnerDashboardCampaignIdRoute
+  PartnerDashboardCampaignNewRoute: typeof PartnerDashboardCampaignNewRoute
+}
+
+const PartnerDashboardRouteChildren: PartnerDashboardRouteChildren = {
+  PartnerDashboardInvoicesRoute: PartnerDashboardInvoicesRoute,
+  PartnerDashboardIndexRoute: PartnerDashboardIndexRoute,
+  PartnerDashboardCampaignIdRoute: PartnerDashboardCampaignIdRoute,
+  PartnerDashboardCampaignNewRoute: PartnerDashboardCampaignNewRoute,
+}
+
+const PartnerDashboardRouteWithChildren =
+  PartnerDashboardRoute._addFileChildren(PartnerDashboardRouteChildren)
+
+interface PartnerRouteChildren {
+  PartnerDashboardRoute: typeof PartnerDashboardRouteWithChildren
+  PartnerRegisterRoute: typeof PartnerRegisterRoute
+  PartnerIndexRoute: typeof PartnerIndexRoute
+}
+
+const PartnerRouteChildren: PartnerRouteChildren = {
+  PartnerDashboardRoute: PartnerDashboardRouteWithChildren,
+  PartnerRegisterRoute: PartnerRegisterRoute,
+  PartnerIndexRoute: PartnerIndexRoute,
+}
+
+const PartnerRouteWithChildren =
+  PartnerRoute._addFileChildren(PartnerRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
+  PartnerRoute: PartnerRouteWithChildren,
   SignupRoute: SignupRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   AuthCallbackRoute: AuthCallbackRoute,
@@ -969,6 +1175,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicCronGeneratePartnerInvoicesRoute:
+    ApiPublicCronGeneratePartnerInvoicesRoute,
   ApiPublicHooksPartnersMonthlyResetRoute:
     ApiPublicHooksPartnersMonthlyResetRoute,
   ApiPublicHooksTripRemindersRoute: ApiPublicHooksTripRemindersRoute,
