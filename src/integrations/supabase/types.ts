@@ -191,9 +191,13 @@ export type Database = {
       partners: {
         Row: {
           category: string
+          clicks: number
+          clicks_this_month: number
           created_at: string
           description: string | null
           id: string
+          impressions: number
+          impressions_this_month: number
           is_active: boolean
           lat: number | null
           lng: number | null
@@ -204,9 +208,13 @@ export type Database = {
         }
         Insert: {
           category: string
+          clicks?: number
+          clicks_this_month?: number
           created_at?: string
           description?: string | null
           id?: string
+          impressions?: number
+          impressions_this_month?: number
           is_active?: boolean
           lat?: number | null
           lng?: number | null
@@ -217,9 +225,13 @@ export type Database = {
         }
         Update: {
           category?: string
+          clicks?: number
+          clicks_this_month?: number
           created_at?: string
           description?: string | null
           id?: string
+          impressions?: number
+          impressions_this_month?: number
           is_active?: boolean
           lat?: number | null
           lng?: number | null
@@ -631,6 +643,14 @@ export type Database = {
       }
       get_invite_preview: { Args: { p_token: string }; Returns: Json }
       get_shared_trip: { Args: { p_token: string }; Returns: Json }
+      increment_partner_click: {
+        Args: { p_partner_id: string }
+        Returns: undefined
+      }
+      increment_partner_impression: {
+        Args: { p_partner_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _uid: string }; Returns: boolean }
       is_trip_member: {
         Args: { _trip_id: string; _user_id: string }
@@ -656,6 +676,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reset_partner_monthly_stats: { Args: never; Returns: undefined }
       restore_account_by_token: { Args: { p_token: string }; Returns: Json }
     }
     Enums: {

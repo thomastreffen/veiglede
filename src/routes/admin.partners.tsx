@@ -23,6 +23,10 @@ type Partner = {
   description: string | null;
   is_active: boolean;
   created_at: string;
+  impressions?: number;
+  clicks?: number;
+  impressions_this_month?: number;
+  clicks_this_month?: number;
 };
 
 const CATEGORY_LABEL: Record<Partner["category"], string> = {
@@ -108,6 +112,19 @@ function AdminPartners() {
                 {p.description && <p className="mt-2 text-xs text-slate-400 line-clamp-2">{p.description}</p>}
               </div>
             </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 pt-3 border-t border-slate-800 text-center">
+              <Stat label="Visninger" value={p.impressions_this_month ?? 0} />
+              <Stat label="Klikk" value={p.clicks_this_month ?? 0} />
+              <Stat
+                label="CTR"
+                value={
+                  (p.impressions_this_month ?? 0) > 0
+                    ? `${(((p.clicks_this_month ?? 0) / (p.impressions_this_month ?? 1)) * 100).toFixed(1)}%`
+                    : "—"
+                }
+              />
+            </div>
+            <p className="mt-1 text-[10px] uppercase tracking-wider text-slate-500 text-center">Denne måneden</p>
             <div className="mt-3 flex items-center justify-between gap-2 pt-3 border-t border-slate-800">
               <label className="inline-flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
                 <input type="checkbox" checked={p.is_active} onChange={() => onToggle(p)} className="accent-primary" />
@@ -232,6 +249,15 @@ function PartnerEditor({ partner, onClose, onSave }: { partner: Partner | null; 
 }
 
 const inputCls = "w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary";
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-lg bg-slate-900/60 border border-slate-800 py-1.5">
+      <p className="font-semibold text-sm tabular-nums">{value}</p>
+      <p className="text-[9px] uppercase tracking-wider text-slate-500">{label}</p>
+    </div>
+  );
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

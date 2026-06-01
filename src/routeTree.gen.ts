@@ -49,6 +49,7 @@ import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lova
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicHooksTripRemindersRouteImport } from './routes/api/public/hooks/trip-reminders'
+import { Route as ApiPublicHooksPartnersMonthlyResetRouteImport } from './routes/api/public/hooks/partners-monthly-reset'
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
 import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.trips.$tripId.stops.$stopId'
 
@@ -255,6 +256,12 @@ const ApiPublicHooksTripRemindersRoute =
     path: '/api/public/hooks/trip-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPartnersMonthlyResetRoute =
+  ApiPublicHooksPartnersMonthlyResetRouteImport.update({
+    id: '/api/public/hooks/partners-monthly-reset',
+    path: '/api/public/hooks/partners-monthly-reset',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppTripsTripIdRoadbookRoute = AppTripsTripIdRoadbookRouteImport.update({
   id: '/roadbook',
   path: '/roadbook',
@@ -304,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -346,6 +354,7 @@ export interface FileRoutesByTo {
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -391,6 +400,7 @@ export interface FileRoutesById {
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
     | '/trips/$tripId/roadbook'
+    | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
     | '/trips/$tripId/roadbook'
+    | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -522,6 +534,7 @@ export interface FileRouteTypes {
     | '/api/public/poi-search'
     | '/lovable/email/suppression'
     | '/_app/trips/$tripId/roadbook'
+    | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -551,6 +564,7 @@ export interface RootRouteChildren {
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicHooksPartnersMonthlyResetRoute: typeof ApiPublicHooksPartnersMonthlyResetRoute
   ApiPublicHooksTripRemindersRoute: typeof ApiPublicHooksTripRemindersRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -839,6 +853,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksTripRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/partners-monthly-reset': {
+      id: '/api/public/hooks/partners-monthly-reset'
+      path: '/api/public/hooks/partners-monthly-reset'
+      fullPath: '/api/public/hooks/partners-monthly-reset'
+      preLoaderRoute: typeof ApiPublicHooksPartnersMonthlyResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/trips/$tripId/roadbook': {
       id: '/_app/trips/$tripId/roadbook'
       path: '/roadbook'
@@ -948,6 +969,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicHooksPartnersMonthlyResetRoute:
+    ApiPublicHooksPartnersMonthlyResetRoute,
   ApiPublicHooksTripRemindersRoute: ApiPublicHooksTripRemindersRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,

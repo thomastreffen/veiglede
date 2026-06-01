@@ -12,6 +12,7 @@ import { getRoute, type RouteResult } from "@/lib/routing";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchRoutePartnersFn } from "@/lib/partners.functions";
 
 export const Route = createFileRoute("/_app/trips/new")({
   head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
@@ -248,6 +249,29 @@ function NewTripWizard() {
       const s = styleMeta(style);
       const vt = selectedVehicle.type;
       const energy = energyTypeToSource(selectedVehicle.energy);
+      // Prefer selected place coords; fall back to local demo lookup from text.
+      const fromResolved = fromPlace ?? manualPlace(origin);
+      const toResolved = toPlace ?? manualPlace(destination);
+
+      // Fetch active partners within 50 km of the route endpoints. Used both
+      // to disclose recommendations in the AI summary and to inject 1–2
+      // partner stops below.
+      let routePartners: Awaited<ReturnType<typeof fetchRoutePartnersFn>>["partners"] = [];
+      if (fromResolved && toResolved) {
+        try {
+          const res = await fetchRoutePartnersFn({
+            data: {
+              origin: { lat: fromResolved.lat, lng: fromResolved.lng },
+              destination: { lat: toResolved.lat, lng: toResolved.lng },
+              radiusKm: 50,
+            },
+          });
+          routePartners = res.partners;
+        } catch (err) {
+          if (import.meta.env.DEV) console.debug("[wizard] fetchRoutePartnersFn failed", err);
+        }
+      }
+
       const ai = buildAiSummary({
         origin, destination, vehicle: vt, style,
         energy, vehicleName: selectedVehicle.name,
@@ -258,10 +282,10 @@ function NewTripWizard() {
           maxDrivingHours: prefs.maxDrivingHours,
           pauseEveryMin: prefs.pauseEveryMin,
         },
+        nearbyPartners: routePartners.map((p) => ({
+          name: p.name, category: p.category, region: p.region, description: p.description,
+        })),
       });
-      // Prefer selected place coords; fall back to local demo lookup from text.
-      const fromResolved = fromPlace ?? manualPlace(origin);
-      const toResolved = toPlace ?? manualPlace(destination);
 
       // Try real routing when we have coordinates for both endpoints.
       let route: RouteResult | null = null;
@@ -318,6 +342,38 @@ function NewTripWizard() {
         routeFerryDurationMin: route?.ferryDurationMin,
         routeFallbackEstimateMin: route?.fallbackEstimateMin,
       });
+      // Inject up to 2 nearby active partners as suggestion stops on the
+      // first day of the trip. Honestly labeled — see Stop.isPartner.
+      try {
+        const bundle0 = tripsApi.getTripBundle(trip.id);
+        const firstDay = bundle0.days[0];
+        if (firstDay && routePartners.length > 0) {
+          const categoryToStopType: Record<string, "food" | "lodging" | "attraction" | "fuel"> = {
+            mat: "food",
+            overnatting: "lodging",
+            attraksjon: "attraction",
+            drivstoff: "fuel",
+          };
+          const picks = routePartners.slice(0, 2);
+          for (const p of picks) {
+            tripsApi.addStop(firstDay.id, {
+              name: p.name,
+              type: categoryToStopType[p.category] ?? "attraction",
+              description: p.description ?? undefined,
+              location: p.region ?? undefined,
+              lat: p.lat, lng: p.lng,
+              isPartner: true,
+              promoted: true,
+              partnerId: p.id,
+              partnerWebsite: p.website ?? undefined,
+              partnerLogoUrl: p.logo_url ?? undefined,
+              reason: "Anbefalt partner langs ruta — tydelig merket.",
+            });
+          }
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug("[wizard] partner stop injection failed", err);
+      }
       // Snapshot a trip time breakdown using the freshly-seeded stops.
       try {
         const { computeTimeBreakdown } = await import("@/lib/trip-time");

@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
+import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
@@ -413,7 +414,7 @@ function TripPlanner() {
                                 <p className="font-semibold truncate">{stop.name}</p>
                                 <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
                                 {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
-                                {stop.promoted && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
+                                {stop.promoted && !stop.isPartner && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
                               </div>
                               {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
                               {stop.type === "lodging" && stop.booking && <BookingInfo booking={stop.booking} />}
@@ -428,6 +429,13 @@ function TripPlanner() {
                                   <Info className="h-3 w-3 mt-0.5 shrink-0" />
                                   <span>{stop.reason}</span>
                                 </p>
+                              )}
+                              {stop.isPartner && (
+                                <PartnerStopBlock
+                                  partnerId={stop.partnerId}
+                                  logoUrl={stop.partnerLogoUrl}
+                                  website={stop.partnerWebsite}
+                                />
                               )}
                             </div>
                           </Link>

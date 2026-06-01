@@ -47,6 +47,12 @@ export interface Stop {
   day?: number;
   isSuggestion?: boolean;
   isPartner?: boolean;
+  /** Partner registry id (UUID) — set when this stop comes from the partners table. */
+  partnerId?: string;
+  /** Partner website (external link) — shown as "Besøk nettside →" for partner stops. */
+  partnerWebsite?: string;
+  /** Partner logo URL — small mark shown next to the stop name. */
+  partnerLogoUrl?: string;
   isPhotoStop?: boolean;
   placement?: "along" | "detour" | "after" | "new-day" | "day";
   routeStatus?: "on-route" | "detour" | "suggestion";
@@ -1146,6 +1152,9 @@ export function buildAiSummary(input: {
   origin: string; destination: string; vehicle: VehicleType; style: RouteStyle;
   energy?: EnergySource; vehicleName?: string;
   userPrompt?: string; prefs?: AiPrefsInput;
+  /** Optional list of active partners within ~50 km of the route — used to
+   *  honestly disclose recommended partner stops in the narrative summary. */
+  nearbyPartners?: Array<{ name: string; category: string; region: string | null; description: string | null }>;
 }): string {
   const v = vehicleMeta(input.vehicle);
   const s = styleMeta(input.style);
@@ -1215,7 +1224,18 @@ export function buildAiSummary(input: {
     }
   }
 
-  parts.push("Lokale tips og partnerstopp dukker bare opp når de faktisk passer ruten.");
+  const partners = input.nearbyPartners ?? [];
+  if (partners.length > 0) {
+    const picks = partners.slice(0, 2);
+    const phrases = picks.map((p) => {
+      const where = p.region ? ` i ${p.region}` : "";
+      const why = p.description ? ` — ${p.description}` : "";
+      return `${p.name} (${p.category})${where}${why}`;
+    });
+    parts.push(`Anbefalte partnere langs ruten: ${phrases.join("; ")}. Disse er tydelig merket som «Anbefalt partner».`);
+  } else {
+    parts.push("Lokale tips og partnerstopp dukker bare opp når de faktisk passer ruten.");
+  }
   if (input.userPrompt) parts.push(`Ekstra hensyn: «${input.userPrompt}».`);
   return parts.join(" ");
 }
