@@ -229,6 +229,26 @@ function TripPlanner() {
                 <Pencil className="h-3.5 w-3.5" /> Rediger tur
               </button>
             )}
+            {user && (
+              <button
+                onClick={() => {
+                  const next = !(trip.isPublic ?? false);
+                  if (next && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+                  tripsApi.setTripPublic(trip.id, next);
+                  void flushTripsNow();
+                  toast.success(next ? "Tur er nå offentlig 🌍" : "Tur er nå privat 🔒");
+                }}
+                title="Offentlige turer vises på din profil og i Utforsk"
+                className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  trip.isPublic
+                    ? "border-primary bg-primary/10 text-primary hover:bg-primary/20"
+                    : "border-border bg-background/60 hover:border-primary hover:text-primary"
+                }`}
+              >
+                {trip.isPublic ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                {trip.isPublic ? "🌍 Offentlig" : "🔒 Privat"}
+              </button>
+            )}
           </div>
           {trip.subtitle && <p className="mt-2 text-sm md:text-base text-foreground/80">{trip.subtitle}</p>}
           <p className="mt-3 inline-flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 text-primary" /> {trip.origin} → {trip.destination}</p>
