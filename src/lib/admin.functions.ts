@@ -344,7 +344,7 @@ export const adminListAuditLogFn = createServerFn({ method: "GET" })
         action: r.action as string,
         target_user_id: (r.target_user_id as string | null) ?? null,
         note: (r.note as string | null) ?? null,
-        metadata: (r.metadata as Record<string, unknown> | null) ?? null,
+        metadata: (r.metadata as { from?: string | null; to?: string | null; validUntil?: string | null; role?: string | null } | null) ?? null,
         created_at: r.created_at as string,
         admin_name: names.get(r.admin_id as string)?.display_name ?? null,
         target_name: r.target_user_id ? names.get(r.target_user_id as string)?.display_name ?? null : null,
