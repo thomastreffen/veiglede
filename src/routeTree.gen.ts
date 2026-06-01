@@ -30,6 +30,7 @@ import { Route as ApiPublicGooglePlacesRouteImport } from './routes/api/public/g
 import { Route as ApiPublicDirectionsRouteImport } from './routes/api/public/directions'
 import { Route as AppTripsNewRouteImport } from './routes/_app.trips.new'
 import { Route as AppTripsTripIdRouteImport } from './routes/_app.trips.$tripId'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as AppTripsTripIdRoadbookRouteImport } from './routes/_app.trips.$tripId.roadbook'
 import { Route as AppTripsTripIdStopsStopIdRouteImport } from './routes/_app.trips.$tripId.stops.$stopId'
 
@@ -137,6 +138,12 @@ const AppTripsTripIdRoute = AppTripsTripIdRouteImport.update({
   path: '/$tripId',
   getParentRoute: () => AppTripsRoute,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppTripsTripIdRoadbookRoute = AppTripsTripIdRoadbookRouteImport.update({
   id: '/roadbook',
   path: '/roadbook',
@@ -171,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesByTo {
@@ -195,6 +203,7 @@ export interface FileRoutesByTo {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRoutesById {
@@ -221,6 +230,7 @@ export interface FileRoutesById {
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/_app/trips/$tripId/stops/$stopId': typeof AppTripsTripIdStopsStopIdRoute
 }
 export interface FileRouteTypes {
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
+    | '/lovable/email/queue/process'
     | '/trips/$tripId/stops/$stopId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/trips/$tripId/roadbook'
+    | '/lovable/email/queue/process'
     | '/trips/$tripId/stops/$stopId'
   id:
     | '__root__'
@@ -296,6 +308,7 @@ export interface FileRouteTypes {
     | '/api/public/map-config'
     | '/api/public/poi-search'
     | '/_app/trips/$tripId/roadbook'
+    | '/lovable/email/queue/process'
     | '/_app/trips/$tripId/stops/$stopId'
   fileRoutesById: FileRoutesById
 }
@@ -314,6 +327,7 @@ export interface RootRouteChildren {
   ApiPublicGooglePlacesRoute: typeof ApiPublicGooglePlacesRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -465,6 +479,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTripsTripIdRouteImport
       parentRoute: typeof AppTripsRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/trips/$tripId/roadbook': {
       id: '/_app/trips/$tripId/roadbook'
       path: '/roadbook'
@@ -543,17 +564,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGooglePlacesRoute: ApiPublicGooglePlacesRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
