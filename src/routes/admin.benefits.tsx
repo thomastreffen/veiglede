@@ -29,7 +29,7 @@ function AdminBenefitsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-benefits"] }),
   });
   const create = useMutation({
-    mutationFn: (v: Parameters<typeof createFn>[0]["data"]) => createFn({ data: v }),
+    mutationFn: (v: { name: string; category: typeof CATEGORIES[number]; contact_email: string; website?: string; monthly_fee_nok: number }) => createFn({ data: v }),
     onSuccess: (r) => {
       if (r.ok) { toast.success("Leverandør opprettet"); setShowAdd(false); qc.invalidateQueries({ queryKey: ["admin-benefits"] }); }
       else toast.error(r.error ?? "Feil");

@@ -34,6 +34,20 @@ function randomCode(prefix = "VEIG") {
   return `${prefix}${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
+type BenefitInputT = {
+  id?: string;
+  title: string;
+  description: string | null;
+  discount_code: string | null;
+  affiliate_url: string | null;
+  direct_url: string;
+  vehicle_types: Array<"motorcycle" | "car" | "rv">;
+  energy_types: Array<"petrol" | "diesel" | "electric" | "hybrid">;
+  valid_from: string | null;
+  valid_to: string | null;
+  is_active: boolean;
+};
+
 function PartnerBenefitsPage() {
   const listFn = useServerFn(listMyBenefitsFn);
   const ensureFn = useServerFn(ensureMyBenefitProviderFn);
@@ -45,11 +59,11 @@ function PartnerBenefitsPage() {
   const { data: audience } = useQuery({ queryKey: ["audience-stats"], queryFn: () => audFn() });
 
   const ensure = useMutation({
-    mutationFn: (i: Parameters<typeof ensureFn>[0]["data"]) => ensureFn({ data: i }),
+    mutationFn: (i: { name: string; category: typeof CATEGORIES[number]; contact_email: string; website?: string; description?: string }) => ensureFn({ data: i }),
     onSuccess: (r) => { if (r.ok) { toast.success("Leverandørprofil lagret"); qc.invalidateQueries({ queryKey: ["my-benefits"] }); } else toast.error(r.error ?? "Feil"); },
   });
   const upsert = useMutation({
-    mutationFn: (i: Parameters<typeof upsertFn>[0]["data"]) => upsertFn({ data: i }),
+    mutationFn: (i: BenefitInputT) => upsertFn({ data: i }),
     onSuccess: (r) => { if (r.ok) { toast.success("Fordel lagret"); qc.invalidateQueries({ queryKey: ["my-benefits"] }); } else toast.error(r.error ?? "Feil"); },
   });
   const del = useMutation({
@@ -153,7 +167,7 @@ function ProviderForm({ onSubmit }: { onSubmit: (i: { name: string; category: ty
   );
 }
 
-function BenefitForm({ onSubmit, providerName }: { onSubmit: (i: Parameters<ReturnType<typeof useServerFn<typeof upsertMyBenefitFn>>>[0]["data"]) => void; providerName: string }) {
+function BenefitForm({ onSubmit, providerName }: { onSubmit: (i: BenefitInputT) => void; providerName: string }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [code, setCode] = useState("");
