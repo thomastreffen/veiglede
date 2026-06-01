@@ -1168,11 +1168,12 @@ function PlannerActions({
   );
 }
 
-function PlannerBtn({ label, onClick }: { label: string; onClick: () => void }) {
+function PlannerBtn({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-2xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:bg-surface-2 transition-colors"
+      disabled={disabled}
+      className="rounded-2xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:bg-surface-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {label}
     </button>
