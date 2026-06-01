@@ -91,6 +91,36 @@ export function TripTracker({
         )}
       </div>
 
+      {/* Live position sharing toggle */}
+      <div className="rounded-xl border border-border bg-background/40 p-3">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={liveOn}
+            onChange={(e) => setLiveOn(e.target.checked)}
+            disabled={!user}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <div className="flex-1">
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+              <Radio className={`h-3.5 w-3.5 ${liveOn ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
+              Del posisjon live
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              {!user
+                ? "Logg inn for å dele posisjon live."
+                : liveOn
+                  ? (permState === "denied"
+                      ? "Posisjonstilgang blokkert. Aktiver i nettleseren for å dele."
+                      : "Reisefølget kan se hvor du er. Oppdateres hvert 30. sekund.")
+                  : "Av som standard. Slå på for å la reisefølget følge ruta i sanntid."}
+            </p>
+          </div>
+        </label>
+      </div>
+
+
+
       {/* Live stats */}
       {t.status !== "idle" && (
         <div className="grid grid-cols-3 gap-2 text-xs">
