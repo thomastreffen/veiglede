@@ -18,10 +18,9 @@ const truncate = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1
 
 const slugify = (s: string) =>
   s
-    .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
 export function buildGpx(trip: Trip, stops: Stop[]): string {
