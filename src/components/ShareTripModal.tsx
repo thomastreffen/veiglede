@@ -279,15 +279,36 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
                 <ul className="space-y-1.5 pt-2">
                   {invites.map((inv) => {
                     const url = inviteUrl(inv.invite_token);
+                    const pending = inv.status === "invited" || inv.status === "opened";
+                    const statusText = pending
+                      ? relativeTime(inv.created_at)
+                      : statusLabel(inv.status);
                     return (
-                      <li key={inv.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/40 p-2 pl-3 text-xs">
+                      <li key={inv.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/40 p-2 pl-3 text-xs flex-wrap">
                         <Users className="h-3.5 w-3.5 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="truncate text-xs font-semibold">{inv.invited_email ?? "Lenkeinvitasjon"}</p>
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {statusLabel(inv.status)} · {roleLabel(inv.role)}
+                            {statusText}
                           </p>
                         </div>
+                        <span
+                          className={
+                            inv.role === "editor"
+                              ? "inline-flex items-center rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400 border border-amber-500/40"
+                              : "inline-flex items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border border-border"
+                          }
+                        >
+                          {roleLabel(inv.role)}
+                        </span>
+                        {pending && inv.invited_email && (
+                          <button
+                            onClick={() => handleResend(inv)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-1 text-[10px] font-bold uppercase tracking-wider hover:border-primary"
+                          >
+                            <Send className="h-3 w-3" /> Send på nytt
+                          </button>
+                        )}
                         <button
                           onClick={() => copy(`inv-${inv.id}`, url)}
                           className="inline-flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-1 hover:border-primary"
@@ -305,6 +326,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
                       </li>
                     );
                   })}
+
                 </ul>
               )}
               <p className="pt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
