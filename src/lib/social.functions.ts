@@ -163,7 +163,7 @@ export const feedFromFollowsFn = createServerFn({ method: "GET" })
     if (ids.length === 0) return [];
 
     const { data: rows } = await supabaseAdmin
-      .from("trips").select("user_id, data").in("id", ids);
+      .from("trips").select("user_id, data").in("user_id", ids);
     const collected: Array<FeedTrip & { _userId: string }> = [];
     for (const row of rows ?? []) {
       const blob = row.data as { trips?: Array<Record<string, unknown>> } | null;
