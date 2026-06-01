@@ -41,6 +41,13 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    if (window.location.search.includes("pwa=reset")) {
+      localStorage.removeItem(VISIT_KEY);
+      localStorage.removeItem(DISMISS_KEY);
+      localStorage.removeItem(INSTALLED_KEY);
+    }
+
     if (isStandalone()) {
       localStorage.setItem(INSTALLED_KEY, "1");
       return;
@@ -54,7 +61,7 @@ export function InstallPrompt() {
     // Honor dismissal
     const dismissed = Number(localStorage.getItem(DISMISS_KEY) || "0");
     if (Date.now() < dismissed) return;
-    if (count < 2) return;
+    if (count < 1) return;
 
     if (globalDeferredPrompt) {
       setDeferred(globalDeferredPrompt);
