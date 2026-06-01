@@ -71,13 +71,13 @@ function Roadbook() {
         ]}
       />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Planlegger
         </Link>
         <div className="flex gap-2">
           <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> Del</button>
-          <button className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary"><Download className="h-3.5 w-3.5" /> Eksport</button>
+          <button onClick={handleExportPdf} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Download className="h-3.5 w-3.5" /> Eksporter PDF</button>
         </div>
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
