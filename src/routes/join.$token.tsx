@@ -53,9 +53,13 @@ function JoinPage() {
     try {
       await joinTripWithToken(token);
       setOutcome("joined");
+      toast.success("Du er nå med på turen! 🎉");
       const trip = state && typeof state === "object" ? (state.trip as TripLite | null) : null;
-      if (trip?.shareToken) {
-        setTimeout(() => navigate({ to: "/shared/$shareToken", params: { shareToken: trip.shareToken! } }), 600);
+      const tripId = trip?.id;
+      if (tripId) {
+        setTimeout(() => navigate({ to: "/trips/$tripId", params: { tripId } }), 700);
+      } else if (trip?.shareToken) {
+        setTimeout(() => navigate({ to: "/shared/$shareToken", params: { shareToken: trip.shareToken! } }), 700);
       }
     } catch {
       /* swallow */
