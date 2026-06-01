@@ -1,16 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { getPublicProfileByUsername, type PublicProfileTrip } from "@/lib/profiles.functions";
+import { getPublicProfileByUsername, type PublicProfileTrip, type PublicProfilePayload, type PublicProfileVehicle } from "@/lib/profiles.functions";
 import { COVERS, vehicleMeta, styleMeta, type CoverKey, type VehicleType, type RouteStyle } from "@/lib/trips-store";
 import { energyMeta, type EnergyType } from "@/lib/vehicles-store";
 import { Route as RouteIcon, Clock, Camera, MapPin, ArrowRight, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/u/$username")({
-  head: ({ params, loaderData }) => {
+  head: ({ params, loaderData }: { params: { username: string }; loaderData?: PublicProfilePayload }) => {
     const p = loaderData?.profile;
     const stats = loaderData?.stats;
+
     const name = p?.displayName ?? params.username;
     const title = stats
       ? `${name} på Veiglede — ${stats.tripsCount} turer, ${stats.totalKm.toLocaleString("nb-NO")} km`

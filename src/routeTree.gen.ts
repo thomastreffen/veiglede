@@ -15,6 +15,7 @@ import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
 import { Route as RestoreTokenRouteImport } from './routes/restore.$token'
@@ -71,6 +72,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SharedTripIdRoute = SharedTripIdRouteImport.update({
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
+  '/u/$username': typeof UUsernameRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -275,6 +282,7 @@ export interface FileRoutesByTo {
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
+  '/u/$username': typeof UUsernameRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -312,6 +320,7 @@ export interface FileRoutesById {
   '/restore/$token': typeof RestoreTokenRoute
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
+  '/u/$username': typeof UUsernameRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -349,6 +358,7 @@ export interface FileRouteTypes {
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
+    | '/u/$username'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
+    | '/u/$username'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -420,6 +431,7 @@ export interface FileRouteTypes {
     | '/restore/$token'
     | '/shared/$shareToken'
     | '/shared/$tripId'
+    | '/u/$username'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
     | '/api/public/directions'
@@ -450,6 +462,7 @@ export interface RootRouteChildren {
   RestoreTokenRoute: typeof RestoreTokenRoute
   SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
+  UUsernameRoute: typeof UUsernameRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
   ApiPublicGooglePlacesRoute: typeof ApiPublicGooglePlacesRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
@@ -503,6 +516,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shared/$tripId': {
@@ -769,6 +789,7 @@ const rootRouteChildren: RootRouteChildren = {
   RestoreTokenRoute: RestoreTokenRoute,
   SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
+  UUsernameRoute: UUsernameRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
   ApiPublicGooglePlacesRoute: ApiPublicGooglePlacesRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
