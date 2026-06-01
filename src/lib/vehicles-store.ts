@@ -156,7 +156,8 @@ export const vehiclesApi = {
   add(input: Omit<Vehicle, "id">): Vehicle {
     const v: Vehicle = { ...input, id: uid() };
     const cur = getSnapshot();
-    persist({ ...cur, vehicles: [...cur.vehicles, v] });
+    const defaultId = cur.defaultId || v.id;
+    persist({ vehicles: [...cur.vehicles, v], defaultId });
     return v;
   },
   update(id: string, patch: Partial<Vehicle>) {
