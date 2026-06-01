@@ -9,8 +9,9 @@ import {
 } from "@/lib/trips-store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Compass, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Sparkles,
+  Compass, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Sparkles, Share2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/explore")({
   head: () => ({
