@@ -44,20 +44,20 @@ function TripsDashboard() {
           );
           return (
             <>
-              <StatCell n={String(trips.length)} l="planlagte turer" />
+              <StatCell n={String(trips.length)} l={t.app.trips.plannedTrips} />
               <div className="md:hidden">
                 <p className="font-display text-lg md:text-xl leading-tight">
-                  {planned.toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">planlagt</span>
+                  {planned.toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">{t.app.trips.planned}</span>
                 </p>
                 <p className="font-display text-lg md:text-xl leading-tight mt-0.5">
-                  {Math.round(driven).toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-primary ml-1">kjørt</span>
+                  {Math.round(driven).toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-primary ml-1">{t.app.trips.driven}</span>
                 </p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">km</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">{t.app.trips.km}</p>
               </div>
-              <StatCell className="hidden md:block" n={planned.toLocaleString("nb-NO")} l="km planlagt" />
-              <StatCell className="hidden md:block" n={Math.round(driven).toLocaleString("nb-NO")} l="km kjørt" accent />
-              <StatCell n={String(vehicles.length)} l="kjøretøy" />
-              <StatCell n={String(photoStops)} l="fotostopp" />
+              <StatCell className="hidden md:block" n={planned.toLocaleString("nb-NO")} l={t.app.trips.kmPlanned} />
+              <StatCell className="hidden md:block" n={Math.round(driven).toLocaleString("nb-NO")} l={t.app.trips.kmDriven} accent />
+              <StatCell n={String(vehicles.length)} l={t.app.trips.vehicles} />
+              <StatCell n={String(photoStops)} l={t.app.trips.photoStops} />
             </>
           );
         })()}
