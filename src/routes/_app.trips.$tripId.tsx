@@ -24,6 +24,7 @@ import { TripMemories } from "@/components/TripMemories";
 import { TripPhotosGallery } from "@/components/TripPhotosGallery";
 import { DetourPromptDialog } from "@/components/DetourPromptDialog";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import { PackingList } from "@/components/PackingList";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { EditTripSheet } from "@/components/EditTripSheet";
 import {
@@ -316,6 +317,7 @@ function TripPlanner() {
         {[
           { href: "#track", label: "Live tur" },
           { href: "#days", label: "Dag for dag" },
+          { href: "#packing", label: "Pakkeliste" },
           { href: "#along", label: "Langs ruta" },
           { href: "#photos", label: "Bilder" },
           { href: "#tips", label: "Lokale tips" },
@@ -439,6 +441,9 @@ function TripPlanner() {
           })}
         </ol>
       </section>
+
+      {/* Packing list */}
+      <PackingList trip={trip} stopTypes={tripStops.map((s) => s.type)} />
 
       {/* Suggested along the route */}
       <section id="along" className="mt-10 scroll-mt-24">

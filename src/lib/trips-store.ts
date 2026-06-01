@@ -144,6 +144,17 @@ export interface Trip {
   // Trip economy v1 — user-supplied fuel/energy price for turregnskap.
   fuelPricePerUnit?: number; // NOK per liter (petrol/diesel) or per kWh (electric)
   consumptionPer100Km?: number; // l/100km or kWh/100km override
+  // Packing list — categorized checklist saved per trip.
+  packingList?: PackingItem[];
+}
+
+export type PackingCategory = "klær" | "utstyr" | "dokumenter" | "mat" | "annet";
+
+export interface PackingItem {
+  id: string;
+  label: string;
+  checked: boolean;
+  category?: PackingCategory;
 }
 
 export interface TripTimeBreakdownSnapshot {
