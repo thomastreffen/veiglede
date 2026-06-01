@@ -34,6 +34,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTripsRouteImport } from './routes/admin.trips'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPartnersRouteImport } from './routes/admin.partners'
+import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
 import { Route as AdminAdvertisersRouteImport } from './routes/admin.advertisers'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
@@ -56,6 +57,7 @@ import { Route as PartnerDashboardCampaignIdRouteImport } from './routes/partner
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksTripRemindersRouteImport } from './routes/api/public/hooks/trip-reminders'
 import { Route as ApiPublicHooksPartnersMonthlyResetRouteImport } from './routes/api/public/hooks/partners-monthly-reset'
 import { Route as ApiPublicCronGeneratePartnerInvoicesRouteImport } from './routes/api/public/cron/generate-partner-invoices'
@@ -186,6 +188,11 @@ const AdminPartnersRoute = AdminPartnersRouteImport.update({
   path: '/partners',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminInvoicesRoute = AdminInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdvertisersRoute = AdminAdvertisersRouteImport.update({
   id: '/advertisers',
   path: '/advertisers',
@@ -302,6 +309,12 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksTripRemindersRoute =
   ApiPublicHooksTripRemindersRouteImport.update({
     id: '/api/public/hooks/trip-reminders',
@@ -348,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
   '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/trips': typeof AdminTripsRoute
@@ -378,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -399,6 +414,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
   '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/trips': typeof AdminTripsRoute
@@ -428,6 +444,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -453,6 +470,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/trips': typeof AppTripsRouteWithChildren
   '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/trips': typeof AdminTripsRoute
@@ -483,6 +501,7 @@ export interface FileRoutesById {
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -508,6 +527,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/trips'
     | '/admin/advertisers'
+    | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
     | '/admin/trips'
@@ -538,6 +558,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
+    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -559,6 +580,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/trips'
     | '/admin/advertisers'
+    | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
     | '/admin/trips'
@@ -588,6 +610,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
+    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -612,6 +635,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/trips'
     | '/admin/advertisers'
+    | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
     | '/admin/trips'
@@ -642,6 +666,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
+    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -676,6 +701,7 @@ export interface RootRouteChildren {
   ApiPublicCronGeneratePartnerInvoicesRoute: typeof ApiPublicCronGeneratePartnerInvoicesRoute
   ApiPublicHooksPartnersMonthlyResetRoute: typeof ApiPublicHooksPartnersMonthlyResetRoute
   ApiPublicHooksTripRemindersRoute: typeof ApiPublicHooksTripRemindersRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
   LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
@@ -858,6 +884,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPartnersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/invoices': {
+      id: '/admin/invoices'
+      path: '/invoices'
+      fullPath: '/admin/invoices'
+      preLoaderRoute: typeof AdminInvoicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/advertisers': {
       id: '/admin/advertisers'
       path: '/advertisers'
@@ -1012,6 +1045,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/trip-reminders': {
       id: '/api/public/hooks/trip-reminders'
       path: '/api/public/hooks/trip-reminders'
@@ -1102,6 +1142,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface AdminRouteChildren {
   AdminAdvertisersRoute: typeof AdminAdvertisersRoute
+  AdminInvoicesRoute: typeof AdminInvoicesRoute
   AdminPartnersRoute: typeof AdminPartnersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTripsRoute: typeof AdminTripsRoute
@@ -1111,6 +1152,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdvertisersRoute: AdminAdvertisersRoute,
+  AdminInvoicesRoute: AdminInvoicesRoute,
   AdminPartnersRoute: AdminPartnersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTripsRoute: AdminTripsRoute,
@@ -1180,6 +1222,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPartnersMonthlyResetRoute:
     ApiPublicHooksPartnersMonthlyResetRoute,
   ApiPublicHooksTripRemindersRoute: ApiPublicHooksTripRemindersRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
   LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,

@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Pause, Loader2 } from "lucide-react";
+import { Check, Pause, Loader2, Receipt } from "lucide-react";
 import { listPartnerAccountsFn, setPartnerAccountStatusFn } from "@/lib/partner.functions";
 
 export const Route = createFileRoute("/admin/advertisers")({
@@ -25,10 +25,18 @@ function AdminAdvertisers() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Inntekt</p>
-        <h1 className="font-display text-3xl md:text-4xl uppercase">Annonsører</h1>
-        <p className="mt-2 text-sm text-slate-400">Godkjenn eller suspender partnerkontoer.</p>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Inntekt</p>
+          <h1 className="font-display text-3xl md:text-4xl uppercase">Annonsører</h1>
+          <p className="mt-2 text-sm text-slate-400">Godkjenn eller suspender partnerkontoer.</p>
+        </div>
+        <Link
+          to="/admin/invoices"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs border border-white/15 hover:bg-white/5"
+        >
+          <Receipt className="h-3.5 w-3.5" /> Fakturaoversikt
+        </Link>
       </div>
 
       {isLoading ? (
