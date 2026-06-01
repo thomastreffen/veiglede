@@ -93,9 +93,19 @@ const SCENIC_ROUTES = [
   { name: "Sognefjellet", km: "108 km", img: routeSognefjellet },
 ];
 
-const FEATURE_ICONS = [Mountain, MapPin, Sparkles, BookOpen, Users];
-const WHAT_ICONS = [User, Users, Camera];
-const WHAT_IMAGES = [heroFjord, groupMotorcycles, routeHardanger];
+const STEP_ICONS = [Bike, Sparkles, Share2, Camera];
+const STEP_IMAGES = [groupMotorcycles, routeSognefjellet, routeHardanger, routeLofoten];
+const AUDIENCE_EMOJIS = ["🏍️", "🚗", "🚐"];
+const AUDIENCE_IMAGES = [groupMotorcycles, heroFjord, routeHardanger];
+const TESTIMONIAL_EMOJIS = ["🏍️", "🚐", "🚗"];
+const ROW_EMOJIS: string[][] = [
+  ["🗺️", "📍", "📅"],
+  ["🏍️", "⛽", "🌤️"],
+  ["👥", "📡", "💬"],
+  ["🔍", "👤", "💾"],
+  ["📄", "🗺️", "🎒"],
+  ["🎁", "⭐", "🇳🇴"],
+];
 
 function getSeason(month: number) {
   if (month >= 5 && month <= 7) {
