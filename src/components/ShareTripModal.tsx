@@ -353,8 +353,21 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
 
 function LiveSharingSection({ tripId }: { tripId: string }) {
   const [liveOn, setLiveOn] = useLiveOptIn(tripId);
+  const session = useLiveSession(tripId);
+  const live = isLiveActive(session);
+  const [copied, setCopied] = useState(false);
+  const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
+  const liveUrl = session?.live_share_token ? `${base}/live/${session.live_share_token}` : "";
+
+  const copyLink = async () => {
+    if (!liveUrl) return;
+    try { await navigator.clipboard.writeText(liveUrl); } catch { /* noop */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
   return (
-    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
       <label className="flex items-start gap-3 cursor-pointer">
         <input
           type="checkbox"
@@ -378,6 +391,32 @@ function LiveSharingSection({ tripId }: { tripId: string }) {
           </div>
         </div>
       </label>
+
+      {liveOn && live && liveUrl && (
+        <div className="space-y-2 rounded-lg border border-primary/30 bg-background/60 p-3">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Live-lenke</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 min-w-0 flex-1 rounded-lg border border-border bg-background/80 px-2.5 py-2">
+              <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="flex-1 min-w-0 text-[11px] font-mono break-all">{liveUrl}</span>
+            </div>
+            <button
+              onClick={copyLink}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 min-h-[40px]"
+            >
+              {copied ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier live-lenke</>}
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Alle med lenken kan følge deg live — ingen innlogging nødvendig.
+          </p>
+        </div>
+      )}
+      {liveOn && !live && (
+        <p className="text-[11px] text-muted-foreground">
+          Live-lenken vises her så snart du har startet turen og delt din første posisjon.
+        </p>
+      )}
     </div>
   );
 }
