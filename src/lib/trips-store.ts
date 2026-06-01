@@ -87,6 +87,20 @@ export interface TripDay {
   title: string;
   date?: string;
   summary?: string;
+  /** Optional planned departure time (HH:MM, 24h). Used to estimate arrival at each stop. */
+  departureTime?: string;
+}
+
+/** Keywords that strongly suggest a stop is a lodging/overnight. */
+export const LODGING_KEYWORDS = [
+  "hotell", "hotel", "hostel", "camping", "overnatting", "airbnb", "hytte", "cabin", "resort",
+  "rorbu", "fjellstove", "vandrerhjem", "motell", "motel", "pensjonat", "lodge", "inn",
+];
+
+export function looksLikeLodging(name?: string): boolean {
+  if (!name) return false;
+  const n = name.toLowerCase();
+  return LODGING_KEYWORDS.some((k) => n.includes(k));
 }
 
 export type TripStatus = "draft" | "saved";
@@ -460,14 +474,125 @@ export const tripsApi = {
     state = { ...state, days: state.days.filter((d) => d.id !== id), stops: state.stops.filter((s) => s.dayId !== id) };
     persist();
   },
+  /** Delete a day but merge its stops into the previous day (by dayNumber). No-op if first day. */
+  mergeDayUp(id: string) {
+    ensureInit();
+    const day = state.days.find((d) => d.id === id);
+    if (!day) return;
+    const siblings = state.days.filter((d) => d.tripId === day.tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+    const idx = siblings.findIndex((d) => d.id === id);
+    if (idx <= 0) return;
+    const prev = siblings[idx - 1];
+    const prevStops = state.stops.filter((s) => s.dayId === prev.id);
+    const baseOrder = prevStops.length;
+    const moving = state.stops.filter((s) => s.dayId === id).sort((a, b) => a.order - b.order);
+    state = {
+      ...state,
+      stops: state.stops.map((s) => {
+        const movingIdx = moving.findIndex((m) => m.id === s.id);
+        if (movingIdx >= 0) return { ...s, dayId: prev.id, order: baseOrder + movingIdx };
+        return s;
+      }),
+      days: state.days
+        .filter((d) => d.id !== id)
+        .map((d) => (d.tripId === day.tripId && d.dayNumber > day.dayNumber ? { ...d, dayNumber: d.dayNumber - 1 } : d)),
+    };
+    refreshTripDerivedState(day.tripId);
+    persist();
+  },
+  /** Reorder a day by ±1 (swaps dayNumber with neighbor). */
+  reorderDay(id: string, direction: -1 | 1) {
+    ensureInit();
+    const day = state.days.find((d) => d.id === id);
+    if (!day) return;
+    const siblings = state.days.filter((d) => d.tripId === day.tripId).sort((a, b) => a.dayNumber - b.dayNumber);
+    const idx = siblings.findIndex((d) => d.id === id);
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return;
+    const a = siblings[idx], b = siblings[swapIdx];
+    state = {
+      ...state,
+      days: state.days.map((d) => {
+        if (d.id === a.id) return { ...d, dayNumber: b.dayNumber };
+        if (d.id === b.id) return { ...d, dayNumber: a.dayNumber };
+        return d;
+      }),
+    };
+    persist();
+  },
+  /** Move a stop to another day (appended at end). */
+  moveStopToDay(stopId: string, targetDayId: string) {
+    ensureInit();
+    const stop = state.stops.find((s) => s.id === stopId);
+    if (!stop || stop.dayId === targetDayId) return;
+    const order = state.stops.filter((s) => s.dayId === targetDayId).length;
+    state = {
+      ...state,
+      stops: state.stops.map((s) => (s.id === stopId ? { ...s, dayId: targetDayId, order } : s)),
+    };
+    const tripId = getTripIdForDay(targetDayId);
+    if (tripId) refreshTripDerivedState(tripId);
+    persist();
+  },
+  /** Duplicate a day (with all its stops) and insert immediately after the source day. */
+  duplicateDay(id: string): TripDay | null {
+    ensureInit();
+    const day = state.days.find((d) => d.id === id);
+    if (!day) return null;
+    const newDay: TripDay = {
+      id: uid(),
+      tripId: day.tripId,
+      dayNumber: day.dayNumber + 1,
+      title: `${day.title} (kopi)`,
+      date: day.date,
+      summary: day.summary,
+      departureTime: day.departureTime,
+    };
+    const sourceStops = state.stops.filter((s) => s.dayId === id).sort((a, b) => a.order - b.order);
+    const clonedStops: Stop[] = sourceStops.map((s, i) => ({
+      ...s,
+      id: uid(),
+      dayId: newDay.id,
+      order: i,
+      photos: undefined,
+    }));
+    state = {
+      ...state,
+      days: [
+        ...state.days.map((d) =>
+          d.tripId === day.tripId && d.dayNumber > day.dayNumber ? { ...d, dayNumber: d.dayNumber + 1 } : d,
+        ),
+        newDay,
+      ],
+      stops: [...state.stops, ...clonedStops],
+    };
+    refreshTripDerivedState(day.tripId);
+    persist();
+    return newDay;
+  },
   addStop(dayId: string, input: Partial<Stop> = {}): Stop {
     ensureInit();
     const order = state.stops.filter((s) => s.dayId === dayId).length;
+    // Auto-detect lodging from name keywords if type not explicitly set.
+    const detectedLodging = (input.type === "lodging") || (!input.type && looksLikeLodging(input.name));
+    const finalType: StopType = detectedLodging ? "lodging" : (input.type ?? "attraction");
+    // Pre-fill booking dates for lodging stops when not provided.
+    let booking = input.booking;
+    if (finalType === "lodging" && !booking) {
+      const day = state.days.find((d) => d.id === dayId);
+      const checkin = day?.date;
+      let checkout: string | undefined;
+      if (checkin) {
+        const d = new Date(checkin);
+        if (!isNaN(d.getTime())) { d.setDate(d.getDate() + 1); checkout = d.toISOString().slice(0, 10); }
+      }
+      booking = { checkinDate: checkin, checkoutDate: checkout, nights: 1, status: "none" };
+    }
     const stop: Stop = {
       id: uid(),
       dayId,
       name: input.name ?? "Nytt stopp",
-      type: input.type ?? "attraction",
+      type: finalType,
       notes: input.notes,
       estimatedTime: input.estimatedTime,
       location: input.location,
@@ -484,7 +609,7 @@ export const tripsApi = {
       distanceFromRouteKm: input.distanceFromRouteKm,
       extraDistanceKm: input.extraDistanceKm,
       photos: input.photos,
-      booking: input.booking,
+      booking,
       energy: input.energy,
       order,
     };
