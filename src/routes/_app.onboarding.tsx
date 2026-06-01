@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInteres
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { useTripsStore } from "@/lib/trips-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
+import { UsernamePicker } from "@/components/UsernamePicker";
 import { Check, ArrowRight, Sparkles, Info } from "lucide-react";
 
 export const Route = createFileRoute("/_app/onboarding")({
@@ -20,9 +21,16 @@ function Onboarding() {
   const [step, setStep] = useState(1);
   const [editorOpen, setEditorOpen] = useState(false);
   const [freshAfterDelete, setFreshAfterDelete] = useState(false);
+  const [username, setUsername] = useState("");
+  const [usernameOk, setUsernameOk] = useState(false);
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
   const { trips } = useTripsStore();
+
+  const onUsernameChange = useCallback((v: string, ok: boolean) => {
+    setUsername(v);
+    setUsernameOk(ok);
+  }, []);
 
   // Read the post-deletion notice exactly once, before any other effect can
   // clear localStorage.
@@ -46,6 +54,7 @@ function Onboarding() {
         id: user.id,
         onboarded_at: new Date().toISOString(),
         display_name: prefs.displayName,
+        ...(usernameOk && username ? { username } : {}),
       });
     }
     const next = getNext(fallback);
@@ -84,6 +93,16 @@ function Onboarding() {
             <Bullet>Personlige ruter basert på kjørestil og kjøretøy</Bullet>
             <Bullet>AI-genererte roadbooks med stopp som matcher deg</Bullet>
             <Bullet>Alt lagres på kontoen din — synkronisert mellom enheter</Bullet>
+          </div>
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Velg ditt brukernavn</p>
+            <UsernamePicker
+              suggested={(user?.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name
+                ?? (user?.user_metadata as { full_name?: string; name?: string } | undefined)?.name
+                ?? user?.email?.split("@")[0]}
+              ownUserId={user?.id}
+              onChange={onUsernameChange}
+            />
           </div>
           <NavRow onNext={() => setStep(2)} onSkip={skip} />
         </Card>
