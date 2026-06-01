@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { CookieBanner } from "@/components/CookieBanner";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/i18n/provider";
 import { useServerFn } from "@tanstack/react-start";
