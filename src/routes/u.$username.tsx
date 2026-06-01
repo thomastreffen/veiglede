@@ -128,7 +128,7 @@ function PublicProfilePage() {
             <p className="mt-3 text-sm text-muted-foreground">Ingen offentlige turer enda.</p>
           ) : (
             <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {trips.map((t) => <ProfileTripCard key={t.shareToken} t={t} ownerName={profile.displayName} />)}
+              {trips.map((t: PublicProfileTrip) => <ProfileTripCard key={t.shareToken} t={t} ownerName={profile.displayName} />)}
             </ul>
           )}
         </section>
