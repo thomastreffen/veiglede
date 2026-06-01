@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useAuth, signOut } from "@/lib/auth";
 import { deleteMyAccount } from "@/lib/account";
-import { LogOut, LogIn, Trash2, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { UsernamePicker } from "@/components/UsernamePicker";
+import { toast } from "sonner";
+import { LogOut, LogIn, Trash2, AlertTriangle, ExternalLink } from "lucide-react";
 
 function DangerZone() {
   const { user } = useAuth();
