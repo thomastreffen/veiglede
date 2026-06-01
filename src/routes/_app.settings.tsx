@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useTripsStore } from "@/lib/trips-store";
 import { useQuery } from "@tanstack/react-query";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useAuth, signOut } from "@/lib/auth";
