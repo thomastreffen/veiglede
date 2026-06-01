@@ -12,6 +12,7 @@ import { getRoute, type RouteResult } from "@/lib/routing";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchRoutePartnersFn } from "@/lib/partners.functions";
 
 export const Route = createFileRoute("/_app/trips/new")({
   head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
