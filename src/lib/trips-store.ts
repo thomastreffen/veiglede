@@ -290,9 +290,9 @@ function load(): State {
   if (typeof window === "undefined") return EMPTY_STATE;
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) { const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s; }
+    if (!raw) { localStorage.setItem(KEY, JSON.stringify(EMPTY_STATE)); return EMPTY_STATE; }
     return JSON.parse(raw);
-  } catch { return seed(); }
+  } catch { return EMPTY_STATE; }
 }
 
 let state: State = EMPTY_STATE;

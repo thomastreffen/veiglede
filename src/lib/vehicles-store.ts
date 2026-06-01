@@ -106,36 +106,8 @@ interface State { vehicles: Vehicle[]; defaultId: string }
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
 function seed(): State {
-  const v: Vehicle[] = [
-    {
-      id: "v-demo-mc",
-      name: "Motorsykkel",
-      type: "motorcycle",
-      energy: "petrol",
-      isDemo: true,
-      hint: "For svingete veier, utsikt og fotostopp",
-      ...defaultsFor("motorcycle", "petrol"),
-    },
-    {
-      id: "v-demo-car",
-      name: "Bil",
-      type: "car",
-      energy: "petrol",
-      isDemo: true,
-      hint: "For vanlige bilturer, elbil eller langturer",
-      ...defaultsFor("car", "petrol"),
-    },
-    {
-      id: "v-demo-rv",
-      name: "Bobil / Camper",
-      type: "rv",
-      energy: "diesel",
-      isDemo: true,
-      hint: "For rolige etapper, camping og overnatting",
-      ...defaultsFor("rv", "diesel"),
-    },
-  ];
-  return { vehicles: v, defaultId: v[0].id };
+  // New users start with a clean garage — no demo vehicles.
+  return { vehicles: [], defaultId: "" };
 }
 
 const KEY = "veiglede.vehicles.v2";
@@ -184,7 +156,8 @@ export const vehiclesApi = {
   add(input: Omit<Vehicle, "id">): Vehicle {
     const v: Vehicle = { ...input, id: uid() };
     const cur = getSnapshot();
-    persist({ ...cur, vehicles: [...cur.vehicles, v] });
+    const defaultId = cur.defaultId || v.id;
+    persist({ vehicles: [...cur.vehicles, v], defaultId });
     return v;
   },
   update(id: string, patch: Partial<Vehicle>) {

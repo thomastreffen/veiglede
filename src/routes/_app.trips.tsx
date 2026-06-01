@@ -73,7 +73,7 @@ function TripsDashboard() {
       {trips.length > 0 && (
         <section className="mt-10">
           <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Mine kjøretøy</h2>
+            <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Min garasje</h2>
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Totalt per kjøretøy</span>
           </div>
           <ul className="mt-4 grid gap-3 sm:grid-cols-3">
