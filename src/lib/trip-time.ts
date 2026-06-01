@@ -33,7 +33,9 @@ export const DEFAULT_STOP_DURATION_MIN: Record<StopType, number> = {
   experience: 60,
   detour: 30,
   lodging: 0, // overnight handled separately — does not inflate active day time
+  ferry: 30,
 };
+
 
 const FERRY_DEFAULT_MIN = 30;
 
