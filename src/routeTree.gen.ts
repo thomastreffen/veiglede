@@ -27,6 +27,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppMapsCheckRouteImport } from './routes/_app.maps-check'
+import { Route as AppGarageRouteImport } from './routes/_app.garage'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
@@ -130,6 +131,11 @@ const AppMapsCheckRoute = AppMapsCheckRouteImport.update({
   path: '/maps-check',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGarageRoute = AppGarageRouteImport.update({
+  id: '/garage',
+  path: '/garage',
+  getParentRoute: () => AppRoute,
+} as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/garage': typeof AppGarageRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/garage': typeof AppGarageRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/_app/garage': typeof AppGarageRoute
   '/_app/maps-check': typeof AppMapsCheckRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/roadbook': typeof AppRoadbookRoute
@@ -307,6 +316,7 @@ export interface FileRouteTypes {
     | '/map-test'
     | '/signup'
     | '/unsubscribe'
+    | '/garage'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/map-test'
     | '/signup'
     | '/unsubscribe'
+    | '/garage'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/map-test'
     | '/signup'
     | '/unsubscribe'
+    | '/_app/garage'
     | '/_app/maps-check'
     | '/_app/onboarding'
     | '/_app/roadbook'
@@ -552,6 +564,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMapsCheckRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/garage': {
+      id: '/_app/garage'
+      path: '/garage'
+      fullPath: '/garage'
+      preLoaderRoute: typeof AppGarageRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/lovable/email/suppression': {
       id: '/lovable/email/suppression'
       path: '/lovable/email/suppression'
@@ -675,6 +694,7 @@ const AppTripsRouteWithChildren = AppTripsRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppGarageRoute: typeof AppGarageRoute
   AppMapsCheckRoute: typeof AppMapsCheckRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppRoadbookRoute: typeof AppRoadbookRoute
@@ -683,6 +703,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppGarageRoute: AppGarageRoute,
   AppMapsCheckRoute: AppMapsCheckRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppRoadbookRoute: AppRoadbookRoute,
@@ -719,3 +740,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
