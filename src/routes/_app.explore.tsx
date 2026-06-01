@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Compass, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Sparkles, Share2, Users,
 } from "lucide-react";
+import { TripReactionsRow } from "@/components/TripReactionsRow";
+import { SaveTripButton } from "@/components/SaveTripButton";
 
 const ExploreSearch = z.object({
   tab: z.enum(["turer", "brukere"]).optional(),
