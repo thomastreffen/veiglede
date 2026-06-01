@@ -197,6 +197,9 @@ export type Database = {
           id: string
           is_public: boolean
           onboarded_at: string | null
+          show_garage: boolean
+          show_stats: boolean
+          show_trips: boolean
           theme: string
           updated_at: string
           username: string | null
@@ -210,6 +213,9 @@ export type Database = {
           id: string
           is_public?: boolean
           onboarded_at?: string | null
+          show_garage?: boolean
+          show_stats?: boolean
+          show_trips?: boolean
           theme?: string
           updated_at?: string
           username?: string | null
@@ -223,6 +229,9 @@ export type Database = {
           id?: string
           is_public?: boolean
           onboarded_at?: string | null
+          show_garage?: boolean
+          show_stats?: boolean
+          show_trips?: boolean
           theme?: string
           updated_at?: string
           username?: string | null
