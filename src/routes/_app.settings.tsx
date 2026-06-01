@@ -265,6 +265,7 @@ function Settings() {
 
       {/* 2 — My vehicles */}
       <Section
+        id="garasje"
         title="Min garasje"
         caption={`${vehicles.length} ${vehicles.length === 1 ? "kjøretøy" : "kjøretøy"}`}
         action={
