@@ -212,7 +212,19 @@ function TripPlanner() {
             <span className={`inline-flex items-center gap-1.5 rounded-full backdrop-blur border px-3 py-1 text-xs font-semibold bg-background/60 ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
             <TripMembers tripId={trip.id} onOpenShare={() => setShareOpen(true)} />
           </div>
-          <h1 className="mt-5 font-display text-4xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
+          <div className="mt-5 flex items-start gap-3 flex-wrap">
+            <h1 className="font-display text-4xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
+            {user && (
+              <button
+                onClick={() => setEditOpen(true)}
+                title="Rediger tur"
+                aria-label="Rediger tur"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 backdrop-blur px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Rediger tur
+              </button>
+            )}
+          </div>
           {trip.subtitle && <p className="mt-2 text-sm md:text-base text-foreground/80">{trip.subtitle}</p>}
           <p className="mt-3 inline-flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 text-primary" /> {trip.origin} → {trip.destination}</p>
         </div>
