@@ -215,9 +215,9 @@ function Onboarding() {
             <button onClick={() => finish()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Sparkles className="h-4 w-4" /> Planlegg min første tur
             </button>
-            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext(useTripsStore.getState().trips.length === 0 ? "/garage" : "/trips")); }}
+            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext(trips.length === 0 ? "/garage" : "/trips")); }}
               className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm hover:bg-surface-2">
-              {useTripsStore.getState().trips.length === 0 ? "Til min garasje" : "Til mine turer"}
+              {trips.length === 0 ? "Til min garasje" : "Til mine turer"}
             </button>
           </div>
 
