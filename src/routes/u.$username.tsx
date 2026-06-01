@@ -100,13 +100,11 @@ function PublicProfilePage() {
             <p className="text-sm text-muted-foreground">@{profile.username}</p>
             {profile.bio && <p className="mt-2 text-sm leading-relaxed max-w-prose">{profile.bio}</p>}
             {showStats && stats && (
-              <p className="mt-2 text-xs uppercase tracking-wider">
-                <span className="text-primary">{stats.tripsCount} turer</span>
-                <span className="text-muted-foreground"> · {stats.totalKm.toLocaleString("nb-NO")} km planlagt</span>
-                {stats.drivenKm > 0 && (
-                  <span className="text-primary"> · {stats.drivenKm.toLocaleString("nb-NO")} km kjørt</span>
-                )}
-              </p>
+              <div className="mt-2 space-y-0.5 text-xs uppercase tracking-wider">
+                <p className="text-primary">{stats.tripsCount} turer</p>
+                <p className="text-muted-foreground">{stats.totalKm.toLocaleString("nb-NO")} km planlagt</p>
+                <p className="text-muted-foreground">{stats.drivenKm.toLocaleString("nb-NO")} km kjørt</p>
+              </div>
             )}
             <div className="mt-3">
               <FollowBlock userId={profile.id} username={profile.username} />
