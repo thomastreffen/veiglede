@@ -94,6 +94,16 @@ function Onboarding() {
             <Bullet>AI-genererte roadbooks med stopp som matcher deg</Bullet>
             <Bullet>Alt lagres på kontoen din — synkronisert mellom enheter</Bullet>
           </div>
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Velg ditt brukernavn</p>
+            <UsernamePicker
+              suggested={(user?.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name
+                ?? (user?.user_metadata as { full_name?: string; name?: string } | undefined)?.name
+                ?? user?.email?.split("@")[0]}
+              ownUserId={user?.id}
+              onChange={onUsernameChange}
+            />
+          </div>
           <NavRow onNext={() => setStep(2)} onSkip={skip} />
         </Card>
       )}
