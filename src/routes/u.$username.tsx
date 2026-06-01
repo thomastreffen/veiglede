@@ -87,6 +87,9 @@ function PublicProfilePage() {
                 {stats.tripsCount} turer planlagt · {stats.totalKm.toLocaleString("nb-NO")} km totalt
               </p>
             )}
+            <div className="mt-3">
+              <FollowBlock userId={profile.id} username={profile.username} />
+            </div>
           </div>
         </header>
 
