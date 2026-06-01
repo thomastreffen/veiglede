@@ -159,7 +159,7 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
         avatarUrl: (profile.avatar_url as string | null) ?? undefined,
       },
       toggles: { showGarage, showTrips, showStats },
-      stats: showStats ? { tripsCount, totalKm: Math.round(totalKm) } : undefined,
+      stats: showStats ? { tripsCount, totalKm: Math.round(totalKm), drivenKm: Math.round(drivenKm) } : undefined,
       vehicles,
       trips: publicTrips,
     };
