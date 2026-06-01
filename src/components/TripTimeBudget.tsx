@@ -12,6 +12,7 @@ import {
   addMinutesToHHMM,
 } from "@/lib/trip-time";
 import { Clock, Coffee, BatteryCharging, Ship, Sparkles, Bed, Fuel, Zap } from "lucide-react";
+import { CostCalculator } from "@/components/CostCalculator";
 
 interface BudgetProps {
   trip: Trip;
