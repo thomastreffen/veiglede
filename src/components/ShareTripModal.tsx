@@ -379,3 +379,5 @@ function LiveSharingSection({ tripId }: { tripId: string }) {
       </label>
     </div>
   );
+}
+
