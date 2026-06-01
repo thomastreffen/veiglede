@@ -8,7 +8,7 @@ import { getOnboardingStatus } from "@/lib/account";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 
 const nav = [
-  { to: "/", label: "Hjem", icon: Home, exact: true },
+  { to: "/", label: "Hjem", icon: Home },
   { to: "/trips", label: "Mine turer", icon: Map },
   { to: "/roadbook", label: "Roadbook", icon: BookOpen },
   { to: "/settings", label: "Profil", icon: User },
