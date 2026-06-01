@@ -427,22 +427,21 @@ function Landing() {
           <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12 items-end">
             <div>
               <p className="text-[11px] uppercase tracking-[0.32em] text-primary">
-                Nasjonale turistveier
+                {t.landing.scenicRoutes.title}
               </p>
               <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase leading-[0.95]">
-                18 strekninger.
+                {t.landing.scenicRoutes.headlineLine1}
                 <br />
-                <span className="text-primary">Alle dekket.</span>
+                <span className="text-primary">{t.landing.scenicRoutes.headlineLine2}</span>
               </h2>
               <p className="mt-5 text-[#1a1a1a]/70 leading-relaxed max-w-md">
-                Norge har 18 offisielle nasjonale turistveier — utvalgte strekninger med
-                arkitektur, utsikt og stopp i verdensklasse. Veiglede dekker alle 18.
+                {t.landing.scenicRoutes.body}
               </p>
               <Link
                 to="/trips/new"
                 className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#1a1a1a] px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#1a1a1a]/90 transition-all"
               >
-                Planlegg din turistveirute <ArrowRight className="h-4 w-4" />
+                {t.landing.scenicRoutes.cta} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
@@ -460,12 +459,15 @@ function Landing() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-primary">
-                      Turistvei
+                      {t.landing.scenicRoutes.badge}
                     </p>
                     <h3 className="mt-1 font-display text-lg uppercase tracking-wide">
                       {s.name}
                     </h3>
-                    <p className="text-xs text-white/80">{s.km}</p>
+                    <p className="mt-1 text-xs text-white/85 leading-snug">
+                      {t.landing.scenicRoutes.descriptions[s.name]}
+                    </p>
+                    <p className="mt-1 text-xs text-white/70">{s.km}</p>
                   </div>
                 </div>
               ))}
