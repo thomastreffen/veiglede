@@ -677,3 +677,154 @@ function ThemeOption({ current, value, label, icon }: { current: Theme; value: T
     </button>
   );
 }
+
+/* ---------- Desktop dashboard pieces ---------- */
+
+const NAV_ITEMS: { id: string; label: string }[] = [
+  { id: "sjafor", label: "Sjåfør" },
+  { id: "garasje", label: "Min garasje" },
+  { id: "korepreferanser", label: "Kjørepreferanser" },
+  { id: "langs-ruta", label: "Hva vil du se langs ruta?" },
+  { id: "personvern", label: "Personvern" },
+  { id: "utseende", label: "Utseende" },
+  { id: "konto", label: "Konto og data" },
+];
+
+function SidebarProfile() {
+  const { user } = useAuth();
+  const prefs = useDriverPrefs();
+  const [username, setUsername] = useState<string | null>(null);
+  const fetchStats = useServerFn(getFollowStatsFn);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setUsername((data?.username as string | null) ?? null); });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const { data: stats } = useQuery({
+    queryKey: ["follow-stats", user?.id],
+    queryFn: () => fetchStats({ data: { userId: user!.id } }),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string };
+  const displayName = meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
+  const avatar = meta.avatar_url;
+  const initial = (displayName || "?").charAt(0).toUpperCase();
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5 text-center">
+      <div className="mx-auto h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-4xl overflow-hidden">
+        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
+      </div>
+      <p className="mt-3 font-semibold text-base truncate">{displayName}</p>
+      {username && <p className="text-xs text-muted-foreground">@{username}</p>}
+      {stats && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          <span className="text-foreground font-medium">{stats.followers}</span> følgere
+          {" · følger "}
+          <span className="text-foreground font-medium">{stats.following}</span>
+        </p>
+      )}
+      {username && (
+        <a
+          href={`/u/${username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          Se min offentlige profil →
+        </a>
+      )}
+    </div>
+  );
+}
+
+function SectionNav() {
+  const [active, setActive] = useState<string>(NAV_ITEMS[0].id);
+  const clickedRef = useRef<{ id: string; until: number } | null>(null);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (clickedRef.current && Date.now() < clickedRef.current.until) return;
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible?.target.id) setActive(visible.target.id);
+      },
+      { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+    );
+    NAV_ITEMS.forEach((it) => {
+      const el = document.getElementById(it.id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
+
+  const onClick = (id: string) => {
+    setActive(id);
+    clickedRef.current = { id, until: Date.now() + 800 };
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <nav className="hidden md:block rounded-2xl border border-border bg-surface p-3">
+      <p className="px-2 pb-2 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">På siden</p>
+      <ul className="space-y-0.5">
+        {NAV_ITEMS.map((it) => {
+          const on = active === it.id;
+          return (
+            <li key={it.id}>
+              <a
+                href={`#${it.id}`}
+                onClick={(e) => { e.preventDefault(); onClick(it.id); }}
+                className={`block rounded-lg px-3 py-2 text-sm transition-colors ${on ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"}`}
+              >
+                {it.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+function StatsStrip() {
+  const { user } = useAuth();
+  const { trips } = useTripsStore();
+  const { vehicles } = useVehicles();
+  const fetchStats = useServerFn(getFollowStatsFn);
+  const { data: follow } = useQuery({
+    queryKey: ["follow-stats", user?.id],
+    queryFn: () => fetchStats({ data: { userId: user!.id } }),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const km = trips.reduce((a, t) => a + (t.distanceKm ?? 0), 0);
+  const cells = [
+    { n: String(trips.length), l: "turer" },
+    { n: km.toLocaleString("nb-NO"), l: "km" },
+    { n: String(vehicles.length), l: "kjøretøy" },
+    { n: String(follow?.followers ?? 0), l: "følgere" },
+  ];
+
+  return (
+    <div className="grid grid-cols-4 gap-2 md:gap-3 rounded-2xl border border-border bg-surface p-3 md:p-4">
+      {cells.map((c) => (
+        <div key={c.l} className="text-center">
+          <p className="font-display text-2xl md:text-3xl">{c.n}</p>
+          <p className="text-[10px] md:text-xs uppercase tracking-wider text-muted-foreground">{c.l}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
