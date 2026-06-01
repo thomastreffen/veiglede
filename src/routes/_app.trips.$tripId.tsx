@@ -34,7 +34,7 @@ import { EditTripSheet } from "@/components/EditTripSheet";
 import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
-  Navigation, CornerDownRight, Check, Pencil,
+  Navigation, CornerDownRight, Check, Pencil, MoreHorizontal, Copy, BedDouble, ArrowRightLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { flushTripsNow } from "@/lib/cloud-sync";
