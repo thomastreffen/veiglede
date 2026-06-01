@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_requests: {
+        Row: {
+          completed_at: string | null
+          id: string
+          requested_at: string
+          restore_before: string
+          restore_token: string
+          restored_at: string | null
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          requested_at?: string
+          restore_before?: string
+          restore_token?: string
+          restored_at?: string | null
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          requested_at?: string
+          restore_before?: string
+          restore_token?: string
+          restored_at?: string | null
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_prefs: {
         Row: {
           data: Json
@@ -361,6 +394,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      restore_account_by_token: { Args: { p_token: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
