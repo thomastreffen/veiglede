@@ -23,6 +23,10 @@ type Partner = {
   description: string | null;
   is_active: boolean;
   created_at: string;
+  impressions?: number;
+  clicks?: number;
+  impressions_this_month?: number;
+  clicks_this_month?: number;
 };
 
 const CATEGORY_LABEL: Record<Partner["category"], string> = {
