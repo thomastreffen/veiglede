@@ -296,7 +296,7 @@ export const adminSetTripPublicFn = createServerFn({ method: "POST" })
       t.id === data.tripId ? { ...t, isPublic: data.isPublic } : t,
     );
     const { error: upErr } = await supabaseAdmin
-      .from("trips").update({ data: blob }).eq("user_id", data.ownerId);
+      .from("trips").update({ data: blob as never }).eq("user_id", data.ownerId);
     if (upErr) throw new Error(upErr.message);
     return { ok: true };
   });
@@ -327,7 +327,7 @@ export const adminDeleteTripFn = createServerFn({ method: "POST" })
     blob.days = (blob.days ?? []).filter((d) => d.tripId !== data.tripId);
     blob.stops = (blob.stops ?? []).filter((s) => !dayIds.has(s.dayId as string));
     const { error: upErr } = await supabaseAdmin
-      .from("trips").update({ data: blob }).eq("user_id", data.ownerId);
+      .from("trips").update({ data: blob as never }).eq("user_id", data.ownerId);
     if (upErr) throw new Error(upErr.message);
     return { ok: true };
   });
