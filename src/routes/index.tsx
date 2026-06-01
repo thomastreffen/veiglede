@@ -743,6 +743,7 @@ function Landing() {
         </div>
       </footer>
 
+      <LanguageBanner />
       <CookieBanner />
     </div>
   );
