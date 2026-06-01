@@ -42,8 +42,8 @@ function TripsDashboard() {
         {[
           { n: String(trips.length), l: "planlagte turer" },
           { n: trips.reduce((a, t) => a + t.distanceKm, 0).toLocaleString("nb-NO"), l: "km totalt" },
-          { n: "3", l: "kjøretøy" },
-          { n: "47", l: "fotostopp" },
+          { n: String(vehicles.length), l: "kjøretøy" },
+          { n: String(photoStops), l: "fotostopp" },
         ].map((s) => (
           <div key={s.l}>
             <p className="font-display text-2xl md:text-4xl">{s.n}</p>
