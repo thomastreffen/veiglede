@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -11,18 +11,30 @@ import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useBrowserNotifications } from "@/lib/useBrowserNotifications";
 import { amIAdminFn } from "@/lib/admin.functions";
+import { useT } from "@/i18n/provider";
+import type { Dict } from "@/i18n/locales/nb";
 
 const FORDELER_LAUNCH = new Date("2026-06-01").getTime();
 const isFordelerNew = () => Date.now() - FORDELER_LAUNCH < 30 * 24 * 60 * 60 * 1000;
 
-const nav = [
-  { to: "/", label: "Hjem", icon: Home },
-  { to: "/explore", label: "Utforsk", icon: Compass },
-  { to: "/fordeler", label: "Fordeler", icon: Gift, badge: "NY" as const },
-  { to: "/trips", label: "Mine turer", icon: Map },
-  { to: "/garage", label: "Min garasje", icon: Car },
-  { to: "/settings", label: "Profil", icon: User },
-];
+type NavItemDef = {
+  to: string;
+  label: string;
+  icon: typeof Home;
+  badge?: string;
+};
+
+function buildNav(t: Dict): NavItemDef[] {
+  const n = t.app.nav;
+  return [
+    { to: "/", label: n.home, icon: Home },
+    { to: "/explore", label: n.explore, icon: Compass },
+    { to: "/fordeler", label: n.fordeler, icon: Gift, badge: n.fordelerBadge },
+    { to: "/trips", label: n.myTrips, icon: Map },
+    { to: "/garage", label: n.garage, icon: Car },
+    { to: "/settings", label: n.profile, icon: User },
+  ];
+}
 
 /** Back-compat alias. New code should import VeigledeLogo directly. */
 export function VeigledeMark({ className }: { className?: string }) {
@@ -35,6 +47,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const { notify } = useBrowserNotifications();
   const amIAdmin = useServerFn(amIAdminFn);
+  const t = useT();
+  const nav = useMemo(() => buildNav(t), [t]);
   const { data: adminInfo } = useQuery({
     queryKey: ["am-i-admin", user?.id ?? "anon"],
     queryFn: () => amIAdmin(),
@@ -52,8 +66,6 @@ export function AppShell() {
     (async () => {
       const status = await getOnboardingStatus(user.id);
       if (cancelled) return;
-      // Only redirect when we are CERTAIN the user is new. On unknown/error
-      // (transient RLS / network), leave the returning user where they are.
       if (status.kind === "new") {
         const next = pathname && pathname !== "/" ? pathname : "/trips";
         navigate({ to: "/onboarding", search: { next }, replace: true } as never);
@@ -61,8 +73,6 @@ export function AppShell() {
     })();
     return () => { cancelled = true; };
   }, [user, pathname, navigate]);
-
-
 
   return (
     <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
@@ -86,15 +96,15 @@ export function AppShell() {
               </Link>
             ))}
             <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
-              <Plus className="h-4 w-4" /> Ny tur
+              <Plus className="h-4 w-4" /> {t.app.nav.newTrip}
             </Link>
             {user && isAdmin && (
               <Link
                 to="/admin"
                 className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-2"
-                title="Admin panel"
+                title={t.app.nav.adminTitle}
               >
-                <Shield className="h-4 w-4" /> Admin
+                <Shield className="h-4 w-4" /> {t.app.nav.admin}
               </Link>
             )}
             {user ? (
@@ -107,13 +117,13 @@ export function AppShell() {
             ) : (
               <>
                 <span
-                  title="Du utforsker i demo-modus — data lagres bare på denne enheten"
+                  title={t.app.nav.demoTooltip}
                   className="ml-1 hidden lg:inline-flex items-center rounded-full border border-border bg-surface-2/60 px-2.5 py-1 text-[10px] uppercase tracking-wider text-muted-foreground"
                 >
-                  Demo
+                  {t.app.nav.demo}
                 </span>
                 <Link to="/login" className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-surface-2">
-                  <LogIn className="h-4 w-4" /> Logg inn
+                  <LogIn className="h-4 w-4" /> {t.app.nav.login}
                 </Link>
               </>
             )}
@@ -127,12 +137,20 @@ export function AppShell() {
       </main>
 
       {/* Mobile bottom nav */}
-      <MobileBottomNav pathname={pathname} />
+      <MobileBottomNav pathname={pathname} nav={nav} quickActionsLabel={t.app.nav.quickActions} />
     </div>
   );
 }
 
-function MobileBottomNav({ pathname }: { pathname: string }) {
+function MobileBottomNav({
+  pathname,
+  nav,
+  quickActionsLabel,
+}: {
+  pathname: string;
+  nav: NavItemDef[];
+  quickActionsLabel: string;
+}) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const tripMatch = pathname.match(/^\/trips\/([^/]+)/);
   const insideTrip = !!tripMatch && tripMatch[1] !== "new";
@@ -148,7 +166,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
               <button
                 type="button"
                 onClick={() => setSheetOpen(true)}
-                aria-label="Hurtigvalg"
+                aria-label={quickActionsLabel}
                 className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background"
               >
                 <Plus className="h-6 w-6" strokeWidth={3} />
@@ -173,7 +191,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
   );
 }
 
-function NavItem({ n }: { n: typeof nav[number] }) {
+function NavItem({ n }: { n: NavItemDef }) {
   const Icon = n.icon;
   return (
     <li>
@@ -182,7 +200,7 @@ function NavItem({ n }: { n: typeof nav[number] }) {
         activeOptions={{ exact: true }}
         activeProps={{ className: "text-primary" }}
         inactiveProps={{ className: "text-muted-foreground" }}
-        className="flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-wider"
+        className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-wider")}
       >
         <Icon className="h-5 w-5" />
         <span>{n.label}</span>

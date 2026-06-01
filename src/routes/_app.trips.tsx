@@ -8,10 +8,11 @@ import { useAuth } from "@/lib/auth";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
 import { useVehicles } from "@/lib/vehicles-store";
 import { feedFromFollowsFn, type FeedTrip } from "@/lib/social.functions";
-import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users, Radio, Search, X, Filter, SlidersHorizontal } from "lucide-react";
+import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users, Radio, Search, X } from "lucide-react";
 import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
@@ -22,8 +23,9 @@ function TripsDashboard() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips: allTrips, stops } = useTripsStore();
   const { vehicles } = useVehicles();
+  const t = useT();
   // Drafts only appear in "Mine turer" after the user explicitly saves them.
-  const trips = allTrips.filter((t) => t.status !== "draft");
+  const trips = allTrips.filter((tr) => tr.status !== "draft");
   const photoStops = stops.filter((s) => s.photoOp === true).length;
 
   if (pathname !== "/trips") {
@@ -42,20 +44,20 @@ function TripsDashboard() {
           );
           return (
             <>
-              <StatCell n={String(trips.length)} l="planlagte turer" />
+              <StatCell n={String(trips.length)} l={t.app.trips.plannedTrips} />
               <div className="md:hidden">
                 <p className="font-display text-lg md:text-xl leading-tight">
-                  {planned.toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">planlagt</span>
+                  {planned.toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">{t.app.trips.planned}</span>
                 </p>
                 <p className="font-display text-lg md:text-xl leading-tight mt-0.5">
-                  {Math.round(driven).toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-primary ml-1">kjørt</span>
+                  {Math.round(driven).toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-primary ml-1">{t.app.trips.driven}</span>
                 </p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">km</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">{t.app.trips.km}</p>
               </div>
-              <StatCell className="hidden md:block" n={planned.toLocaleString("nb-NO")} l="km planlagt" />
-              <StatCell className="hidden md:block" n={Math.round(driven).toLocaleString("nb-NO")} l="km kjørt" accent />
-              <StatCell n={String(vehicles.length)} l="kjøretøy" />
-              <StatCell n={String(photoStops)} l="fotostopp" />
+              <StatCell className="hidden md:block" n={planned.toLocaleString("nb-NO")} l={t.app.trips.kmPlanned} />
+              <StatCell className="hidden md:block" n={Math.round(driven).toLocaleString("nb-NO")} l={t.app.trips.kmDriven} accent />
+              <StatCell n={String(vehicles.length)} l={t.app.trips.vehicles} />
+              <StatCell n={String(photoStops)} l={t.app.trips.photoStops} />
             </>
           );
         })()}
@@ -75,8 +77,8 @@ function TripsDashboard() {
       {/* Featured routes */}
       <section className="mt-12">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Foreslåtte ruter</h2>
-          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Norge</span>
+          <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">{t.app.trips.suggestedRoutes}</h2>
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{t.app.trips.norway}</span>
         </div>
         <ul className="mt-4 grid gap-3 sm:grid-cols-3">
           {FEATURED_ROUTES.map((r) => (
@@ -88,7 +90,7 @@ function TripsDashboard() {
                   <p className="mt-3 text-[11px] uppercase tracking-wider text-foreground/80">{r.region}</p>
                   <h3 className="mt-1 font-display text-xl uppercase">{r.title}</h3>
                   <p className="mt-2 text-xs text-foreground/80">{r.km} km · {styleMeta(r.style).label}</p>
-                  <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary">Planlegg <ArrowRight className="h-3 w-3" /></p>
+                  <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary">{t.app.trips.plan} <ArrowRight className="h-3 w-3" /></p>
                 </div>
               </Link>
             </li>
@@ -105,6 +107,7 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
   const tracking = useTripTracking(t.id);
   const tm = statusMeta(tracking.status);
   const [confirming, setConfirming] = useState(false);
+  const tr = useT();
 
   const stop = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -135,11 +138,11 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
           <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
             <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
             <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
-            <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} stopp`} />
+            <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} ${tr.app.trips.stopsLabel}`} />
           </div>
           {typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0 && (
             <p className="mt-2 text-[11px] text-primary">
-              {Math.round(t.actualDistanceKm)} km kjørt · {t.distanceKm} km planlagt
+              {tr.app.trips.drivenVsPlanned(Math.round(t.actualDistanceKm), t.distanceKm)}
             </p>
           )}
           <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
@@ -151,7 +154,7 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
         {!confirming && (
           <button
             type="button"
-            aria-label="Slett tur"
+            aria-label={tr.app.trips.deleteTrip}
             onClick={(e) => { stop(e); setConfirming(true); }}
             className="absolute top-3 right-12 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur border border-border text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:border-destructive transition-opacity"
           >
@@ -164,21 +167,21 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
             onClick={stop}
             className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/90 backdrop-blur-sm p-4 text-center"
           >
-            <p className="font-display text-lg uppercase">Slett denne turen?</p>
+            <p className="font-display text-lg uppercase">{tr.app.trips.deleteConfirm}</p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={(e) => { stop(e); tripsApi.deleteTrip(t.id); }}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-destructive px-4 py-2 text-xs font-bold uppercase tracking-wider text-destructive-foreground hover:brightness-110"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Slett
+                <Trash2 className="h-3.5 w-3.5" /> {tr.app.trips.delete}
               </button>
               <button
                 type="button"
                 onClick={(e) => { stop(e); setConfirming(false); }}
                 className="inline-flex items-center rounded-xl border border-border bg-surface-2 px-4 py-2 text-xs font-bold uppercase tracking-wider hover:border-primary"
               >
-                Avbryt
+                {tr.app.trips.cancel}
               </button>
             </div>
           </div>
