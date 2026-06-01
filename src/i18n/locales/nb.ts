@@ -278,6 +278,36 @@ export const nb = {
       resetFiltersAria: "Nullstill filter",
     },
   },
+  landing: {
+    regions: {
+      label: "Regioner",
+      title: "Norge på veien",
+      subtitle: "Fra Lindesnes til Nordkapp — opplev landet fra rattet.",
+      kmTrips: "km turer",
+      explore: "Utforsk ruter",
+      tags: {
+        Vestlandet: "Fjorder, fjell og nasjonale turistveier",
+        "Nord-Norge": "Midnattssol, Lofoten og Nordkapp",
+        "Fjell-Norge": "Jotunheimen, Rondane og høyfjellet",
+        Østlandet: "Innsjøer, skogsvei og historiske byer",
+        Trøndelag: "Kystlinje, øyer og Trondheim",
+        Sørlandet: "Hvite strender, skjærgård og sommerveier",
+      } as Record<string, string>,
+    },
+    scenicRoutes: {
+      title: "Nasjonale turistveier",
+      headlineLine1: "18 strekninger.",
+      headlineLine2: "Alle dekket.",
+      body: "Norge har 18 offisielle nasjonale turistveier — utvalgte strekninger med arkitektur, utsikt og stopp i verdensklasse. Veiglede dekker alle 18.",
+      cta: "Planlegg din turistveirute",
+      badge: "Turistvei",
+      descriptions: {
+        Atlanterhavsveien: "Norges mest dramatiske kyststrekning",
+        Trollstigen: "11 hårnålssvinger opp fjellsiden",
+        Sognefjellet: "Nord-Europas høyeste fjellovergang",
+      } as Record<string, string>,
+    },
+  },
 };
 
 export type Dict = typeof nb;

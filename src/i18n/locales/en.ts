@@ -278,4 +278,34 @@ export const en: Dict = {
       resetFiltersAria: "Reset filters",
     },
   },
+  landing: {
+    regions: {
+      label: "Regions",
+      title: "Norway on the road",
+      subtitle: "From Lindesnes to the North Cape — experience the country from behind the wheel.",
+      kmTrips: "km trips",
+      explore: "Explore routes",
+      tags: {
+        Vestlandet: "Fjords, mountains and scenic routes",
+        "Nord-Norge": "Midnight sun, Lofoten and North Cape",
+        "Fjell-Norge": "Jotunheimen, Rondane and the high mountains",
+        Østlandet: "Lakes, forest roads and historic cities",
+        Trøndelag: "Coastline, islands and Trondheim",
+        Sørlandet: "White beaches, archipelago and summer roads",
+      },
+    },
+    scenicRoutes: {
+      title: "National scenic routes",
+      headlineLine1: "18 routes.",
+      headlineLine2: "All covered.",
+      body: "Norway has 18 official national scenic routes — curated stretches with world-class architecture, viewpoints and stops. Veiglede covers all 18.",
+      cta: "Plan your scenic route",
+      badge: "Scenic route",
+      descriptions: {
+        Atlanterhavsveien: "Norway's most dramatic coastal stretch",
+        Trollstigen: "11 hairpin bends up the mountainside",
+        Sognefjellet: "Northern Europe's highest mountain pass",
+      },
+    },
+  },
 };

@@ -277,4 +277,34 @@ export const sv: Dict = {
       resetFiltersAria: "Återställ filter",
     },
   },
+  landing: {
+    regions: {
+      label: "Regioner",
+      title: "Norge på vägen",
+      subtitle: "Från Lindesnes till Nordkap — upplev landet bakom ratten.",
+      kmTrips: "km resor",
+      explore: "Utforska rutter",
+      tags: {
+        Vestlandet: "Fjordar, berg och nationella turistvägar",
+        "Nord-Norge": "Midnattssol, Lofoten och Nordkap",
+        "Fjell-Norge": "Jotunheimen, Rondane och fjällen",
+        Østlandet: "Sjöar, skogvägar och historiska städer",
+        Trøndelag: "Kustlinje, öar och Trondheim",
+        Sørlandet: "Vita stränder, skärgård och sommarvägar",
+      },
+    },
+    scenicRoutes: {
+      title: "Nationella turistvägar",
+      headlineLine1: "18 sträckor.",
+      headlineLine2: "Alla täckta.",
+      body: "Norge har 18 officiella nationella turistvägar — utvalda sträckor med arkitektur, utsikter och stopp i världsklass. Veiglede täcker alla 18.",
+      cta: "Planera din turistväg",
+      badge: "Turistväg",
+      descriptions: {
+        Atlanterhavsveien: "Norges mest dramatiska kuststräcka",
+        Trollstigen: "11 hårnålskurvor upp bergsidan",
+        Sognefjellet: "Nordeuropas högsta fjällpass",
+      },
+    },
+  },
 };

@@ -80,12 +80,12 @@ const POPULAR_ROUTES = [
 ];
 
 const REGIONS = [
-  { name: "Vestlandet", tag: "Fjorder, fjell og nasjonale turistveier", km: "300–900 km turer", img: routeHardanger, color: "#1e3a5f" },
-  { name: "Nord-Norge", tag: "Midnattssol, Lofoten og Nordkapp", km: "500–1500 km turer", img: routeLofoten, color: "#0c2340" },
-  { name: "Fjell-Norge", tag: "Jotunheimen, Rondane og høyfjellet", km: "200–600 km turer", img: routeSognefjellet, color: "#2d5a3d" },
-  { name: "Østlandet", tag: "Skog, innsjøer og kulturlandskap", km: "150–500 km turer", img: groupMotorcycles, color: "#4a5568" },
-  { name: "Trøndelag", tag: "Kyst, fjell og historiske veier", km: "300–700 km turer", img: routeTrollstigen, color: "#6b3a2a" },
-  { name: "Sørlandet", tag: "Hvite hus, skjærgård og solfylte kyststier", km: "200–600 km turer", img: routeAtlanterhavsveien, color: "#c9a84c" },
+  { name: "Vestlandet", km: "300–900 km", img: routeHardanger, color: "#1e3a5f" },
+  { name: "Nord-Norge", km: "500–1500 km", img: routeLofoten, color: "#0c2340" },
+  { name: "Fjell-Norge", km: "200–600 km", img: routeSognefjellet, color: "#2d5a3d" },
+  { name: "Østlandet", km: "150–500 km", img: groupMotorcycles, color: "#4a5568" },
+  { name: "Trøndelag", km: "300–700 km", img: routeTrollstigen, color: "#6b3a2a" },
+  { name: "Sørlandet", km: "200–600 km", img: routeAtlanterhavsveien, color: "#c9a84c" },
 ];
 
 const SCENIC_ROUTES = [
@@ -380,10 +380,10 @@ function Landing() {
       {/* ============ NORGE PÅ VEIEN ============ */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
         <div className="text-center">
-          <p className="text-[11px] uppercase tracking-[0.32em] text-primary">Regioner</p>
-          <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">Norge på veien</h2>
+          <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.landing.regions.label}</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">{t.landing.regions.title}</h2>
           <p className="mt-4 text-[#1a1a1a]/70 max-w-xl mx-auto">
-            Fra Lindesnes til Nordkapp — opplev landet fra rattet.
+            {t.landing.regions.subtitle}
           </p>
           <span className="mx-auto mt-5 block h-0.5 w-12 bg-primary/70" />
         </div>
@@ -408,11 +408,11 @@ function Landing() {
                 <h3 className="font-display text-2xl md:text-3xl uppercase tracking-wide">
                   {r.name}
                 </h3>
-                <p className="mt-2 text-sm text-white/90 leading-snug">{r.tag}</p>
+                <p className="mt-2 text-sm text-white/90 leading-snug">{t.landing.regions.tags[r.name]}</p>
                 <div className="mt-3 flex items-center justify-between text-xs uppercase tracking-wider">
-                  <span className="text-white/75">{r.km}</span>
+                  <span className="text-white/75">{r.km} {t.landing.regions.kmTrips}</span>
                   <span className="inline-flex items-center gap-1 text-primary font-semibold">
-                    Utforsk ruter <ArrowRight className="h-3.5 w-3.5" />
+                    {t.landing.regions.explore} <ArrowRight className="h-3.5 w-3.5" />
                   </span>
                 </div>
               </div>
@@ -427,22 +427,21 @@ function Landing() {
           <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12 items-end">
             <div>
               <p className="text-[11px] uppercase tracking-[0.32em] text-primary">
-                Nasjonale turistveier
+                {t.landing.scenicRoutes.title}
               </p>
               <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase leading-[0.95]">
-                18 strekninger.
+                {t.landing.scenicRoutes.headlineLine1}
                 <br />
-                <span className="text-primary">Alle dekket.</span>
+                <span className="text-primary">{t.landing.scenicRoutes.headlineLine2}</span>
               </h2>
               <p className="mt-5 text-[#1a1a1a]/70 leading-relaxed max-w-md">
-                Norge har 18 offisielle nasjonale turistveier — utvalgte strekninger med
-                arkitektur, utsikt og stopp i verdensklasse. Veiglede dekker alle 18.
+                {t.landing.scenicRoutes.body}
               </p>
               <Link
                 to="/trips/new"
                 className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#1a1a1a] px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#1a1a1a]/90 transition-all"
               >
-                Planlegg din turistveirute <ArrowRight className="h-4 w-4" />
+                {t.landing.scenicRoutes.cta} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
@@ -460,12 +459,15 @@ function Landing() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-primary">
-                      Turistvei
+                      {t.landing.scenicRoutes.badge}
                     </p>
                     <h3 className="mt-1 font-display text-lg uppercase tracking-wide">
                       {s.name}
                     </h3>
-                    <p className="text-xs text-white/80">{s.km}</p>
+                    <p className="mt-1 text-xs text-white/85 leading-snug">
+                      {t.landing.scenicRoutes.descriptions[s.name]}
+                    </p>
+                    <p className="mt-1 text-xs text-white/70">{s.km}</p>
                   </div>
                 </div>
               ))}

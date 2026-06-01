@@ -278,4 +278,34 @@ export const de: Dict = {
       resetFiltersAria: "Filter zurücksetzen",
     },
   },
+  landing: {
+    regions: {
+      label: "Regionen",
+      title: "Norwegen auf der Straße",
+      subtitle: "Von Lindesnes bis zum Nordkap — erlebe das Land vom Lenkrad aus.",
+      kmTrips: "km Touren",
+      explore: "Routen entdecken",
+      tags: {
+        Vestlandet: "Fjorde, Berge und Panoramastraßen",
+        "Nord-Norge": "Mitternachtssonne, Lofoten und Nordkap",
+        "Fjell-Norge": "Jotunheimen, Rondane und das Hochgebirge",
+        Østlandet: "Seen, Waldstraßen und historische Städte",
+        Trøndelag: "Küstenlinie, Inseln und Trondheim",
+        Sørlandet: "Weiße Strände, Schären und Sommerstraßen",
+      },
+    },
+    scenicRoutes: {
+      title: "Nationale Panoramastraßen",
+      headlineLine1: "18 Strecken.",
+      headlineLine2: "Alle abgedeckt.",
+      body: "Norwegen hat 18 offizielle nationale Panoramastraßen — ausgewählte Strecken mit Architektur, Aussichten und Stopps von Weltklasse. Veiglede deckt alle 18 ab.",
+      cta: "Plane deine Panoramaroute",
+      badge: "Panoramastraße",
+      descriptions: {
+        Atlanterhavsveien: "Norwegens dramatischste Küstenstrecke",
+        Trollstigen: "11 Haarnadelkurven die Bergseite hinauf",
+        Sognefjellet: "Nordeuropas höchster Gebirgspass",
+      },
+    },
+  },
 };
