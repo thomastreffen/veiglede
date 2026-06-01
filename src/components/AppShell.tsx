@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Map, User, Plus, LogIn, Car, Compass } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { Home, Map, User, Plus, LogIn, Car, Compass, Shield } from "lucide-react";
 import { TripQuickAddSheet } from "@/components/TripQuickAddSheet";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -8,6 +10,7 @@ import { getOnboardingStatus } from "@/lib/account";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useBrowserNotifications } from "@/lib/useBrowserNotifications";
+import { amIAdminFn } from "@/lib/admin.functions";
 
 const nav = [
   { to: "/", label: "Hjem", icon: Home },
