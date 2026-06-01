@@ -47,6 +47,12 @@ export interface Stop {
   day?: number;
   isSuggestion?: boolean;
   isPartner?: boolean;
+  /** Partner registry id (UUID) — set when this stop comes from the partners table. */
+  partnerId?: string;
+  /** Partner website (external link) — shown as "Besøk nettside →" for partner stops. */
+  partnerWebsite?: string;
+  /** Partner logo URL — small mark shown next to the stop name. */
+  partnerLogoUrl?: string;
   isPhotoStop?: boolean;
   placement?: "along" | "detour" | "after" | "new-day" | "day";
   routeStatus?: "on-route" | "detour" | "suggestion";
