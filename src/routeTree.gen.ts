@@ -29,6 +29,7 @@ import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppMapsCheckRouteImport } from './routes/_app.maps-check'
 import { Route as AppGarageRouteImport } from './routes/_app.garage'
+import { Route as AppExploreRouteImport } from './routes/_app.explore'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
@@ -142,6 +143,11 @@ const AppGarageRoute = AppGarageRouteImport.update({
   path: '/garage',
   getParentRoute: () => AppRoute,
 } as any)
+const AppExploreRoute = AppExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
+  getParentRoute: () => AppRoute,
+} as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/explore': typeof AppExploreRoute
   '/garage': typeof AppGarageRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
@@ -253,6 +260,7 @@ export interface FileRoutesByTo {
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/explore': typeof AppExploreRoute
   '/garage': typeof AppGarageRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
@@ -289,6 +297,7 @@ export interface FileRoutesById {
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/_app/explore': typeof AppExploreRoute
   '/_app/garage': typeof AppGarageRoute
   '/_app/maps-check': typeof AppMapsCheckRoute
   '/_app/onboarding': typeof AppOnboardingRoute
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/map-test'
     | '/signup'
     | '/unsubscribe'
+    | '/explore'
     | '/garage'
     | '/maps-check'
     | '/onboarding'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/map-test'
     | '/signup'
     | '/unsubscribe'
+    | '/explore'
     | '/garage'
     | '/maps-check'
     | '/onboarding'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/map-test'
     | '/signup'
     | '/unsubscribe'
+    | '/_app/explore'
     | '/_app/garage'
     | '/_app/maps-check'
     | '/_app/onboarding'
@@ -591,6 +603,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGarageRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/explore': {
+      id: '/_app/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof AppExploreRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/lovable/email/suppression': {
       id: '/lovable/email/suppression'
       path: '/lovable/email/suppression'
@@ -714,6 +733,7 @@ const AppTripsRouteWithChildren = AppTripsRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppExploreRoute: typeof AppExploreRoute
   AppGarageRoute: typeof AppGarageRoute
   AppMapsCheckRoute: typeof AppMapsCheckRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
@@ -723,6 +743,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppExploreRoute: AppExploreRoute,
   AppGarageRoute: AppGarageRoute,
   AppMapsCheckRoute: AppMapsCheckRoute,
   AppOnboardingRoute: AppOnboardingRoute,
