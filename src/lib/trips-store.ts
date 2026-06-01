@@ -1152,6 +1152,9 @@ export function buildAiSummary(input: {
   origin: string; destination: string; vehicle: VehicleType; style: RouteStyle;
   energy?: EnergySource; vehicleName?: string;
   userPrompt?: string; prefs?: AiPrefsInput;
+  /** Optional list of active partners within ~50 km of the route — used to
+   *  honestly disclose recommended partner stops in the narrative summary. */
+  nearbyPartners?: Array<{ name: string; category: string; region: string | null; description: string | null }>;
 }): string {
   const v = vehicleMeta(input.vehicle);
   const s = styleMeta(input.style);
