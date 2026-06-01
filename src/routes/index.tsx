@@ -516,7 +516,7 @@ function Landing() {
             </p>
             <Link
               to="/explore"
-              search={{ region: season.region } as never}
+              
               className="mt-7 inline-flex items-center gap-2 rounded-2xl border-2 border-[#1a1a1a] px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-all"
             >
               {season.cta} <ArrowRight className="h-4 w-4" />
