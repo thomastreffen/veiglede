@@ -99,43 +99,39 @@ function Onboarding() {
             onClick={() => setEditorOpen(true)}
             className="mt-5 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:brightness-110"
           >
-            + Legg til ditt eget kjøretøy
+            + Legg til kjøretøy
           </button>
 
-          <div className="mt-4 grid gap-2">
-            {vehicles.map((v) => {
-              const isDefault = v.id === defaultId;
-              return (
-                <button
-                  key={v.id}
-                  onClick={() => vehiclesApi.setDefault(v.id)}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${isDefault ? "border-primary bg-primary/10" : "border-border bg-surface-1 hover:border-border/80"}`}
-                >
-                  <div className="h-10 w-10 grid place-items-center rounded-lg bg-surface-2 text-lg shrink-0">
-                    {v.type === "motorcycle" ? "🏍️" : v.type === "rv" ? "🚐" : "🚗"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium truncate">{v.name}</p>
-                      {v.isDemo && (
-                        <span className="text-[10px] uppercase tracking-wider rounded-full border border-border px-1.5 py-0.5 text-muted-foreground">Eksempel</span>
-                      )}
-                      {!v.isDemo && (
-                        <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-primary">Lagret</span>
-                      )}
-                      {isDefault && (
-                        <span className="text-[10px] uppercase tracking-wider rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground">Standard</span>
-                      )}
+          {vehicles.length > 0 && (
+            <div className="mt-4 grid gap-2">
+              {vehicles.map((v) => {
+                const isDefault = v.id === defaultId;
+                return (
+                  <button
+                    key={v.id}
+                    onClick={() => vehiclesApi.setDefault(v.id)}
+                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${isDefault ? "border-primary bg-primary/10" : "border-border bg-surface-1 hover:border-border/80"}`}
+                  >
+                    <div className="h-10 w-10 grid place-items-center rounded-lg bg-surface-2 text-lg shrink-0">
+                      {v.type === "motorcycle" ? "🏍️" : v.type === "rv" ? "🚐" : "🚗"}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {v.hint ?? `${v.energy}`}
-                    </p>
-                  </div>
-                  {isDefault && <Check className="h-4 w-4 text-primary shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium truncate">{v.name}</p>
+                        {isDefault && (
+                          <span className="text-[10px] uppercase tracking-wider rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground">Standard</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {v.hint ?? `${v.energy}`}
+                      </p>
+                    </div>
+                    {isDefault && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <VehicleEditor
             open={editorOpen}
