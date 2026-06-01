@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { trackingApi, useTripTracking, statusMeta } from "@/lib/trip-tracking";
-import { tripsApi, useTripsStore } from "@/lib/trips-store";
+import { tripsApi } from "@/lib/trips-store";
 import type { Stop } from "@/lib/trips-store";
 import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio } from "lucide-react";
 import { useAuth } from "@/lib/auth";
