@@ -12,14 +12,14 @@ export const Route = createFileRoute("/admin")({
   component: AdminLayout,
 });
 
-const NAV = [
-  { to: "/admin", label: "Dashboard", icon: BarChart3, exact: true, emoji: "📊" },
-  { to: "/admin/users", label: "Brukere", icon: Users, emoji: "👥" },
-  { to: "/admin/trips", label: "Turer", icon: Map, emoji: "🗺️" },
-  { to: "/admin/partners", label: "Partnere", icon: Handshake, emoji: "🤝" },
-  { to: "/admin/advertisers", label: "Annonsører", icon: Megaphone, emoji: "📢" },
-  { to: "/admin/settings", label: "Innstillinger", icon: SettingsIcon, emoji: "⚙️" },
-] as const;
+const NAV: { to: string; label: string; emoji: string; exact?: boolean }[] = [
+  { to: "/admin", label: "Dashboard", exact: true, emoji: "📊" },
+  { to: "/admin/users", label: "Brukere", emoji: "👥" },
+  { to: "/admin/trips", label: "Turer", emoji: "🗺️" },
+  { to: "/admin/partners", label: "Partnere", emoji: "🤝" },
+  { to: "/admin/advertisers", label: "Annonsører", emoji: "📢" },
+  { to: "/admin/settings", label: "Innstillinger", emoji: "⚙️" },
+];
 
 function AdminLayout() {
   const { user, loading } = useAuth();

@@ -13,8 +13,10 @@ import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
 import { Route as SharedShareTokenRouteImport } from './routes/shared.$shareToken'
@@ -24,6 +26,11 @@ import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminTripsRouteImport } from './routes/admin.trips'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminPartnersRouteImport } from './routes/admin.partners'
+import { Route as AdminAdvertisersRouteImport } from './routes/admin.advertisers'
 import { Route as AppTripsRouteImport } from './routes/_app.trips'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
@@ -65,6 +72,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -73,6 +85,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
@@ -118,6 +135,31 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTripsRoute = AdminTripsRouteImport.update({
+  id: '/trips',
+  path: '/trips',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPartnersRoute = AdminPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdvertisersRoute = AdminAdvertisersRouteImport.update({
+  id: '/advertisers',
+  path: '/advertisers',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppTripsRoute = AppTripsRouteImport.update({
   id: '/trips',
@@ -227,6 +269,7 @@ const AppTripsTripIdStopsStopIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
@@ -238,6 +281,11 @@ export interface FileRoutesByFullPath {
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
+  '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/partners': typeof AdminPartnersRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/trips': typeof AdminTripsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -247,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -274,6 +323,11 @@ export interface FileRoutesByTo {
   '/roadbook': typeof AppRoadbookRoute
   '/settings': typeof AppSettingsRoute
   '/trips': typeof AppTripsRouteWithChildren
+  '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/partners': typeof AdminPartnersRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/trips': typeof AdminTripsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -283,6 +337,7 @@ export interface FileRoutesByTo {
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin': typeof AdminIndexRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -301,6 +356,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/signup': typeof SignupRoute
@@ -312,6 +368,11 @@ export interface FileRoutesById {
   '/_app/roadbook': typeof AppRoadbookRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/trips': typeof AppTripsRouteWithChildren
+  '/admin/advertisers': typeof AdminAdvertisersRoute
+  '/admin/partners': typeof AdminPartnersRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/trips': typeof AdminTripsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -321,6 +382,7 @@ export interface FileRoutesById {
   '/shared/$shareToken': typeof SharedShareTokenRoute
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
   '/api/public/directions': typeof ApiPublicDirectionsRoute
@@ -339,6 +401,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/login'
     | '/map-test'
     | '/signup'
@@ -350,6 +413,11 @@ export interface FileRouteTypes {
     | '/roadbook'
     | '/settings'
     | '/trips'
+    | '/admin/advertisers'
+    | '/admin/partners'
+    | '/admin/settings'
+    | '/admin/trips'
+    | '/admin/users'
     | '/auth/callback'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -359,6 +427,7 @@ export interface FileRouteTypes {
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/u/$username'
+    | '/admin/'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -386,6 +455,11 @@ export interface FileRouteTypes {
     | '/roadbook'
     | '/settings'
     | '/trips'
+    | '/admin/advertisers'
+    | '/admin/partners'
+    | '/admin/settings'
+    | '/admin/trips'
+    | '/admin/users'
     | '/auth/callback'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -395,6 +469,7 @@ export interface FileRouteTypes {
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/u/$username'
+    | '/admin'
     | '/trips/$tripId'
     | '/trips/new'
     | '/api/public/directions'
@@ -412,6 +487,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/admin'
     | '/login'
     | '/map-test'
     | '/signup'
@@ -423,6 +499,11 @@ export interface FileRouteTypes {
     | '/_app/roadbook'
     | '/_app/settings'
     | '/_app/trips'
+    | '/admin/advertisers'
+    | '/admin/partners'
+    | '/admin/settings'
+    | '/admin/trips'
+    | '/admin/users'
     | '/auth/callback'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -432,6 +513,7 @@ export interface FileRouteTypes {
     | '/shared/$shareToken'
     | '/shared/$tripId'
     | '/u/$username'
+    | '/admin/'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
     | '/api/public/directions'
@@ -450,6 +532,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
   SignupRoute: typeof SignupRoute
@@ -504,6 +587,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -517,6 +607,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/u/$username': {
       id: '/u/$username'
@@ -580,6 +677,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/trips': {
+      id: '/admin/trips'
+      path: '/trips'
+      fullPath: '/admin/trips'
+      preLoaderRoute: typeof AdminTripsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/partners': {
+      id: '/admin/partners'
+      path: '/partners'
+      fullPath: '/admin/partners'
+      preLoaderRoute: typeof AdminPartnersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/advertisers': {
+      id: '/admin/advertisers'
+      path: '/advertisers'
+      fullPath: '/admin/advertisers'
+      preLoaderRoute: typeof AdminAdvertisersRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_app/trips': {
       id: '/_app/trips'
@@ -774,9 +906,30 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface AdminRouteChildren {
+  AdminAdvertisersRoute: typeof AdminAdvertisersRoute
+  AdminPartnersRoute: typeof AdminPartnersRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminTripsRoute: typeof AdminTripsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdvertisersRoute: AdminAdvertisersRoute,
+  AdminPartnersRoute: AdminPartnersRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminTripsRoute: AdminTripsRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
   SignupRoute: SignupRoute,
