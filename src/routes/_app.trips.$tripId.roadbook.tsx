@@ -236,6 +236,32 @@ function Roadbook() {
           )}
         </section>
 
+        {/* Completion summary */}
+        {tracking.status === "completed" && (
+          <section className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-5">
+            <p className="text-[11px] uppercase tracking-wider text-emerald-500 font-bold">Tur fullført</p>
+            <p className="mt-2 text-sm text-foreground/90">
+              {typeof trip.actualDistanceKm === "number" && trip.actualDistanceKm > 0 ? (
+                <>
+                  Du kjørte <span className="font-semibold">{Math.round(trip.actualDistanceKm)} km</span> mot planlagt{" "}
+                  <span className="font-semibold">{trip.distanceKm} km</span>
+                  {(() => {
+                    const diff = Math.round(trip.actualDistanceKm! - trip.distanceKm);
+                    if (diff === 0) return " — akkurat som planlagt.";
+                    return diff > 0
+                      ? ` — ${diff} km lengre enn planlagt.`
+                      : ` — ${Math.abs(diff)} km kortere enn planlagt.`;
+                  })()}
+                </>
+              ) : (
+                <>
+                  Planlagt distanse: <span className="font-semibold">{trip.distanceKm} km</span>. Slå på live-deling neste gang for å logge faktisk kjørt distanse.
+                </>
+              )}
+            </p>
+          </section>
+        )}
+
         {/* Practical info */}
         <section className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
           <p className="font-display uppercase text-foreground text-base">Praktisk info</p>
