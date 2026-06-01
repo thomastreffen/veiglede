@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useTripsStore } from "@/lib/trips-store";
 import { useQuery } from "@tanstack/react-query";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useAuth, signOut } from "@/lib/auth";
@@ -213,18 +214,28 @@ function Settings() {
   const openEdit = (v: Vehicle) => { setEditing(v); setEditorOpen(true); };
 
   return (
-    <div className="py-5 md:py-8 max-w-2xl mx-auto space-y-6">
-      <header>
+    <div className="py-5 md:py-8 max-w-6xl mx-auto px-2 md:px-4">
+      <header className="mb-6 md:mb-8">
         <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Din profil</p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Førerprofil</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre — og hvilket kjøretøy du tar med.</p>
+        <p className="mt-2 text-sm text-muted-foreground max-w-2xl">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre — og hvilket kjøretøy du tar med.</p>
       </header>
 
-      <AccountCard />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        {/* Sidebar (desktop) / inline top (mobile) */}
+        <aside className="md:col-span-1">
+          <div className="md:sticky md:top-20 space-y-4">
+            <SidebarProfile />
+            <AccountCard />
+            <SectionNav />
+          </div>
+        </aside>
 
+        <div className="md:col-span-2 space-y-6">
+      <StatsStrip />
 
       {/* 1 — Driver profile */}
-      <Section title="Sjåfør" caption="Grunninnstillinger">
+      <Section id="sjafor" title="Sjåfør" caption="Grunninnstillinger">
         <ProfileHeader />
 
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
@@ -254,6 +265,7 @@ function Settings() {
 
       {/* 2 — My vehicles */}
       <Section
+        id="garasje"
         title="Min garasje"
         caption={`${vehicles.length} ${vehicles.length === 1 ? "kjøretøy" : "kjøretøy"}`}
         action={
@@ -263,7 +275,7 @@ function Settings() {
         }
       >
         <p className="text-xs text-muted-foreground mb-3">Hvert kjøretøy har sin egen rutestil og foretrukne stopp. Velg standard ved å trykke «Sett som standard».</p>
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {vehicles.map((vh) => (
             <VehicleCard
               key={vh.id}
@@ -287,7 +299,7 @@ function Settings() {
 
 
       {/* 3 — Driving preferences */}
-      <Section title="Kjørepreferanser" caption="Hva slags kjøring liker du?">
+      <Section id="korepreferanser" title="Kjørepreferanser" caption="Hva slags kjøring liker du?">
         <div className="flex flex-wrap gap-2">
           {DRIVING_FLAGS.map((f) => {
             const on = !!prefs.drivingFlags[f.key];
@@ -326,7 +338,7 @@ function Settings() {
       </Section>
 
       {/* 4 — Stop interests */}
-      <Section title="Hva vil du se langs ruta?" caption="Personaliserer «Langs ruta» og partnertips">
+      <Section id="langs-ruta" title="Hva vil du se langs ruta?" caption="Personaliserer «Langs ruta» og partnertips">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {STOP_INTERESTS.map((s) => {
             const on = prefs.stopInterests.includes(s.value);
@@ -380,12 +392,12 @@ function Settings() {
       </Section>
 
       {/* 5b — Public profile privacy */}
-      <Section title="Personvern" caption="Din offentlige profil">
+      <Section id="personvern" title="Personvern" caption="Din offentlige profil">
         <PrivacyControls />
       </Section>
 
       {/* 6 — Appearance */}
-      <Section title="Utseende" caption="Tema">
+      <Section id="utseende" title="Utseende" caption="Tema">
         <div className="inline-flex rounded-2xl border border-border bg-background p-1">
           <ThemeOption current={theme} value="dark" label="Mørk" icon={<Moon className="h-4 w-4" />} />
           <ThemeOption current={theme} value="light" label="Lys" icon={<Sun className="h-4 w-4" />} />
@@ -421,7 +433,11 @@ function Settings() {
         )}
       </section>
 
-      <DangerZone />
+      <div id="konto" className="scroll-mt-24">
+        <DangerZone />
+      </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -588,9 +604,9 @@ function PrivacyControls() {
 
 
 
-function Section({ title, caption, action, children }: { title: string; caption?: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Section({ id, title, caption, action, children }: { id?: string; title: string; caption?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+    <section id={id} className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 md:p-6">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-xl uppercase">{title}</h2>
         <div className="flex items-center gap-3">
@@ -661,3 +677,154 @@ function ThemeOption({ current, value, label, icon }: { current: Theme; value: T
     </button>
   );
 }
+
+/* ---------- Desktop dashboard pieces ---------- */
+
+const NAV_ITEMS: { id: string; label: string }[] = [
+  { id: "sjafor", label: "Sjåfør" },
+  { id: "garasje", label: "Min garasje" },
+  { id: "korepreferanser", label: "Kjørepreferanser" },
+  { id: "langs-ruta", label: "Hva vil du se langs ruta?" },
+  { id: "personvern", label: "Personvern" },
+  { id: "utseende", label: "Utseende" },
+  { id: "konto", label: "Konto og data" },
+];
+
+function SidebarProfile() {
+  const { user } = useAuth();
+  const prefs = useDriverPrefs();
+  const [username, setUsername] = useState<string | null>(null);
+  const fetchStats = useServerFn(getFollowStatsFn);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setUsername((data?.username as string | null) ?? null); });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const { data: stats } = useQuery({
+    queryKey: ["follow-stats", user?.id],
+    queryFn: () => fetchStats({ data: { userId: user!.id } }),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string };
+  const displayName = meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
+  const avatar = meta.avatar_url;
+  const initial = (displayName || "?").charAt(0).toUpperCase();
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5 text-center">
+      <div className="mx-auto h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-4xl overflow-hidden">
+        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
+      </div>
+      <p className="mt-3 font-semibold text-base truncate">{displayName}</p>
+      {username && <p className="text-xs text-muted-foreground">@{username}</p>}
+      {stats && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          <span className="text-foreground font-medium">{stats.followers}</span> følgere
+          {" · følger "}
+          <span className="text-foreground font-medium">{stats.following}</span>
+        </p>
+      )}
+      {username && (
+        <a
+          href={`/u/${username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          Se min offentlige profil →
+        </a>
+      )}
+    </div>
+  );
+}
+
+function SectionNav() {
+  const [active, setActive] = useState<string>(NAV_ITEMS[0].id);
+  const clickedRef = useRef<{ id: string; until: number } | null>(null);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (clickedRef.current && Date.now() < clickedRef.current.until) return;
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible?.target.id) setActive(visible.target.id);
+      },
+      { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+    );
+    NAV_ITEMS.forEach((it) => {
+      const el = document.getElementById(it.id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
+
+  const onClick = (id: string) => {
+    setActive(id);
+    clickedRef.current = { id, until: Date.now() + 800 };
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <nav className="hidden md:block rounded-2xl border border-border bg-surface p-3">
+      <p className="px-2 pb-2 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">På siden</p>
+      <ul className="space-y-0.5">
+        {NAV_ITEMS.map((it) => {
+          const on = active === it.id;
+          return (
+            <li key={it.id}>
+              <a
+                href={`#${it.id}`}
+                onClick={(e) => { e.preventDefault(); onClick(it.id); }}
+                className={`block rounded-lg px-3 py-2 text-sm transition-colors ${on ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"}`}
+              >
+                {it.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+function StatsStrip() {
+  const { user } = useAuth();
+  const { trips } = useTripsStore();
+  const { vehicles } = useVehicles();
+  const fetchStats = useServerFn(getFollowStatsFn);
+  const { data: follow } = useQuery({
+    queryKey: ["follow-stats", user?.id],
+    queryFn: () => fetchStats({ data: { userId: user!.id } }),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const km = trips.reduce((a, t) => a + (t.distanceKm ?? 0), 0);
+  const cells = [
+    { n: String(trips.length), l: "turer" },
+    { n: km.toLocaleString("nb-NO"), l: "km" },
+    { n: String(vehicles.length), l: "kjøretøy" },
+    { n: String(follow?.followers ?? 0), l: "følgere" },
+  ];
+
+  return (
+    <div className="grid grid-cols-4 gap-2 md:gap-3 rounded-2xl border border-border bg-surface p-3 md:p-4">
+      {cells.map((c) => (
+        <div key={c.l} className="text-center">
+          <p className="font-display text-2xl md:text-3xl">{c.n}</p>
+          <p className="text-[10px] md:text-xs uppercase tracking-wider text-muted-foreground">{c.l}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
