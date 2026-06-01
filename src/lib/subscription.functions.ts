@@ -260,6 +260,27 @@ export const adminSubscriptionStatsFn = createServerFn({ method: "GET" })
       }
     }
 
+    // 6-month MRR trend (estimated): for each month, count subs created
+    // on/before end of month that were still active at month-end.
+    const trend: { month: string; mrr: number }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+      let monthMrr = 0;
+      for (const r of rows ?? []) {
+        const created = new Date(r.created_at as string);
+        if (created > monthEnd) continue;
+        if (r.status !== "active") continue;
+        const plan = r.plan as Plan;
+        if (plan === "pro") monthMrr += 79;
+        if (plan === "gruppe") monthMrr += 199;
+      }
+      trend.push({
+        month: monthEnd.toLocaleDateString("nb-NO", { month: "short" }),
+        mrr: monthMrr,
+      });
+    }
+
     const userIds = paying.map((p) => p.userId);
     const profiles = userIds.length
       ? (await supabaseAdmin.from("profiles").select("id, username, display_name").in("id", userIds)).data ?? []
@@ -269,6 +290,7 @@ export const adminSubscriptionStatsFn = createServerFn({ method: "GET" })
     return {
       counts,
       mrr,
+      trend,
       subscribers: paying.map((p) => {
         const prof = pm.get(p.userId);
         return {
@@ -279,6 +301,7 @@ export const adminSubscriptionStatsFn = createServerFn({ method: "GET" })
       }),
     };
   });
+
 
 export const adminSetUserPlanFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
