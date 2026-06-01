@@ -430,6 +430,13 @@ function TripPlanner() {
                                   <span>{stop.reason}</span>
                                 </p>
                               )}
+                              {stop.isPartner && (
+                                <PartnerStopBlock
+                                  partnerId={stop.partnerId}
+                                  logoUrl={stop.partnerLogoUrl}
+                                  website={stop.partnerWebsite}
+                                />
+                              )}
                             </div>
                           </Link>
                           <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
