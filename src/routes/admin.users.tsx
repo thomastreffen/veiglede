@@ -369,7 +369,7 @@ function UserDrawer({ userId, onClose }: { userId: string | null; onClose: () =>
   const [saving, setSaving] = useState(false);
 
   // Sync form with loaded sub
-  useMemo(() => {
+  useEffect(() => {
     if (data?.subscription) {
       setPlanValue((data.subscription.plan as "free" | "pro" | "gruppe") ?? "free");
       setValidUntil(
