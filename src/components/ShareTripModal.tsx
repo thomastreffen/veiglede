@@ -343,21 +343,45 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
         </div>
 
 
-        {/* Live sharing teaser */}
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        {/* Live sharing toggle */}
+        <LiveSharingSection tripId={trip.id} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LiveSharingSection({ tripId }: { tripId: string }) {
+  const [liveOn, setLiveOn] = useLiveOptIn(tripId);
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={liveOn}
+          onChange={(e) => setLiveOn(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-primary"
+        />
+        <div className="flex-1">
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-primary font-bold">
-            <Radio className="h-3.5 w-3.5" /> Kommer: del turen live
+            <Radio className={`h-3.5 w-3.5 ${liveOn ? "animate-pulse" : ""}`} /> Del turen live
           </p>
           <p className="mt-1.5 text-xs text-foreground/80 leading-relaxed">
-            Snart kan du dele reisen mens du er på veien — posisjon, siste stopp, neste stopp,
-            bilder du tar underveis og små reiseoppdateringer til de som følger deg.
+            La reisefølget følge posisjonen din i sanntid mens du er på veien.
+            Slås av som standard — du må selv aktivere deling. Du kan skru det av når som helst.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5"><MapPin className="h-3 w-3 text-primary" /> Live posisjon</span>
             <span className="inline-flex items-center gap-1.5"><Camera className="h-3 w-3 text-primary" /> Bilder fra ruta</span>
-            <span className="inline-flex items-center gap-1.5"><BookOpen className="h-3 w-3 text-primary" /> Neste planlagte stopp</span>
-            <span className="inline-flex items-center gap-1.5"><Users className="h-3 w-3 text-primary" /> Følgere & følge</span>
+            <span className="inline-flex items-center gap-1.5"><BookOpen className="h-3 w-3 text-primary" /> Siste stopp</span>
+            <span className="inline-flex items-center gap-1.5"><Users className="h-3 w-3 text-primary" /> Følgere</span>
           </div>
+        </div>
+      </label>
+    </div>
+  );
+}
+
         </div>
       </DialogContent>
     </Dialog>
