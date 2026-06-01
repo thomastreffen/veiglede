@@ -5,6 +5,7 @@ import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { useAuth } from "@/lib/auth";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
+import { useVehicles } from "@/lib/vehicles-store";
 import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips")({
@@ -14,9 +15,11 @@ export const Route = createFileRoute("/_app/trips")({
 
 function TripsDashboard() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const { trips: allTrips } = useTripsStore();
+  const { trips: allTrips, stops } = useTripsStore();
+  const { vehicles } = useVehicles();
   // Drafts only appear in "Mine turer" after the user explicitly saves them.
   const trips = allTrips.filter((t) => t.status !== "draft");
+  const photoStops = stops.filter((s) => s.photoOp === true).length;
 
   if (pathname !== "/trips") {
     return <Outlet />;
@@ -39,8 +42,8 @@ function TripsDashboard() {
         {[
           { n: String(trips.length), l: "planlagte turer" },
           { n: trips.reduce((a, t) => a + t.distanceKm, 0).toLocaleString("nb-NO"), l: "km totalt" },
-          { n: "3", l: "kjøretøy" },
-          { n: "47", l: "fotostopp" },
+          { n: String(vehicles.length), l: "kjøretøy" },
+          { n: String(photoStops), l: "fotostopp" },
         ].map((s) => (
           <div key={s.l}>
             <p className="font-display text-2xl md:text-4xl">{s.n}</p>
