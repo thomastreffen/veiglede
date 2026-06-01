@@ -36,9 +36,9 @@ function EditCampaign() {
         startsAt: data.campaign.starts_at,
         endsAt: data.campaign.ends_at,
         budget: data.campaign.budget_nok,
-        pricing: data.campaign.pricing_model,
+        pricing: data.campaign.pricing_model as "cpm" | "fixed",
         cpm: data.campaign.cpm_rate,
-        status: data.campaign.status,
+        status: data.campaign.status as "draft" | "active" | "paused" | "completed",
       });
     }
   }, [data?.campaign]);

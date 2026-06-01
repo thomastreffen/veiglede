@@ -115,7 +115,7 @@ function RegisterPartner() {
           logoUrl: logoUrl ?? null,
           description: form.description || null,
           address: form.place.label,
-          region: form.place.region ?? null,
+          region: null,
           lat: form.place.lat,
           lng: form.place.lng,
         },
