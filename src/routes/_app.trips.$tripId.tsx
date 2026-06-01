@@ -527,6 +527,256 @@ function TripPlanner() {
   );
 }
 
+type Td = ReturnType<typeof useT>["app"]["tripDetail"];
+
+function DayCard({
+  day, dayIdx, totalDays, allDays, dayStops, trip, tripId, userId, selectedStopId,
+  onLightbox, td, onAddStopType,
+}: {
+  day: import("@/lib/trips-store").TripDay;
+  dayIdx: number;
+  totalDays: number;
+  allDays: import("@/lib/trips-store").TripDay[];
+  dayStops: import("@/lib/trips-store").Stop[];
+  trip: import("@/lib/trips-store").Trip;
+  tripId: string;
+  userId: string | undefined;
+  selectedStopId: string | null;
+  onLightbox: (url: string) => void;
+  td: Td;
+  onAddStopType: (typeValue: import("@/lib/trips-store").StopType, typeLabel: string) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [timeOpen, setTimeOpen] = useState(false);
+  const [moveStopId, setMoveStopId] = useState<string | null>(null);
+  const hasLodging = dayStops.some((s) => s.type === "lodging");
+  const coords = dayCoords(trip, dayStops);
+
+  // Build time options: 05:00 → 12:00 in 15-min steps.
+  const timeOptions = useMemo(() => {
+    const out: string[] = [];
+    for (let h = 5; h <= 12; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        if (h === 12 && m > 0) break;
+        out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+      }
+    }
+    return out;
+  }, []);
+
+  // Compute estimated arrival per stop based on departure + cumulative drive + dwell.
+  // Average 60 km/h for driving legs. Dwell = previous stops' durationMin.
+  const arrivals = useMemo(() => {
+    if (!day.departureTime) return new Map<string, string>();
+    const [hh, mm] = day.departureTime.split(":").map(Number);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return new Map<string, string>();
+    let mins = hh * 60 + mm;
+    const map = new Map<string, string>();
+    dayStops.forEach((s, i) => {
+      if (i > 0) mins += (s.distanceFromPrevKm ?? 0) * 60 / 60; // 60 km/h → 1 min/km
+      const h = Math.floor(mins / 60) % 24;
+      const m = Math.round(mins % 60);
+      map.set(s.id, `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+      mins += s.durationMin ?? 0;
+    });
+    return map;
+  }, [day.departureTime, dayStops]);
+
+  const moveStop = (stop: import("@/lib/trips-store").Stop) =>
+    allDays.filter((d) => d.id !== day.id);
+
+  return (
+    <li className="rounded-2xl border border-border bg-surface overflow-hidden">
+      <div className="flex items-start gap-4 p-4 md:p-5 border-b border-border/60">
+        <div className="h-11 w-11 rounded-xl bg-primary text-primary-foreground grid place-items-center font-display text-xl shrink-0">{day.dayNumber}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <input value={day.title} onChange={(e) => tripsApi.updateDay(day.id, { title: e.target.value })}
+              className="flex-1 min-w-0 font-display text-xl md:text-2xl uppercase bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
+            {hasLodging && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
+                <BedDouble className="h-3 w-3" /> Overnatting
+              </span>
+            )}
+          </div>
+          <input value={day.summary ?? ""} placeholder={td.dayDescPlaceholder}
+            onChange={(e) => tripsApi.updateDay(day.id, { summary: e.target.value })}
+            className="mt-1 w-full text-sm text-muted-foreground bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
+
+          {/* Departure time */}
+          <div className="mt-2 relative">
+            {day.departureTime ? (
+              <button onClick={() => setTimeOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary px-2.5 py-1 text-[11px] uppercase tracking-wider hover:bg-primary/20">
+                <Clock className="h-3 w-3" /> Avreise {day.departureTime}
+              </button>
+            ) : (
+              <button onClick={() => setTimeOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary">
+                <Clock className="h-3 w-3" /> Sett avreisestidspunkt
+              </button>
+            )}
+            {timeOpen && (
+              <div className="absolute left-0 top-full mt-1 z-30 w-56 rounded-xl border border-border bg-surface-2 shadow-xl p-2">
+                <div className="grid grid-cols-4 gap-1 max-h-56 overflow-y-auto">
+                  {timeOptions.map((t) => (
+                    <button key={t}
+                      onClick={() => { tripsApi.updateDay(day.id, { departureTime: t }); setTimeOpen(false); }}
+                      className={`rounded-md px-1.5 py-1 text-[11px] font-mono ${
+                        day.departureTime === t
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-primary/15 hover:text-primary"
+                      }`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-1 flex justify-between gap-2 pt-1 border-t border-border/60">
+                  {day.departureTime && (
+                    <button onClick={() => { tripsApi.updateDay(day.id, { departureTime: undefined }); setTimeOpen(false); }}
+                      className="text-[11px] text-muted-foreground hover:text-destructive px-1">Fjern</button>
+                  )}
+                  <button onClick={() => setTimeOpen(false)} className="ml-auto text-[11px] text-muted-foreground hover:text-foreground px-1">Lukk</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Day actions: reorder + menu */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button onClick={() => tripsApi.reorderDay(day.id, -1)} disabled={dayIdx === 0}
+            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt dag opp">
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <button onClick={() => tripsApi.reorderDay(day.id, 1)} disabled={dayIdx === totalDays - 1}
+            className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt dag ned">
+            <ChevronDown className="h-4 w-4" />
+          </button>
+          <div className="relative">
+            <button onClick={() => setMenuOpen((v) => !v)}
+              className="p-1.5 text-muted-foreground hover:text-primary" aria-label="Dagsmeny">
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-30 w-56 rounded-xl border border-border bg-surface-2 shadow-xl p-1 text-sm">
+                <button onClick={() => { tripsApi.duplicateDay(day.id); setMenuOpen(false); toast.success("Dag duplisert"); }}
+                  className="w-full text-left inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary">
+                  <Copy className="h-3.5 w-3.5" /> Dupliser dag
+                </button>
+                {totalDays > 1 && (
+                  <button onClick={() => {
+                    setMenuOpen(false);
+                    if (confirm("Slett dag? Stopp på denne dagen flyttes til forrige dag.")) tripsApi.mergeDayUp(day.id);
+                  }}
+                    className="w-full text-left inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-destructive/10 hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" /> Slett dag
+                  </button>
+                )}
+                <button onClick={() => setMenuOpen(false)}
+                  className="mt-0.5 w-full text-left rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-background">Lukk</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="px-4 md:px-5 pt-3" />
+
+      <ul className="divide-y divide-border/60">
+        {dayStops.map((stop, idx) => {
+          const meta = stopDisplayMeta(stop);
+          const arrival = arrivals.get(stop.id);
+          const otherDays = moveStop(stop);
+          return (
+            <li key={stop.id} id={`stop-${stop.id}`}
+              className={`transition-colors hover:bg-surface-2/40 ${selectedStopId === stop.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}>
+              <div className="flex items-stretch">
+                <Link to="/trips/$tripId/stops/$stopId" params={{ tripId, stopId: stop.id }} className="flex flex-1 items-start gap-3 p-4 hover:bg-surface-2/60 transition-colors min-w-0">
+                  <span className="h-10 w-10 rounded-xl bg-surface-2 grid place-items-center text-lg shrink-0">{meta.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold truncate">{stop.name}</p>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
+                      {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> {td.photoBadge}</span>}
+                      {stop.promoted && !stop.isPartner && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">{td.partnerBadge}</span>}
+                    </div>
+                    {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
+                    {stop.type === "lodging" && stop.booking && <BookingInfo booking={stop.booking} />}
+                    <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                      {stop.estimatedTime && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{stop.estimatedTime}</span>}
+                      {arrival && !stop.estimatedTime && <span className="inline-flex items-center gap-1 text-primary/80"><Clock className="h-3 w-3" />ca. {arrival}</span>}
+                      {stop.durationMin && <><span>·</span><span>{formatDuration(stop.durationMin)}</span></>}
+                      {stop.distanceFromPrevKm !== undefined && idx > 0 && <><span>·</span><span>+{stop.distanceFromPrevKm} km</span></>}
+                      {stop.location && <><span>·</span><span>{stop.location}</span></>}
+                    </p>
+                    {stop.reason && (
+                      <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
+                        <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span>{stop.reason}</span>
+                      </p>
+                    )}
+                    {stop.isPartner && (
+                      <PartnerStopBlock partnerId={stop.partnerId} logoUrl={stop.partnerLogoUrl} website={stop.partnerWebsite} />
+                    )}
+                  </div>
+                </Link>
+                <div className="flex flex-col items-center justify-center border-l border-border/60 px-1 relative">
+                  <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
+                    className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label={td.moveUp}>
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
+                    className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label={td.moveDown}>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  {otherDays.length > 0 && (
+                    <button onClick={(e) => { e.preventDefault(); setMoveStopId(moveStopId === stop.id ? null : stop.id); }}
+                      className="p-1.5 text-muted-foreground hover:text-primary" aria-label="Flytt til annen dag" title="Flytt til annen dag">
+                      <ArrowRightLeft className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  <button onClick={(e) => { e.preventDefault(); if (confirm(td.removeStopConfirm(stop.name))) tripsApi.deleteStop(stop.id); }}
+                    className="p-1.5 text-muted-foreground hover:text-destructive" aria-label={td.removeStop}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                  {moveStopId === stop.id && (
+                    <div className="absolute right-full top-1/2 -translate-y-1/2 mr-1 z-30 w-48 rounded-xl border border-border bg-surface-2 shadow-xl p-1 text-sm">
+                      <p className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">Flytt til dag</p>
+                      {otherDays.map((d) => (
+                        <button key={d.id} onClick={() => { tripsApi.moveStopToDay(stop.id, d.id); setMoveStopId(null); toast.success(`Flyttet til Dag ${d.dayNumber}`); }}
+                          className="w-full text-left rounded-lg px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary">
+                          Dag {d.dayNumber}{d.title ? ` — ${d.title}` : ""}
+                        </button>
+                      ))}
+                      <button onClick={() => setMoveStopId(null)} className="mt-0.5 w-full text-left rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-background">Avbryt</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <StopPhotos stop={stop} tripId={tripId} userId={userId} onLightbox={onLightbox} />
+            </li>
+          );
+        })}
+        {dayStops.length === 0 && (
+          <li className="px-5 py-6 text-sm text-muted-foreground italic">{td.noStopsToday}</li>
+        )}
+      </ul>
+
+      <div className="p-3 bg-background/40 border-t border-border/60 flex gap-2 overflow-x-auto">
+        {STOP_TYPES.slice(0, 8).map((typ) => (
+          <button key={typ.value}
+            onClick={() => onAddStopType(typ.value, typ.label)}
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-surface border border-border px-3 py-1.5 text-xs hover:border-primary">
+            <span>{typ.emoji}</span> {typ.label}
+          </button>
+        ))}
+      </div>
+    </li>
+  );
+}
+
+
 function StopPhotos({
   stop, tripId, userId, onLightbox,
 }: {
