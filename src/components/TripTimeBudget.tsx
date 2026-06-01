@@ -4,14 +4,14 @@
 // `TripDayTimeRow` is a compact per-day row for roadbook + planner.
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
-import { tripFuelKind } from "@/lib/trips-store";
 import {
   computeTimeBreakdown,
   computeDayBreakdowns,
   formatDuration,
   addMinutesToHHMM,
 } from "@/lib/trip-time";
-import { Clock, Coffee, BatteryCharging, Ship, Sparkles, Bed, Fuel, Zap } from "lucide-react";
+import { Clock, Coffee, BatteryCharging, Ship, Sparkles, Bed } from "lucide-react";
+import { CostCalculator } from "@/components/CostCalculator";
 
 interface BudgetProps {
   trip: Trip;
@@ -87,8 +87,7 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
         ) : null}
       </ul>
 
-      <LodgingCostBreakdown stops={stops} />
-      <EnergyCostBreakdown trip={trip} />
+      <CostCalculator trip={trip} stops={stops} />
 
 
 
@@ -148,85 +147,6 @@ export function TripDayTimeRow({ trip, days, stops, dayId, startTime }: DayRowPr
       {startTime && arr && (
         <span className="inline-flex items-center gap-1.5">Start {startTime} → Antatt ankomst <span className="text-foreground font-semibold normal-case tracking-normal">{arr}</span></span>
       )}
-    </div>
-  );
-}
-
-function LodgingCostBreakdown({ stops }: { stops: Stop[] }) {
-  const items = stops
-    .filter((s) => s.type === "lodging" && s.booking?.pricePerNight && (s.booking?.nights ?? 0) > 0)
-    .map((s) => {
-      const nights = s.booking!.nights ?? 1;
-      const price = s.booking!.pricePerNight!;
-      return { id: s.id, name: s.name, nights, total: price * nights };
-    });
-  if (items.length === 0) return null;
-  const grandTotal = items.reduce((sum, it) => sum + it.total, 0);
-  return (
-    <div className="mt-4 pt-3 border-t border-border/60">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 inline-flex items-center gap-1.5">
-        <Bed className="h-3 w-3" /> Overnatting (kostnad)
-      </p>
-      <ul className="space-y-1.5">
-        {items.map((it) => (
-          <li key={it.id} className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground truncate pr-2">{it.name} · {it.nights} {it.nights === 1 ? "natt" : "netter"}</span>
-            <span className="font-mono tabular-nums text-foreground">{it.total.toFixed(0)} kr</span>
-          </li>
-        ))}
-        <li className="flex items-center justify-between text-xs font-semibold pt-1.5 mt-1 border-t border-border/40">
-          <span>Total overnatting</span>
-          <span className="font-mono tabular-nums text-primary">{grandTotal.toFixed(0)} kr</span>
-        </li>
-      </ul>
-    </div>
-  );
-}
-
-/** Defaults per fuel kind. Used when the user hasn't set price/consumption on the trip. */
-const ENERGY_DEFAULTS = {
-  petrol:   { consumption: 7.5, price: 21, unit: "l",   label: "Bensin",  icon: "fuel" as const },
-  diesel:   { consumption: 6.5, price: 19, unit: "l",   label: "Diesel",  icon: "fuel" as const },
-  electric: { consumption: 18,  price: 5,  unit: "kWh", label: "Lading",  icon: "zap"  as const },
-  hybrid:   { consumption: 5.5, price: 21, unit: "l",   label: "Hybrid",  icon: "fuel" as const },
-  other:    null,
-};
-
-function EnergyCostBreakdown({ trip }: { trip: Trip }) {
-  const kind = tripFuelKind(trip);
-  const def = ENERGY_DEFAULTS[kind];
-  if (!def) return null;
-  if (!trip.distanceKm || trip.distanceKm <= 0) return null;
-
-  const consumption = trip.consumptionPer100Km ?? def.consumption;
-  const price = trip.fuelPricePerUnit ?? def.price;
-  const usingDefaults = trip.consumptionPer100Km == null || trip.fuelPricePerUnit == null;
-  const totalUnits = (trip.distanceKm * consumption) / 100;
-  const totalCost = totalUnits * price;
-  const Icon = def.icon === "zap" ? Zap : Fuel;
-
-  return (
-    <div className="mt-4 pt-3 border-t border-border/60">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 inline-flex items-center gap-1.5">
-        <Icon className="h-3 w-3" /> {def.label} (kostnad)
-      </p>
-      <ul className="space-y-1.5">
-        <li className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            ca. {totalUnits.toFixed(totalUnits >= 10 ? 0 : 1)} {def.unit} · {consumption} {def.unit}/100 km
-          </span>
-          <span className="font-mono tabular-nums text-foreground">{(consumption * price / 100).toFixed(2)} kr/km</span>
-        </li>
-        <li className="flex items-center justify-between text-xs font-semibold pt-1.5 mt-1 border-t border-border/40">
-          <span>Estimert total</span>
-          <span className="font-mono tabular-nums text-primary">{totalCost.toFixed(0)} kr</span>
-        </li>
-        {usingDefaults && (
-          <li className="text-[10px] text-muted-foreground pt-1">
-            Estimat basert på {price} kr/{def.unit}. Sett egne verdier på kjøretøy/turen for nøyaktig pris.
-          </li>
-        )}
-      </ul>
     </div>
   );
 }
