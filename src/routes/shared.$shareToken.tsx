@@ -9,6 +9,7 @@ import { getPublicTripByToken } from "@/lib/public-trips.functions";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { TripComments } from "@/components/TripComments";
 import { LiveSharedBlock } from "@/components/LiveSharedBlock";
+import { SaveTripButton } from "@/components/SaveTripButton";
 import {
   MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass,
 } from "lucide-react";
