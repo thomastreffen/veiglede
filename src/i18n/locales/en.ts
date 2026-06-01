@@ -52,12 +52,68 @@ export const en: Dict = {
   },
   how: {
     eyebrow: "How it works",
-    title: "Plan your trip in a few easy steps",
+    title: "From idea to trip in four steps",
     steps: [
-      { title: "Pick your vehicle and style", body: "Tell us what you drive and how you like to drive it." },
-      { title: "Get routes and stop suggestions", body: "Our AI builds a route with scenic roads and great stops." },
-      { title: "Open your roadbook and share", body: "Follow the roadbook, navigate with confidence and share with your group." },
+      { title: "Add your vehicle", body: "Tell us what you drive and how you like to drive. Bike, car or camper — Veiglede tailors everything to you." },
+      { title: "Plan with AI", body: "Enter start and end, pick a style and date. AI generates a complete roadbook with stops, map and travel time." },
+      { title: "Share with your group", body: "Invite friends, share live position and plan together. Everyone follows the same roadbook." },
+      { title: "Experience and document", body: "Follow the roadbook on the road, add photos at each stop and revisit memories afterwards." },
     ],
+  },
+  featureGrid: {
+    eyebrow: "Features",
+    title: "Everything you need for the trip",
+    rows: [
+      { category: "Planning", items: [
+        { title: "AI route planner", body: "Describe your trip and get a complete roadbook with stops, travel time and day stages in seconds." },
+        { title: "Smart stops along the way", body: "Viewpoints, food, fuel, lodging and local gems — matched to your vehicle and style." },
+        { title: "Day-by-day roadbook", body: "Structured plan with estimated time, map and description for each stop — ready to follow." },
+      ]},
+      { category: "Vehicles and garage", items: [
+        { title: "My garage", body: "Add cars, bikes or campers with their own preferences. Veiglede adapts routes to what you drive." },
+        { title: "Cost calculator", body: "Estimate fuel, tolls, ferries and lodging. See total cost and split across travel companions." },
+        { title: "Weather on trip dates", body: "See the forecast for each day and each stop — straight from the Norwegian Meteorological Institute." },
+      ]},
+      { category: "Share and experience together", items: [
+        { title: "Plan with companions", body: "Invite friends and family to follow the same plan. Everyone sees the roadbook in real time." },
+        { title: "Live sharing", body: "Share your position while driving — family can follow along without downloading an app." },
+        { title: "Comments and reactions", body: "Comment on stops, add photos along the way and react to other people's trips." },
+      ]},
+      { category: "Social and discovery", items: [
+        { title: "Explore other trips", body: "See routes planned by other Veiglede users. Filter by region, vehicle and style." },
+        { title: "Public profile and garage", body: "Show off your vehicles and share your trips with other enthusiasts." },
+        { title: "Save others' routes", body: "Find a route you like? Save it to your own planner with one click." },
+      ]},
+      { category: "Practical", items: [
+        { title: "PDF and GPX export", body: "Export the roadbook to PDF for print, or GPX for Garmin and other GPS devices." },
+        { title: "Open in Google Maps/Waze", body: "Send the route to your favourite navigation app with one tap." },
+        { title: "AI packing lists", body: "Get AI-generated packing lists tailored to vehicle, route and season — don't leave anything behind." },
+      ]},
+      { category: "Benefits and premium", items: [
+        { title: "Veiglede Benefits", body: "Exclusive discounts on motorcycle gear, workshops, insurance and more — only for Veiglede users." },
+        { title: "Pro and Group plans", body: "Unlimited garage, advanced AI and group planning for motorcycle clubs and friend groups." },
+        { title: "Norwegian scenic routes", body: "Veiglede covers all 18 official scenic routes with suggested stops and itineraries." },
+      ]},
+    ],
+  },
+  audiences: {
+    eyebrow: "For everyone who drives",
+    title: "Built for the road — whatever you drive",
+    cards: [
+      { title: "Motorcyclists", body: "Twisty mountain passes, scenic routes and photo stops. Veiglede is built for riding." },
+      { title: "Car families", body: "Plan the family trip with stops everyone enjoys. Share the roadbook with everyone in the car." },
+      { title: "Camper travellers", body: "Easy stages, campsites and lodging planned along the route." },
+    ],
+  },
+  testimonials: {
+    eyebrow: "What people say",
+    title: "Early feedback",
+    items: [
+      { quote: "Planned my motorcycle trip to Lofoten in 10 minutes. The roadbook was better than what I'd made myself in 2 hours.", author: "Motorcyclist, Oslo" },
+      { quote: "Finally an app that understands camper driving is different from regular car driving.", author: "Camper traveller, Bergen" },
+      { quote: "Shared the trip with the whole family via live link. The kids followed along on the map the whole way!", author: "Family dad, Trondheim" },
+    ],
+    disclaimer: "Examples from beta testers. Send us your feedback at kontakt@veiglede.no.",
   },
   together: {
     title: "Plan together",

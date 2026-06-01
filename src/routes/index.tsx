@@ -93,9 +93,19 @@ const SCENIC_ROUTES = [
   { name: "Sognefjellet", km: "108 km", img: routeSognefjellet },
 ];
 
-const FEATURE_ICONS = [Mountain, MapPin, Sparkles, BookOpen, Users];
-const WHAT_ICONS = [User, Users, Camera];
-const WHAT_IMAGES = [heroFjord, groupMotorcycles, routeHardanger];
+const STEP_ICONS = [Bike, Sparkles, Share2, Camera];
+const STEP_IMAGES = [groupMotorcycles, routeSognefjellet, routeHardanger, routeLofoten];
+const AUDIENCE_EMOJIS = ["🏍️", "🚗", "🚐"];
+const AUDIENCE_IMAGES = [groupMotorcycles, heroFjord, routeHardanger];
+const TESTIMONIAL_EMOJIS = ["🏍️", "🚐", "🚗"];
+const ROW_EMOJIS: string[][] = [
+  ["🗺️", "📍", "📅"],
+  ["🏍️", "⛽", "🌤️"],
+  ["👥", "📡", "💬"],
+  ["🔍", "👤", "💾"],
+  ["📄", "🗺️", "🎒"],
+  ["🎁", "⭐", "🇳🇴"],
+];
 
 function getSeason(month: number) {
   if (month >= 5 && month <= 7) {
@@ -334,23 +344,35 @@ function Landing() {
       {/* ============ SOCIAL PROOF STRIP (dark band) ============ */}
       <SocialProofStrip />
 
-      {/* ============ FEATURE STRIP ============ */}
+      {/* ============ FEATURE GRID — ALT DU TRENGER ============ */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 -mt-12 md:-mt-16 relative z-10">
-        <div className="rounded-2xl border border-black/5 bg-white shadow-xl shadow-black/10 px-4 md:px-6 py-7 md:py-8 grid gap-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-          {t.features.map((f, i) => {
-            const Icon = FEATURE_ICONS[i];
-            return (
-              <div key={f.title} className="text-center">
-                <Icon className="mx-auto h-7 w-7 text-primary" />
-                <h3 className="mt-3 font-display text-sm uppercase tracking-wide text-[#1a1a1a]">
-                  {f.title}
-                </h3>
-                <p className="mt-1.5 text-xs text-[#1a1a1a]/60 leading-relaxed whitespace-pre-line">
-                  {f.body}
+        <div className="rounded-3xl border border-black/5 bg-white shadow-xl shadow-black/10 p-6 md:p-10">
+          <div className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.featureGrid.eyebrow}</p>
+            <h2 className="mt-3 font-display text-2xl md:text-4xl uppercase">{t.featureGrid.title}</h2>
+            <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
+          </div>
+          <div className="mt-10 space-y-10">
+            {t.featureGrid.rows.map((row, ri) => (
+              <div key={row.category}>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-[#1a1a1a]/50 mb-4">
+                  {String(ri + 1).padStart(2, "0")} · {row.category}
                 </p>
+                <div className="grid gap-5 md:grid-cols-3">
+                  {row.items.map((it, ii) => (
+                    <div
+                      key={it.title}
+                      className="rounded-2xl border border-black/5 bg-[#FAFAF8] p-5 hover:border-primary/30 hover:-translate-y-0.5 transition-all"
+                    >
+                      <div className="text-3xl leading-none">{ROW_EMOJIS[ri]?.[ii]}</div>
+                      <h3 className="mt-3 font-display text-base uppercase tracking-wide">{it.title}</h3>
+                      <p className="mt-2 text-sm text-[#1a1a1a]/65 leading-relaxed">{it.body}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </section>
 
@@ -451,46 +473,64 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ HVA ER VEIGLEDE ============ */}
+      {/* ============ FOR ALLE SOM KJØRER (audiences) ============ */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
         <div className="text-center">
-          <p className="text-[11px] uppercase tracking-[0.32em] text-[#1a1a1a]/50">
-            {t.what.eyebrow}
-          </p>
-          <span className="mx-auto mt-3 block h-0.5 w-12 bg-primary/70" />
+          <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.audiences.eyebrow}</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">{t.audiences.title}</h2>
+          <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {t.what.cards.map((c, i) => {
-            const Icon = WHAT_ICONS[i];
-            const img = WHAT_IMAGES[i];
-            return (
-              <article
-                key={c.title}
-                className="group rounded-3xl border border-black/5 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all"
+          {t.audiences.cards.map((c, i) => (
+            <article
+              key={c.title}
+              className="group relative isolate overflow-hidden rounded-3xl aspect-[4/5] flex flex-col justify-end p-6 text-white shadow-lg hover:-translate-y-1 transition-all"
+            >
+              <img
+                src={AUDIENCE_IMAGES[i]}
+                alt=""
+                aria-hidden
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+              <div className="relative">
+                <div className="text-4xl leading-none">{AUDIENCE_EMOJIS[i]}</div>
+                <h3 className="mt-3 font-display text-2xl uppercase tracking-wide">{c.title}</h3>
+                <p className="mt-2 text-sm text-white/90 leading-relaxed">{c.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ============ TESTIMONIALS ============ */}
+      <section className="bg-white border-y border-black/5">
+        <div className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
+          <div className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.testimonials.eyebrow}</p>
+            <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">{t.testimonials.title}</h2>
+            <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {t.testimonials.items.map((q, i) => (
+              <figure
+                key={q.author}
+                className="rounded-3xl border border-black/5 bg-[#FAFAF8] p-7 flex flex-col"
               >
-                <div className="p-6 md:p-7">
-                  <Icon className="h-7 w-7 text-primary" />
-                  <h3 className="mt-4 font-display text-xl uppercase tracking-wide">
-                    {c.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-[#1a1a1a]/65 leading-relaxed">{c.body}</p>
-                </div>
-                <div className="mt-auto px-5 pb-5">
-                  <div className="overflow-hidden rounded-2xl aspect-[16/9]">
-                    <img
-                      src={img}
-                      alt=""
-                      aria-hidden
-                      width={1024}
-                      height={576}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+                <div className="text-3xl leading-none">{TESTIMONIAL_EMOJIS[i]}</div>
+                <blockquote className="mt-4 text-base md:text-lg leading-relaxed text-[#1a1a1a]/85">
+                  &ldquo;{q.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-5 pt-4 border-t border-black/5 text-xs uppercase tracking-wider text-[#1a1a1a]/60">
+                  {q.author}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+          <p className="mt-8 text-center text-xs text-[#1a1a1a]/50 italic">
+            {t.testimonials.disclaimer}
+          </p>
         </div>
       </section>
 
@@ -526,61 +566,41 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ SLIK FUNGERER DET ============ */}
+      {/* ============ SLIK FUNGERER DET — 4 steg ============ */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
         <div className="text-center">
           <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.how.eyebrow}</p>
           <h2 className="mt-3 font-display text-2xl md:text-4xl uppercase">{t.how.title}</h2>
           <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
         </div>
-        <ol className="mt-12 grid gap-5 md:grid-cols-3">
-          {t.how.steps.map((s, i) => (
-            <li
-              key={s.title}
-              className="rounded-3xl border border-black/5 bg-white shadow-sm p-7 hover:shadow-lg hover:-translate-y-1 transition-all"
-            >
-              <span className="font-display text-3xl text-primary">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <h3 className="mt-3 font-display text-lg uppercase tracking-wide">{s.title}</h3>
-              <p className="mt-2 text-sm text-[#1a1a1a]/65 leading-relaxed">{s.body}</p>
-              {i === 0 && (
-                <div className="mt-6 flex items-center gap-5 text-primary">
-                  <Bike className="h-10 w-10" />
-                  <Car className="h-10 w-10" />
-                  <Caravan className="h-10 w-10" />
+        <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {t.how.steps.map((s, i) => {
+            const Icon = STEP_ICONS[i] ?? Sparkles;
+            return (
+              <li
+                key={s.title}
+                className="group rounded-3xl border border-black/5 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all"
+              >
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  <img
+                    src={STEP_IMAGES[i]}
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  <span className="absolute top-3 left-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#1a1a1a]">
+                    <Icon className="h-3.5 w-3.5 text-primary" /> Steg {i + 1}
+                  </span>
                 </div>
-              )}
-              {i === 1 && (
-                <div className="mt-6 h-12 relative">
-                  <svg viewBox="0 0 320 48" className="absolute inset-0 h-full w-full">
-                    <path
-                      d="M10 36 C 70 6, 130 46, 190 22 S 290 12, 310 22"
-                      fill="none"
-                      stroke="var(--primary)"
-                      strokeWidth="2.5"
-                      strokeDasharray="5 5"
-                    />
-                    {[[16, 38], [150, 30], [310, 22]].map(([x, y]) => (
-                      <g key={`${x}-${y}`} transform={`translate(${x} ${y})`}>
-                        <circle r="6" fill="var(--primary)" opacity="0.2" />
-                        <circle r="3" fill="var(--primary)" />
-                      </g>
-                    ))}
-                  </svg>
+                <div className="p-6 flex-1 flex flex-col">
+                  <h3 className="font-display text-lg uppercase tracking-wide">{s.title}</h3>
+                  <p className="mt-2 text-sm text-[#1a1a1a]/65 leading-relaxed">{s.body}</p>
                 </div>
-              )}
-              {i === 2 && (
-                <div className="mt-6 flex items-center gap-4 text-primary">
-                  <BookOpen className="h-10 w-10" />
-                  <span className="h-px flex-1 border-t border-dashed border-primary/40" />
-                  <Share2 className="h-8 w-8" />
-                  <span className="h-px w-6 border-t border-dashed border-primary/40" />
-                  <Users className="h-8 w-8" />
-                </div>
-              )}
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ol>
       </section>
 

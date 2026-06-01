@@ -52,12 +52,68 @@ export const de: Dict = {
   },
   how: {
     eyebrow: "So funktioniert es",
-    title: "Plane deine Reise in wenigen Schritten",
+    title: "Von der Idee zur Tour in vier Schritten",
     steps: [
-      { title: "Fahrzeug und Stil wählen", body: "Sag uns, was du fährst und wie du gern unterwegs bist." },
-      { title: "Route und Stopps erhalten", body: "Unsere KI baut eine Route mit Panoramastraßen und guten Stopps." },
-      { title: "Roadbook öffnen und teilen", body: "Folge dem Roadbook, navigiere sicher und teile mit der Gruppe." },
+      { title: "Füge dein Fahrzeug hinzu", body: "Sag uns, was du fährst und wie du gern fährst. Motorrad, Auto oder Wohnmobil — Veiglede passt alles an dich an." },
+      { title: "Plane mit KI", body: "Gib Start und Ziel ein, wähle Stil und Datum. Die KI erzeugt ein komplettes Roadbook mit Stopps, Karte und Fahrzeit." },
+      { title: "Teile mit der Gruppe", body: "Lade Freunde ein, teile die Live-Position und plant gemeinsam. Alle folgen demselben Roadbook." },
+      { title: "Erleben und dokumentieren", body: "Folge dem Roadbook unterwegs, füge Fotos an Stopps hinzu und sieh dir die Erinnerungen später an." },
     ],
+  },
+  featureGrid: {
+    eyebrow: "Funktionen",
+    title: "Alles, was du für die Tour brauchst",
+    rows: [
+      { category: "Planung", items: [
+        { title: "KI-Routenplaner", body: "Beschreibe deine Tour und erhalte in Sekunden ein komplettes Roadbook mit Stopps, Fahrzeit und Tagesetappen." },
+        { title: "Smarte Stopps entlang der Route", body: "Aussichten, Essen, Tankstellen, Übernachtung und lokale Schätze — passend zu Fahrzeug und Stil." },
+        { title: "Tag-für-Tag-Roadbook", body: "Strukturierter Plan mit geschätzter Zeit, Karte und Beschreibung für jeden Stopp — startklar." },
+      ]},
+      { category: "Fahrzeuge und Garage", items: [
+        { title: "Meine Garage", body: "Füge Autos, Motorräder oder Wohnmobile mit eigenen Vorlieben hinzu. Veiglede passt Routen an dein Fahrzeug an." },
+        { title: "Kostenrechner", body: "Berechne Sprit, Maut, Fähren und Übernachtung. Sieh die Gesamtkosten und teile sie auf die Mitreisenden auf." },
+        { title: "Wetter zu deinen Reisedaten", body: "Sieh die Vorhersage für jeden Tag und jeden Stopp — direkt vom norwegischen Wetterdienst." },
+      ]},
+      { category: "Teilen und gemeinsam erleben", items: [
+        { title: "Mit Reisebegleitung planen", body: "Lade Freunde und Familie ein, demselben Plan zu folgen. Alle sehen das Roadbook in Echtzeit." },
+        { title: "Live-Sharing", body: "Teile deine Position unterwegs — die Familie kann mitverfolgen, ohne eine App zu installieren." },
+        { title: "Kommentare und Reaktionen", body: "Kommentiere Stopps, füge unterwegs Fotos hinzu und reagiere auf Touren anderer." },
+      ]},
+      { category: "Sozial und Entdeckung", items: [
+        { title: "Andere Touren entdecken", body: "Sieh dir Routen anderer Veiglede-Nutzer an. Filtere nach Region, Fahrzeug und Stil." },
+        { title: "Öffentliches Profil und Garage", body: "Zeige deine Fahrzeuge und teile deine Touren mit anderen Enthusiasten." },
+        { title: "Routen anderer speichern", body: "Eine Route, die dir gefällt? Speichere sie mit einem Klick in deinem Planer." },
+      ]},
+      { category: "Praktisch", items: [
+        { title: "PDF- und GPX-Export", body: "Exportiere das Roadbook als PDF zum Drucken oder als GPX für Garmin und andere GPS-Geräte." },
+        { title: "In Google Maps/Waze öffnen", body: "Sende die Route mit einem Tipp an deine bevorzugte Navi-App." },
+        { title: "Packlisten mit KI", body: "KI-generierte Packlisten — passend zu Fahrzeug, Route und Jahreszeit. Vergiss nichts." },
+      ]},
+      { category: "Vorteile und Premium", items: [
+        { title: "Veiglede Vorteile", body: "Exklusive Rabatte auf Motorradausrüstung, Werkstätten, Versicherungen und mehr — nur für Veiglede-Nutzer." },
+        { title: "Pro- und Gruppen-Tarife", body: "Unbegrenzte Garage, fortschrittliche KI und Gruppenplanung für MC-Clubs und Freundeskreise." },
+        { title: "Norwegens Panoramastraßen", body: "Veiglede deckt alle 18 offiziellen Panoramastraßen mit Stopps und Vorschlägen ab." },
+      ]},
+    ],
+  },
+  audiences: {
+    eyebrow: "Für alle, die fahren",
+    title: "Gebaut für die Straße — egal was du fährst",
+    cards: [
+      { title: "Motorradfahrer", body: "Kurvige Pässe, Panoramastraßen und Fotostopps. Veiglede ist fürs Motorradfahren gemacht." },
+      { title: "Autofamilien", body: "Plane den Familientrip mit Stopps für alle. Teile das Roadbook mit allen im Auto." },
+      { title: "Wohnmobilisten", body: "Entspannte Etappen, Campingplätze und Übernachtungen entlang der Route." },
+    ],
+  },
+  testimonials: {
+    eyebrow: "Was die Leute sagen",
+    title: "Frühes Feedback",
+    items: [
+      { quote: "Habe die Motorradtour nach Lofoten in 10 Minuten geplant. Das Roadbook war besser als das, was ich selbst in 2 Stunden gemacht hätte.", author: "Motorradfahrer, Oslo" },
+      { quote: "Endlich eine App, die versteht, dass Wohnmobilfahren anders ist als normales Autofahren.", author: "Wohnmobilist, Bergen" },
+      { quote: "Habe die Tour per Live-Link mit der ganzen Familie geteilt. Die Kinder haben den ganzen Weg auf der Karte mitverfolgt!", author: "Familienvater, Trondheim" },
+    ],
+    disclaimer: "Beispiele von Beta-Testern. Schick uns dein Feedback an kontakt@veiglede.no.",
   },
   together: {
     title: "Gemeinsam planen",
