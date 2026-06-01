@@ -115,7 +115,7 @@ function Roadbook() {
         </div>
       </header>
 
-      <section className="mt-8 mx-auto max-w-2xl">
+      <section className="mt-8 mx-auto max-w-2xl print:hidden">
         <TripMap
           trip={trip}
           days={tripDays}
