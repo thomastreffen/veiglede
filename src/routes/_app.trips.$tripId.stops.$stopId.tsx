@@ -91,6 +91,9 @@ function StopEdit() {
           <textarea rows={4} value={stop.notes ?? ""} placeholder="Hva er verdt å huske…" onChange={(e) => tripsApi.updateStop(stop.id, { notes: e.target.value })} className={input} />
         </Field>
 
+        {stop.type === "lodging" && <BookingEditor stop={stop} />}
+
+
         <div className="pt-2 flex justify-between gap-3">
           <button onClick={() => navigate({ to: "/trips/$tripId", params: { tripId } })} className="rounded-2xl bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground">Ferdig</button>
           <button onClick={() => { if (confirm("Slette stoppet?")) { tripsApi.deleteStop(stop.id); navigate({ to: "/trips/$tripId", params: { tripId } }); } }}
