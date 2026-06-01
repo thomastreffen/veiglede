@@ -616,6 +616,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_public: boolean
+          language: string | null
           onboarded_at: string | null
           role: string
           show_garage: boolean
@@ -635,6 +636,7 @@ export type Database = {
           id: string
           is_active?: boolean
           is_public?: boolean
+          language?: string | null
           onboarded_at?: string | null
           role?: string
           show_garage?: boolean
@@ -654,6 +656,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_public?: boolean
+          language?: string | null
           onboarded_at?: string | null
           role?: string
           show_garage?: boolean
