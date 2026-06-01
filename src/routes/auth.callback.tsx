@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getOnboardingStatus } from "@/lib/account";
+import { sendTransactionalEmail } from "@/lib/email/send";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth/callback")({
