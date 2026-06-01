@@ -228,11 +228,11 @@ function TripPlanner() {
             {user && (
               <button
                 onClick={() => setEditOpen(true)}
-                title="Rediger tur"
-                aria-label="Rediger tur"
+                title={td.editTrip}
+                aria-label={td.editTrip}
                 className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 backdrop-blur px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
               >
-                <Pencil className="h-3.5 w-3.5" /> Rediger tur
+                <Pencil className="h-3.5 w-3.5" /> {td.editTrip}
               </button>
             )}
             {user && (
@@ -242,9 +242,9 @@ function TripPlanner() {
                   if (next && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
                   tripsApi.setTripPublic(trip.id, next);
                   void flushTripsNow();
-                  toast.success(next ? "Tur er nå offentlig 🌍" : "Tur er nå privat 🔒");
+                  toast.success(next ? td.publicToast : td.privateToast);
                 }}
-                title="Offentlige turer vises på din profil og i Utforsk"
+                title={td.publicTooltip}
                 className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                   trip.isPublic
                     ? "border-primary bg-primary/10 text-primary hover:bg-primary/20"
@@ -252,7 +252,7 @@ function TripPlanner() {
                 }`}
               >
                 {trip.isPublic ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                {trip.isPublic ? "🌍 Offentlig" : "🔒 Privat"}
+                {trip.isPublic ? td.publicLabel : td.privateLabel}
               </button>
             )}
           </div>
