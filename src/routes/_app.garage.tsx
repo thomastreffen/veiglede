@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Car } from "lucide-react";
+import { Plus, Car, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { useTripsStore } from "@/lib/trips-store";
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { VehicleCard } from "@/components/VehicleCard";
+import { VehiclePhotoStrip } from "@/components/VehiclePhotoStrip";
 
 export const Route = createFileRoute("/_app/garage")({
   head: () => ({ meta: [{ title: "Min garasje — Veiglede" }] }),
