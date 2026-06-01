@@ -146,6 +146,18 @@ export interface Trip {
   consumptionPer100Km?: number; // l/100km or kWh/100km override
   // Packing list — categorized checklist saved per trip.
   packingList?: PackingItem[];
+  // Trip economy v2 — full cost calculator settings.
+  costSettings?: CostSettings;
+}
+
+export interface CostSettings {
+  fuelPricePerLiter?: number;       // NOK
+  electricityPricePerKwh?: number;  // NOK
+  fuelConsumptionPer100km?: number; // l/100km or kWh/100km
+  tollEstimate?: number;            // NOK
+  ferryEstimate?: number;           // NOK
+  otherCosts?: number;              // NOK
+  people?: number;                  // for per-person split
 }
 
 export type PackingCategory = "klær" | "utstyr" | "dokumenter" | "mat" | "annet";
