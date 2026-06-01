@@ -26,6 +26,7 @@ export function AppShell() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { notify } = useBrowserNotifications();
 
   // Onboarding gate: send freshly-logged-in users who haven't onboarded
   // to /onboarding once.
