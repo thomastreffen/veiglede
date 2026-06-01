@@ -9,16 +9,16 @@ export interface TemplateEntry {
   to?: string
 }
 
-import { template as welcomeTemplate } from './welcome'
-import { template as tripInvitationTemplate } from './trip-invitation'
-import { template as tripSharedTemplate } from './trip-shared'
-import { template as accountDeletionTemplate } from './account-deletion'
-import { template as tripReminderTemplate } from './trip-reminder'
+import { template as welcome } from './welcome'
+import { template as tripInvitation } from './trip-invitation'
+import { template as tripShared } from './trip-shared'
+import { template as accountDeletion } from './account-deletion'
+import { template as tripReminder } from './trip-reminder'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
-  'welcome': welcomeTemplate,
-  'trip-invitation': tripInvitationTemplate,
-  'trip-shared': tripSharedTemplate,
-  'account-deletion': accountDeletionTemplate,
-  'trip-reminder': tripReminderTemplate,
+  welcome,
+  'trip-invitation': tripInvitation,
+  'trip-shared': tripShared,
+  'account-deletion': accountDeletion,
+  'trip-reminder': tripReminder,
 }
