@@ -6,7 +6,8 @@ import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { useAuth } from "@/lib/auth";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
 import { useVehicles } from "@/lib/vehicles-store";
-import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users } from "lucide-react";
+import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users, Radio } from "lucide-react";
+import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
