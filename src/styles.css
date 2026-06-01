@@ -149,3 +149,93 @@
 }
 
 
+
+/* ============ Print styles for Roadbook PDF export ============ */
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 14mm 22mm 14mm;
+    @bottom-center {
+      content: "Veiglede — Roadbook · veiglede.no · Side " counter(page) " av " counter(pages);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 9pt;
+      color: #555;
+    }
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide app shell chrome */
+  body > div > header,
+  body > div > nav,
+  header.sticky,
+  nav.md\:hidden,
+  nav[class*="fixed"] {
+    display: none !important;
+  }
+
+  /* Generic no-print helper */
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Strip surfaces & borders for clean B/W print */
+  .print-roadbook {
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .print-roadbook * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .print-roadbook a { text-decoration: none !important; }
+  .print-roadbook .rounded-2xl,
+  .print-roadbook .rounded-xl,
+  .print-roadbook .rounded-3xl,
+  .print-roadbook section.rounded-2xl {
+    border: 1px solid #ccc !important;
+  }
+  .print-roadbook .border,
+  .print-roadbook .border-border,
+  .print-roadbook .border-primary\/30,
+  .print-roadbook .border-primary\/40,
+  .print-roadbook .border-emerald-500\/40,
+  .print-roadbook .border-dashed {
+    border-color: #ccc !important;
+  }
+
+  /* Page-break each day section */
+  .print-day {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .print-day + .print-day {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  /* Prevent unwanted breaks inside stops */
+  .print-roadbook li,
+  .print-roadbook h1,
+  .print-roadbook h2,
+  .print-roadbook h3 {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Make sure print-only elements show */
+  .print-only {
+    display: block !important;
+  }
+}
+
+/* Hide print-only elements on screen */
+@media screen {
+  .print-only { display: none !important; }
+}

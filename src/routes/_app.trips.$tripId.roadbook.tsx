@@ -42,8 +42,25 @@ function Roadbook() {
 
   const fmtDur = (m?: number) => !m ? "" : m >= 60 ? `${Math.floor(m/60)}t${m%60?` ${m%60}min`:""}` : `${m} min`;
 
+  const handleExportPdf = () => {
+    if (typeof window !== "undefined") window.print();
+  };
+
   return (
-    <div className="py-4">
+    <div className="py-4 print-roadbook">
+      {/* Print-only header */}
+      <div className="print-only mb-4" style={{ borderBottom: "1px solid #000", paddingBottom: "8px" }}>
+        <p style={{ fontSize: "10pt", letterSpacing: "0.2em", textTransform: "uppercase" }}>Veiglede · Roadbook</p>
+        <h1 style={{ fontSize: "22pt", margin: "4px 0 2px", fontWeight: 700 }}>{trip.title}</h1>
+        {trip.subtitle && <p style={{ fontSize: "10pt", fontStyle: "italic" }}>{trip.subtitle}</p>}
+        <p style={{ fontSize: "10pt", marginTop: "4px" }}>
+          {trip.origin} → {trip.destination}{trip.region ? ` · ${trip.region}` : ""}
+        </p>
+        <p style={{ fontSize: "9pt", marginTop: "6px" }}>
+          {trip.distanceKm} km · {trip.drivingTime} · {tripStops.length} stopp · {vehicleDisplay} · {s.label}
+          {trip.startDate ? ` · Avreise ${new Date(trip.startDate).toLocaleDateString("nb-NO")}` : ""}
+        </p>
+      </div>
       <DemoDebugPanel
         title="Roadbook debug"
         items={[
@@ -54,18 +71,18 @@ function Roadbook() {
         ]}
       />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Planlegger
         </Link>
         <div className="flex gap-2">
           <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> Del</button>
-          <button className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary"><Download className="h-3.5 w-3.5" /> Eksport</button>
+          <button onClick={handleExportPdf} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Download className="h-3.5 w-3.5" /> Eksporter PDF</button>
         </div>
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
 
-      <section className="mt-4 max-w-2xl mx-auto">
+      <section className="mt-4 max-w-2xl mx-auto print:hidden">
         <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
       </section>
 
@@ -81,7 +98,7 @@ function Roadbook() {
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
         </div>
 
-        <div className="mt-5 flex justify-center gap-2 flex-wrap">
+        <div className="mt-5 flex justify-center gap-2 flex-wrap print:hidden">
           {tracking.status === "idle" && (
             <button onClick={() => trackingApi.start(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
               <Play className="h-4 w-4" /> Start tur
@@ -98,7 +115,7 @@ function Roadbook() {
         </div>
       </header>
 
-      <section className="mt-8 mx-auto max-w-2xl">
+      <section className="mt-8 mx-auto max-w-2xl print:hidden">
         <TripMap
           trip={trip}
           days={tripDays}
@@ -127,7 +144,7 @@ function Roadbook() {
         {tripDays.map((day) => {
           const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
           return (
-            <section key={day.id} className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+            <section key={day.id} className="print-day rounded-2xl border border-border bg-surface p-5 md:p-6">
               <div className="flex items-baseline gap-3">
                 <span className="font-display text-3xl uppercase text-primary">Dag {day.dayNumber}</span>
                 {day.date && <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{day.date}</span>}
@@ -334,6 +351,12 @@ function Roadbook() {
       </div>
 
       <div className="mt-12 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">— slutt på roadbook —</div>
+
+      {/* Print-only footer block (per-page footer comes from @page) */}
+      <div className="print-only" style={{ marginTop: "16px", paddingTop: "8px", borderTop: "1px solid #000", textAlign: "center", fontSize: "9pt" }}>
+        <p style={{ fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" }}>Veiglede</p>
+        <p style={{ fontStyle: "italic", marginTop: "2px" }}>Veiviseren for den fineste veien · veiglede.no</p>
+      </div>
     </div>
   );
 }
