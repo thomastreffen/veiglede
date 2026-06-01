@@ -292,7 +292,7 @@ function load(): State {
     const raw = localStorage.getItem(KEY);
     if (!raw) { localStorage.setItem(KEY, JSON.stringify(EMPTY_STATE)); return EMPTY_STATE; }
     return JSON.parse(raw);
-  } catch { return seed(); }
+  } catch { return EMPTY_STATE; }
 }
 
 let state: State = EMPTY_STATE;
