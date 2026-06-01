@@ -191,32 +191,41 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
           display_name: string | null
           id: string
+          is_public: boolean
           onboarded_at: string | null
           theme: string
           updated_at: string
+          username: string | null
           welcome_email_sent_at: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           id: string
+          is_public?: boolean
           onboarded_at?: string | null
           theme?: string
           updated_at?: string
+          username?: string | null
           welcome_email_sent_at?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          is_public?: boolean
           onboarded_at?: string | null
           theme?: string
           updated_at?: string
+          username?: string | null
           welcome_email_sent_at?: string | null
         }
         Relationships: []
@@ -431,6 +440,36 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          storage_path: string
+          url: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          storage_path: string
+          url: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          storage_path?: string
+          url?: string
+          user_id?: string
+          vehicle_id?: string
         }
         Relationships: []
       }
