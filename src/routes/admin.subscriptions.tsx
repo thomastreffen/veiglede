@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminSubscriptionStatsFn, adminSetUserPlanFn } from "@/lib/subscription.functions";
 import { toast } from "sonner";
 import { useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
 
 export const Route = createFileRoute("/admin/subscriptions")({
   head: () => ({ meta: [{ title: "Abonnementer — Admin" }, { name: "robots", content: "noindex" }] }),
