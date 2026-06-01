@@ -50,6 +50,8 @@ export const Route = createFileRoute("/_app/trips/$tripId")({
 
 function TripPlanner() {
   const { tripId } = Route.useParams();
+  const t = useT();
+  const td = t.app.tripDetail;
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips, days, stops } = useTripsStore();
   const prefs = useDriverPrefs();
