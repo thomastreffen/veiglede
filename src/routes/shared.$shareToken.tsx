@@ -216,7 +216,7 @@ function EmptyState({ title, body, icon }: { title: string; body: string; icon?:
   );
 }
 
-function LiveSharedBlock({ tripId }: { tripId: string }) {
+export function LiveSharedBlock({ tripId }: { tripId: string }) {
   const session = useLiveSession(tripId);
   const live = isLiveActive(session);
   const [open, setOpen] = useState(false);
