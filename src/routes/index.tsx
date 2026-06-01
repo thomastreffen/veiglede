@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { CookieBanner } from "@/components/CookieBanner";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/i18n/provider";
 import { useServerFn } from "@tanstack/react-start";
@@ -675,10 +676,10 @@ function Landing() {
               Veiglede
             </h4>
             <ul className="mt-4 space-y-2 text-sm">
-              <li><a href="#" className="hover:text-white">Om oss</a></li>
-              <li><a href="#" className="hover:text-white">Personvern</a></li>
-              <li><a href="#" className="hover:text-white">Kontakt</a></li>
-              <li><a href="#" className="hover:text-white">For partnere</a></li>
+              <li><a href="mailto:kontakt@veiglede.no" className="hover:text-white">Kontakt</a></li>
+              <li><Link to="/personvern" className="hover:text-white">Personvern</Link></li>
+              <li><Link to="/vilkar" className="hover:text-white">Vilkår</Link></li>
+              <li><Link to="/partner" className="hover:text-white">For partnere</Link></li>
             </ul>
           </div>
           <div>
@@ -720,6 +721,8 @@ function Landing() {
           </div>
         </div>
       </footer>
+
+      <CookieBanner />
     </div>
   );
 }
