@@ -177,7 +177,10 @@ export interface Trip {
   packingList?: PackingItem[];
   // Trip economy v2 — full cost calculator settings.
   costSettings?: CostSettings;
+  /** Route hash of the last ferrySegments[] applied — prevents duplicate auto-inserts. */
+  ferryDetectionHash?: string;
 }
+
 
 export interface CostSettings {
   fuelPricePerLiter?: number;       // NOK
