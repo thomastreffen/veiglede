@@ -63,10 +63,13 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
     }
   };
 
-  const onPhotoChange = (file?: File) => {
+  const onPhotoChange = async (file?: File) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setPhoto(reader.result as string);
+    reader.onload = async () => {
+      const compressed = await compressImage(reader.result as string);
+      setPhoto(compressed);
+    };
     reader.readAsDataURL(file);
   };
 
