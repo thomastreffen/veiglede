@@ -151,6 +151,13 @@ export const de: Dict = {
     nb: "Norsk",
     en: "English",
     de: "Deutsch",
+    nl: "Nederlands",
+    sv: "Svenska",
+    da: "Dansk",
+  },
+  banner: {
+    suggest: (lang: string) => `Wir vermuten, du bevorzugst ${lang} — Sprache wechseln →`,
+    dismiss: "Schließen",
   },
   invite: {
     inviteCompanions: "Mitreisende einladen",

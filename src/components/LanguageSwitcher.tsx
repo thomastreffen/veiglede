@@ -1,12 +1,6 @@
 import { useI18n } from "@/i18n/provider";
-import type { Locale } from "@/i18n";
+import { LOCALE_META, SUPPORTED_LOCALES, type Locale } from "@/i18n";
 import { cn } from "@/lib/utils";
-
-const OPTIONS: { code: Locale; label: string }[] = [
-  { code: "nb", label: "NO" },
-  { code: "en", label: "EN" },
-  { code: "de", label: "DE" },
-];
 
 interface Props {
   className?: string;
@@ -22,23 +16,25 @@ export function LanguageSwitcher({ className, tone = "dark" }: Props) {
       role="group"
       aria-label={t.language.label}
       className={cn(
-        "inline-flex items-center rounded-full border p-0.5 text-[11px] font-semibold uppercase tracking-wider",
+        "inline-flex items-center gap-0.5 rounded-full border p-0.5 text-[11px] font-semibold uppercase tracking-wider flex-wrap",
         isLight
           ? "border-white/20 bg-white/5 backdrop-blur"
           : "border-border bg-surface-2/60",
         className,
       )}
     >
-      {OPTIONS.map((o) => {
-        const active = o.code === locale;
+      {SUPPORTED_LOCALES.map((code) => {
+        const meta = LOCALE_META[code];
+        const active = code === locale;
         return (
           <button
-            key={o.code}
+            key={code}
             type="button"
-            onClick={() => setLocale(o.code)}
+            onClick={() => setLocale(code)}
             aria-pressed={active}
+            title={meta.long}
             className={cn(
-              "px-2.5 py-1 rounded-full transition-colors",
+              "px-2 py-1 rounded-full transition-colors inline-flex items-center gap-1",
               active
                 ? "bg-primary text-primary-foreground"
                 : isLight
@@ -46,7 +42,8 @@ export function LanguageSwitcher({ className, tone = "dark" }: Props) {
                   : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {o.label}
+            <span aria-hidden>{meta.flag}</span>
+            <span className="hidden sm:inline">{meta.short}</span>
           </button>
         );
       })}

@@ -150,6 +150,13 @@ export const nb = {
     nb: "Norsk",
     en: "English",
     de: "Deutsch",
+    nl: "Nederlands",
+    sv: "Svenska",
+    da: "Dansk",
+  },
+  banner: {
+    suggest: (lang: string) => `Vi oppdaget at du kanskje foretrekker ${lang} — bytt språk →`,
+    dismiss: "Lukk",
   },
   invite: {
     inviteCompanions: "Inviter reisefølge",
