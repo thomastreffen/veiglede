@@ -120,10 +120,13 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
     const publicTrips: PublicProfileTrip[] = [];
     let tripsCount = 0;
     let totalKm = 0;
+    let drivenKm = 0;
     for (const t of allTrips) {
       if (t?.status === "draft") continue;
       tripsCount += 1;
       totalKm += Number(t.distanceKm ?? 0);
+      const actual = Number(t.actualDistanceKm ?? 0);
+      if (actual > 0) drivenKm += actual;
       if (showTrips && t.isPublic === true && typeof t.shareToken === "string") {
         publicTrips.push({
           id: String(t.id ?? ""),
