@@ -232,17 +232,10 @@ function Settings() {
         </aside>
 
         <div className="md:col-span-2 space-y-6">
-      <header>
-        <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Din profil</p>
-        <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase">Førerprofil</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Veiglede tilpasser ruter, stopp og forslag etter hvordan du liker å kjøre — og hvilket kjøretøy du tar med.</p>
-      </header>
-
-      <AccountCard />
-
+      <StatsStrip />
 
       {/* 1 — Driver profile */}
-      <Section title="Sjåfør" caption="Grunninnstillinger">
+      <Section id="sjafor" title="Sjåfør" caption="Grunninnstillinger">
         <ProfileHeader />
 
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
