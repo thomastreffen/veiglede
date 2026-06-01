@@ -416,7 +416,7 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Søk i turer…"
+          placeholder={tr.app.search.placeholder}
           className="pl-9 pr-9 rounded-xl"
         />
         {query && (
@@ -424,7 +424,7 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
             type="button"
             onClick={() => setQuery("")}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            aria-label="Tøm søk"
+            aria-label={tr.app.search.clear}
           >
             <X className="h-4 w-4" />
           </button>
@@ -435,10 +435,10 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
       <div className="flex flex-wrap items-center gap-2">
         <Select value={vehicleFilter} onValueChange={(v) => setVehicleFilter(v as "all" | VehicleType)}>
           <SelectTrigger className="w-[150px] rounded-xl text-xs">
-            <SelectValue placeholder="Kjøretøy" />
+            <SelectValue placeholder={tr.app.search.vehicle} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle kjøretøy</SelectItem>
+            <SelectItem value="all">{tr.app.search.allVehicles}</SelectItem>
             {VEHICLES.map((v) => (
               <SelectItem key={v.value} value={v.value}>{v.emoji} {v.label}</SelectItem>
             ))}
@@ -447,10 +447,10 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
 
         <Select value={styleFilter} onValueChange={(v) => setStyleFilter(v as "all" | RouteStyle)}>
           <SelectTrigger className="w-[170px] rounded-xl text-xs">
-            <SelectValue placeholder="Stil" />
+            <SelectValue placeholder={tr.app.search.style} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle stiler</SelectItem>
+            <SelectItem value="all">{tr.app.search.allStyles}</SelectItem>
             {ROUTE_STYLES.map((s) => (
               <SelectItem key={s.value} value={s.value}>{s.emoji} {s.label}</SelectItem>
             ))}
@@ -459,24 +459,24 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
 
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
           <SelectTrigger className="w-[160px] rounded-xl text-xs">
-            <SelectValue placeholder="Sorter" />
+            <SelectValue placeholder={tr.app.search.sort} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Nyeste først</SelectItem>
-            <SelectItem value="oldest">Eldste først</SelectItem>
-            <SelectItem value="longest">Lengste tur</SelectItem>
-            <SelectItem value="shortest">Kortest tur</SelectItem>
+            <SelectItem value="newest">{tr.app.search.sortNewest}</SelectItem>
+            <SelectItem value="oldest">{tr.app.search.sortOldest}</SelectItem>
+            <SelectItem value="longest">{tr.app.search.sortLongest}</SelectItem>
+            <SelectItem value="shortest">{tr.app.search.sortShortest}</SelectItem>
           </SelectContent>
         </Select>
 
         {activeCount > 0 && (
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider">
-            {activeCount} {activeCount === 1 ? "aktivt filter" : "aktive filter"}
+            {activeCount} {activeCount === 1 ? tr.app.search.activeFilterSingular : tr.app.search.activeFilterPlural}
             <button
               type="button"
               onClick={() => { setQuery(""); setVehicleFilter("all"); setStyleFilter("all"); setSortBy("newest"); }}
               className="ml-0.5 hover:text-destructive"
-              aria-label="Nullstill filter"
+              aria-label={tr.app.search.resetFiltersAria}
             >
               <X className="h-3 w-3" />
             </button>
@@ -487,11 +487,11 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
       {/* Header + CTA */}
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Mine turer</p>
-          <h1 className="mt-1 font-display text-3xl md:text-5xl uppercase">{filtered.length} turer</h1>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{tr.app.trips.mineHeading}</p>
+          <h1 className="mt-1 font-display text-3xl md:text-5xl uppercase">{tr.app.trips.countTrips(filtered.length)}</h1>
         </div>
         <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20">
-          <Plus className="h-4 w-4" strokeWidth={3} /> Ny tur
+          <Plus className="h-4 w-4" strokeWidth={3} /> {tr.app.nav.newTrip}
         </Link>
       </div>
 
@@ -499,14 +499,14 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
         <EmptyState />
       ) : filtered.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
-          <p className="font-display text-2xl uppercase">Ingen turer matcher søket</p>
-          <p className="mt-2 text-sm text-muted-foreground">Prøv å justere filtere eller søkeord.</p>
+          <p className="font-display text-2xl uppercase">{tr.app.trips.noMatchTitle}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{tr.app.trips.noMatchBody}</p>
           <button
             type="button"
             onClick={() => { setQuery(""); setVehicleFilter("all"); setStyleFilter("all"); setSortBy("newest"); }}
             className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground"
           >
-            Nullstill filter
+            {tr.app.trips.resetFilters}
           </button>
         </div>
       ) : (
