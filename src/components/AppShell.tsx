@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Map, BookOpen, User, Plus, LogIn } from "lucide-react";
+import { Home, Map, BookOpen, User, Plus, LogIn, Car } from "lucide-react";
 import { TripQuickAddSheet } from "@/components/TripQuickAddSheet";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
