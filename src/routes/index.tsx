@@ -380,10 +380,10 @@ function Landing() {
       {/* ============ NORGE PÅ VEIEN ============ */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
         <div className="text-center">
-          <p className="text-[11px] uppercase tracking-[0.32em] text-primary">Regioner</p>
-          <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">Norge på veien</h2>
+          <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.landing.regions.label}</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">{t.landing.regions.title}</h2>
           <p className="mt-4 text-[#1a1a1a]/70 max-w-xl mx-auto">
-            Fra Lindesnes til Nordkapp — opplev landet fra rattet.
+            {t.landing.regions.subtitle}
           </p>
           <span className="mx-auto mt-5 block h-0.5 w-12 bg-primary/70" />
         </div>
@@ -408,11 +408,11 @@ function Landing() {
                 <h3 className="font-display text-2xl md:text-3xl uppercase tracking-wide">
                   {r.name}
                 </h3>
-                <p className="mt-2 text-sm text-white/90 leading-snug">{r.tag}</p>
+                <p className="mt-2 text-sm text-white/90 leading-snug">{t.landing.regions.tags[r.name]}</p>
                 <div className="mt-3 flex items-center justify-between text-xs uppercase tracking-wider">
-                  <span className="text-white/75">{r.km}</span>
+                  <span className="text-white/75">{r.km} {t.landing.regions.kmTrips}</span>
                   <span className="inline-flex items-center gap-1 text-primary font-semibold">
-                    Utforsk ruter <ArrowRight className="h-3.5 w-3.5" />
+                    {t.landing.regions.explore} <ArrowRight className="h-3.5 w-3.5" />
                   </span>
                 </div>
               </div>
