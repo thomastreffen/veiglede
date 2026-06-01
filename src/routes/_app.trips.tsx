@@ -206,6 +206,7 @@ function formatDate(d: string) {
 
 function FollowedTripsSection() {
   const { user } = useAuth();
+  const tr = useT();
   const [items, setItems] = useState<FollowedTrip[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -225,8 +226,8 @@ function FollowedTripsSection() {
   return (
     <section className="mt-10">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Turer jeg følger</h2>
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{items.length} {items.length === 1 ? "tur" : "turer"}</span>
+        <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">{tr.app.trips.followedTitle}</h2>
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{items.length} {items.length === 1 ? tr.app.trips.tripSingular : tr.app.trips.tripPlural}</span>
       </div>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((f, i) => <FollowedTripCard key={`${String((f.trip as Record<string, unknown>).id ?? "")}-${i}`} f={f} />)}
