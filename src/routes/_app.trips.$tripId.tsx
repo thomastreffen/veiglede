@@ -568,42 +568,41 @@ function TripPlanner() {
 
       {/* Practical info */}
       <section id="practical" className="mt-10 rounded-2xl border border-border bg-surface p-5 scroll-mt-24">
-        <h2 className="font-display text-xl uppercase">Praktisk info</h2>
+        <h2 className="font-display text-xl uppercase">{td.practicalTitle}</h2>
         <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-          <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
-          <li>· Beregnet kjøretid: {trip.drivingTime} <span className="text-[11px] text-muted-foreground/80">(rutemotor — kan avvike fra Google Maps, trafikk, ferge og lokale forhold)</span></li>
-          <li>· Kjøretøy: {vehicleDisplay} ({v.label}{em ? ` · ${em.label}` : ""}) · stil: {s.label}</li>
-          {trip.energy === "electric" && <li>· Ladestrategi: prioriter hurtigladere langs ruta — bensinstasjoner filtreres bort.</li>}
-          {trip.energy === "hybrid" && <li>· Hybrid: både lading og bensinstopp foreslås der det passer.</li>}
-          {trip.vehicle === "rv" && <li>· Camper/bobil: stopp med plass, høyde, camping og overnatting prioriteres.</li>}
-          {trip.vehicle === "motorcycle" && <li>· MC: korte, trygge pauser og svingete strekk foretrekkes.</li>}
-          {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })}</li>}
-          <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
+          <li>· {td.practicalTotal(trip.distanceKm, tripDays.length)}</li>
+          <li>· {td.practicalDrivingTime(trip.drivingTime)} <span className="text-[11px] text-muted-foreground/80">{td.practicalDrivingTimeNote}</span></li>
+          <li>· {td.practicalVehicle(vehicleDisplay, v.label, em ? em.label : "", s.label)}</li>
+          {trip.energy === "electric" && <li>· {td.electricNote}</li>}
+          {trip.energy === "hybrid" && <li>· {td.hybridNote}</li>}
+          {trip.vehicle === "rv" && <li>· {td.rvNote}</li>}
+          {trip.vehicle === "motorcycle" && <li>· {td.mcNote}</li>}
+          {trip.startDate && <li>· {td.departure(new Date(trip.startDate).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }))}</li>}
+          <li>· {td.remember}</li>
         </ul>
 
         <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
+          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">{td.yourDrivingStyle}</p>
           <p className="mt-1.5 text-sm text-foreground/90">
-            Stoppene er plassert slik at dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
-            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
+            {td.stopsPlacedNote(prefs.maxDrivingHours, formatPauseLabel(prefs.pauseEveryMin))}
           </p>
           {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
             <p className="mt-1.5 text-sm text-foreground/90">
-              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+              {td.avoidPrefix} {[prefs.drivingFlags["no-highway"] && td.avoidHighway, prefs.drivingFlags["no-ferry"] && td.avoidFerry].filter(Boolean).join(` ${td.avoidAnd} `)} {td.avoidSuffix}
             </p>
           )}
-          <p className="mt-1.5 text-[11px] text-muted-foreground">Endre i Profil → Kjørepreferanser.</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">{td.changeInProfile}</p>
         </div>
 
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
           className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-          <BookOpen className="h-4 w-4" /> Åpne roadbook
+          <BookOpen className="h-4 w-4" /> {td.openRoadbook}
         </Link>
       </section>
 
-      <button onClick={() => { if (confirm("Slette hele turen?")) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
+      <button onClick={() => { if (confirm(td.deleteTripConfirm)) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
         className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm text-muted-foreground hover:text-destructive hover:border-destructive">
-        <Trash2 className="h-4 w-4" /> Slett tur
+        <Trash2 className="h-4 w-4" /> {td.deleteTrip}
       </button>
       {lightboxUrl && (
         <div onClick={() => setLightboxUrl(null)} className="fixed inset-0 z-50 bg-background/95 backdrop-blur grid place-items-center p-4 cursor-zoom-out">
