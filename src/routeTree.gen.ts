@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PersonvernRouteImport } from './routes/personvern'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
@@ -82,6 +83,11 @@ const SignupRoute = SignupRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonvernRoute = PersonvernRouteImport.update({
+  id: '/personvern',
+  path: '/personvern',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnerRoute = PartnerRouteImport.update({
@@ -381,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/personvern': typeof PersonvernRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -439,6 +446,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
+  '/personvern': typeof PersonvernRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -500,6 +508,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/personvern': typeof PersonvernRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -562,6 +571,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/partner'
+    | '/personvern'
     | '/pricing'
     | '/signup'
     | '/unsubscribe'
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/map-test'
+    | '/personvern'
     | '/pricing'
     | '/signup'
     | '/unsubscribe'
@@ -680,6 +691,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map-test'
     | '/partner'
+    | '/personvern'
     | '/pricing'
     | '/signup'
     | '/unsubscribe'
@@ -742,6 +754,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
   PartnerRoute: typeof PartnerRouteWithChildren
+  PersonvernRoute: typeof PersonvernRoute
   PricingRoute: typeof PricingRoute
   SignupRoute: typeof SignupRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
@@ -788,6 +801,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/personvern': {
+      id: '/personvern'
+      path: '/personvern'
+      fullPath: '/personvern'
+      preLoaderRoute: typeof PersonvernRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partner': {
@@ -1306,6 +1326,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
   PartnerRoute: PartnerRouteWithChildren,
+  PersonvernRoute: PersonvernRoute,
   PricingRoute: PricingRoute,
   SignupRoute: SignupRoute,
   UnsubscribeRoute: UnsubscribeRoute,
