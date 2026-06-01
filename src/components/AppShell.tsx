@@ -108,7 +108,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
     <>
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border/60 bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
         <ul className="grid grid-cols-5 items-end">
-          {nav.slice(0, 2).map((n) => <NavItem key={n.to} n={n} pathname={pathname} />)}
+          {nav.slice(0, 2).map((n) => <NavItem key={n.to} n={n} />)}
           <li className="flex justify-center -mt-6">
             {insideTrip ? (
               <button
@@ -125,7 +125,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
               </Link>
             )}
           </li>
-          {nav.slice(2).map((n) => <NavItem key={n.to} n={n} pathname={pathname} />)}
+          {nav.slice(2).map((n) => <NavItem key={n.to} n={n} />)}
         </ul>
       </nav>
       {currentTripId && (
