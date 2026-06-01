@@ -117,6 +117,19 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
   const v = vehicleMeta(t.vehicle as VehicleType);
   const s = styleMeta(t.style as RouteStyle);
   const cover = (t.cover as CoverKey) ?? "fjord";
+  const shareUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/shared/${t.shareToken}`
+    : `/shared/${t.shareToken}`;
+  const onShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const data = { title: t.title, text: t.subtitle ?? `${t.origin} → ${t.destination}`, url: shareUrl };
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try { await navigator.share(data); return; } catch { /* user cancelled or unsupported */ }
+    }
+    try { await navigator.clipboard.writeText(shareUrl); toast.success("Lenke kopiert! 🔗"); }
+    catch { toast.error("Kunne ikke dele"); }
+  };
   return (
     <li>
       <Link
@@ -132,6 +145,13 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
           <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider border border-border">
             {v.emoji} {s.emoji}
           </span>
+          <button
+            onClick={onShare}
+            aria-label="Del tur"
+            className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur border border-border text-foreground hover:bg-primary hover:text-primary-foreground"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+          </button>
         </div>
         <div className="p-4 md:p-5">
           {t.region && <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}</p>}
