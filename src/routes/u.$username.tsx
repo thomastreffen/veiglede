@@ -91,7 +91,8 @@ function PublicProfilePage() {
           <section className="mt-10">
             <h2 className="font-display text-xl uppercase">Garasje</h2>
             <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {vehicles.map((v) => {
+              {vehicles.map((v: PublicProfileVehicle) => {
+
                 const tm = vehicleMeta(v.type as VehicleType);
                 const em = energyMeta(v.energy as EnergyType);
                 const sm = styleMeta(v.defaultStyle as RouteStyle);
