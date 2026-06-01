@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { I18nProvider } from "@/i18n/provider";
 import { Toaster } from "@/components/ui/sonner";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 import appCss from "../styles.css?url";
 
@@ -53,7 +54,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Veiglede — AI-drevet roadtrip-planlegger" },
       { name: "description", content: "Veiglede er en moderne AI-drevet roadtrip-planlegger for folk som elsker veien — ikke bare målet." },
-      { name: "theme-color", content: "#13131c" },
+      { name: "theme-color", content: "#f97316" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Veiglede" },
       { property: "og:title", content: "Veiglede — AI-drevet roadtrip-planlegger" },
       { name: "twitter:title", content: "Veiglede — AI-drevet roadtrip-planlegger" },
       { property: "og:description", content: "Veiglede er en moderne AI-drevet roadtrip-planlegger for folk som elsker veien — ikke bare målet." },
@@ -78,6 +82,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@300;400;500;600;700;800&display=swap",
       },
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       {
         rel: "icon",
         type: "image/svg+xml",
@@ -118,6 +124,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <Outlet />
+        <InstallPrompt />
         <Toaster position="top-center" richColors />
       </I18nProvider>
     </QueryClientProvider>
