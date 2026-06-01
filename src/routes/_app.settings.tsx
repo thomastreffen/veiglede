@@ -340,6 +340,11 @@ function Settings() {
         />
       </Section>
 
+      {/* 5b — Public profile privacy */}
+      <Section title="Personvern" caption="Din offentlige profil">
+        <PrivacyControls />
+      </Section>
+
       {/* 6 — Appearance */}
       <Section title="Utseende" caption="Tema">
         <div className="inline-flex rounded-2xl border border-border bg-background p-1">
