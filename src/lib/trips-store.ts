@@ -107,6 +107,8 @@ export interface Trip {
   energy?: EnergySource;
   style: RouteStyle;
   distanceKm: number;
+  /** Faktisk kjørt distanse (km), satt når en tur fullføres med live posisjon. */
+  actualDistanceKm?: number;
   drivingTime: string;
   stopsCount: number;
   cover: CoverKey;

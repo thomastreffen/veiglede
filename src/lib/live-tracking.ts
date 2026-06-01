@@ -1,6 +1,8 @@
 // Live trip sharing — broadcast & subscribe to current position.
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { distanceKm } from "@/lib/geo";
+import { trackingApi } from "@/lib/trip-tracking";
 
 const LS_KEY = "vg.live-sharing.optin.v1";
 
@@ -178,12 +180,24 @@ export function useLiveBroadcaster(opts: {
     watchId = navigator.geolocation.watchPosition(
       (p) => {
         setPermState("granted");
-        lastPosRef.current = {
+        const next: LivePosition = {
           lat: p.coords.latitude,
           lng: p.coords.longitude,
           heading: p.coords.heading,
           speed: p.coords.speed,
         };
+        const prev = lastPosRef.current;
+        if (prev && status === "active") {
+          const delta = distanceKm(
+            { lat: prev.lat, lng: prev.lng },
+            { lat: next.lat, lng: next.lng },
+          );
+          // Ignore noise (<5m) and unrealistic jumps (>2km between samples).
+          if (delta >= 0.005 && delta <= 2) {
+            trackingApi.addDistance(tripId, delta);
+          }
+        }
+        lastPosRef.current = next;
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) setPermState("denied");

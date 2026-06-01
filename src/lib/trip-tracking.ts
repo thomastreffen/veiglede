@@ -10,6 +10,8 @@ export interface TripTracking {
   visitedStopIds: string[];
   spontaneousStops: { id: string; label: string; at: number }[];
   notes?: string;
+  /** Accumulated driven distance (km) from live geolocation samples. */
+  actualDistanceKm?: number;
 }
 
 type State = Record<string, TripTracking>;
@@ -36,6 +38,10 @@ export function useTripTracking(tripId: string): TripTracking {
   return s[tripId] ?? DEFAULT;
 }
 
+export function getTracking(tripId: string): TripTracking {
+  return snap()[tripId] ?? DEFAULT;
+}
+
 function update(tripId: string, patch: Partial<TripTracking>) {
   const cur = snap();
   cache = { ...cur, [tripId]: { ...DEFAULT, ...cur[tripId], ...patch } };
@@ -44,7 +50,7 @@ function update(tripId: string, patch: Partial<TripTracking>) {
 
 export const trackingApi = {
   start(tripId: string) {
-    update(tripId, { status: "active", startedAt: Date.now(), completedAt: undefined });
+    update(tripId, { status: "active", startedAt: Date.now(), completedAt: undefined, actualDistanceKm: 0 });
   },
   pause(tripId: string) { update(tripId, { status: "paused", pausedAt: Date.now() }); },
   resume(tripId: string) { update(tripId, { status: "active" }); },
@@ -67,6 +73,13 @@ export const trackingApi = {
     update(tripId, {
       spontaneousStops: [...cur.spontaneousStops, { id: Math.random().toString(36).slice(2, 8), label, at: Date.now() }],
     });
+  },
+  addDistance(tripId: string, deltaKm: number) {
+    if (!isFinite(deltaKm) || deltaKm <= 0) return;
+    const cur = snap()[tripId] ?? DEFAULT;
+    // Only accumulate while actively tracking (ignore stale callbacks after complete/reset).
+    if (cur.status !== "active") return;
+    update(tripId, { actualDistanceKm: (cur.actualDistanceKm ?? 0) + deltaKm });
   },
 };
 

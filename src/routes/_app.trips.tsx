@@ -138,6 +138,11 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
             <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
             <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} stopp`} />
           </div>
+          {typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0 && (
+            <p className="mt-2 text-[11px] text-primary">
+              {Math.round(t.actualDistanceKm)} km kjørt · {t.distanceKm} km planlagt
+            </p>
+          )}
           <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
             <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {t.origin} → {t.destination}</span>
             {t.startDate && <span>{formatDate(t.startDate)}</span>}
