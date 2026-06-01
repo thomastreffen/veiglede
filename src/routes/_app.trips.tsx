@@ -507,3 +507,12 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
     </>
   );
 }
+
+function StatCell({ n, l, accent, className }: { n: string; l: string; accent?: boolean; className?: string }) {
+  return (
+    <div className={className}>
+      <p className={`font-display text-2xl md:text-4xl ${accent ? "text-primary" : ""}`}>{n}</p>
+      <p className="mt-1 text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider leading-tight">{l}</p>
+    </div>
+  );
+}
