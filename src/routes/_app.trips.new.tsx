@@ -249,6 +249,29 @@ function NewTripWizard() {
       const s = styleMeta(style);
       const vt = selectedVehicle.type;
       const energy = energyTypeToSource(selectedVehicle.energy);
+      // Prefer selected place coords; fall back to local demo lookup from text.
+      const fromResolved = fromPlace ?? manualPlace(origin);
+      const toResolved = toPlace ?? manualPlace(destination);
+
+      // Fetch active partners within 50 km of the route endpoints. Used both
+      // to disclose recommendations in the AI summary and to inject 1–2
+      // partner stops below.
+      let routePartners: Awaited<ReturnType<typeof fetchRoutePartnersFn>>["partners"] = [];
+      if (fromResolved && toResolved) {
+        try {
+          const res = await fetchRoutePartnersFn({
+            data: {
+              origin: { lat: fromResolved.lat, lng: fromResolved.lng },
+              destination: { lat: toResolved.lat, lng: toResolved.lng },
+              radiusKm: 50,
+            },
+          });
+          routePartners = res.partners;
+        } catch (err) {
+          if (import.meta.env.DEV) console.debug("[wizard] fetchRoutePartnersFn failed", err);
+        }
+      }
+
       const ai = buildAiSummary({
         origin, destination, vehicle: vt, style,
         energy, vehicleName: selectedVehicle.name,
@@ -259,10 +282,10 @@ function NewTripWizard() {
           maxDrivingHours: prefs.maxDrivingHours,
           pauseEveryMin: prefs.pauseEveryMin,
         },
+        nearbyPartners: routePartners.map((p) => ({
+          name: p.name, category: p.category, region: p.region, description: p.description,
+        })),
       });
-      // Prefer selected place coords; fall back to local demo lookup from text.
-      const fromResolved = fromPlace ?? manualPlace(origin);
-      const toResolved = toPlace ?? manualPlace(destination);
 
       // Try real routing when we have coordinates for both endpoints.
       let route: RouteResult | null = null;
