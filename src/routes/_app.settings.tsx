@@ -433,7 +433,11 @@ function Settings() {
         )}
       </section>
 
-      <DangerZone />
+      <div id="konto" className="scroll-mt-24">
+        <DangerZone />
+      </div>
+        </div>
+      </div>
     </div>
   );
 }
