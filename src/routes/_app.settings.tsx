@@ -20,6 +20,7 @@ import {
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { VehicleCard } from "@/components/VehicleCard";
+import { BenefitsConsent } from "@/components/BenefitsConsent";
 
 function DangerZone() {
   const { user } = useAuth();
@@ -429,6 +430,8 @@ function Settings() {
           </button>
         )}
       </section>
+
+      <BenefitsConsent />
 
       <div id="konto" className="scroll-mt-24">
         <DangerZone />

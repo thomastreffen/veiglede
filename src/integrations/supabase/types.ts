@@ -68,6 +68,119 @@ export type Database = {
         }
         Relationships: []
       }
+      benefit_providers: {
+        Row: {
+          category: string
+          contact_email: string
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          monthly_fee_nok: number
+          name: string
+          partner_account_id: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          category: string
+          contact_email: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          monthly_fee_nok?: number
+          name: string
+          partner_account_id?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          category?: string
+          contact_email?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          monthly_fee_nok?: number
+          name?: string
+          partner_account_id?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      benefits: {
+        Row: {
+          affiliate_url: string | null
+          clicks: number
+          code_copies: number
+          created_at: string
+          description: string | null
+          direct_url: string
+          discount_code: string | null
+          energy_types: string[]
+          id: string
+          impressions: number
+          is_active: boolean
+          provider_id: string
+          title: string
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+          vehicle_types: string[]
+        }
+        Insert: {
+          affiliate_url?: string | null
+          clicks?: number
+          code_copies?: number
+          created_at?: string
+          description?: string | null
+          direct_url: string
+          discount_code?: string | null
+          energy_types?: string[]
+          id?: string
+          impressions?: number
+          is_active?: boolean
+          provider_id: string
+          title: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          vehicle_types?: string[]
+        }
+        Update: {
+          affiliate_url?: string | null
+          clicks?: number
+          code_copies?: number
+          created_at?: string
+          description?: string | null
+          direct_url?: string
+          discount_code?: string | null
+          energy_types?: string[]
+          id?: string
+          impressions?: number
+          is_active?: boolean
+          provider_id?: string
+          title?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          vehicle_types?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefits_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_prefs: {
         Row: {
           data: Json
@@ -466,6 +579,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          benefits_opt_in: boolean
           bio: string | null
           created_at: string
           display_name: string | null
@@ -484,6 +598,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          benefits_opt_in?: boolean
           bio?: string | null
           created_at?: string
           display_name?: string | null
@@ -502,6 +617,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          benefits_opt_in?: boolean
           bio?: string | null
           created_at?: string
           display_name?: string | null
@@ -814,6 +930,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_benefit_consents: {
+        Row: {
+          consent_analytics: boolean
+          consent_targeting: boolean
+          consented_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consent_analytics?: boolean
+          consent_targeting?: boolean
+          consented_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consent_analytics?: boolean
+          consent_targeting?: boolean
+          consented_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_follows: {
         Row: {
           created_at: string
@@ -900,6 +1040,18 @@ export type Database = {
       }
       get_invite_preview: { Args: { p_token: string }; Returns: Json }
       get_shared_trip: { Args: { p_token: string }; Returns: Json }
+      increment_benefit_click: {
+        Args: { p_benefit_id: string }
+        Returns: undefined
+      }
+      increment_benefit_code_copy: {
+        Args: { p_benefit_id: string }
+        Returns: undefined
+      }
+      increment_benefit_impression: {
+        Args: { p_benefit_id: string }
+        Returns: undefined
+      }
       increment_partner_click: {
         Args: { p_partner_id: string }
         Returns: undefined
