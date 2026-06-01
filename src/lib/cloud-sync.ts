@@ -18,6 +18,7 @@ const KEYS = {
   prefs: "veiglede.profile.v1",
   vehicles: "veiglede.vehicles.v2",
   trips: "veiglede.v4",
+  language: "veiglede.language",
 } as const;
 
 let installed = false;
@@ -31,10 +32,11 @@ function fireStorageReload() {
 }
 
 async function pullAll(userId: string) {
-  const [prefsRes, vehiclesRes, tripsRes] = await Promise.all([
+  const [prefsRes, vehiclesRes, tripsRes, profileRes] = await Promise.all([
     supabase.from("driver_prefs").select("data").eq("user_id", userId).maybeSingle(),
     supabase.from("vehicles").select("data").eq("id", userId).maybeSingle(),
     supabase.from("trips").select("data").eq("id", userId).maybeSingle(),
+    supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
   ]);
 
   let didWrite = false;
@@ -57,14 +59,33 @@ async function pullAll(userId: string) {
     void pushKey(KEYS.trips, localStorage.getItem(KEYS.trips)!);
   }
 
+  // Language: cloud preference wins. If empty and local has one, push it up.
+  const cloudLang = (profileRes.data as { language?: string } | null)?.language;
+  if (cloudLang) {
+    const prev = localStorage.getItem(KEYS.language);
+    if (prev !== cloudLang) {
+      localStorage.setItem(KEYS.language, cloudLang);
+      didWrite = true;
+    }
+  } else {
+    const localLang = localStorage.getItem(KEYS.language);
+    if (localLang) void pushKey(KEYS.language, localLang);
+  }
+
   if (didWrite) fireStorageReload();
 }
 
 async function pushKey(key: string, raw: string) {
   if (!currentUserId) return;
-  let data: unknown;
-  try { data = JSON.parse(raw); } catch { return; }
   try {
+    if (key === KEYS.language) {
+      await supabase
+        .from("profiles")
+        .upsert({ id: currentUserId, language: raw, updated_at: new Date().toISOString() });
+      return;
+    }
+    let data: unknown;
+    try { data = JSON.parse(raw); } catch { return; }
     if (key === KEYS.prefs) {
       await supabase.from("driver_prefs").upsert({
         user_id: currentUserId,
@@ -96,7 +117,13 @@ function wrapLocalStorage() {
   localStorage.setItem = (key: string, value: string) => {
     orig(key, value);
     if (!currentUserId) return;
-    if (key !== KEYS.prefs && key !== KEYS.vehicles && key !== KEYS.trips) return;
+    if (
+      key !== KEYS.prefs &&
+      key !== KEYS.vehicles &&
+      key !== KEYS.trips &&
+      key !== KEYS.language
+    )
+      return;
     if (debounce[key]) clearTimeout(debounce[key]);
     debounce[key] = setTimeout(() => pushKey(key, value), 800);
   };
