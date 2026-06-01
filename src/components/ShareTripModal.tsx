@@ -16,6 +16,17 @@ import {
   type TripInvite, type InviteRole,
 } from "@/lib/trip-invites";
 import { flushTripsNow } from "@/lib/cloud-sync";
+import { sendTransactionalEmail } from "@/lib/email/send";
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.max(1, Math.floor(diff / 60000));
+  if (m < 60) return `Invitert for ${m} minutt${m === 1 ? "" : "er"} siden`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `Invitert for ${h} time${h === 1 ? "" : "r"} siden`;
+  const d = Math.floor(h / 24);
+  return `Invitert for ${d} dag${d === 1 ? "" : "er"} siden`;
+}
 
 interface Props {
   trip: Trip;
