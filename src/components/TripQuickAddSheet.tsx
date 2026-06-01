@@ -192,18 +192,31 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
     if (!lastDay) { toast.error("Ingen dag tilgjengelig"); return; }
     if (!lodgingPlace) { toast.error("Velg et sted fra listen"); return; }
     const nights = Math.max(1, Number(lodgingNights) || 1);
+    const guests = lodgingGuests.trim() ? Math.max(1, Number(lodgingGuests) || 1) : undefined;
+    const price = lodgingPrice.trim() ? Number(lodgingPrice.replace(",", ".")) : undefined;
+    const validPrice = price != null && !Number.isNaN(price) && price > 0 ? price : undefined;
+    const checkout = lodgingCheckout || addDaysIso(lodgingDate, nights);
     tripsApi.addStop(lastDay.id, {
       name: lodgingPlace.name,
       type: "lodging",
       location: lodgingPlace.secondary ?? lodgingPlace.label,
       lat: lodgingPlace.lat, lng: lodgingPlace.lng,
-      description: `Overnatting${nights > 1 ? ` (${nights} netter)` : ""}.${lodgingDate ? ` Innsjekk ${lodgingDate}.` : ""}`,
+      description: `Overnatting${nights > 1 ? ` (${nights} netter)` : ""}.${lodgingDate ? ` Innsjekk ${lodgingDate}.` : ""}${validPrice ? ` ${validPrice.toFixed(0)} kr/natt.` : ""}`,
       reason: "Lagt til via hurtigvalg.",
       durationMin: 720 * nights,
+      booking: {
+        checkinDate: lodgingDate,
+        checkoutDate: checkout,
+        nights,
+        guests,
+        pricePerNight: validPrice,
+        status: lodgingStatus,
+      },
     });
     toast.success(`Overnatting lagt til: ${lodgingPlace.name}`);
     close();
   };
+
 
   const items: { icon: React.ReactNode; label: string; onClick: () => void }[] = [
     { icon: <Camera className="h-5 w-5" />, label: "📷 Ta bilde / Last opp bilde", onClick: () => fileRef.current?.click() },
