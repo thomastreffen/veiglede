@@ -2,24 +2,27 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
+import { useLiveSession, isLiveActive, type LiveSession } from "@/lib/live-tracking";
 
 interface Props {
-  tripId: string;
+  tripId?: string;
+  /** Pre-fetched session (e.g. from useLiveSessionByToken in a public route). */
+  session?: LiveSession | null;
   height?: string;
   className?: string;
 }
 
-export function LiveTripMap({ tripId, height = "60vh", className }: Props) {
+export function LiveTripMap({ tripId, session: sessionProp, height = "60vh", className }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const [mapKey, setMapKey] = useState<string | null>(null);
   const [keyError, setKeyError] = useState<string | null>(null);
-  const session = useLiveSession(tripId);
+  // Always call the hook; pass null when caller supplies the session directly.
+  const hookSession = useLiveSession(sessionProp === undefined ? tripId ?? null : null);
+  const session = sessionProp !== undefined ? sessionProp : hookSession;
   const live = isLiveActive(session);
 
-  // Fetch MapTiler browser key (same endpoint used by main map).
   useEffect(() => {
     let cancelled = false;
     fetch("/api/public/map-config")
@@ -33,7 +36,6 @@ export function LiveTripMap({ tripId, height = "60vh", className }: Props) {
     return () => { cancelled = true; };
   }, []);
 
-  // Initialise map once we have a key.
   useEffect(() => {
     if (!mapKey || !containerRef.current || mapRef.current) return;
     const initial = session ? [session.lng, session.lat] as [number, number] : [10.75, 60.0] as [number, number];
@@ -52,7 +54,6 @@ export function LiveTripMap({ tripId, height = "60vh", className }: Props) {
     };
   }, [mapKey, session]);
 
-  // Update / create marker as session changes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !session) return;
@@ -71,7 +72,6 @@ export function LiveTripMap({ tripId, height = "60vh", className }: Props) {
       map.flyTo({ center: lngLat, zoom: 12, duration: 800 });
     } else {
       markerRef.current.setLngLat(lngLat);
-      // Smoothly recentre but don't fight the user too aggressively
       map.easeTo({ center: lngLat, duration: 600 });
     }
   }, [session]);
@@ -100,7 +100,6 @@ export function LiveTripMap({ tripId, height = "60vh", className }: Props) {
         {keyError && (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">{keyError}</div>
         )}
-        {/* Status overlay */}
         <div className="absolute left-3 top-3 right-3 flex justify-between gap-2 pointer-events-none">
           <div className="inline-flex items-center gap-2 rounded-full bg-background/85 backdrop-blur border border-border px-3 py-1.5 text-xs">
             <span className={`h-2 w-2 rounded-full ${live ? "bg-primary animate-pulse" : "bg-muted-foreground"}`} />

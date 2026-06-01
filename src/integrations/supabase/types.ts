@@ -311,6 +311,7 @@ export type Database = {
           id: string
           last_stop_name: string | null
           lat: number
+          live_share_token: string
           lng: number
           speed: number | null
           status: string
@@ -323,6 +324,7 @@ export type Database = {
           id?: string
           last_stop_name?: string | null
           lat: number
+          live_share_token?: string
           lng: number
           speed?: number | null
           status?: string
@@ -335,6 +337,7 @@ export type Database = {
           id?: string
           last_stop_name?: string | null
           lat?: number
+          live_share_token?: string
           lng?: number
           speed?: number | null
           status?: string

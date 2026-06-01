@@ -273,10 +273,10 @@ function FollowedTripCard({ f }: { f: FollowedTrip }) {
             </div>
           </div>
         </Link>
-        {live && (
+        {live && session?.live_share_token && (
           <Link
-            to="/live/$tripId"
-            params={{ tripId: id }}
+            to="/live/$token"
+            params={{ token: session.live_share_token }}
             className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
           >
             <Radio className="h-3 w-3 animate-pulse" /> Følg live

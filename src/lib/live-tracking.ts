@@ -16,6 +16,7 @@ export interface LiveSession {
   last_stop_name: string | null;
   status: LiveStatus;
   updated_at: string;
+  live_share_token: string;
 }
 
 export interface LivePosition {
@@ -58,6 +59,34 @@ export function useLiveOptIn(tripId: string): [boolean, (v: boolean) => void] {
   return [on, (v) => setLiveOptIn(tripId, v)];
 }
 
+// ---------- share-token cache (per tripId+userId) ----------
+const tokenCache = new Map<string, string>();
+function cacheKey(tripId: string, userId: string) { return `${tripId}::${userId}`; }
+
+async function ensureShareToken(tripId: string, userId: string): Promise<string> {
+  const key = cacheKey(tripId, userId);
+  const cached = tokenCache.get(key);
+  if (cached) return cached;
+  // Look up existing row to reuse its token.
+  const { data } = await (supabase as any)
+    .from("trip_live_sessions")
+    .select("live_share_token")
+    .eq("trip_id", tripId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  const existing = (data as { live_share_token?: string } | null)?.live_share_token;
+  if (existing) {
+    tokenCache.set(key, existing);
+    return existing;
+  }
+  const fresh =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
+  tokenCache.set(key, fresh);
+  return fresh;
+}
+
 // ---------- write API ----------
 export async function upsertLiveSession(input: {
   tripId: string;
@@ -66,6 +95,7 @@ export async function upsertLiveSession(input: {
   status: LiveStatus;
   lastStopName?: string | null;
 }) {
+  const token = await ensureShareToken(input.tripId, input.userId);
   const row = {
     trip_id: input.tripId,
     user_id: input.userId,
@@ -76,8 +106,8 @@ export async function upsertLiveSession(input: {
     last_stop_name: input.lastStopName ?? null,
     status: input.status,
     updated_at: new Date().toISOString(),
+    live_share_token: token,
   };
-  // Types may not yet include this table; cast for safety.
   const { error } = await (supabase as any)
     .from("trip_live_sessions")
     .upsert(row, { onConflict: "trip_id,user_id" });
@@ -98,6 +128,7 @@ export async function updateLiveStatus(input: {
 }
 
 export async function endLiveSession(input: { tripId: string; userId: string }) {
+  tokenCache.delete(cacheKey(input.tripId, input.userId));
   const { error } = await (supabase as any)
     .from("trip_live_sessions")
     .delete()
@@ -107,10 +138,6 @@ export async function endLiveSession(input: { tripId: string; userId: string }) 
 }
 
 // ---------- broadcaster hook ----------
-/**
- * Periodically reads geolocation and upserts the live session.
- * Only runs when `enabled` is true and we have an authenticated user.
- */
 export function useLiveBroadcaster(opts: {
   tripId: string;
   userId: string | null | undefined;
@@ -165,7 +192,6 @@ export function useLiveBroadcaster(opts: {
       { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
     );
 
-    // Send right away (once we have a fix) and on an interval
     const initial = setTimeout(() => void send(), 2_000);
     const timer = setInterval(() => void send(), interval);
 
@@ -177,7 +203,6 @@ export function useLiveBroadcaster(opts: {
     };
   }, [broadcastable, tripId, userId, status, lastStopName, interval]);
 
-  // When user pauses/completes, reflect status immediately.
   useEffect(() => {
     if (!enabled || !userId) return;
     if (status === "completed") {
@@ -188,11 +213,32 @@ export function useLiveBroadcaster(opts: {
   return { permState };
 }
 
-// ---------- subscriber hook ----------
-/**
- * Fetches the current live session for a trip and subscribes to realtime updates.
- * Returns the latest session row (or null if none active).
- */
+// ---------- subscriber hooks ----------
+function subscribeAndSet(
+  filter: { column: "trip_id" | "live_share_token"; value: string },
+  setSession: (s: LiveSession | null) => void,
+) {
+  const channel = supabase
+    .channel(`live-${filter.column}-${filter.value}`)
+    .on(
+      // @ts-expect-error realtime types
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "trip_live_sessions",
+        filter: `${filter.column}=eq.${filter.value}`,
+      },
+      (payload: { eventType: string; new: LiveSession | null; old: LiveSession | null }) => {
+        if (payload.eventType === "DELETE") setSession(null);
+        else if (payload.new) setSession(payload.new);
+      },
+    )
+    .subscribe();
+  return channel;
+}
+
+/** Fetch and subscribe to the live session for a trip (auth or anon via RLS). */
 export function useLiveSession(tripId: string | null | undefined): LiveSession | null {
   const [session, setSession] = useState<LiveSession | null>(null);
 
@@ -212,22 +258,7 @@ export function useLiveSession(tripId: string | null | undefined): LiveSession |
     };
     void load();
 
-    const channel = supabase
-      .channel(`live-${tripId}`)
-      .on(
-        // @ts-expect-error realtime types
-        "postgres_changes",
-        { event: "*", schema: "public", table: "trip_live_sessions", filter: `trip_id=eq.${tripId}` },
-        (payload: { eventType: string; new: LiveSession | null; old: LiveSession | null }) => {
-          if (payload.eventType === "DELETE") {
-            setSession(null);
-          } else if (payload.new) {
-            setSession(payload.new);
-          }
-        },
-      )
-      .subscribe();
-
+    const channel = subscribeAndSet({ column: "trip_id", value: tripId }, setSession);
     return () => {
       cancelled = true;
       void supabase.removeChannel(channel);
@@ -237,10 +268,50 @@ export function useLiveSession(tripId: string | null | undefined): LiveSession |
   return session;
 }
 
+/** Public, token-based lookup — works without an authenticated session. */
+export function useLiveSessionByToken(token: string | null | undefined): {
+  session: LiveSession | null;
+  loading: boolean;
+} {
+  const [session, setSession] = useState<LiveSession | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!token) { setSession(null); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+
+    const load = async () => {
+      const { data } = await (supabase as any)
+        .from("trip_live_sessions")
+        .select("*")
+        .eq("live_share_token", token)
+        .maybeSingle();
+      if (cancelled) return;
+      setSession((data as LiveSession | null) ?? null);
+      setLoading(false);
+    };
+    void load();
+
+    const channel = subscribeAndSet({ column: "live_share_token", value: token }, setSession);
+
+    // Auto-refresh: if session is null, retry every 15s in case the driver
+    // starts broadcasting after the page loaded.
+    const retry = setInterval(() => { if (!cancelled) void load(); }, 15_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(retry);
+      void supabase.removeChannel(channel);
+    };
+  }, [token]);
+
+  return { session, loading };
+}
+
 export function isLiveActive(s: LiveSession | null): boolean {
   if (!s) return false;
   if (s.status === "completed") return false;
-  // Consider stale after 5 minutes without updates
   const age = Date.now() - new Date(s.updated_at).getTime();
   return age < 5 * 60 * 1000;
 }
