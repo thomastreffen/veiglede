@@ -54,8 +54,30 @@ function AdminSubscriptions() {
             <Card label="MRR (estimert)" value={`${data.mrr.toLocaleString("nb-NO")} kr`} accent />
           </div>
 
+          <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="font-display text-lg uppercase">MRR siste 6 måneder</h2>
+              <span className="text-xs text-slate-500">Estimert</span>
+            </div>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
+                  <YAxis stroke="#64748b" fontSize={11} />
+                  <Tooltip
+                    contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number) => [`${v.toLocaleString("nb-NO")} kr`, "MRR"]}
+                  />
+                  <Bar dataKey="mrr" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
           <section className="rounded-2xl border border-slate-800 bg-slate-900/60">
             <div className="p-5 border-b border-slate-800 flex items-baseline justify-between">
+
               <h2 className="font-display text-lg uppercase">Betalende abonnenter</h2>
               <span className="text-xs text-slate-500">{data.subscribers.length} totalt</span>
             </div>
