@@ -17,7 +17,8 @@ import { BookingInfo, BookingBadge } from "@/components/BookingInfo";
 import { DayWeather } from "@/components/DayWeather";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 import { dayDate, dayCoords } from "@/lib/weather";
-import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed } from "lucide-react";
+import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed, FileDown } from "lucide-react";
+import { downloadGpx } from "@/lib/gpx-export";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
   head: () => ({ meta: [{ title: "Roadbook — Veiglede" }] }),
@@ -78,9 +79,10 @@ function Roadbook() {
         <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Planlegger
         </Link>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> Del</button>
           <button onClick={handleExportPdf} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Download className="h-3.5 w-3.5" /> Eksporter PDF</button>
+          <button onClick={() => downloadGpx(trip, tripStops)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><FileDown className="h-3.5 w-3.5" /> Last ned GPX</button>
         </div>
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
