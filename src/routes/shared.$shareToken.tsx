@@ -8,10 +8,9 @@ import {
 import { getPublicTripByToken } from "@/lib/public-trips.functions";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { TripComments } from "@/components/TripComments";
-import { LiveTripMap } from "@/components/LiveTripMap";
-import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
+import { LiveSharedBlock } from "@/components/LiveSharedBlock";
 import {
-  MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass, Radio,
+  MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass,
 } from "lucide-react";
 import { useState } from "react";
 
