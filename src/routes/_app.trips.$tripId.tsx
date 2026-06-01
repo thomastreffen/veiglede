@@ -441,6 +441,9 @@ function TripPlanner() {
         </ol>
       </section>
 
+      {/* Packing list */}
+      <PackingList trip={trip} stopTypes={tripStops.map((s) => s.type)} />
+
       {/* Suggested along the route */}
       <section id="along" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
