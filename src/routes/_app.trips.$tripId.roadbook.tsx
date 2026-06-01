@@ -98,7 +98,7 @@ function Roadbook() {
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
         </div>
 
-        <div className="mt-5 flex justify-center gap-2 flex-wrap">
+        <div className="mt-5 flex justify-center gap-2 flex-wrap print:hidden">
           {tracking.status === "idle" && (
             <button onClick={() => trackingApi.start(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
               <Play className="h-4 w-4" /> Start tur
