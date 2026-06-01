@@ -51,12 +51,68 @@ export const nb = {
   },
   how: {
     eyebrow: "Slik fungerer det",
-    title: "Planlegg reisen din i noen få enkle steg",
+    title: "Fra idé til tur på fire steg",
     steps: [
-      { title: "Velg kjøretøy og kjørestil", body: "Fortell oss hva du kjører og hvordan du liker å kjøre." },
-      { title: "Få rute og stoppforslag", body: "AI-en vår lager en rute med sceniske veier og gode stopp." },
-      { title: "Åpne roadbook og del turen", body: "Følg roadbooken, naviger trygt og del med turfølget." },
+      { title: "Legg til kjøretøyet ditt", body: "Fortell oss hva du kjører og hvordan du liker å kjøre. MC, bil eller bobil — Veiglede tilpasser alt etter deg." },
+      { title: "Planlegg turen med AI", body: "Skriv inn start og mål, velg stil og dato. AI genererer et komplett roadbook med stopp, kart og reisetid." },
+      { title: "Del med reisefølget", body: "Inviter venner, del live-posisjon og planlegg sammen. Alle følger samme roadbook." },
+      { title: "Opplev og dokumenter", body: "Følg roadbooken underveis, legg til bilder på stopp og se minner fra turen etterpå." },
     ],
+  },
+  featureGrid: {
+    eyebrow: "Funksjoner",
+    title: "Alt du trenger for turen",
+    rows: [
+      { category: "Planlegging", items: [
+        { title: "AI-drevet ruteplanlegger", body: "Beskriv turen din og få et komplett roadbook med stopp, reisetid og dagsetapper på sekunder." },
+        { title: "Smarte stopp langs ruta", body: "Utsiktspunkt, matpause, drivstoff, overnatting og lokale perler — tilpasset kjøretøyet og stilen din." },
+        { title: "Dag-for-dag roadbook", body: "Strukturert plan med estimert tid, kart og beskrivelse for hvert stopp — klar til å følge." },
+      ]},
+      { category: "Kjøretøy og garasje", items: [
+        { title: "Min garasje", body: "Legg til bil, MC eller bobil med egne preferanser. Veiglede tilpasser rutene etter hva du kjører." },
+        { title: "Kostnadskalkulator", body: "Beregn drivstoff, bom, ferge og overnatting. Se total kostnad og fordel på reisefølge." },
+        { title: "Værvarsel på turdatoer", body: "Se værmeldingen for hver dag og hvert stoppested — hentet fra Meteorologisk institutt." },
+      ]},
+      { category: "Del og opplev sammen", items: [
+        { title: "Planlegg med reisefølge", body: "Inviter venner og familie til å følge samme plan. Alle ser roadbooken i sanntid." },
+        { title: "Live-deling", body: "Del posisjonen din mens du kjører — familien kan følge med uten å laste ned en app." },
+        { title: "Kommentarer og reaksjoner", body: "Kommenter stopp, legg til bilder underveis og reager på andres turer." },
+      ]},
+      { category: "Sosial og oppdagelse", items: [
+        { title: "Utforsk andres turer", body: "Se ruter planlagt av andre Veiglede-brukere. Filtrer på region, kjøretøy og stil." },
+        { title: "Offentlig profil og garasje", body: "Vis frem kjøretøyene dine og del turene dine med andre entusiaster." },
+        { title: "Lagre andres ruter", body: "Finn en rute du liker? Lagre den til din egen planlegger med ett klikk." },
+      ]},
+      { category: "Praktisk", items: [
+        { title: "PDF og GPX-eksport", body: "Eksporter roadbooken til PDF for utskrift, eller GPX-fil til Garmin og andre GPS-enheter." },
+        { title: "Åpne i Google Maps/Waze", body: "Send ruten direkte til din foretrukne navigasjonsapp med ett trykk." },
+        { title: "Pakkeliste med AI", body: "Få AI-genererte pakkelister tilpasset kjøretøy, rute og årstid — ikke glem noe hjemmefra." },
+      ]},
+      { category: "Fordeler og premium", items: [
+        { title: "Veiglede Fordeler", body: "Eksklusive rabatter på MC-utstyr, verksted, forsikring og mer — kun for Veiglede-brukere." },
+        { title: "Pro og Gruppe-planer", body: "Ubegrenset garasje, avansert AI og gruppeplanlegging for MC-klubber og vennegjenger." },
+        { title: "Nasjonale turistveier", body: "Veiglede dekker alle 18 nasjonale turistveier med foreslåtte stopp og ruter." },
+      ]},
+    ],
+  },
+  audiences: {
+    eyebrow: "For alle som kjører",
+    title: "Bygget for veien — uansett kjøretøy",
+    cards: [
+      { title: "Motorsyklister", body: "Svingete fjellpass, nasjonale turistveier og fotostopp. Veiglede er bygget for MC-kjøring." },
+      { title: "Bilfamilier", body: "Planlegg familieturen med stopp alle liker. Del roadbooken med alle i bilen." },
+      { title: "Bobilister", body: "Rolige etapper, campingplasser og overnatting planlagt langs ruta." },
+    ],
+  },
+  testimonials: {
+    eyebrow: "Hva folk sier",
+    title: "Tidlige tilbakemeldinger",
+    items: [
+      { quote: "Planla MC-turen til Lofoten på 10 minutter. Roadbooken var bedre enn det jeg hadde laget selv på 2 timer.", author: "MC-entusiast, Oslo" },
+      { quote: "Endelig en app som forstår at bobilkjøring er annerledes enn vanlig bilkjøring.", author: "Bobilist, Bergen" },
+      { quote: "Delte turen med hele familien via live-link. Ungene fulgte med på kartet hele veien!", author: "Familiefar, Trondheim" },
+    ],
+    disclaimer: "Eksempler fra beta-testere. Send oss din tilbakemelding på kontakt@veiglede.no.",
   },
   together: {
     title: "Planlegg sammen",
