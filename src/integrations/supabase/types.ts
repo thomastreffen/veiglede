@@ -188,6 +188,48 @@ export type Database = {
         }
         Relationships: []
       }
+      partners: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          lat: number | null
+          lng: number | null
+          logo_url: string | null
+          name: string
+          region: string | null
+          website: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          name: string
+          region?: string | null
+          website?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          name?: string
+          region?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -195,8 +237,10 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          is_active: boolean
           is_public: boolean
           onboarded_at: string | null
+          role: string
           show_garage: boolean
           show_stats: boolean
           show_trips: boolean
@@ -211,8 +255,10 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          is_active?: boolean
           is_public?: boolean
           onboarded_at?: string | null
+          role?: string
           show_garage?: boolean
           show_stats?: boolean
           show_trips?: boolean
@@ -227,8 +273,10 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          is_active?: boolean
           is_public?: boolean
           onboarded_at?: string | null
+          role?: string
           show_garage?: boolean
           show_stats?: boolean
           show_trips?: boolean
@@ -583,6 +631,7 @@ export type Database = {
       }
       get_invite_preview: { Args: { p_token: string }; Returns: Json }
       get_shared_trip: { Args: { p_token: string }; Returns: Json }
+      is_admin: { Args: { _uid: string }; Returns: boolean }
       is_trip_member: {
         Args: { _trip_id: string; _user_id: string }
         Returns: boolean
