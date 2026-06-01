@@ -46,6 +46,10 @@ function GaragePage() {
                 (t.vehicleId === vh.id || (!t.vehicleId && t.vehicle === vh.type))
             );
             const totalKm = vehicleTrips.reduce((sum, t) => sum + t.distanceKm, 0);
+            const actualKm = vehicleTrips.reduce(
+              (sum, t) => sum + (typeof t.actualDistanceKm === "number" ? t.actualDistanceKm : 0),
+              0,
+            );
 
             return (
               <VehicleCard
@@ -61,12 +65,14 @@ function GaragePage() {
                       <span className="font-medium">{vehicleTrips.length}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Total planlagt km</span>
+                      <span className="text-muted-foreground">Planlagt totalt</span>
                       <span className="font-medium">{totalKm.toLocaleString("nb-NO")} km</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Faktisk kjørt km</span>
-                      <span className="text-muted-foreground italic">kommer snart</span>
+                      <span className="text-muted-foreground">Faktisk kjørt</span>
+                      <span className={actualKm > 0 ? "font-medium text-primary" : "text-muted-foreground"}>
+                        {actualKm > 0 ? `${Math.round(actualKm).toLocaleString("nb-NO")} km` : "0 km"}
+                      </span>
                     </div>
                   </div>
                 }
