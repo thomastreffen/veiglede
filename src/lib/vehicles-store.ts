@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import type { VehicleType, RouteStyle, StopType, EnergySource } from "./trips-store";
 
 
@@ -127,7 +128,16 @@ function load(): State {
 
 function persist(next: State) {
   cache = next;
-  if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(next));
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(next));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "QuotaExceededError") {
+        toast.error("Kunne ikke lagre — prøv et mindre bilde");
+      }
+      throw e;
+    }
+  }
   listeners.forEach((l) => l());
 }
 
