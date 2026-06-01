@@ -112,6 +112,19 @@ function AdminPartners() {
                 {p.description && <p className="mt-2 text-xs text-slate-400 line-clamp-2">{p.description}</p>}
               </div>
             </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 pt-3 border-t border-slate-800 text-center">
+              <Stat label="Visninger" value={p.impressions_this_month ?? 0} />
+              <Stat label="Klikk" value={p.clicks_this_month ?? 0} />
+              <Stat
+                label="CTR"
+                value={
+                  (p.impressions_this_month ?? 0) > 0
+                    ? `${(((p.clicks_this_month ?? 0) / (p.impressions_this_month ?? 1)) * 100).toFixed(1)}%`
+                    : "—"
+                }
+              />
+            </div>
+            <p className="mt-1 text-[10px] uppercase tracking-wider text-slate-500 text-center">Denne måneden</p>
             <div className="mt-3 flex items-center justify-between gap-2 pt-3 border-t border-slate-800">
               <label className="inline-flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
                 <input type="checkbox" checked={p.is_active} onChange={() => onToggle(p)} className="accent-primary" />
