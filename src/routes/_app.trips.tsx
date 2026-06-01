@@ -8,10 +8,11 @@ import { useAuth } from "@/lib/auth";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
 import { useVehicles } from "@/lib/vehicles-store";
 import { feedFromFollowsFn, type FeedTrip } from "@/lib/social.functions";
-import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users, Radio, Search, X, Filter, SlidersHorizontal } from "lucide-react";
+import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users, Radio, Search, X } from "lucide-react";
 import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
