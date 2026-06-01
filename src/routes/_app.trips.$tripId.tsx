@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
+import { useT } from "@/i18n/provider";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
@@ -49,6 +50,8 @@ export const Route = createFileRoute("/_app/trips/$tripId")({
 
 function TripPlanner() {
   const { tripId } = Route.useParams();
+  const t = useT();
+  const td = t.app.tripDetail;
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { trips, days, stops } = useTripsStore();
   const prefs = useDriverPrefs();
@@ -120,8 +123,8 @@ function TripPlanner() {
   if (!trip) {
     return (
       <div className="py-12 text-center">
-        <p className="font-display text-2xl uppercase">Tur ikke funnet</p>
-        <Link to="/trips" className="mt-4 inline-block text-sm text-primary underline">Tilbake til mine turer</Link>
+        <p className="font-display text-2xl uppercase">{td.notFound}</p>
+        <Link to="/trips" className="mt-4 inline-block text-sm text-primary underline">{td.backToMyTrips}</Link>
       </div>
     );
   }
@@ -173,25 +176,25 @@ function TripPlanner() {
       {trip.status === "draft" && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/50 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
           <span className="flex-1 min-w-0">
-            📝 Dette er en kladd — ikke synlig i «Mine turer» før du lagrer.
+            {td.draftBanner}
           </span>
           <button
             type="button"
-            onClick={() => { tripsApi.updateTrip(trip.id, { status: "saved" }); toast.success("Tur lagret ✓"); }}
+            onClick={() => { tripsApi.updateTrip(trip.id, { status: "saved" }); toast.success(td.tripSavedToast); }}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-amber-950 hover:brightness-110 shadow-lg shadow-amber-400/20"
           >
-            <Check className="h-3.5 w-3.5" /> Lagre tur
+            <Check className="h-3.5 w-3.5" /> {td.saveTrip}
           </button>
         </div>
       )}
 
       <div className="flex items-center justify-between gap-3">
         <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Mine turer
+          <ArrowLeft className="h-4 w-4" /> {td.myTripsLink}
         </Link>
         {trip.status !== "draft" && (
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-            <Check className="h-3 w-3 text-primary" /> Lagret
+            <Check className="h-3 w-3 text-primary" /> {td.savedBadge}
           </span>
         )}
       </div>
@@ -225,11 +228,11 @@ function TripPlanner() {
             {user && (
               <button
                 onClick={() => setEditOpen(true)}
-                title="Rediger tur"
-                aria-label="Rediger tur"
+                title={td.editTrip}
+                aria-label={td.editTrip}
                 className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 backdrop-blur px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
               >
-                <Pencil className="h-3.5 w-3.5" /> Rediger tur
+                <Pencil className="h-3.5 w-3.5" /> {td.editTrip}
               </button>
             )}
             {user && (
@@ -239,9 +242,9 @@ function TripPlanner() {
                   if (next && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
                   tripsApi.setTripPublic(trip.id, next);
                   void flushTripsNow();
-                  toast.success(next ? "Tur er nå offentlig 🌍" : "Tur er nå privat 🔒");
+                  toast.success(next ? td.publicToast : td.privateToast);
                 }}
-                title="Offentlige turer vises på din profil og i Utforsk"
+                title={td.publicTooltip}
                 className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                   trip.isPublic
                     ? "border-primary bg-primary/10 text-primary hover:bg-primary/20"
@@ -249,7 +252,7 @@ function TripPlanner() {
                 }`}
               >
                 {trip.isPublic ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                {trip.isPublic ? "🌍 Offentlig" : "🔒 Privat"}
+                {trip.isPublic ? td.publicLabel : td.privateLabel}
               </button>
             )}
           </div>
@@ -260,9 +263,9 @@ function TripPlanner() {
 
       {/* Stat row */}
       <section className="mt-4 grid grid-cols-3 gap-3">
-        <BigStat icon={<RouteIcon className="h-4 w-4" />} label="Distanse" value={`${trip.distanceKm} km`} />
-        <BigStat icon={<Clock className="h-4 w-4" />} label="Kjøretid" value={trip.drivingTime} />
-        <BigStat icon={<Camera className="h-4 w-4" />} label="Stopp" value={String(totalStops)} />
+        <BigStat icon={<RouteIcon className="h-4 w-4" />} label={td.distance} value={`${trip.distanceKm} km`} />
+        <BigStat icon={<Clock className="h-4 w-4" />} label={td.drivingTime} value={trip.drivingTime} />
+        <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
       </section>
 
       {/* Map */}
@@ -278,7 +281,7 @@ function TripPlanner() {
           height="h-72 md:h-[520px]"
         />
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
-          Beregnet av rutemotor. Kan avvike fra Google Maps, trafikk, ferge og lokale forhold.
+          {td.mapDisclaimer}
         </p>
         <DetourTotals trip={trip} stops={tripStops} />
       </section>
@@ -290,7 +293,7 @@ function TripPlanner() {
 
       {/* Time budget */}
       <section className="mt-4">
-        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title={td.tripBudget} />
       </section>
 
 
@@ -300,10 +303,10 @@ function TripPlanner() {
         <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-              <Sparkles className="h-4 w-4" /> AI ko-pilot
+              <Sparkles className="h-4 w-4" /> {td.aiCopilot}
             </p>
             <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-primary">
-              Tilpasset profilen din · {prefs.stopInterests.length} interesser
+              {td.profileMatched(prefs.stopInterests.length)}
             </span>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-foreground/90">{trip.aiSummary}</p>
@@ -314,12 +317,12 @@ function TripPlanner() {
       <section className="mt-4 grid grid-cols-2 gap-3">
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-          <BookOpen className="h-4 w-4" /> Åpne roadbook
+          <BookOpen className="h-4 w-4" /> {td.openRoadbook}
         </Link>
         <button
           onClick={() => setShareOpen(true)}
           className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2 hover:border-primary">
-          <Share2 className="h-4 w-4" /> Del tur
+          <Share2 className="h-4 w-4" /> {td.shareTrip}
         </button>
         <OpenInMaps origin={trip.origin} destination={trip.destination} />
       </section>
@@ -332,7 +335,7 @@ function TripPlanner() {
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
       <EditTripSheet trip={trip} open={editOpen} onOpenChange={setEditOpen} />
-      <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title="Lagre og del turen din" description="Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter." redirectTo={`/trips/${tripId}`} />
+      <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title={td.saveAndSharePromptTitle} description={td.saveAndSharePromptBody} redirectTo={`/trips/${tripId}`} />
 
       <section className="mt-4">
         <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
@@ -349,13 +352,13 @@ function TripPlanner() {
       {/* Quick-jump pills */}
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
         {[
-          { href: "#track", label: "Live tur" },
-          { href: "#days", label: "Dag for dag" },
-          { href: "#packing", label: "Pakkeliste" },
-          { href: "#along", label: "Langs ruta" },
-          { href: "#photos", label: "Bilder" },
-          { href: "#tips", label: "Lokale tips" },
-          { href: "#practical", label: "Praktisk" },
+          { href: "#track", label: td.jumpLive },
+          { href: "#days", label: td.jumpDays },
+          { href: "#packing", label: td.jumpPacking },
+          { href: "#along", label: td.jumpAlong },
+          { href: "#photos", label: td.jumpPhotos },
+          { href: "#tips", label: td.jumpTips },
+          { href: "#practical", label: td.jumpPractical },
         ].map((p) => (
           <a key={p.href} href={p.href}
             className="shrink-0 inline-flex items-center rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary">
@@ -367,9 +370,9 @@ function TripPlanner() {
       {/* Days */}
       <section id="days" className="mt-8 scroll-mt-24">
         <div className="flex items-end justify-between">
-          <h2 className="font-display text-2xl uppercase">Dag for dag</h2>
+          <h2 className="font-display text-2xl uppercase">{td.dayByDay}</h2>
           <button onClick={() => tripsApi.addDay(tripId)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-xs uppercase tracking-wider hover:border-primary">
-            <Plus className="h-3.5 w-3.5" /> Legg til dag
+            <Plus className="h-3.5 w-3.5" /> {td.addDay}
           </button>
         </div>
 
@@ -383,11 +386,11 @@ function TripPlanner() {
                   <div className="flex-1 min-w-0">
                     <input value={day.title} onChange={(e) => tripsApi.updateDay(day.id, { title: e.target.value })}
                       className="w-full font-display text-xl md:text-2xl uppercase bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
-                    <input value={day.summary ?? ""} placeholder="Kort beskrivelse av dagen…"
+                    <input value={day.summary ?? ""} placeholder={td.dayDescPlaceholder}
                       onChange={(e) => tripsApi.updateDay(day.id, { summary: e.target.value })}
                       className="mt-1 w-full text-sm text-muted-foreground bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
                   </div>
-                  <button onClick={() => { if (confirm("Slette dagen?")) tripsApi.deleteDay(day.id); }} className="text-muted-foreground hover:text-destructive p-1">
+                  <button onClick={() => { if (confirm(td.deleteDayConfirm)) tripsApi.deleteDay(day.id); }} className="text-muted-foreground hover:text-destructive p-1">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -415,8 +418,8 @@ function TripPlanner() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-semibold truncate">{stop.name}</p>
                                 <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
-                                {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> Foto</span>}
-                                {stop.promoted && !stop.isPartner && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Partner</span>}
+                                {stop.photoOp && <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider"><ImageIcon className="h-2.5 w-2.5" /> {td.photoBadge}</span>}
+                                {stop.promoted && !stop.isPartner && <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">{td.partnerBadge}</span>}
                               </div>
                               {stop.description && <p className="mt-1 text-sm text-foreground/80 line-clamp-2">{stop.description}</p>}
                               {stop.type === "lodging" && stop.booking && <BookingInfo booking={stop.booking} />}
@@ -443,15 +446,15 @@ function TripPlanner() {
                           </Link>
                           <div className="flex flex-col items-center justify-center border-l border-border/60 px-1">
                             <button onClick={() => tripsApi.moveStop(stop.id, -1)} disabled={idx === 0}
-                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt opp">
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label={td.moveUp}>
                               <ChevronUp className="h-4 w-4" />
                             </button>
                             <button onClick={() => tripsApi.moveStop(stop.id, 1)} disabled={idx === dayStops.length - 1}
-                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label="Flytt ned">
+                              className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-20 disabled:hover:text-muted-foreground" aria-label={td.moveDown}>
                               <ChevronDown className="h-4 w-4" />
                             </button>
-                            <button onClick={(e) => { e.preventDefault(); if (confirm(`Fjerne «${stop.name}»?`)) tripsApi.deleteStop(stop.id); }}
-                              className="p-1.5 text-muted-foreground hover:text-destructive" aria-label="Fjern stopp">
+                            <button onClick={(e) => { e.preventDefault(); if (confirm(td.removeStopConfirm(stop.name))) tripsApi.deleteStop(stop.id); }}
+                              className="p-1.5 text-muted-foreground hover:text-destructive" aria-label={td.removeStop}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
@@ -466,20 +469,20 @@ function TripPlanner() {
                     );
                   })}
                   {dayStops.length === 0 && (
-                    <li className="px-5 py-6 text-sm text-muted-foreground italic">Ingen stopp på denne dagen enda.</li>
+                    <li className="px-5 py-6 text-sm text-muted-foreground italic">{td.noStopsToday}</li>
                   )}
                 </ul>
 
 
                 <div className="p-3 bg-background/40 border-t border-border/60 flex gap-2 overflow-x-auto">
-                  {STOP_TYPES.slice(0, 8).map((t) => (
-                    <button key={t.value}
+                  {STOP_TYPES.slice(0, 8).map((typ) => (
+                    <button key={typ.value}
                       onClick={() => {
-                        const stop = tripsApi.addStop(day.id, { type: t.value, name: `Nytt ${t.label.toLowerCase()}` });
+                        const stop = tripsApi.addStop(day.id, { type: typ.value, name: td.newStopPrefix(typ.label) });
                         navigate({ to: "/trips/$tripId/stops/$stopId", params: { tripId, stopId: stop.id } });
                       }}
                       className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-surface border border-border px-3 py-1.5 text-xs hover:border-primary">
-                      <span>{t.emoji}</span> {t.label}
+                      <span>{typ.emoji}</span> {typ.label}
                     </button>
                   ))}
                 </div>
@@ -496,12 +499,12 @@ function TripPlanner() {
       <section id="along" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foreslått</p>
-            <h2 className="mt-1 font-display text-2xl uppercase">Langs ruta</h2>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{td.suggestedEyebrow}</p>
+            <h2 className="mt-1 font-display text-2xl uppercase">{td.alongRouteTitle}</h2>
           </div>
-          <p className="text-[11px] text-muted-foreground">Trykk for å legge til</p>
+          <p className="text-[11px] text-muted-foreground">{td.tapToAdd}</p>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Tilpasset {vehicleDisplay}{em ? ` (${em.label.toLowerCase()})` : ""} · {s.label.toLowerCase()} · interesser fra profil og kjøretøy.</p>
+        <p className="mt-1 text-xs text-muted-foreground">{td.tailoredFor(vehicleDisplay, em ? em.label.toLowerCase() : "", s.label.toLowerCase())}</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {enrichedSuggestions.map(({ sug, info }: { sug: SuggestedStop; info: ReturnType<typeof suggestionRouteInfo> }) => (
@@ -541,9 +544,9 @@ function TripPlanner() {
 
       {/* Photo memories concept */}
       <section id="photos" className="mt-10 scroll-mt-24">
-        <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Foto</p>
-        <h2 className="mt-1 font-display text-2xl uppercase">Bilder fra ruta</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Senere kan bilder du tar underveis kobles automatisk til turen basert på tid og posisjon.</p>
+        <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{td.photoEyebrow}</p>
+        <h2 className="mt-1 font-display text-2xl uppercase">{td.photosFromRoute}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{td.photosLater}</p>
 
         <TripPhotosGallery tripId={tripId} />
       </section>
@@ -552,11 +555,11 @@ function TripPlanner() {
       <section id="tips" className="mt-10 scroll-mt-24">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Partnertips</p>
-            <h2 className="mt-1 font-display text-2xl uppercase">Lokalt langs ruta</h2>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{td.partnerTipsEyebrow}</p>
+            <h2 className="mt-1 font-display text-2xl uppercase">{td.localAlongRoute}</h2>
           </div>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Veiglede er gratis. Lokale tips og partnere vises bare når de passer ruten din.</p>
+        <p className="mt-1 text-xs text-muted-foreground">{td.freeTipsNote}</p>
 
         <div className="mt-4 space-y-3">
           {partnerTips.map((tip) => <PartnerCard key={tip.id} tip={tip} />)}
@@ -565,42 +568,41 @@ function TripPlanner() {
 
       {/* Practical info */}
       <section id="practical" className="mt-10 rounded-2xl border border-border bg-surface p-5 scroll-mt-24">
-        <h2 className="font-display text-xl uppercase">Praktisk info</h2>
+        <h2 className="font-display text-xl uppercase">{td.practicalTitle}</h2>
         <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-          <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
-          <li>· Beregnet kjøretid: {trip.drivingTime} <span className="text-[11px] text-muted-foreground/80">(rutemotor — kan avvike fra Google Maps, trafikk, ferge og lokale forhold)</span></li>
-          <li>· Kjøretøy: {vehicleDisplay} ({v.label}{em ? ` · ${em.label}` : ""}) · stil: {s.label}</li>
-          {trip.energy === "electric" && <li>· Ladestrategi: prioriter hurtigladere langs ruta — bensinstasjoner filtreres bort.</li>}
-          {trip.energy === "hybrid" && <li>· Hybrid: både lading og bensinstopp foreslås der det passer.</li>}
-          {trip.vehicle === "rv" && <li>· Camper/bobil: stopp med plass, høyde, camping og overnatting prioriteres.</li>}
-          {trip.vehicle === "motorcycle" && <li>· MC: korte, trygge pauser og svingete strekk foretrekkes.</li>}
-          {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })}</li>}
-          <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
+          <li>· {td.practicalTotal(trip.distanceKm, tripDays.length)}</li>
+          <li>· {td.practicalDrivingTime(trip.drivingTime)} <span className="text-[11px] text-muted-foreground/80">{td.practicalDrivingTimeNote}</span></li>
+          <li>· {td.practicalVehicle(vehicleDisplay, v.label, em ? em.label : "", s.label)}</li>
+          {trip.energy === "electric" && <li>· {td.electricNote}</li>}
+          {trip.energy === "hybrid" && <li>· {td.hybridNote}</li>}
+          {trip.vehicle === "rv" && <li>· {td.rvNote}</li>}
+          {trip.vehicle === "motorcycle" && <li>· {td.mcNote}</li>}
+          {trip.startDate && <li>· {td.departure(new Date(trip.startDate).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }))}</li>}
+          <li>· {td.remember}</li>
         </ul>
 
         <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
+          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">{td.yourDrivingStyle}</p>
           <p className="mt-1.5 text-sm text-foreground/90">
-            Stoppene er plassert slik at dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
-            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
+            {td.stopsPlacedNote(prefs.maxDrivingHours, formatPauseLabel(prefs.pauseEveryMin))}
           </p>
           {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
             <p className="mt-1.5 text-sm text-foreground/90">
-              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+              {td.avoidPrefix} {[prefs.drivingFlags["no-highway"] && td.avoidHighway, prefs.drivingFlags["no-ferry"] && td.avoidFerry].filter(Boolean).join(` ${td.avoidAnd} `)} {td.avoidSuffix}
             </p>
           )}
-          <p className="mt-1.5 text-[11px] text-muted-foreground">Endre i Profil → Kjørepreferanser.</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">{td.changeInProfile}</p>
         </div>
 
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
           className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-          <BookOpen className="h-4 w-4" /> Åpne roadbook
+          <BookOpen className="h-4 w-4" /> {td.openRoadbook}
         </Link>
       </section>
 
-      <button onClick={() => { if (confirm("Slette hele turen?")) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
+      <button onClick={() => { if (confirm(td.deleteTripConfirm)) { tripsApi.deleteTrip(tripId); navigate({ to: "/trips" }); } }}
         className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3 text-sm text-muted-foreground hover:text-destructive hover:border-destructive">
-        <Trash2 className="h-4 w-4" /> Slett tur
+        <Trash2 className="h-4 w-4" /> {td.deleteTrip}
       </button>
       {lightboxUrl && (
         <div onClick={() => setLightboxUrl(null)} className="fixed inset-0 z-50 bg-background/95 backdrop-blur grid place-items-center p-4 cursor-zoom-out">
