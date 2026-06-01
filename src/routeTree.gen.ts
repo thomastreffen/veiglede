@@ -57,7 +57,6 @@ import { Route as PartnerDashboardCampaignIdRouteImport } from './routes/partner
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
-import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksTripRemindersRouteImport } from './routes/api/public/hooks/trip-reminders'
 import { Route as ApiPublicHooksPartnersMonthlyResetRouteImport } from './routes/api/public/hooks/partners-monthly-reset'
 import { Route as ApiPublicCronGeneratePartnerInvoicesRouteImport } from './routes/api/public/cron/generate-partner-invoices'
@@ -309,12 +308,6 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicPaymentsWebhookRoute =
-  ApiPublicPaymentsWebhookRouteImport.update({
-    id: '/api/public/payments/webhook',
-    path: '/api/public/payments/webhook',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicHooksTripRemindersRoute =
   ApiPublicHooksTripRemindersRouteImport.update({
     id: '/api/public/hooks/trip-reminders',
@@ -392,7 +385,6 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -444,7 +436,6 @@ export interface FileRoutesByTo {
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -501,7 +492,6 @@ export interface FileRoutesById {
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
   '/api/public/hooks/partners-monthly-reset': typeof ApiPublicHooksPartnersMonthlyResetRoute
   '/api/public/hooks/trip-reminders': typeof ApiPublicHooksTripRemindersRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -558,7 +548,6 @@ export interface FileRouteTypes {
     | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
-    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -610,7 +599,6 @@ export interface FileRouteTypes {
     | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
-    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -666,7 +654,6 @@ export interface FileRouteTypes {
     | '/api/public/cron/generate-partner-invoices'
     | '/api/public/hooks/partners-monthly-reset'
     | '/api/public/hooks/trip-reminders'
-    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -701,7 +688,6 @@ export interface RootRouteChildren {
   ApiPublicCronGeneratePartnerInvoicesRoute: typeof ApiPublicCronGeneratePartnerInvoicesRoute
   ApiPublicHooksPartnersMonthlyResetRoute: typeof ApiPublicHooksPartnersMonthlyResetRoute
   ApiPublicHooksTripRemindersRoute: typeof ApiPublicHooksTripRemindersRoute
-  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
   LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
@@ -1045,13 +1031,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/payments/webhook': {
-      id: '/api/public/payments/webhook'
-      path: '/api/public/payments/webhook'
-      fullPath: '/api/public/payments/webhook'
-      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/hooks/trip-reminders': {
       id: '/api/public/hooks/trip-reminders'
       path: '/api/public/hooks/trip-reminders'
@@ -1222,7 +1201,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPartnersMonthlyResetRoute:
     ApiPublicHooksPartnersMonthlyResetRoute,
   ApiPublicHooksTripRemindersRoute: ApiPublicHooksTripRemindersRoute,
-  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
   LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
