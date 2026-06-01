@@ -380,10 +380,3 @@ function LiveSharingSection({ tripId }: { tripId: string }) {
       </label>
     </div>
   );
-}
-
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
