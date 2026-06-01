@@ -18,6 +18,7 @@ import { ShareTripModal } from "@/components/ShareTripModal";
 import { TripCompanions } from "@/components/TripCompanions";
 import { TripMembers } from "@/components/TripMembers";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
+import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
 import { TripMemories } from "@/components/TripMemories";
@@ -319,6 +320,12 @@ function TripPlanner() {
           <Share2 className="h-4 w-4" /> Del tur
         </button>
       </section>
+
+      {trip.isPublic && (
+        <section className="mt-4">
+          <TripReactionsRow tripId={trip.id} />
+        </section>
+      )}
 
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
       <EditTripSheet trip={trip} open={editOpen} onOpenChange={setEditOpen} />

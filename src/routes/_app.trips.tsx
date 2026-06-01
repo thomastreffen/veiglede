@@ -1,10 +1,13 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTripsStore, tripsApi, COVERS, VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta, FEATURED_ROUTES, type CoverKey, type VehicleType, type RouteStyle } from "@/lib/trips-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { useAuth } from "@/lib/auth";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
 import { useVehicles } from "@/lib/vehicles-store";
+import { feedFromFollowsFn, type FeedTrip } from "@/lib/social.functions";
 import { Plus, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Trash2, Users, Radio, Search, X, Filter, SlidersHorizontal } from "lucide-react";
 import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
 import { Input } from "@/components/ui/input";
@@ -52,6 +55,7 @@ function TripsDashboard() {
       {/* Featured routes */}
 
       <FollowedTripsSection />
+      <FeedFromFollowsSection />
 
       {/* Featured routes */}
       <section className="mt-12">
@@ -269,6 +273,65 @@ function FollowedTripCard({ f }: { f: FollowedTrip }) {
         )}
       </div>
     </li>
+  );
+}
+
+function FeedFromFollowsSection() {
+  const { user } = useAuth();
+  const fetcher = useServerFn(feedFromFollowsFn);
+  const { data, isLoading } = useQuery({
+    queryKey: ["feed-from-follows", user?.id],
+    queryFn: () => fetcher(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  if (!user || isLoading || !data || data.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-display text-xl md:text-2xl uppercase tracking-wide">Fra folk du følger</h2>
+        <Link to="/explore" className="text-xs text-primary hover:underline">Se alle på Utforsk →</Link>
+      </div>
+      <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.slice(0, 6).map((t) => (
+          <li key={t.id}>
+            <FeedTripCard t={t} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function FeedTripCard({ t }: { t: FeedTrip }) {
+  const v = vehicleMeta(t.vehicle as VehicleType);
+  const s = styleMeta(t.style as RouteStyle);
+  const cover = (t.cover as CoverKey) ?? "fjord";
+  return (
+    <Link to="/shared/$shareToken" params={{ shareToken: t.shareToken }} className="group relative block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
+      <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
+        <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
+        <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">
+          {s.emoji} {s.label}
+        </span>
+        <span className="absolute top-3 right-3 text-xl">{v.emoji}</span>
+      </div>
+      <div className="p-4 md:p-5">
+        {t.region && <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}</p>}
+        <h3 className="mt-1 font-display text-xl uppercase leading-tight group-hover:text-primary transition-colors">{t.title}</h3>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+          <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
+          <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
+          <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} stopp`} />
+        </div>
+        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
+          <span className="inline-flex items-center gap-1 truncate"><MapPin className="h-3 w-3" /> {t.origin} → {t.destination}</span>
+          {t.ownerName && <span className="truncate">av {t.ownerName}</span>}
+        </div>
+      </div>
+    </Link>
   );
 }
 

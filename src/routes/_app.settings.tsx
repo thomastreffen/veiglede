@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { useDebugMode, setDebugMode } from "@/components/DemoDebugPanel";
 import { useAuth, signOut } from "@/lib/auth";
 import { deleteMyAccount } from "@/lib/account";
 import { supabase } from "@/integrations/supabase/client";
 import { UsernamePicker } from "@/components/UsernamePicker";
+import { getFollowStatsFn } from "@/lib/social.functions";
 import { toast } from "sonner";
 import { LogOut, LogIn, Trash2, AlertTriangle, ExternalLink } from "lucide-react";
 
@@ -151,8 +154,44 @@ function ProfileHeader() {
       <div className="min-w-0">
         <p className="font-semibold text-lg truncate">{displayName}</p>
         <p className="text-xs text-muted-foreground truncate">{email}</p>
+        <ProfileFollowStats />
       </div>
     </div>
+  );
+}
+
+function ProfileFollowStats() {
+  const { user } = useAuth();
+  const [username, setUsername] = useState<string | null>(null);
+  const fetchStats = useServerFn(getFollowStatsFn);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setUsername((data?.username as string | null) ?? null); });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const { data: stats } = useQuery({
+    queryKey: ["follow-stats", user?.id],
+    queryFn: () => fetchStats({ data: { userId: user!.id } }),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  if (!user || !stats || !username) return null;
+
+  return (
+    <p className="mt-1 text-xs text-muted-foreground">
+      <Link to="/u/$username" params={{ username }} hash="followers" className="hover:text-primary hover:underline">
+        {stats.followers} følgere
+      </Link>
+      {" · "}
+      <Link to="/u/$username" params={{ username }} hash="following" className="hover:text-primary hover:underline">
+        følger {stats.following}
+      </Link>
+    </p>
   );
 }
 

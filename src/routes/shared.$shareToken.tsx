@@ -9,6 +9,7 @@ import { getPublicTripByToken } from "@/lib/public-trips.functions";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { TripComments } from "@/components/TripComments";
 import { LiveSharedBlock } from "@/components/LiveSharedBlock";
+import { SaveTripButton } from "@/components/SaveTripButton";
 import {
   MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass,
 } from "lucide-react";
@@ -97,9 +98,26 @@ function SharedTripByToken() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto max-w-2xl flex items-center justify-between px-4 py-3">
           <Link to="/" aria-label="Veiglede"><VeigledeLogo size="md" /></Link>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
-            <Eye className="h-3 w-3" /> Delt visning
-          </span>
+          <div className="flex items-center gap-2">
+            <SaveTripButton
+              payload={{
+                sourceTripId: trip.id,
+                title: trip.title,
+                subtitle: trip.subtitle,
+                region: trip.region,
+                origin: trip.origin,
+                destination: trip.destination,
+                distanceKm: trip.distanceKm,
+                drivingTime: trip.drivingTime,
+                cover: trip.cover,
+                style: trip.style,
+                vehicle: trip.vehicle,
+              }}
+            />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
+              <Eye className="h-3 w-3" /> Delt visning
+            </span>
+          </div>
         </div>
       </header>
 
