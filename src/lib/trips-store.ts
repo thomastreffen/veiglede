@@ -87,6 +87,20 @@ export interface TripDay {
   title: string;
   date?: string;
   summary?: string;
+  /** Optional planned departure time (HH:MM, 24h). Used to estimate arrival at each stop. */
+  departureTime?: string;
+}
+
+/** Keywords that strongly suggest a stop is a lodging/overnight. */
+export const LODGING_KEYWORDS = [
+  "hotell", "hotel", "hostel", "camping", "overnatting", "airbnb", "hytte", "cabin", "resort",
+  "rorbu", "fjellstove", "vandrerhjem", "motell", "motel", "pensjonat", "lodge", "inn",
+];
+
+export function looksLikeLodging(name?: string): boolean {
+  if (!name) return false;
+  const n = name.toLowerCase();
+  return LODGING_KEYWORDS.some((k) => n.includes(k));
 }
 
 export type TripStatus = "draft" | "saved";
