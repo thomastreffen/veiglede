@@ -124,18 +124,6 @@ function AccountCard() {
   );
 }
 
-import { useTheme, setTheme, type Theme } from "@/lib/theme";
-import { ROUTE_STYLES, stopMeta, vehicleMeta, styleMeta } from "@/lib/trips-store";
-import {
-  useDriverPrefs, updateDriverPrefs, toggleDrivingFlag, toggleStopInterest,
-  DRIVING_FLAGS, STOP_INTERESTS,
-} from "@/lib/driver-prefs";
-import {
-  useVehicles, vehiclesApi, type Vehicle,
-} from "@/lib/vehicles-store";
-import { VehicleEditor } from "@/components/VehicleEditor";
-import { VehicleCard } from "@/components/VehicleCard";
-import { Moon, Sun, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Globe, Eye, BarChart3, Car as CarIcon } from "lucide-react";
 
 function ProfileHeader() {
   const { user } = useAuth();
