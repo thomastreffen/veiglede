@@ -139,10 +139,15 @@ export function TripTracker({
 
       {/* Live stats */}
       {t.status !== "idle" && (
-        <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <Stat icon={<Clock className="h-3 w-3" />} label="Tid" value={elapsedStr} />
           <Stat icon={<MapPin className="h-3 w-3" />} label="Besøkt" value={`${visitedCount}/${tripStops.length}`} />
           <Stat icon={<Plus className="h-3 w-3" />} label="Spontant" value={String(t.spontaneousStops.length)} />
+          <Stat
+            icon={<Radio className="h-3 w-3" />}
+            label="Kjørt"
+            value={t.actualDistanceKm ? `${Math.round(t.actualDistanceKm)} km` : "—"}
+          />
         </div>
       )}
 
