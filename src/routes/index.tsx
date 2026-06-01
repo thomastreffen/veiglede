@@ -155,6 +155,7 @@ function Landing() {
               <ShieldCheck className="mt-0.5 h-4 w-4 text-primary shrink-0" />
               {t.hero.note}
             </p>
+            <CommunityCounter />
           </div>
 
           {/* Right: "Din neste tur" panel */}
