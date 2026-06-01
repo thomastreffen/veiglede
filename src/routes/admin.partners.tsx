@@ -12,7 +12,7 @@ import {
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 
 export const Route = createFileRoute("/admin/partners")({
-  component: AdminPartners;
+  component: AdminPartners,
 });
 
 type Partner = {
