@@ -41,7 +41,7 @@ function ExplorePage() {
   const navigate = useNavigate({ from: Route.fullPath });
 
   const setTab = (next: "turer" | "brukere") => {
-    navigate({ search: (s) => ({ ...s, tab: next === "turer" ? undefined : next }) });
+    navigate({ search: (s: z.infer<typeof ExploreSearch>) => ({ ...s, tab: next === "turer" ? undefined : next }) });
   };
 
   return (
