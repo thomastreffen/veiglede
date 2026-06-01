@@ -73,3 +73,96 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
 
     return { found: false };
   });
+
+/** Safe, public-facing summary of a trip for the /explore feed. */
+export interface PublicTripSummary {
+  id: string;
+  title: string;
+  subtitle?: string;
+  region?: string;
+  origin: string;
+  destination: string;
+  distanceKm: number;
+  drivingTime: string;
+  stopsCount: number;
+  cover: string;
+  style: string;
+  vehicle: string;
+  startDate?: string;
+  shareToken: string;
+  ownerName?: string;
+  ownerAvatarUrl?: string;
+  createdAt: number;
+}
+
+/**
+ * Fetch up to 20 publicly-shared trips across all users, newest first.
+ * Only trips with isPublic === true AND a shareToken are returned.
+ * Returns only safe fields — no emails, no private notes, no precise coords.
+ */
+export const fetchPublicTripsFn = createServerFn({ method: "GET" })
+  .handler(async (): Promise<PublicTripSummary[]> => {
+    const { data: rows, error } = await supabaseAdmin
+      .from("trips")
+      .select("user_id, data, updated_at");
+
+    if (error || !rows) {
+      console.error("fetchPublicTrips error:", error?.message);
+      return [];
+    }
+
+    // Collect public trips from every user's jsonb blob.
+    const collected: Array<PublicTripSummary & { _userId: string }> = [];
+    for (const row of rows) {
+      const blob = row.data as { trips?: Array<Record<string, unknown>> } | null;
+      if (!blob?.trips) continue;
+      for (const t of blob.trips) {
+        if (t?.isPublic !== true) continue;
+        const shareToken = typeof t.shareToken === "string" ? t.shareToken : undefined;
+        if (!shareToken) continue;
+        collected.push({
+          _userId: row.user_id as string,
+          id: String(t.id ?? ""),
+          title: String(t.title ?? "Tur"),
+          subtitle: typeof t.subtitle === "string" ? t.subtitle : undefined,
+          region: typeof t.region === "string" ? t.region : undefined,
+          origin: String(t.origin ?? ""),
+          destination: String(t.destination ?? ""),
+          distanceKm: Number(t.distanceKm ?? 0),
+          drivingTime: String(t.drivingTime ?? ""),
+          stopsCount: Number(t.stopsCount ?? 0),
+          cover: String(t.cover ?? "fjord"),
+          style: String(t.style ?? "scenic"),
+          vehicle: String(t.vehicle ?? "car"),
+          startDate: typeof t.startDate === "string" ? t.startDate : undefined,
+          shareToken,
+          createdAt: Number(t.createdAt ?? 0),
+        });
+      }
+    }
+
+    if (collected.length === 0) return [];
+
+    // Look up display names for the involved users (one query).
+    const userIds = Array.from(new Set(collected.map((c) => c._userId)));
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id, display_name, avatar_url")
+      .in("id", userIds);
+    const nameById = new Map<string, { name?: string; avatar?: string }>();
+    for (const p of profiles ?? []) {
+      nameById.set(p.id as string, {
+        name: (p.display_name as string | null) ?? undefined,
+        avatar: (p.avatar_url as string | null) ?? undefined,
+      });
+    }
+
+    return collected
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 20)
+      .map(({ _userId, ...summary }) => ({
+        ...summary,
+        ownerName: nameById.get(_userId)?.name,
+        ownerAvatarUrl: nameById.get(_userId)?.avatar,
+      }));
+  });

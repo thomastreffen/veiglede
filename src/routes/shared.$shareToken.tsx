@@ -15,7 +15,42 @@ import {
 import { useState } from "react";
 
 export const Route = createFileRoute("/shared/$shareToken")({
-  head: () => ({ meta: [{ title: "Delt tur — Veiglede" }] }),
+  loader: async ({ params }) => {
+    try {
+      const data = await getPublicTripByToken({ data: { token: params.shareToken } });
+      if (data?.found && !data.isPrivate && data.trip) {
+        const t = data.trip as Record<string, unknown>;
+        return {
+          title: String(t.title ?? "Delt tur"),
+          subtitle: typeof t.subtitle === "string" ? t.subtitle : undefined,
+          origin: String(t.origin ?? ""),
+          destination: String(t.destination ?? ""),
+          region: typeof t.region === "string" ? t.region : undefined,
+          distanceKm: Number(t.distanceKm ?? 0),
+        };
+      }
+    } catch {
+      // fall through to default head
+    }
+    return null;
+  },
+  head: ({ loaderData }) => {
+    if (!loaderData) {
+      return { meta: [{ title: "Delt tur — Veiglede" }] };
+    }
+    const pageTitle = `${loaderData.title} — Veiglede`;
+    const desc = loaderData.subtitle
+      ?? `${loaderData.origin} → ${loaderData.destination}${loaderData.region ? ` · ${loaderData.region}` : ""} · ${loaderData.distanceKm} km`;
+    return {
+      meta: [
+        { title: pageTitle },
+        { name: "description", content: desc },
+        { property: "og:title", content: pageTitle },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "article" },
+      ],
+    };
+  },
   component: SharedTripByToken,
 });
 
