@@ -50,7 +50,7 @@ function update(tripId: string, patch: Partial<TripTracking>) {
 
 export const trackingApi = {
   start(tripId: string) {
-    update(tripId, { status: "active", startedAt: Date.now(), completedAt: undefined });
+    update(tripId, { status: "active", startedAt: Date.now(), completedAt: undefined, actualDistanceKm: 0 });
   },
   pause(tripId: string) { update(tripId, { status: "paused", pausedAt: Date.now() }); },
   resume(tripId: string) { update(tripId, { status: "active" }); },
