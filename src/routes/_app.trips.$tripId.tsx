@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { TripMap } from "@/components/TripMap";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
+import { BookingInfo } from "@/components/BookingInfo";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
