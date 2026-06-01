@@ -343,29 +343,6 @@ function NewTripWizard() {
 
   return (
     <div className="py-4 md:py-8 max-w-2xl mx-auto pb-32 md:pb-12">
-      <DemoDebugPanel
-        title="Wizard debug"
-        items={[
-          { label: "Route", value: "/trips/new" },
-          { label: "Step", value: `${step}/4` },
-          { label: "Trip id", value: tripId ?? "ikke opprettet" },
-          { label: "Routing", value: lastRoute?.provider ?? "—" },
-          { label: "Profile", value: lastRoute?.profile ?? "—" },
-          { label: "Avoid", value: lastRoute?.avoidOptions ? `hw=${lastRoute.avoidOptions.highways} fer=${lastRoute.avoidOptions.ferries}` : "—" },
-          { label: "Geometry pts", value: lastRoute?.geometry.length ?? 0 },
-          { label: "ORS raw dist", value: lastRoute?.rawDistanceMeters != null ? `${lastRoute.rawDistanceMeters} m` : "—" },
-          { label: "ORS raw dur", value: lastRoute?.rawDurationSeconds != null ? `${lastRoute.rawDurationSeconds} s` : "—" },
-          { label: "Normalized", value: lastRoute ? `${lastRoute.distanceKm} km · ${lastRoute.durationMin} min` : "—" },
-          { label: "Ferry (ORS)", value: lastRoute?.ferryDurationMin ? `${lastRoute.ferryDurationMin} min · ${lastRoute.ferryDistanceKm} km` : "none/unknown" },
-          { label: "Fallback est", value: lastRoute?.fallbackEstimateMin != null ? `${lastRoute.fallbackEstimateKm} km · ${lastRoute.fallbackEstimateMin} min` : "—" },
-          { label: "Δ vs fallback", value: lastRoute?.fallbackEstimateMin != null && lastRoute.provider === "ors" ? `${lastRoute.durationMin - lastRoute.fallbackEstimateMin} min` : "—" },
-          { label: "Driving src", value: lastRoute?.durationMin != null && lastRoute.provider === "ors" ? "ors" : "estimated" },
-          { label: "Stop sum (min)", value: tripId ? (tripsApi.getTripBundle(tripId).stops.reduce((a, s) => a + (s.durationMin ?? 0), 0)) : "—" },
-          { label: "Routing warn", value: lastRoute?.warnings?.join(",") ?? "—" },
-        ]}
-      />
-
-
       <div className="flex items-center justify-between">
         {step > 1 ? (
           <button onClick={prev} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
