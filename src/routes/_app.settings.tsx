@@ -299,7 +299,7 @@ function Settings() {
 
 
       {/* 3 — Driving preferences */}
-      <Section title="Kjørepreferanser" caption="Hva slags kjøring liker du?">
+      <Section id="korepreferanser" title="Kjørepreferanser" caption="Hva slags kjøring liker du?">
         <div className="flex flex-wrap gap-2">
           {DRIVING_FLAGS.map((f) => {
             const on = !!prefs.drivingFlags[f.key];
