@@ -48,7 +48,7 @@ const TripInvitationEmail = ({
 export const template = {
   component: TripInvitationEmail,
   subject: (d: Record<string, any>) =>
-    `${d?.inviterName || 'En venn'} inviterer deg på tur: ${d?.tripTitle || 'Veiglede-tur'}`,
+    `${d?.inviterName || 'En venn'} vil ha deg med på turen: ${d?.tripTitle || 'Veiglede-tur'}`,
   displayName: 'Tur-invitasjon',
   previewData: {
     inviterName: 'Kari',
