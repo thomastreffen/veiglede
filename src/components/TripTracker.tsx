@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trackingApi, useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import type { Stop } from "@/lib/trips-store";
-import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles } from "lucide-react";
+import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import {
+  useLiveBroadcaster, useLiveOptIn, endLiveSession,
+} from "@/lib/live-tracking";
 
 export function TripTracker({
   tripId, tripStops, vehicleLabel,
