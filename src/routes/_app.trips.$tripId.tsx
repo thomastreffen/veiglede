@@ -317,6 +317,7 @@ function TripPlanner() {
         {[
           { href: "#track", label: "Live tur" },
           { href: "#days", label: "Dag for dag" },
+          { href: "#packing", label: "Pakkeliste" },
           { href: "#along", label: "Langs ruta" },
           { href: "#photos", label: "Bilder" },
           { href: "#tips", label: "Lokale tips" },
