@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
+import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
