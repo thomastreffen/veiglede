@@ -17,6 +17,7 @@ import {
 } from "@/lib/trip-invites";
 import { flushTripsNow } from "@/lib/cloud-sync";
 import { sendTransactionalEmail } from "@/lib/email/send";
+import { useLiveOptIn } from "@/lib/live-tracking";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
