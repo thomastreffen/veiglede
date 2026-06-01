@@ -190,10 +190,21 @@ function PartnerEditor({ partner, onClose, onSave }: { partner: Partner | null; 
   const [logoUrl, setLogoUrl] = useState(partner?.logo_url ?? "");
   const [website, setWebsite] = useState(partner?.website ?? "");
   const [region, setRegion] = useState(partner?.region ?? "");
-  const [lat, setLat] = useState(partner?.lat?.toString() ?? "");
-  const [lng, setLng] = useState(partner?.lng?.toString() ?? "");
+  const [lat, setLat] = useState<number | null>(partner?.lat ?? null);
+  const [lng, setLng] = useState<number | null>(partner?.lng ?? null);
+  const [placeText, setPlaceText] = useState(partner?.lat && partner?.lng ? `${partner.lat.toFixed(4)}, ${partner.lng.toFixed(4)}` : "");
+  const [selectedPlace, setSelectedPlace] = useState<ResolvedPlace | null>(null);
   const [description, setDescription] = useState(partner?.description ?? "");
   const [isActive, setIsActive] = useState(partner?.is_active ?? true);
+
+  const handlePlaceSelect = (p: ResolvedPlace | null) => {
+    setSelectedPlace(p);
+    if (p) {
+      setLat(p.lat);
+      setLng(p.lng);
+      if (!region.trim() && p.secondary) setRegion(p.secondary);
+    }
+  };
 
   const submit = () => {
     if (!name.trim()) { toast.error("Navn må fylles ut"); return; }
@@ -203,8 +214,8 @@ function PartnerEditor({ partner, onClose, onSave }: { partner: Partner | null; 
       logo_url: logoUrl.trim() || null,
       website: website.trim() || null,
       region: region.trim() || null,
-      lat: lat ? Number(lat) : null,
-      lng: lng ? Number(lng) : null,
+      lat,
+      lng,
       description: description.trim() || null,
       is_active: isActive,
     });
@@ -229,10 +240,23 @@ function PartnerEditor({ partner, onClose, onSave }: { partner: Partner | null; 
           <Field label="Logo URL"><input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" className={inputCls} /></Field>
           <Field label="Nettside"><input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" className={inputCls} /></Field>
           <Field label="Region"><input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Vestlandet, Nord-Norge…" className={inputCls} /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Latitude"><input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="60.391" className={inputCls} /></Field>
-            <Field label="Longitude"><input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="5.322" className={inputCls} /></Field>
-          </div>
+          <Field label="Adresse / sted">
+            <PlaceAutocomplete
+              value={placeText}
+              onTextChange={setPlaceText}
+              selected={selectedPlace}
+              onSelect={handlePlaceSelect}
+              placeholder="Søk etter adresse eller sted…"
+            />
+          </Field>
+          {lat !== null && lng !== null && (
+            <div className="space-y-1">
+              <MapPreview lat={lat} lng={lng} />
+              <p className="text-[10px] text-slate-500 tabular-nums">
+                {lat.toFixed(5)}, {lng.toFixed(5)}
+              </p>
+            </div>
+          )}
           <Field label="Beskrivelse">
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={inputCls} />
           </Field>
@@ -241,6 +265,7 @@ function PartnerEditor({ partner, onClose, onSave }: { partner: Partner | null; 
             Aktiv
           </label>
         </div>
+
         <div className="mt-6 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-xl border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800">Avbryt</button>
           <button onClick={submit} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
