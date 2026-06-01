@@ -139,15 +139,17 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
   );
 }
 
-function NavItem({ n, pathname }: { n: typeof nav[number]; pathname: string }) {
-  const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
+function NavItem({ n }: { n: typeof nav[number] }) {
   const Icon = n.icon;
   return (
     <li>
-      <Link to={n.to} className={cn(
-        "flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-wider",
-        active ? "text-primary" : "text-muted-foreground"
-      )}>
+      <Link
+        to={n.to}
+        activeOptions={{ exact: true }}
+        activeProps={{ className: "text-primary" }}
+        inactiveProps={{ className: "text-muted-foreground" }}
+        className="flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-wider"
+      >
         <Icon className="h-5 w-5" />
         <span>{n.label}</span>
       </Link>
