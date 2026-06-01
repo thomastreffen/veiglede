@@ -275,7 +275,7 @@ function Settings() {
         }
       >
         <p className="text-xs text-muted-foreground mb-3">Hvert kjøretøy har sin egen rutestil og foretrukne stopp. Velg standard ved å trykke «Sett som standard».</p>
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {vehicles.map((vh) => (
             <VehicleCard
               key={vh.id}
