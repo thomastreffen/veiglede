@@ -184,6 +184,14 @@ function Roadbook() {
                         </p>
                       )}
                       {stop.notes && <p className="mt-2 text-sm italic text-foreground/80">«{stop.notes}»</p>}
+                      {stop.isPartner && (
+                        <PartnerStopBlock
+                          partnerId={stop.partnerId}
+                          logoUrl={stop.partnerLogoUrl}
+                          website={stop.partnerWebsite}
+                          variant="roadbook"
+                        />
+                      )}
                     </li>
                   );
                 })}
