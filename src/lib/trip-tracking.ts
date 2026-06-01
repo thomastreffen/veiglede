@@ -10,6 +10,8 @@ export interface TripTracking {
   visitedStopIds: string[];
   spontaneousStops: { id: string; label: string; at: number }[];
   notes?: string;
+  /** Accumulated driven distance (km) from live geolocation samples. */
+  actualDistanceKm?: number;
 }
 
 type State = Record<string, TripTracking>;
