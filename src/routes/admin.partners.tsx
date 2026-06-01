@@ -11,10 +11,6 @@ import {
 } from "@/lib/admin.functions";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 
-export const Route = createFileRoute("/admin/partners")({
-  component: AdminPartners,
-});
-
 type Partner = {
   id: string;
   name: string;
@@ -35,6 +31,10 @@ const CATEGORY_LABEL: Record<Partner["category"], string> = {
   attraksjon: "🏞️ Attraksjon",
   drivstoff: "⛽ Drivstoff",
 };
+
+export const Route = createFileRoute("/admin/partners")({
+  component: AdminPartners,
+});
 
 function AdminPartners() {
   const list = useServerFn(adminListPartnersFn);
