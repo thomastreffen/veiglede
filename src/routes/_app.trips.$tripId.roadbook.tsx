@@ -13,7 +13,8 @@ import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { TripMap } from "@/components/TripMap";
 import { TripTimeBudget, TripDayTimeRow } from "@/components/TripTimeBudget";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
-import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag } from "lucide-react";
+import { BookingInfo, BookingBadge } from "@/components/BookingInfo";
+import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
   head: () => ({ meta: [{ title: "Roadbook — Veiglede" }] }),
