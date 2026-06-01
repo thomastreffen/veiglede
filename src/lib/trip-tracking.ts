@@ -74,6 +74,13 @@ export const trackingApi = {
       spontaneousStops: [...cur.spontaneousStops, { id: Math.random().toString(36).slice(2, 8), label, at: Date.now() }],
     });
   },
+  addDistance(tripId: string, deltaKm: number) {
+    if (!isFinite(deltaKm) || deltaKm <= 0) return;
+    const cur = snap()[tripId] ?? DEFAULT;
+    // Only accumulate while actively tracking (ignore stale callbacks after complete/reset).
+    if (cur.status !== "active") return;
+    update(tripId, { actualDistanceKm: (cur.actualDistanceKm ?? 0) + deltaKm });
+  },
 };
 
 export function statusMeta(s: TripStatus) {
