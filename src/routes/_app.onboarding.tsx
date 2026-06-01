@@ -54,6 +54,7 @@ function Onboarding() {
         id: user.id,
         onboarded_at: new Date().toISOString(),
         display_name: prefs.displayName,
+        ...(usernameOk && username ? { username } : {}),
       });
     }
     const next = getNext(fallback);
