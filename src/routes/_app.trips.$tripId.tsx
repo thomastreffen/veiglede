@@ -176,25 +176,25 @@ function TripPlanner() {
       {trip.status === "draft" && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/50 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
           <span className="flex-1 min-w-0">
-            📝 Dette er en kladd — ikke synlig i «Mine turer» før du lagrer.
+            {td.draftBanner}
           </span>
           <button
             type="button"
-            onClick={() => { tripsApi.updateTrip(trip.id, { status: "saved" }); toast.success("Tur lagret ✓"); }}
+            onClick={() => { tripsApi.updateTrip(trip.id, { status: "saved" }); toast.success(td.tripSavedToast); }}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-amber-950 hover:brightness-110 shadow-lg shadow-amber-400/20"
           >
-            <Check className="h-3.5 w-3.5" /> Lagre tur
+            <Check className="h-3.5 w-3.5" /> {td.saveTrip}
           </button>
         </div>
       )}
 
       <div className="flex items-center justify-between gap-3">
         <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Mine turer
+          <ArrowLeft className="h-4 w-4" /> {td.myTripsLink}
         </Link>
         {trip.status !== "draft" && (
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-            <Check className="h-3 w-3 text-primary" /> Lagret
+            <Check className="h-3 w-3 text-primary" /> {td.savedBadge}
           </span>
         )}
       </div>
