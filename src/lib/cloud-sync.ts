@@ -32,10 +32,11 @@ function fireStorageReload() {
 }
 
 async function pullAll(userId: string) {
-  const [prefsRes, vehiclesRes, tripsRes] = await Promise.all([
+  const [prefsRes, vehiclesRes, tripsRes, profileRes] = await Promise.all([
     supabase.from("driver_prefs").select("data").eq("user_id", userId).maybeSingle(),
     supabase.from("vehicles").select("data").eq("id", userId).maybeSingle(),
     supabase.from("trips").select("data").eq("id", userId).maybeSingle(),
+    supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
   ]);
 
   let didWrite = false;
@@ -56,6 +57,19 @@ async function pullAll(userId: string) {
     didWrite = true;
   } else if (localStorage.getItem(KEYS.trips)) {
     void pushKey(KEYS.trips, localStorage.getItem(KEYS.trips)!);
+  }
+
+  // Language: cloud preference wins. If empty and local has one, push it up.
+  const cloudLang = (profileRes.data as { language?: string } | null)?.language;
+  if (cloudLang) {
+    const prev = localStorage.getItem(KEYS.language);
+    if (prev !== cloudLang) {
+      localStorage.setItem(KEYS.language, cloudLang);
+      didWrite = true;
+    }
+  } else {
+    const localLang = localStorage.getItem(KEYS.language);
+    if (localLang) void pushKey(KEYS.language, localLang);
   }
 
   if (didWrite) fireStorageReload();
