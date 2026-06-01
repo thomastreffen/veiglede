@@ -55,23 +55,12 @@ function TripsDashboard() {
         ))}
       </section>
 
-      <div className="mt-8 flex items-end justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Mine turer</p>
-          <h1 className="mt-1 font-display text-3xl md:text-5xl uppercase">{trips.length} turer</h1>
-        </div>
-        <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20">
-          <Plus className="h-4 w-4" strokeWidth={3} /> Ny tur
-        </Link>
+      {/* Search & filters */}
+      <div className="mt-6 space-y-3">
+        <SearchAndFilters allTrips={trips} />
       </div>
 
-      {trips.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {trips.map((t) => <TripCard key={t.id} t={t} />)}
-        </ul>
-      )}
+      {/* Featured routes */}
 
       <FollowedTripsSection />
 
