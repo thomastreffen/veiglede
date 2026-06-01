@@ -38,12 +38,18 @@ export interface PublicProfileTrip {
 
 export interface PublicProfilePayload {
   found: boolean;
+  isPrivate?: boolean;
   profile?: {
     id: string;
     username: string;
     displayName: string;
     bio?: string;
     avatarUrl?: string;
+  };
+  toggles?: {
+    showGarage: boolean;
+    showTrips: boolean;
+    showStats: boolean;
   };
   stats?: { tripsCount: number; totalKm: number };
   vehicles?: PublicProfileVehicle[];
@@ -58,14 +64,27 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
 
     const { data: profile, error: pErr } = await supabaseAdmin
       .from("profiles")
-      .select("id, username, display_name, avatar_url, bio, is_public")
+      .select("id, username, display_name, avatar_url, bio, is_public, show_garage, show_trips, show_stats")
       .eq("username", username)
       .maybeSingle();
 
-    if (pErr || !profile || profile.is_public !== true) {
-      return { found: false };
+    if (pErr || !profile) return { found: false };
+    if (profile.is_public !== true) {
+      return {
+        found: true,
+        isPrivate: true,
+        profile: {
+          id: profile.id as string,
+          username,
+          displayName: (profile.display_name as string | null) ?? username,
+          avatarUrl: (profile.avatar_url as string | null) ?? undefined,
+        },
+      };
     }
     const userId = profile.id as string;
+    const showGarage = profile.show_garage !== false;
+    const showTrips = profile.show_trips !== false;
+    const showStats = profile.show_stats !== false;
 
     const [{ data: vehRow }, { data: tripsRow }, { data: photoRows }] = await Promise.all([
       supabaseAdmin.from("vehicles").select("data").eq("id", userId).maybeSingle(),
@@ -85,7 +104,8 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
     }
 
     const vBlob = (vehRow?.data ?? null) as { vehicles?: Record<string, unknown>[] } | null;
-    const vehicles: PublicProfileVehicle[] = (vBlob?.vehicles ?? []).map((v) => ({
+    const allVehicles = (vBlob?.vehicles ?? []).filter((v) => v.isPublic !== false);
+    const vehicles: PublicProfileVehicle[] = (showGarage ? allVehicles : []).map((v) => ({
       id: String(v.id ?? ""),
       name: String(v.name ?? "Kjøretøy"),
       type: String(v.type ?? "car"),
@@ -104,7 +124,7 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
       if (t?.status === "draft") continue;
       tripsCount += 1;
       totalKm += Number(t.distanceKm ?? 0);
-      if (t.isPublic === true && typeof t.shareToken === "string") {
+      if (showTrips && t.isPublic === true && typeof t.shareToken === "string") {
         publicTrips.push({
           id: String(t.id ?? ""),
           title: String(t.title ?? "Tur"),
@@ -135,7 +155,8 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
         bio: (profile.bio as string | null) ?? undefined,
         avatarUrl: (profile.avatar_url as string | null) ?? undefined,
       },
-      stats: { tripsCount, totalKm: Math.round(totalKm) },
+      toggles: { showGarage, showTrips, showStats },
+      stats: showStats ? { tripsCount, totalKm: Math.round(totalKm) } : undefined,
       vehicles,
       trips: publicTrips,
     };

@@ -54,6 +54,19 @@ function NotFound() {
   );
 }
 
+function PrivateProfile({ name }: { name: string }) {
+  return (
+    <div className="min-h-screen grid place-items-center p-8 text-center">
+      <div>
+        <div className="mx-auto h-16 w-16 rounded-2xl bg-surface-2 grid place-items-center text-3xl mb-4">🔒</div>
+        <p className="font-display text-3xl uppercase">Denne profilen er privat</p>
+        <p className="mt-2 text-sm text-muted-foreground">{name} har valgt å skjule profilen sin på Veiglede.</p>
+        <Link to="/explore" className="mt-5 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Utforsk turer</Link>
+      </div>
+    </div>
+  );
+}
+
 function PublicProfilePage() {
   const params = Route.useParams();
   const initial = Route.useLoaderData();
@@ -66,7 +79,11 @@ function PublicProfilePage() {
   });
 
   if (!data?.found || !data.profile) return <NotFound />;
-  const { profile, stats, vehicles = [], trips = [] } = data;
+  if (data.isPrivate) return <PrivateProfile name={data.profile.displayName} />;
+  const { profile, stats, vehicles = [], trips = [], toggles } = data;
+  const showGarage = toggles?.showGarage !== false;
+  const showTrips = toggles?.showTrips !== false;
+  const showStats = toggles?.showStats !== false;
   const initialLetter = (profile.displayName || profile.username).charAt(0).toUpperCase();
 
   return (
@@ -82,7 +99,7 @@ function PublicProfilePage() {
             <h1 className="font-display text-3xl md:text-4xl uppercase truncate">{profile.displayName}</h1>
             <p className="text-sm text-muted-foreground">@{profile.username}</p>
             {profile.bio && <p className="mt-2 text-sm leading-relaxed max-w-prose">{profile.bio}</p>}
-            {stats && (
+            {showStats && stats && (
               <p className="mt-2 text-xs uppercase tracking-wider text-primary">
                 {stats.tripsCount} turer planlagt · {stats.totalKm.toLocaleString("nb-NO")} km totalt
               </p>
@@ -93,7 +110,7 @@ function PublicProfilePage() {
           </div>
         </header>
 
-        {vehicles.length > 0 && (
+        {showGarage && vehicles.length > 0 && (
           <section className="mt-10">
             <h2 className="font-display text-xl uppercase">Garasje</h2>
             <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -128,16 +145,18 @@ function PublicProfilePage() {
           </section>
         )}
 
-        <section className="mt-10">
-          <h2 className="font-display text-xl uppercase">Offentlige turer</h2>
-          {trips.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">Ingen offentlige turer enda.</p>
-          ) : (
-            <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {trips.map((t: PublicProfileTrip) => <ProfileTripCard key={t.shareToken} t={t} ownerName={profile.displayName} />)}
-            </ul>
-          )}
-        </section>
+        {showTrips && (
+          <section className="mt-10">
+            <h2 className="font-display text-xl uppercase">Offentlige turer</h2>
+            {trips.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">Ingen offentlige turer enda.</p>
+            ) : (
+              <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {trips.map((t: PublicProfileTrip) => <ProfileTripCard key={t.shareToken} t={t} ownerName={profile.displayName} />)}
+              </ul>
+            )}
+          </section>
+        )}
 
         <section className="mt-12 rounded-2xl border border-primary/40 bg-primary/5 p-6 text-center">
           <p className="font-display text-2xl uppercase">Følg med på Veiglede</p>
