@@ -338,7 +338,7 @@ function Settings() {
       </Section>
 
       {/* 4 — Stop interests */}
-      <Section title="Hva vil du se langs ruta?" caption="Personaliserer «Langs ruta» og partnertips">
+      <Section id="langs-ruta" title="Hva vil du se langs ruta?" caption="Personaliserer «Langs ruta» og partnertips">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {STOP_INTERESTS.map((s) => {
             const on = prefs.stopInterests.includes(s.value);
