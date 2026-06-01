@@ -178,6 +178,16 @@ export const Route = createFileRoute('/api/public/hooks/trip-reminders')({
               recipient_email: recipient,
               start_date: targetDate,
             })
+
+            // In-app notification for the owner
+            await supabase.from('notifications').insert({
+              user_id: ownerId,
+              type: 'trip_reminder',
+              title: 'Tur i morgen',
+              body: `Din tur starter i morgen: ${trip.title}`,
+              trip_id: trip.id,
+              link: `/trips/${trip.id}`,
+            })
             summary.sent++
           }
         }
