@@ -12,8 +12,30 @@ export function TripTracker({
 }: { tripId: string; tripStops: Stop[]; vehicleLabel: string }) {
   const t = useTripTracking(tripId);
   const meta = statusMeta(t.status);
+  const { user } = useAuth();
   const [spontInput, setSpontInput] = useState("");
+  const [liveOn, setLiveOn] = useLiveOptIn(tripId);
   const visitedCount = t.visitedStopIds.length;
+
+  const lastVisited = t.visitedStopIds.length
+    ? tripStops.find((s) => s.id === t.visitedStopIds[t.visitedStopIds.length - 1])?.name ?? null
+    : null;
+
+  const { permState } = useLiveBroadcaster({
+    tripId,
+    userId: user?.id ?? null,
+    enabled: liveOn,
+    status: t.status as "idle" | "active" | "paused" | "completed",
+    lastStopName: lastVisited,
+  });
+
+  // Clean up live session when trip is completed/reset or toggle is turned off.
+  useEffect(() => {
+    if (!user?.id) return;
+    if (t.status === "completed" || t.status === "idle") {
+      if (liveOn) void endLiveSession({ tripId, userId: user.id });
+    }
+  }, [t.status, liveOn, tripId, user?.id]);
 
   const elapsed = t.startedAt
     ? Math.max(0, (t.completedAt ?? Date.now()) - t.startedAt)
