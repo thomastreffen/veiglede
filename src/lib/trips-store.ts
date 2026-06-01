@@ -13,7 +13,9 @@ export type StopType =
   | "rest"
   | "city"
   | "experience"
-  | "detour";
+  | "detour"
+  | "ferry";
+
 
 export type VehicleType = "motorcycle" | "car" | "rv";
 export type RouteStyle = "fastest" | "scenic" | "curvy" | "photo" | "tourist" | "cruise";
