@@ -51,7 +51,7 @@ export interface PublicProfilePayload {
     showTrips: boolean;
     showStats: boolean;
   };
-  stats?: { tripsCount: number; totalKm: number };
+  stats?: { tripsCount: number; totalKm: number; drivenKm: number };
   vehicles?: PublicProfileVehicle[];
   trips?: PublicProfileTrip[];
 }
@@ -120,10 +120,13 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
     const publicTrips: PublicProfileTrip[] = [];
     let tripsCount = 0;
     let totalKm = 0;
+    let drivenKm = 0;
     for (const t of allTrips) {
       if (t?.status === "draft") continue;
       tripsCount += 1;
       totalKm += Number(t.distanceKm ?? 0);
+      const actual = Number(t.actualDistanceKm ?? 0);
+      if (actual > 0) drivenKm += actual;
       if (showTrips && t.isPublic === true && typeof t.shareToken === "string") {
         publicTrips.push({
           id: String(t.id ?? ""),
@@ -156,7 +159,7 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
         avatarUrl: (profile.avatar_url as string | null) ?? undefined,
       },
       toggles: { showGarage, showTrips, showStats },
-      stats: showStats ? { tripsCount, totalKm: Math.round(totalKm) } : undefined,
+      stats: showStats ? { tripsCount, totalKm: Math.round(totalKm), drivenKm: Math.round(drivenKm) } : undefined,
       vehicles,
       trips: publicTrips,
     };

@@ -100,8 +100,12 @@ function PublicProfilePage() {
             <p className="text-sm text-muted-foreground">@{profile.username}</p>
             {profile.bio && <p className="mt-2 text-sm leading-relaxed max-w-prose">{profile.bio}</p>}
             {showStats && stats && (
-              <p className="mt-2 text-xs uppercase tracking-wider text-primary">
-                {stats.tripsCount} turer planlagt · {stats.totalKm.toLocaleString("nb-NO")} km totalt
+              <p className="mt-2 text-xs uppercase tracking-wider">
+                <span className="text-primary">{stats.tripsCount} turer</span>
+                <span className="text-muted-foreground"> · {stats.totalKm.toLocaleString("nb-NO")} km planlagt</span>
+                {stats.drivenKm > 0 && (
+                  <span className="text-primary"> · {stats.drivenKm.toLocaleString("nb-NO")} km kjørt</span>
+                )}
               </p>
             )}
             <div className="mt-3">
