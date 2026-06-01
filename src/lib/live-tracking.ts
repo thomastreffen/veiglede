@@ -1,6 +1,8 @@
 // Live trip sharing — broadcast & subscribe to current position.
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { distanceKm } from "@/lib/geo";
+import { trackingApi } from "@/lib/trip-tracking";
 
 const LS_KEY = "vg.live-sharing.optin.v1";
 
