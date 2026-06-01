@@ -14,6 +14,8 @@ import { TripMap } from "@/components/TripMap";
 import { TripTimeBudget, TripDayTimeRow } from "@/components/TripTimeBudget";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { BookingInfo, BookingBadge } from "@/components/BookingInfo";
+import { DayWeather } from "@/components/DayWeather";
+import { dayDate, dayCoords } from "@/lib/weather";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed } from "lucide-react";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
