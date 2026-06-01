@@ -123,8 +123,8 @@ function TripPlanner() {
   if (!trip) {
     return (
       <div className="py-12 text-center">
-        <p className="font-display text-2xl uppercase">Tur ikke funnet</p>
-        <Link to="/trips" className="mt-4 inline-block text-sm text-primary underline">Tilbake til mine turer</Link>
+        <p className="font-display text-2xl uppercase">{td.notFound}</p>
+        <Link to="/trips" className="mt-4 inline-block text-sm text-primary underline">{td.backToMyTrips}</Link>
       </div>
     );
   }
