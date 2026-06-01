@@ -71,9 +71,12 @@ export function AppShell() {
               <Plus className="h-4 w-4" /> Ny tur
             </Link>
             {user ? (
-              <Link to="/settings" className="ml-1 grid place-items-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-sm font-semibold" title={user.email ?? ""}>
-                {(user.email ?? "?").charAt(0).toUpperCase()}
-              </Link>
+              <>
+                <NotificationBell onIncoming={notify} />
+                <Link to="/settings" className="ml-1 grid place-items-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-sm font-semibold" title={user.email ?? ""}>
+                  {(user.email ?? "?").charAt(0).toUpperCase()}
+                </Link>
+              </>
             ) : (
               <>
                 <span
