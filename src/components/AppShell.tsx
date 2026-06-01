@@ -30,6 +30,14 @@ export function AppShell() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { notify } = useBrowserNotifications();
+  const amIAdmin = useServerFn(amIAdminFn);
+  const { data: adminInfo } = useQuery({
+    queryKey: ["am-i-admin", user?.id ?? "anon"],
+    queryFn: () => amIAdmin({}),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isAdmin = !!adminInfo?.isAdmin;
 
   // Onboarding gate: send freshly-logged-in users who haven't onboarded
   // to /onboarding once.
