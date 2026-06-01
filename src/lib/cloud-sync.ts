@@ -77,9 +77,15 @@ async function pullAll(userId: string) {
 
 async function pushKey(key: string, raw: string) {
   if (!currentUserId) return;
-  let data: unknown;
-  try { data = JSON.parse(raw); } catch { return; }
   try {
+    if (key === KEYS.language) {
+      await supabase
+        .from("profiles")
+        .upsert({ id: currentUserId, language: raw, updated_at: new Date().toISOString() });
+      return;
+    }
+    let data: unknown;
+    try { data = JSON.parse(raw); } catch { return; }
     if (key === KEYS.prefs) {
       await supabase.from("driver_prefs").upsert({
         user_id: currentUserId,
@@ -111,7 +117,13 @@ function wrapLocalStorage() {
   localStorage.setItem = (key: string, value: string) => {
     orig(key, value);
     if (!currentUserId) return;
-    if (key !== KEYS.prefs && key !== KEYS.vehicles && key !== KEYS.trips) return;
+    if (
+      key !== KEYS.prefs &&
+      key !== KEYS.vehicles &&
+      key !== KEYS.trips &&
+      key !== KEYS.language
+    )
+      return;
     if (debounce[key]) clearTimeout(debounce[key]);
     debounce[key] = setTimeout(() => pushKey(key, value), 800);
   };
