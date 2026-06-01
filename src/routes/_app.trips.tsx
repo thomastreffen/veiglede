@@ -374,10 +374,12 @@ function EmptyState() {
 type SortOption = "newest" | "oldest" | "longest" | "shortest";
 
 function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsStore>["trips"] }) {
+  const tr = useT();
   const [query, setQuery] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | VehicleType>("all");
   const [styleFilter, setStyleFilter] = useState<"all" | RouteStyle>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+
 
   const q = query.trim().toLowerCase();
   const activeCount = (q ? 1 : 0) + (vehicleFilter !== "all" ? 1 : 0) + (styleFilter !== "all" ? 1 : 0);
