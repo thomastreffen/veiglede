@@ -4,14 +4,13 @@
 // `TripDayTimeRow` is a compact per-day row for roadbook + planner.
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
-import { tripFuelKind } from "@/lib/trips-store";
 import {
   computeTimeBreakdown,
   computeDayBreakdowns,
   formatDuration,
   addMinutesToHHMM,
 } from "@/lib/trip-time";
-import { Clock, Coffee, BatteryCharging, Ship, Sparkles, Bed, Fuel, Zap } from "lucide-react";
+import { Clock, Coffee, BatteryCharging, Ship, Sparkles, Bed } from "lucide-react";
 import { CostCalculator } from "@/components/CostCalculator";
 
 interface BudgetProps {
