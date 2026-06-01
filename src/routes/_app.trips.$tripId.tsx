@@ -352,13 +352,13 @@ function TripPlanner() {
       {/* Quick-jump pills */}
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
         {[
-          { href: "#track", label: "Live tur" },
-          { href: "#days", label: "Dag for dag" },
-          { href: "#packing", label: "Pakkeliste" },
-          { href: "#along", label: "Langs ruta" },
-          { href: "#photos", label: "Bilder" },
-          { href: "#tips", label: "Lokale tips" },
-          { href: "#practical", label: "Praktisk" },
+          { href: "#track", label: td.jumpLive },
+          { href: "#days", label: td.jumpDays },
+          { href: "#packing", label: td.jumpPacking },
+          { href: "#along", label: td.jumpAlong },
+          { href: "#photos", label: td.jumpPhotos },
+          { href: "#tips", label: td.jumpTips },
+          { href: "#practical", label: td.jumpPractical },
         ].map((p) => (
           <a key={p.href} href={p.href}
             className="shrink-0 inline-flex items-center rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary">
@@ -370,9 +370,9 @@ function TripPlanner() {
       {/* Days */}
       <section id="days" className="mt-8 scroll-mt-24">
         <div className="flex items-end justify-between">
-          <h2 className="font-display text-2xl uppercase">Dag for dag</h2>
+          <h2 className="font-display text-2xl uppercase">{td.dayByDay}</h2>
           <button onClick={() => tripsApi.addDay(tripId)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-xs uppercase tracking-wider hover:border-primary">
-            <Plus className="h-3.5 w-3.5" /> Legg til dag
+            <Plus className="h-3.5 w-3.5" /> {td.addDay}
           </button>
         </div>
 
@@ -386,11 +386,11 @@ function TripPlanner() {
                   <div className="flex-1 min-w-0">
                     <input value={day.title} onChange={(e) => tripsApi.updateDay(day.id, { title: e.target.value })}
                       className="w-full font-display text-xl md:text-2xl uppercase bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
-                    <input value={day.summary ?? ""} placeholder="Kort beskrivelse av dagen…"
+                    <input value={day.summary ?? ""} placeholder={td.dayDescPlaceholder}
                       onChange={(e) => tripsApi.updateDay(day.id, { summary: e.target.value })}
                       className="mt-1 w-full text-sm text-muted-foreground bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
                   </div>
-                  <button onClick={() => { if (confirm("Slette dagen?")) tripsApi.deleteDay(day.id); }} className="text-muted-foreground hover:text-destructive p-1">
+                  <button onClick={() => { if (confirm(td.deleteDayConfirm)) tripsApi.deleteDay(day.id); }} className="text-muted-foreground hover:text-destructive p-1">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
