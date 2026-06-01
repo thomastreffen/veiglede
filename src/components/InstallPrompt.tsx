@@ -61,7 +61,7 @@ export function InstallPrompt() {
     // Honor dismissal
     const dismissed = Number(localStorage.getItem(DISMISS_KEY) || "0");
     if (Date.now() < dismissed) return;
-    if (count < 2) return;
+    if (count < 1) return;
 
     if (globalDeferredPrompt) {
       setDeferred(globalDeferredPrompt);
