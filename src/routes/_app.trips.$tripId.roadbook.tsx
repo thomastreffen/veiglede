@@ -169,6 +169,55 @@ function Roadbook() {
           );
         })}
 
+        {/* Lodging summary */}
+        {(() => {
+          const lodgingStops = tripStops.filter((s) => s.type === "lodging");
+          if (lodgingStops.length === 0) return null;
+          const total = lodgingStops.reduce((sum, s) => {
+            const b = s.booking;
+            if (!b?.pricePerNight) return sum;
+            return sum + b.pricePerNight * (b.nights ?? 1);
+          }, 0);
+          return (
+            <section className="rounded-2xl border border-border bg-surface p-5">
+              <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Bed className="h-3.5 w-3.5" /> Overnatting</p>
+              <h2 className="mt-2 font-display text-2xl uppercase">Hvor du sover</h2>
+              <ul className="mt-4 space-y-3">
+                {lodgingStops.map((s) => {
+                  const b = s.booking;
+                  const nights = b?.nights ?? 1;
+                  const lineTotal = b?.pricePerNight ? b.pricePerNight * nights : null;
+                  return (
+                    <li key={s.id} className="flex items-start justify-between gap-3 rounded-xl border border-border bg-background/40 p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold truncate">{s.name}</p>
+                          <BookingBadge status={b?.status} />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {nights} {nights === 1 ? "natt" : "netter"}
+                          {b?.checkinDate ? ` · innsjekk ${b.checkinDate}` : ""}
+                          {b?.guests ? ` · ${b.guests} gjester` : ""}
+                        </p>
+                      </div>
+                      {lineTotal != null && (
+                        <span className="font-mono tabular-nums text-sm shrink-0">{lineTotal.toFixed(0)} kr</span>
+                      )}
+                    </li>
+                  );
+                })}
+                {total > 0 && (
+                  <li className="flex items-center justify-between pt-2 border-t border-border text-sm font-semibold">
+                    <span>Total overnatting</span>
+                    <span className="font-mono tabular-nums text-primary">{total.toFixed(0)} kr</span>
+                  </li>
+                )}
+              </ul>
+            </section>
+          );
+        })()}
+
+
         {/* Photo opportunities */}
         {memories.length > 0 && (
           <section className="rounded-2xl border border-border bg-surface p-5">
