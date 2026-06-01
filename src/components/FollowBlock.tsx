@@ -30,9 +30,10 @@ export function FollowBlock({ userId, username }: Props) {
 
   const onClick = async () => {
     if (!user) {
-      navigate({ to: "/signup", search: { next: `/u/${username}` } as never });
+      navigate({ to: "/signup" });
       return;
     }
+    void username;
     if (isSelf || pending) return;
     setPending(true);
     try {
