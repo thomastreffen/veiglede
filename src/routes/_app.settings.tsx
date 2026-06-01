@@ -207,7 +207,7 @@ function Settings() {
 
       {/* 2 — My vehicles */}
       <Section
-        title="Mine kjøretøy"
+        title="Min garasje"
         caption={`${vehicles.length} ${vehicles.length === 1 ? "kjøretøy" : "kjøretøy"}`}
         action={
           <button onClick={openNew} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
