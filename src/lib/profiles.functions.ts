@@ -38,12 +38,18 @@ export interface PublicProfileTrip {
 
 export interface PublicProfilePayload {
   found: boolean;
+  isPrivate?: boolean;
   profile?: {
     id: string;
     username: string;
     displayName: string;
     bio?: string;
     avatarUrl?: string;
+  };
+  toggles?: {
+    showGarage: boolean;
+    showTrips: boolean;
+    showStats: boolean;
   };
   stats?: { tripsCount: number; totalKm: number };
   vehicles?: PublicProfileVehicle[];
@@ -58,14 +64,27 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
 
     const { data: profile, error: pErr } = await supabaseAdmin
       .from("profiles")
-      .select("id, username, display_name, avatar_url, bio, is_public")
+      .select("id, username, display_name, avatar_url, bio, is_public, show_garage, show_trips, show_stats")
       .eq("username", username)
       .maybeSingle();
 
-    if (pErr || !profile || profile.is_public !== true) {
-      return { found: false };
+    if (pErr || !profile) return { found: false };
+    if (profile.is_public !== true) {
+      return {
+        found: true,
+        isPrivate: true,
+        profile: {
+          id: profile.id as string,
+          username,
+          displayName: (profile.display_name as string | null) ?? username,
+          avatarUrl: (profile.avatar_url as string | null) ?? undefined,
+        },
+      };
     }
     const userId = profile.id as string;
+    const showGarage = profile.show_garage !== false;
+    const showTrips = profile.show_trips !== false;
+    const showStats = profile.show_stats !== false;
 
     const [{ data: vehRow }, { data: tripsRow }, { data: photoRows }] = await Promise.all([
       supabaseAdmin.from("vehicles").select("data").eq("id", userId).maybeSingle(),
