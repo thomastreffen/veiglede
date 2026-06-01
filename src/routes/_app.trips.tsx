@@ -107,6 +107,7 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
   const tracking = useTripTracking(t.id);
   const tm = statusMeta(tracking.status);
   const [confirming, setConfirming] = useState(false);
+  const tr = useT();
 
   const stop = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -137,11 +138,11 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
           <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
             <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
             <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
-            <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} stopp`} />
+            <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} ${tr.app.trips.stopsLabel}`} />
           </div>
           {typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0 && (
             <p className="mt-2 text-[11px] text-primary">
-              {Math.round(t.actualDistanceKm)} km kjørt · {t.distanceKm} km planlagt
+              {tr.app.trips.drivenVsPlanned(Math.round(t.actualDistanceKm), t.distanceKm)}
             </p>
           )}
           <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
@@ -153,7 +154,7 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
         {!confirming && (
           <button
             type="button"
-            aria-label="Slett tur"
+            aria-label={tr.app.trips.deleteTrip}
             onClick={(e) => { stop(e); setConfirming(true); }}
             className="absolute top-3 right-12 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur border border-border text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:border-destructive transition-opacity"
           >
@@ -166,21 +167,21 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
             onClick={stop}
             className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/90 backdrop-blur-sm p-4 text-center"
           >
-            <p className="font-display text-lg uppercase">Slett denne turen?</p>
+            <p className="font-display text-lg uppercase">{tr.app.trips.deleteConfirm}</p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={(e) => { stop(e); tripsApi.deleteTrip(t.id); }}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-destructive px-4 py-2 text-xs font-bold uppercase tracking-wider text-destructive-foreground hover:brightness-110"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Slett
+                <Trash2 className="h-3.5 w-3.5" /> {tr.app.trips.delete}
               </button>
               <button
                 type="button"
                 onClick={(e) => { stop(e); setConfirming(false); }}
                 className="inline-flex items-center rounded-xl border border-border bg-surface-2 px-4 py-2 text-xs font-bold uppercase tracking-wider hover:border-primary"
               >
-                Avbryt
+                {tr.app.trips.cancel}
               </button>
             </div>
           </div>
