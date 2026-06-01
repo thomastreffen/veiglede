@@ -33,19 +33,34 @@ function TripsDashboard() {
   return (
     <div className="py-5 md:py-8">
       {/* Stats strip */}
-      <section className="grid grid-cols-4 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
-        {[
-          { n: String(trips.length), l: "planlagte turer" },
-          { n: trips.reduce((a, t) => a + t.distanceKm, 0).toLocaleString("nb-NO"), l: "km totalt" },
-          { n: String(vehicles.length), l: "kjøretøy" },
-          { n: String(photoStops), l: "fotostopp" },
-        ].map((s) => (
-          <div key={s.l}>
-            <p className="font-display text-2xl md:text-4xl">{s.n}</p>
-            <p className="mt-1 text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider leading-tight">{s.l}</p>
-          </div>
-        ))}
+      <section className="grid grid-cols-4 md:grid-cols-5 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
+        {(() => {
+          const planned = trips.reduce((a, t) => a + (t.distanceKm ?? 0), 0);
+          const driven = trips.reduce(
+            (a, t) => a + (typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0 ? t.actualDistanceKm : 0),
+            0,
+          );
+          return (
+            <>
+              <StatCell n={String(trips.length)} l="planlagte turer" />
+              <div className="md:hidden">
+                <p className="font-display text-lg md:text-xl leading-tight">
+                  {planned.toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">planlagt</span>
+                </p>
+                <p className="font-display text-lg md:text-xl leading-tight mt-0.5">
+                  {Math.round(driven).toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-primary ml-1">kjørt</span>
+                </p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">km</p>
+              </div>
+              <StatCell className="hidden md:block" n={planned.toLocaleString("nb-NO")} l="km planlagt" />
+              <StatCell className="hidden md:block" n={Math.round(driven).toLocaleString("nb-NO")} l="km kjørt" accent />
+              <StatCell n={String(vehicles.length)} l="kjøretøy" />
+              <StatCell n={String(photoStops)} l="fotostopp" />
+            </>
+          );
+        })()}
       </section>
+
 
       {/* Search & filters */}
       <div className="mt-6 space-y-3">
