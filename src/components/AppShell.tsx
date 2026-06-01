@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { getOnboardingStatus } from "@/lib/account";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useBrowserNotifications } from "@/lib/useBrowserNotifications";
 
 const nav = [
   { to: "/", label: "Hjem", icon: Home },
