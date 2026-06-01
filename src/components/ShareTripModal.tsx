@@ -81,6 +81,10 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
       setInviteMsg("Skriv inn en gyldig e-postadresse");
       return;
     }
+    if (cleanEmail.toLowerCase() === (user.email ?? "").toLowerCase()) {
+      setInviteMsg("Det er deg! Del lenken med andre for å invitere reisefølge.");
+      return;
+    }
     setInviteMsg(null);
     setCreating(true);
     try {
@@ -88,14 +92,52 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
       setInvites((p) => [inv, ...p]);
       setEmail("");
       setRole("viewer");
-      await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
-      setInviteMsg("Invitasjonslenke kopiert — send den til " + cleanEmail);
+      const send = await sendTransactionalEmail({
+        templateName: "trip-invitation",
+        recipientEmail: cleanEmail,
+        idempotencyKey: `invite-${inv.id}`,
+        templateData: {
+          inviteUrl: inviteUrl(inv.invite_token),
+          tripName: trip.name ?? "tur",
+          inviterName: user.email,
+          role,
+        },
+      });
+      if (send.ok) {
+        setInviteMsg(`✓ Invitasjon sendt til ${cleanEmail}`);
+      } else {
+        await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
+        setInviteMsg(`Invitasjonslenke klar — del den manuelt med ${cleanEmail}`);
+      }
     } catch (e) {
       setInviteMsg(e instanceof Error ? e.message : "Kunne ikke lage invitasjon");
     } finally {
       setCreating(false);
     }
   };
+
+  const handleResend = async (inv: TripInvite) => {
+    if (!inv.invited_email) return;
+    setInviteMsg(null);
+    const send = await sendTransactionalEmail({
+      templateName: "trip-invitation",
+      recipientEmail: inv.invited_email,
+      idempotencyKey: `invite-${inv.id}-resend-${Date.now()}`,
+      templateData: {
+        inviteUrl: inviteUrl(inv.invite_token),
+        tripName: trip.name ?? "tur",
+        inviterName: user?.email,
+        role: inv.role,
+      },
+    });
+    if (send.ok) {
+      setInviteMsg(`✓ Invitasjon sendt på nytt til ${inv.invited_email}`);
+    } else {
+      await copy(`inv-${inv.id}`, inviteUrl(inv.invite_token));
+      setInviteMsg(`Lenke kopiert — send den manuelt til ${inv.invited_email}`);
+    }
+  };
+
 
   const handleRemove = async (id: string) => {
     try {
