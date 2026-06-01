@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
+import { buildMaptilerStyleUrl, useRuntimeMapConfig } from "@/lib/map/runtime-config";
 
 interface Props {
   lat: number;
@@ -15,12 +15,13 @@ export function MapPreview({ lat, lng, zoom = 12, className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
+  const cfg = useRuntimeMapConfig();
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || !cfg?.maptilerKey) return;
     const map = new maplibregl.Map({
       container: ref.current,
-      style: buildMaptilerStyleUrl(),
+      style: buildMaptilerStyleUrl(cfg.maptilerKey),
       center: [lng, lat],
       zoom,
       attributionControl: false,
@@ -34,7 +35,7 @@ export function MapPreview({ lat, lng, zoom = 12, className }: Props) {
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cfg?.maptilerKey]);
 
   useEffect(() => {
     const m = mapRef.current;
@@ -42,6 +43,14 @@ export function MapPreview({ lat, lng, zoom = 12, className }: Props) {
     m.setCenter([lng, lat]);
     markerRef.current?.setLngLat([lng, lat]);
   }, [lat, lng]);
+
+  if (!cfg?.maptilerKey) {
+    return (
+      <div className={className ?? "h-40 w-full rounded-lg border border-slate-700 bg-slate-900 grid place-items-center text-xs text-slate-500"}>
+        Kartforhåndsvisning utilgjengelig
+      </div>
+    );
+  }
 
   return <div ref={ref} className={className ?? "h-40 w-full rounded-lg overflow-hidden border border-slate-700"} />;
 }
