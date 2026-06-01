@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Car, Share2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, Car, Share2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useTripsStore } from "@/lib/trips-store";
+import { useTripsStore, vehicleMeta, type VehicleType } from "@/lib/trips-store";
 import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { VehicleCard } from "@/components/VehicleCard";
 import { VehiclePhotoStrip } from "@/components/VehiclePhotoStrip";
+import { PublicUserCard } from "@/components/PublicUserCard";
+import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
 
 export const Route = createFileRoute("/_app/garage")({
   head: () => ({ meta: [{ title: "Min garasje — Veiglede" }] }),
@@ -129,8 +133,55 @@ function GaragePage() {
         </div>
       )}
 
+      {user && vehicles.length > 0 && (
+        <SameVehicleSection
+          ownUserId={user.id}
+          types={Array.from(new Set(vehicles.map((v) => v.type)))}
+        />
+      )}
+
       <VehicleEditor open={editorOpen} onOpenChange={setEditorOpen} vehicle={editing} />
     </div>
+  );
+}
+
+function SameVehicleSection({ ownUserId, types }: { ownUserId: string; types: VehicleType[] }) {
+  const fetcher = useServerFn(fetchPublicProfilesFn);
+  const { data } = useQuery({
+    queryKey: ["public-profiles"],
+    queryFn: () => fetcher(),
+    staleTime: 60_000,
+  });
+  // Pick the primary type to highlight (first vehicle the user owns).
+  const focusType = types[0];
+  const matches = useMemo(() => {
+    if (!data) return [];
+    return data
+      .filter((u) => u.id !== ownUserId && u.vehicleTypes.includes(focusType))
+      .slice(0, 4);
+  }, [data, ownUserId, focusType]);
+
+  if (matches.length === 0) return null;
+  const meta = vehicleMeta(focusType);
+  return (
+    <section className="mt-10">
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Fellesskap</p>
+          <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">Andre som kjører {meta.emoji} {meta.label.toLowerCase()}</h2>
+        </div>
+        <Link
+          to="/explore"
+          search={{ tab: "brukere", vehicle: focusType }}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+        >
+          Se alle <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {matches.map((u) => <PublicUserCard key={u.id} user={u} />)}
+      </ul>
+    </section>
   );
 }
 

@@ -21,6 +21,9 @@ import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/i18n/provider";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { countPublicProfilesFn } from "@/lib/public-profiles.functions";
 import heroFjord from "@/assets/hero-fjord.jpg";
 import routeLofoten from "@/assets/route-lofoten.jpg";
 import routeAtlanterhavsveien from "@/assets/route-atlanterhavsveien.jpg";
@@ -152,6 +155,7 @@ function Landing() {
               <ShieldCheck className="mt-0.5 h-4 w-4 text-primary shrink-0" />
               {t.hero.note}
             </p>
+            <CommunityCounter />
           </div>
 
           {/* Right: "Din neste tur" panel */}
@@ -485,5 +489,24 @@ function Landing() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function CommunityCounter() {
+  const fetcher = useServerFn(countPublicProfilesFn);
+  const { data } = useQuery({
+    queryKey: ["public-profiles-count"],
+    queryFn: () => fetcher(),
+    staleTime: 5 * 60_000,
+  });
+  if (!data || data < 1) return null;
+  return (
+    <p className="mt-4 inline-flex items-center gap-2 text-xs md:text-sm text-white/70">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+      </span>
+      Bli med {data.toLocaleString("nb-NO")} andre som planlegger norske roadtrips
+    </p>
   );
 }
