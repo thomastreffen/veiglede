@@ -477,11 +477,26 @@ export const tripsApi = {
   addStop(dayId: string, input: Partial<Stop> = {}): Stop {
     ensureInit();
     const order = state.stops.filter((s) => s.dayId === dayId).length;
+    // Auto-detect lodging from name keywords if type not explicitly set.
+    const detectedLodging = (input.type === "lodging") || (!input.type && looksLikeLodging(input.name));
+    const finalType: StopType = detectedLodging ? "lodging" : (input.type ?? "attraction");
+    // Pre-fill booking dates for lodging stops when not provided.
+    let booking = input.booking;
+    if (finalType === "lodging" && !booking) {
+      const day = state.days.find((d) => d.id === dayId);
+      const checkin = day?.date;
+      let checkout: string | undefined;
+      if (checkin) {
+        const d = new Date(checkin);
+        if (!isNaN(d.getTime())) { d.setDate(d.getDate() + 1); checkout = d.toISOString().slice(0, 10); }
+      }
+      booking = { checkinDate: checkin, checkoutDate: checkout, nights: 1, status: "none" };
+    }
     const stop: Stop = {
       id: uid(),
       dayId,
       name: input.name ?? "Nytt stopp",
-      type: input.type ?? "attraction",
+      type: finalType,
       notes: input.notes,
       estimatedTime: input.estimatedTime,
       location: input.location,
@@ -498,7 +513,7 @@ export const tripsApi = {
       distanceFromRouteKm: input.distanceFromRouteKm,
       extraDistanceKm: input.extraDistanceKm,
       photos: input.photos,
-      booking: input.booking,
+      booking,
       energy: input.energy,
       order,
     };
