@@ -84,6 +84,8 @@ function SharedTripByToken() {
           </div>
         </section>
 
+        <LiveSharedBlock tripId={trip.id} />
+
         <section className="mt-4 grid grid-cols-3 gap-3">
           {[
             { Icon: RouteIcon, label: "Distanse", value: `${trip.distanceKm} km` },
