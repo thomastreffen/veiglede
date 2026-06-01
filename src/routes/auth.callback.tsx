@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getOnboardingStatus } from "@/lib/account";
 import { sendTransactionalEmail } from "@/lib/email/send";
+import { consumePendingInvite } from "@/lib/trip-invites";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -52,9 +53,19 @@ function AuthCallback() {
               .eq("id", userId);
           }
         } catch { /* noop */ }
-        navigate({ to: "/onboarding", search: { next }, replace: true } as never);
+        const pendingInvite = consumePendingInvite();
+        if (pendingInvite) {
+          navigate({ to: "/join/$token", params: { token: pendingInvite }, replace: true });
+        } else {
+          navigate({ to: "/onboarding", search: { next }, replace: true } as never);
+        }
       } else {
-        window.location.replace(next);
+        const pendingInvite = consumePendingInvite();
+        if (pendingInvite) {
+          window.location.replace(`/join/${pendingInvite}`);
+        } else {
+          window.location.replace(next);
+        }
       }
       return true;
     };

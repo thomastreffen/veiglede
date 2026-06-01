@@ -17,7 +17,7 @@ function LoginPage() {
     if (!user) return;
     const pending = consumePendingInvite();
     if (pending) {
-      navigate({ to: "/invite/$token", params: { token: pending }, replace: true });
+      navigate({ to: "/join/$token", params: { token: pending }, replace: true });
     } else {
       navigate({ to: "/trips", replace: true });
     }
