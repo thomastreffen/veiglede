@@ -6,7 +6,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
-  Radio, MapPin, Camera, Users, Eye, Trash2,
+  Radio, MapPin, Camera, Users, Eye, Trash2, Send,
 } from "lucide-react";
 import { tripsApi, type Trip } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
