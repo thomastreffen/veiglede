@@ -393,21 +393,96 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
 
             {lodgingPlace && (
               <>
-                <Field label="Dato">
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Innsjekk">
+                    <input
+                      type="date"
+                      value={lodgingDate}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setLodgingDate(v);
+                        const n = Math.max(1, Number(lodgingNights) || 1);
+                        setLodgingCheckout(addDaysIso(v, n));
+                      }}
+                      className="form-input"
+                    />
+                  </Field>
+                  <Field label="Utsjekk">
+                    <input
+                      type="date"
+                      value={lodgingCheckout}
+                      min={lodgingDate}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setLodgingCheckout(v);
+                        const ms = new Date(v).getTime() - new Date(lodgingDate).getTime();
+                        const n = Math.max(1, Math.round(ms / 86400000));
+                        if (!Number.isNaN(n)) setLodgingNights(String(n));
+                      }}
+                      className="form-input"
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Antall netter">
+                    <input
+                      type="number" inputMode="numeric" min={1}
+                      value={lodgingNights}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setLodgingNights(raw);
+                        const n = Math.max(1, Number(raw) || 1);
+                        setLodgingCheckout(addDaysIso(lodgingDate, n));
+                      }}
+                      className="form-input"
+                    />
+                  </Field>
+                  <Field label="Gjester">
+                    <input
+                      type="number" inputMode="numeric" min={1}
+                      value={lodgingGuests}
+                      onChange={(e) => setLodgingGuests(e.target.value)}
+                      className="form-input"
+                    />
+                  </Field>
+                </div>
+                <Field label="Pris per natt (NOK, valgfritt)">
                   <input
-                    type="date"
-                    value={lodgingDate}
-                    onChange={(e) => setLodgingDate(e.target.value)}
+                    type="number" inputMode="decimal" min={0} step="1"
+                    value={lodgingPrice}
+                    onChange={(e) => setLodgingPrice(e.target.value)}
+                    placeholder="F.eks. 1490"
                     className="form-input"
                   />
+                  {lodgingPrice.trim() && !Number.isNaN(Number(lodgingPrice.replace(",", "."))) && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Totalt: {(Number(lodgingPrice.replace(",", ".")) * Math.max(1, Number(lodgingNights) || 1)).toFixed(0)} kr
+                    </p>
+                  )}
                 </Field>
-                <Field label="Antall netter">
-                  <input
-                    type="number" inputMode="numeric" min={1}
-                    value={lodgingNights}
-                    onChange={(e) => setLodgingNights(e.target.value)}
-                    className="form-input"
-                  />
+                <Field label="Bookingstatus">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(
+                      [
+                        { v: "none", label: "Ikke booket" },
+                        { v: "booked", label: "Booket" },
+                        { v: "paid", label: "Betalt" },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setLodgingStatus(opt.v)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                          lodgingStatus === opt.v
+                            ? "border-primary bg-primary/15 text-primary"
+                            : "border-border bg-background/60 text-muted-foreground"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </Field>
               </>
             )}
