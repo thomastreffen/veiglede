@@ -15,6 +15,7 @@ import { BookingInfo } from "@/components/BookingInfo";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { OpenInMaps } from "@/components/OpenInMaps";
 import { TripCompanions } from "@/components/TripCompanions";
 import { TripMembers } from "@/components/TripMembers";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
