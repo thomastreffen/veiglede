@@ -6,6 +6,9 @@ import { COVERS, vehicleMeta, styleMeta, type CoverKey, type VehicleType, type R
 import { energyMeta, type EnergyType } from "@/lib/vehicles-store";
 import { Route as RouteIcon, Clock, Camera, MapPin, ArrowRight, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { FollowBlock } from "@/components/FollowBlock";
+import { TripReactionsRow } from "@/components/TripReactionsRow";
+import { SaveTripButton } from "@/components/SaveTripButton";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params, loaderData }: { params: { username: string }; loaderData?: PublicProfilePayload }) => {
