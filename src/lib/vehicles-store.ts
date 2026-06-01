@@ -25,6 +25,8 @@ export interface Vehicle {
   defaultStyle: RouteStyle;
   drivingFlags: Record<string, boolean>;
   stopInterests: StopType[];
+  /** Whether this vehicle appears on the user's public profile. Defaults to true. */
+  isPublic?: boolean;
   isDemo?: boolean;
   hint?: string;
 }
