@@ -9,11 +9,13 @@ import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import { manualPlace, type ResolvedPlace } from "@/lib/places/geocoder";
 import {
   tripsApi, ROUTE_STYLES, styleMeta, vehicleMeta, buildAiSummary,
-  type RouteStyle, type CoverKey, looksLikeLodging,
+  type RouteStyle, type CoverKey, type StopType, looksLikeLodging,
 } from "@/lib/trips-store";
 import { getRoute, type RouteResult } from "@/lib/routing";
 import { fetchRoutePartnersFn } from "@/lib/partners.functions";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { generateAiTripPlanFn, type AiPlanResult } from "@/lib/trip-ai-plan.functions";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -56,6 +58,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
   const defaultVehicle: Vehicle | undefined = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
+  const generateAiPlan = useServerFn(generateAiTripPlanFn);
 
   const [step, setStep] = useState<Step>(1);
 
@@ -66,6 +69,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
   const [toPlace, setToPlace] = useState<ResolvedPlace | null>(null);
   const [date, setDate] = useState(DEFAULT_DATE);
   const [days, setDays] = useState<number>(1);
+  const [roundTrip, setRoundTrip] = useState<boolean>(true);
 
   // Step 2
   const [waypoints, setWaypoints] = useState<WaypointRow[]>([]);
@@ -177,7 +181,21 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                 >
                   <Plus className="h-4 w-4" />
                 </button>
-              </div>
+          </div>
+
+          {days > 1 && (
+            <label className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={roundTrip}
+                onChange={(e) => setRoundTrip(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+              />
+              <span className="text-sm">
+                Rundtur tilbake til <strong>{origin || "start"}</strong>
+              </span>
+            </label>
+          )}
             </Field>
           </div>
 
@@ -382,9 +400,15 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
           onCancel={() => setStep(3)}
           onDone={(tripId) => navigate({ to: "/trips/$tripId", params: { tripId } })}
           onError={() => { toast.error(w.generate.failed); setStep(3); }}
-          run={async () => {
+          initialSteps={[
+            "AI planlegger turen din…",
+          ]}
+          run={async (report) => {
+            const isRoundTrip = roundTrip && days > 1;
+            const finalDestinationText = isRoundTrip ? origin : destination;
             const fromResolved = await ensurePlace(origin, fromPlace);
-            const toResolved = await ensurePlace(destination, toPlace);
+            const toResolvedDirect = await ensurePlace(destination, toPlace);
+            const toResolved = isRoundTrip ? fromResolved : toResolvedDirect;
 
             // Resolve waypoints (filter blanks)
             const wpInputs = waypoints.filter((r) => r.text.trim().length > 0);
@@ -392,7 +416,39 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
               wpInputs.map(async (r) => ({ text: r.text.trim(), place: await ensurePlace(r.text, r.place) }))
             );
 
-            // Nearby partners
+            // For round trips, the typed destination becomes a required waypoint.
+            const aiWaypoints = isRoundTrip
+              ? [destination, ...wpResolved.map((w) => w.text)]
+              : wpResolved.map((w) => w.text);
+
+            // 1) Ask AI for a full day-by-day plan with real stops.
+            report("Spør AI om dag-for-dag plan…");
+            let plan: AiPlanResult | null = null;
+            try {
+              const planRes = await generateAiPlan({
+                data: {
+                  origin,
+                  destination: finalDestinationText,
+                  days,
+                  roundTrip: isRoundTrip,
+                  waypoints: aiWaypoints,
+                  vehicleLabel: vehicleMeta(selectedVehicle.type).label,
+                  energyLabel: selectedVehicle.energy,
+                  styleLabel: styleMeta(style).label,
+                  maxHoursPerDay: maxHours,
+                  stopInterests: selectedVehicle.stopInterests ?? [],
+                  avoidHighway,
+                  language: "nb",
+                },
+              });
+              if (planRes.error === "rate_limited") toast.warning("AI er travel — bruker enkel plan.");
+              else if (planRes.error === "credits_exhausted") toast.warning("AI-kreditt er brukt opp — bruker enkel plan.");
+              plan = planRes.plan;
+            } catch (err) {
+              console.error("[ai-wizard] plan call failed", err);
+            }
+
+            // 2) Nearby partners
             let routePartners: Awaited<ReturnType<typeof fetchRoutePartnersFn>>["partners"] = [];
             if (fromResolved && toResolved) {
               try {
@@ -413,6 +469,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             const finalAvoidHighway = avoidHighway || styleImpliesNoHighway;
             const avoidFerries = !!selectedVehicle.drivingFlags?.["no-ferry"];
 
+            report("Beregner kjørerute…");
             let route: RouteResult | null = null;
             if (fromResolved && toResolved) {
               route = await getRoute({
@@ -430,11 +487,11 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             const drivingTime = dur ? `${Math.floor(dur / 60)}t ${dur % 60}min` : "—";
 
             const waypointHint = wpResolved.length > 0
-              ? `Må innom: ${wpResolved.map((w) => w.text).join(", ")}.`
-              : "";
+              ? `Må innom: ${wpResolved.map((w) => w.text).join(", ")}.${isRoundTrip ? ` Rundtur om ${destination}.` : ""}`
+              : (isRoundTrip ? `Rundtur om ${destination}.` : "");
 
             const ai = buildAiSummary({
-              origin, destination, vehicle: vt, style,
+              origin, destination: finalDestinationText, vehicle: vt, style,
               energy, vehicleName: selectedVehicle.name,
               userPrompt: waypointHint || undefined,
               prefs: {
@@ -449,15 +506,15 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             });
 
             const trip = tripsApi.createTrip({
-              title: `${origin} → ${destination}`,
+              title: isRoundTrip ? `${origin} → ${destination} → ${origin}` : `${origin} → ${destination}`,
               subtitle: `${styleMeta(style).label} med ${selectedVehicle.name}`,
               region: "Norge",
-              origin, destination, startDate: date,
+              origin, destination: finalDestinationText, startDate: date,
               vehicle: vt, vehicleId: selectedVehicle.id, vehicleName: selectedVehicle.name, energy,
               style,
               distanceKm, drivingTime,
               cover: pickCover(style),
-              aiSummary: ai,
+              aiSummary: (plan?.summary ? `${plan.summary} ` : "") + ai,
               originLoc: fromResolved ? { lat: fromResolved.lat, lng: fromResolved.lng } : undefined,
               destinationLoc: toResolved ? { lat: toResolved.lat, lng: toResolved.lng } : undefined,
               destinationPlaceTypes: toResolved?.placeTypes,
@@ -476,7 +533,6 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
               routeFallbackEstimateMin: route?.fallbackEstimateMin,
             });
 
-            // Days split
             if (days > 1) tripsApi.splitIntoDays(trip.id, days);
             const bundle = tripsApi.getTripBundle(trip.id);
             const tripDays = bundle.days.sort((a, b) => a.dayNumber - b.dayNumber);
@@ -491,24 +547,55 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
               });
             }
 
-            // Distribute waypoints evenly across days based on order
-            const n = wpResolved.length;
-            wpResolved.forEach((wp, i) => {
-              const dayIdx = n === 0 ? 0 : Math.min(tripDays.length - 1, Math.floor(((i + 1) / (n + 1)) * tripDays.length));
-              const day = tripDays[dayIdx];
-              if (!day) return;
-              const placeTypes = wp.place?.placeTypes;
-              const type = looksLikeLodging(wp.text, placeTypes) ? "lodging" : "city";
-              tripsApi.addStop(day.id, {
-                name: wp.text,
-                type,
-                location: wp.text,
-                lat: wp.place?.lat,
-                lng: wp.place?.lng,
-                placeTypes,
-                reason: "Lagt til som ønsket stopp.",
+            // 3) Apply AI plan: per-day title + stops
+            if (plan && plan.days.length > 0) {
+              for (const aiDay of plan.days) {
+                const day = tripDays[aiDay.dayNumber - 1];
+                if (!day) continue;
+                report(`Planlegger dag ${aiDay.dayNumber}: ${aiDay.start} → ${aiDay.end}…`);
+                tripsApi.updateDay(day.id, {
+                  title: `${aiDay.start} → ${aiDay.end}`,
+                  summary: aiDay.summary,
+                });
+                for (const s of aiDay.stops) {
+                  tripsApi.addStop(day.id, {
+                    name: s.name,
+                    type: s.type as StopType,
+                    location: s.name,
+                    description: s.description,
+                    durationMin: s.durationMin,
+                    durationSource: "ai",
+                    reason: "AI-foreslått stopp.",
+                  });
+                }
+                if (aiDay.lodging && !aiDay.stops.some((s) => s.type === "lodging")) {
+                  tripsApi.addStop(day.id, {
+                    name: aiDay.lodging,
+                    type: "lodging",
+                    location: aiDay.end,
+                    description: "Foreslått overnatting.",
+                    durationMin: 720,
+                    durationSource: "ai",
+                    reason: "AI-foreslått overnatting.",
+                  });
+                }
+              }
+            } else {
+              // Fallback: distribute typed waypoints across days
+              const n = wpResolved.length;
+              wpResolved.forEach((wp, i) => {
+                const dayIdx = n === 0 ? 0 : Math.min(tripDays.length - 1, Math.floor(((i + 1) / (n + 1)) * tripDays.length));
+                const day = tripDays[dayIdx];
+                if (!day) return;
+                const placeTypes = wp.place?.placeTypes;
+                const type = looksLikeLodging(wp.text, placeTypes) ? "lodging" : "city";
+                tripsApi.addStop(day.id, {
+                  name: wp.text, type, location: wp.text,
+                  lat: wp.place?.lat, lng: wp.place?.lng, placeTypes,
+                  reason: "Lagt til som ønsket stopp.",
+                });
               });
-            });
+            }
 
             // Ferry segments
             if (route?.ferrySegments && route.ferrySegments.length > 0) {
@@ -516,6 +603,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             }
 
             // Partner stops
+            report("Legger til anbefalte partnere…");
             try {
               const b2 = tripsApi.getTripBundle(trip.id);
               const firstDay = b2.days[0];
@@ -549,15 +637,9 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
               }
             } catch { /* ignore */ }
 
+            report("Din tur er klar!");
             return trip.id;
           }}
-          steps={[
-            w.generate.steps.route(origin || "…", destination || "…"),
-            w.generate.steps.stops(styleMeta(style).label),
-            w.generate.steps.legs(days),
-            w.generate.steps.roadbook,
-            w.generate.steps.ready,
-          ]}
         />
       )}
     </div>
@@ -574,25 +656,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function GenerateProgress({
-  steps, run, onDone, onError, onCancel,
+  initialSteps, run, onDone, onError, onCancel,
 }: {
-  steps: string[];
-  run: () => Promise<string>;
+  initialSteps: string[];
+  run: (report: (msg: string) => void) => Promise<string>;
   onDone: (tripId: string) => void;
   onError: (err: unknown) => void;
   onCancel: () => void;
 }) {
   const t = useT();
   const w = t.wizard;
-  const [active, setActive] = useState(0);
+  const [steps, setSteps] = useState<string[]>(initialSteps);
   const tripIdRef = useRef<string | null>(null);
   const errorRef = useRef<unknown>(null);
+  const [done, setDone] = useState(false);
 
   // Kick off the real work once
   useEffect(() => {
     let mounted = true;
-    run()
-      .then((id) => { if (mounted) tripIdRef.current = id; })
+    const report = (msg: string) => {
+      if (!mounted) return;
+      setSteps((prev) => (prev[prev.length - 1] === msg ? prev : [...prev, msg]));
+    };
+    run(report)
+      .then((id) => { if (mounted) { tripIdRef.current = id; setDone(true); } })
       .catch((err) => {
         console.error("[ai-wizard] generate failed", err);
         if (mounted) errorRef.current = err;
@@ -601,19 +688,20 @@ function GenerateProgress({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Animate steps
+  // When done or errored, transition out after a brief beat
   useEffect(() => {
-    if (active >= steps.length - 1) {
-      // hold on last step until trip is ready
-      const poll = setInterval(() => {
-        if (errorRef.current) { clearInterval(poll); onError(errorRef.current); }
-        else if (tripIdRef.current) { clearInterval(poll); onDone(tripIdRef.current); }
-      }, 200);
-      return () => clearInterval(poll);
-    }
-    const tm = setTimeout(() => setActive((a) => a + 1), 1000);
-    return () => clearTimeout(tm);
-  }, [active, steps.length, onDone, onError]);
+    const poll = setInterval(() => {
+      if (errorRef.current) { clearInterval(poll); onError(errorRef.current); }
+      else if (done && tripIdRef.current) {
+        clearInterval(poll);
+        const id = tripIdRef.current;
+        setTimeout(() => onDone(id), 600);
+      }
+    }, 200);
+    return () => clearInterval(poll);
+  }, [done, onDone, onError]);
+
+  const activeIndex = done ? steps.length - 1 : Math.max(0, steps.length - 1);
 
   return (
     <div className="fixed inset-0 z-40 bg-background flex flex-col items-center justify-center px-6 py-10">
@@ -622,24 +710,21 @@ function GenerateProgress({
 
         <p className="mt-8 text-center text-[11px] uppercase tracking-[0.28em] text-primary">{w.generate.loading}</p>
 
-        <ul className="mt-6 space-y-3">
+        <ul className="mt-6 space-y-3 max-h-[40vh] overflow-y-auto">
           {steps.map((label, i) => {
-            const done = i < active || (i === steps.length - 1 && tripIdRef.current);
-            const current = i === active && !done;
+            const isDone = i < activeIndex || (i === steps.length - 1 && done);
+            const current = i === activeIndex && !isDone;
             return (
-              <li key={i} className={cn(
-                "flex items-start gap-3 text-sm transition-opacity",
-                i > active ? "opacity-30" : "opacity-100"
-              )}>
+              <li key={i} className="flex items-start gap-3 text-sm">
                 <span className={cn(
                   "mt-0.5 h-5 w-5 grid place-items-center rounded-full border shrink-0 transition-colors",
-                  done ? "bg-primary border-primary text-primary-foreground"
+                  isDone ? "bg-primary border-primary text-primary-foreground"
                     : current ? "border-primary text-primary animate-pulse"
                     : "border-border text-muted-foreground"
                 )}>
-                  {done ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[10px]">{i + 1}</span>}
+                  {isDone ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[10px]">{i + 1}</span>}
                 </span>
-                <span className={cn(done ? "text-foreground" : current ? "text-foreground" : "text-muted-foreground")}>
+                <span className={isDone || current ? "text-foreground" : "text-muted-foreground"}>
                   {label}
                 </span>
               </li>
