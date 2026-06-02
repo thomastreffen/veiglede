@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, Sparkles, Users, ArrowLeft } from "lucide-react";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { HelpBot } from "@/components/HelpBot";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/pricing")({
 });
 
 function PricingPage() {
+  const t = useT();
+  const pr = t.pricing;
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border/60 bg-surface">
@@ -24,101 +27,65 @@ function PricingPage() {
             <VeigledeLogo size="sm" />
           </Link>
           <Link to="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-3.5 w-3.5" /> Tilbake
+            <ArrowLeft className="h-3.5 w-3.5" /> {pr.back}
           </Link>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-20">
         <div className="text-center max-w-2xl mx-auto">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Priser</p>
-          <h1 className="mt-3 font-display text-4xl md:text-6xl uppercase">Velg planen som passer deg</h1>
-          <p className="mt-4 text-base text-muted-foreground">
-            Start gratis. Oppgrader når du vil ha mer. Bytt eller avbryt når som helst.
-          </p>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{pr.eyebrow}</p>
+          <h1 className="mt-3 font-display text-4xl md:text-6xl uppercase">{pr.title}</h1>
+          <p className="mt-4 text-base text-muted-foreground">{pr.subtitle}</p>
         </div>
 
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-5">
           <PlanCard
-            name="Gratis"
-            price="0 kr"
-            tag="For å komme i gang"
-            features={[
-              "10 turer",
-              "2 kjøretøy",
-              "AI roadbook",
-              "Offentlig profil og garasje",
-              "Følge og dele med andre",
-              "Reisefølge (maks 3)",
-              "Del turer med lenke",
-            ]}
-            ctaLabel="Kom i gang gratis →"
+            name={pr.freeName}
+            price={pr.freePrice}
+            tag={pr.freeTag}
+            features={pr.freeFeatures}
+            ctaLabel={pr.freeCta}
             ctaTo="/signup"
           />
           <PlanCard
-            name="Pro"
-            price="79 kr"
-            interval="/mnd"
-            yearlyNote="eller 599 kr/år — spar 2 mnd"
-            tag="Mest populær"
+            name={pr.proName}
+            price={pr.proPrice}
+            interval={pr.perMonth}
+            yearlyNote={pr.proYearly}
+            tag={pr.proTag}
             highlighted
             icon={<Sparkles className="h-4 w-4" />}
-            features={[
-              "Alt i Gratis",
-              "Ubegrenset turer og kjøretøy",
-              "Avansert AI roadbook",
-              "Live-deling av posisjon",
-              "PDF-eksport",
-              "AI pakkeliste",
-              "Kostnadskalkulator",
-              "Pro-badge på profil",
-              "Prioritert support",
-            ]}
-            ctaLabel="Prøv Pro"
+            features={pr.proFeatures}
+            ctaLabel={pr.proCta}
             ctaTo="/settings"
             ctaHash="abonnement"
           />
           <PlanCard
-            name="Gruppe"
-            price="199 kr"
-            interval="/mnd"
-            tag="For MC-klubber og bobil-lag"
+            name={pr.groupName}
+            price={pr.groupPrice}
+            interval={pr.perMonth}
+            tag={pr.groupTag}
             icon={<Users className="h-4 w-4" />}
-            features={[
-              "Alt i Pro",
-              "Opptil 20 medlemmer",
-              "Delt garasjevisning",
-              "Alle kan redigere felles turer",
-              "Felles turkalender",
-              "Perfekt for MC-klubber og bobil-lag",
-            ]}
-            ctaLabel="Start din gruppe"
+            features={pr.groupFeatures}
+            ctaLabel={pr.groupCta}
             ctaTo="/settings"
             ctaHash="abonnement"
           />
         </div>
 
         <section className="mt-20 max-w-3xl mx-auto">
-          <h2 className="font-display text-2xl md:text-3xl uppercase text-center">Vanlige spørsmål</h2>
+          <h2 className="font-display text-2xl md:text-3xl uppercase text-center">{pr.faqTitle}</h2>
           <div className="mt-8 space-y-4">
-            <Faq q="Kan jeg bytte plan når som helst?">
-              Ja. Du kan oppgradere, nedgradere eller avbryte abonnementet ditt når som helst fra innstillinger.
-            </Faq>
-            <Faq q="Hva skjer med turene mine om jeg nedgraderer?">
-              Alle turer og kjøretøy beholdes. Du kan ikke opprette nye turer over gratis-grensen før du sletter noen — men eksisterende data er trygt lagret.
-            </Faq>
-            <Faq q="Støtter dere MC-klubber?">
-              Ja, Gruppe-planen er laget for nettopp det. Inviter opp til 20 medlemmer, del garasjevisning og planlegg felles turer.
-            </Faq>
-            <Faq q="Når kommer betaling?">
-              Stripe-integrasjon aktiveres snart. Inntil videre kan du registrere interesse — du blir kontaktet når Pro er klart.
-            </Faq>
+            {pr.faqs.map((f) => (
+              <Faq key={f.q} q={f.q}>{f.a}</Faq>
+            ))}
           </div>
         </section>
       </main>
 
       <footer className="border-t border-border/60 mt-20 py-8 text-center text-xs text-muted-foreground">
-        Veiglede · Bygget for nordmenn på veien · <Link to="/hjelp" className="hover:text-foreground underline">Trenger du hjelp?</Link>
+        {pr.footerNote}<Link to="/hjelp" className="hover:text-foreground underline">{pr.helpLink}</Link>
       </footer>
       <HelpBot />
     </div>
@@ -133,7 +100,7 @@ function PlanCard({
   interval?: string;
   yearlyNote?: string;
   tag?: string;
-  features: string[];
+  features: readonly string[];
   ctaLabel: string;
   ctaTo: string;
   ctaHash?: string;
