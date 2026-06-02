@@ -1041,6 +1041,7 @@ export const tripsApi = {
         ...state,
         trips: state.trips.map((t) => (t.id === tripId ? { ...t, ferryDetectionHash: hash } : t)),
       };
+      refreshTripDerivedState(tripId);
       persist();
     }
     return inserted;
