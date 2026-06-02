@@ -416,14 +416,14 @@ function SvgTripMap({
           <ellipse cx={W * 0.5} cy={H * 0.75} rx={220} ry={60} fill="oklch(0.20 0.016 250)" />
         </g>
 
-        {/* Real route geometry takes precedence over per-day schematic */}
-        {geometryPath && (
-          <g>
-            <path d={geometryPath} fill="none" stroke={DAY_COLORS[0]} strokeWidth="10" opacity="0.18" strokeLinecap="round" filter="url(#vg-soft-glow)" />
-            <path d={geometryPath} fill="none" stroke={DAY_COLORS[0]} strokeWidth={compact ? 2.5 : 3.5} strokeLinecap="round" strokeLinejoin="round" />
+        {/* Real route geometry — colored per day */}
+        {geometrySegments.map((seg, i) => (
+          <g key={`geom-${i}`}>
+            <path d={seg.d} fill="none" stroke={seg.color} strokeWidth="10" opacity="0.18" strokeLinecap="round" filter="url(#vg-soft-glow)" />
+            <path d={seg.d} fill="none" stroke={seg.color} strokeWidth={compact ? 2.5 : 3.5} strokeLinecap="round" strokeLinejoin="round" />
           </g>
-        )}
-        {/* Day-colored route segments */}
+        ))}
+        {/* Day-colored route segments (schematic — only when no geometry) */}
         {fallbackPath && (
           <path d={fallbackPath} fill="none" stroke="oklch(0.78 0.17 65)" strokeWidth="3" strokeDasharray="6 6" strokeLinecap="round" />
         )}
@@ -441,6 +441,7 @@ function SvgTripMap({
             </g>
           );
         })}
+
 
 
         {/* Suggestion pins (semi-transparent until hovered) */}
