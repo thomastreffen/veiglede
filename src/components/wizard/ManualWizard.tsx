@@ -87,7 +87,25 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   const updateRow = (key: string, patch: Partial<Row>) =>
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const removeRow = (key: string) => setRows((rs) => rs.filter((r) => r.key !== key));
-  const addRow = () => setRows((rs) => [...rs, newRow()]);
+
+  // Auto-fill date for a new row based on the previous row's date (+1 day).
+  const makeRowAfter = (prev: Row | undefined, opts?: { lodging?: boolean }): Row => {
+    const date = prev?.date ? addDays(prev.date, 1) : "";
+    const dayNumber = (prev?.dayNumber ?? 0) + 1;
+    return {
+      key: uid(), text: "", place: null, date, dayNumber,
+      type: opts?.lodging ? "lodging" : undefined,
+    };
+  };
+  const addRow = () => setRows((rs) => [...rs, makeRowAfter(rs[rs.length - 1])]);
+  const insertLodgingAfter = (key: string) => setRows((rs) => {
+    const idx = rs.findIndex((r) => r.key === key);
+    if (idx < 0) return rs;
+    const lodging = makeRowAfter(rs[idx], { lodging: true });
+    const next = [...rs];
+    next.splice(idx + 1, 0, lodging);
+    return next;
+  });
 
   const validRows = rows.filter((r) => r.text.trim().length > 0);
   const canContinue = validRows.length >= 2;
