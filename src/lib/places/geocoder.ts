@@ -98,6 +98,7 @@ async function searchGoogle(q: string, signal: AbortSignal, opts: SearchOptions)
     type: pickType(r.types),
     source: "google",
     needsDetails: true,
+    placeTypes: r.types ?? [],
   }));
 }
 
