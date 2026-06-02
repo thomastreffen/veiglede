@@ -3,19 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { HelpCircle, X, Send, ThumbsUp, ThumbsDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { helpBotChatFn, helpBotFeedbackFn } from "@/lib/helpbot.functions";
+import { useT } from "@/i18n/provider";
 
 type Msg = { role: "user" | "assistant"; content: string };
-
-const GREETING: Msg = {
-  role: "assistant",
-  content: "Hei! Jeg kan hjelpe deg med Veiglede. Hva lurer du på?",
-};
-
-const QUICK_REPLIES = [
-  "Hvordan planlegger jeg en tur?",
-  "Kan jeg eksportere til GPS?",
-  "Hva er forskjellen på Pro og Gratis?",
-];
 
 function newSessionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -23,6 +13,9 @@ function newSessionId(): string {
 }
 
 export function HelpBot() {
+  const t = useT();
+  const hb = t.app.helpBot;
+  const GREETING: Msg = { role: "assistant", content: hb.greeting };
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
   const [input, setInput] = useState("");
@@ -51,10 +44,7 @@ export function HelpBot() {
       const res = await chat({ data: { messages: next.map(({ role, content }) => ({ role, content })) } });
       setMessages((m) => [...m, { role: "assistant", content: res.reply }]);
     } catch {
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: "Beklager — noe gikk galt. Prøv igjen." },
-      ]);
+      setMessages((m) => [...m, { role: "assistant", content: hb.errorReply }]);
     } finally {
       setLoading(false);
     }
@@ -68,7 +58,7 @@ export function HelpBot() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Åpne hjelpe-bot"
+          aria-label={hb.openAria}
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 grid place-items-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40 hover:brightness-110 transition"
         >
           <HelpCircle className="h-7 w-7" strokeWidth={2.2} />
@@ -82,20 +72,20 @@ export function HelpBot() {
         <div
           className="fixed inset-0 md:inset-auto md:bottom-6 md:right-6 z-50 md:w-[380px] md:h-[600px] md:max-h-[85vh] bg-surface md:rounded-2xl md:border md:border-border shadow-2xl flex flex-col overflow-hidden"
           role="dialog"
-          aria-label="Veiglede-hjelp"
+          aria-label={hb.title}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-2/50">
             <div className="flex items-center gap-2">
               <span className="grid place-items-center h-8 w-8 rounded-full bg-primary/15 text-primary">🤖</span>
               <div>
-                <p className="text-sm font-semibold">Veiglede-hjelp</p>
-                <p className="text-[10px] text-muted-foreground">Vi svarer som regel umiddelbart</p>
+                <p className="text-sm font-semibold">{hb.title}</p>
+                <p className="text-[10px] text-muted-foreground">{hb.subtitle}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              aria-label="Lukk"
+              aria-label={hb.close}
               className="p-2 rounded-lg hover:bg-surface-2"
             >
               <X className="h-4 w-4" />
@@ -115,7 +105,7 @@ export function HelpBot() {
             {loading && <TypingDots />}
             {showQuickReplies && (
               <div className="flex flex-col gap-2 pt-1">
-                {QUICK_REPLIES.map((q) => (
+                {hb.quickReplies.map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -140,7 +130,7 @@ export function HelpBot() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Skriv et spørsmål…"
+                placeholder={hb.inputPlaceholder}
                 maxLength={1000}
                 className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
               />
@@ -148,12 +138,12 @@ export function HelpBot() {
                 type="submit"
                 disabled={loading || !input.trim()}
                 className="grid place-items-center h-10 w-10 rounded-xl bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50"
-                aria-label="Send"
+                aria-label={hb.send}
               >
                 <Send className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-1.5 text-[10px] text-muted-foreground text-center">Powered by Lovable AI</p>
+            <p className="mt-1.5 text-[10px] text-muted-foreground text-center">{hb.poweredBy}</p>
           </form>
         </div>
       )}
@@ -219,6 +209,8 @@ function MessageBubble({
 }
 
 function FeedbackRow({ sessionId, question, answer }: { sessionId: string; question: string; answer: string }) {
+  const t = useT();
+  const hb = t.app.helpBot;
   const [state, setState] = useState<"idle" | "up" | "down" | "thanks">("idle");
   const [text, setText] = useState("");
   const feedback = useServerFn(helpBotFeedbackFn);
@@ -233,7 +225,7 @@ function FeedbackRow({ sessionId, question, answer }: { sessionId: string; quest
   };
 
   if (state === "thanks") {
-    return <p className="text-[11px] text-muted-foreground pl-1">Takk for tilbakemeldingen!</p>;
+    return <p className="text-[11px] text-muted-foreground pl-1">{hb.thanksFeedback}</p>;
   }
   if (state === "down") {
     return (
@@ -247,13 +239,13 @@ function FeedbackRow({ sessionId, question, answer }: { sessionId: string; quest
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Hva manglet i svaret?"
+          placeholder={hb.feedbackPlaceholder}
           maxLength={500}
           className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
           autoFocus
         />
         <button type="submit" className="text-xs rounded-lg bg-primary text-primary-foreground px-2.5 py-1.5">
-          Send
+          {hb.send}
         </button>
       </form>
     );
@@ -268,14 +260,14 @@ function FeedbackRow({ sessionId, question, answer }: { sessionId: string; quest
         }}
         className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary"
       >
-        <ThumbsUp className="h-3 w-3" /> Besvart
+        <ThumbsUp className="h-3 w-3" /> {hb.helpful}
       </button>
       <button
         type="button"
         onClick={() => setState("down")}
         className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary"
       >
-        <ThumbsDown className="h-3 w-3" /> Ikke til hjelp
+        <ThumbsDown className="h-3 w-3" /> {hb.notHelpful}
       </button>
     </div>
   );
