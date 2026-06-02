@@ -79,6 +79,8 @@ export interface Stop {
   ferryCostNok?: number;
   /** Optional ferry route hint (e.g. "Lavik → Oppedal") shown on ferry stops. */
   ferryRouteHint?: string;
+  /** Raw Google Places types (e.g. "lodging", "campground") — used for auto-classification. */
+  placeTypes?: string[];
 }
 
 
@@ -175,6 +177,9 @@ export interface Trip {
   // every time the planner / roadbook mounts. All optional.
   originLoc?: { lat: number; lng: number };
   destinationLoc?: { lat: number; lng: number };
+  /** Raw Google Places types for the destination — propagated to the Ankomst stop. */
+  destinationPlaceTypes?: string[];
+  originPlaceTypes?: string[];
   routeGeometry?: { lat: number; lng: number }[];
   routeDistanceKm?: number;
   routeDurationMin?: number;
@@ -453,12 +458,30 @@ export const tripsApi = {
         description: "Start på dagen — sjekk dekktrykk, fyll tanken.",
         reason: "Felles startpunkt for ruta.", durationMin: 15,
       },
-      {
-        id: uid(), dayId: day1.id, order: 1,
-        name: `Ankomst ${trip.destination}`, type: "city", location: trip.destination,
-        description: "Veis ende for denne etappen.",
-        reason: "Ankomst.", durationMin: 0,
-      },
+      (() => {
+        const destLooksLikeLodging = looksLikeLodging(trip.destination, trip.destinationPlaceTypes);
+        const ankomstType: StopType = destLooksLikeLodging ? "lodging" : "city";
+        return {
+          id: uid(), dayId: day1.id, order: 1,
+          name: `Ankomst ${trip.destination}`, type: ankomstType, location: trip.destination,
+          description: destLooksLikeLodging ? "Innsjekk og overnatting." : "Veis ende for denne etappen.",
+          reason: "Ankomst.", durationMin: destLooksLikeLodging ? 720 : 0,
+          lat: trip.destinationLoc?.lat,
+          lng: trip.destinationLoc?.lng,
+          placeTypes: trip.destinationPlaceTypes,
+          ...(destLooksLikeLodging && trip.startDate
+            ? {
+                booking: (() => {
+                  const ci = trip.startDate;
+                  const d = new Date(ci);
+                  let co: string | undefined;
+                  if (!isNaN(d.getTime())) { d.setDate(d.getDate() + 1); co = d.toISOString().slice(0, 10); }
+                  return { checkinDate: ci, checkoutDate: co, nights: 1, status: "none" as const };
+                })(),
+              }
+            : {}),
+        };
+      })(),
     ];
 
     const finalTrip = { ...trip, stopsCount: newStops.length };
@@ -651,6 +674,14 @@ export const tripsApi = {
       photos: input.photos,
       booking,
       energy: input.energy,
+      isAutoDetected: input.isAutoDetected,
+      ferryRouteHint: input.ferryRouteHint,
+      ferryCostNok: input.ferryCostNok,
+      isPartner: input.isPartner,
+      partnerId: input.partnerId,
+      partnerWebsite: input.partnerWebsite,
+      partnerLogoUrl: input.partnerLogoUrl,
+      placeTypes: input.placeTypes,
       order,
     };
     state = { ...state, stops: [...state.stops, stop] };
@@ -905,7 +936,14 @@ export const tripsApi = {
    */
   applyFerrySegments(
     tripId: string,
-    segments: Array<{ fromLabel?: string; toLabel?: string; durationMin: number; distanceKm: number }>,
+    segments: Array<{
+      fromLabel?: string;
+      toLabel?: string;
+      durationMin: number;
+      distanceKm: number;
+      start?: { lat: number; lng: number };
+      end?: { lat: number; lng: number };
+    }>,
   ): number {
     ensureInit();
     const trip = state.trips.find((t) => t.id === tripId);
@@ -919,12 +957,71 @@ export const tripsApi = {
         .filter((s) => s.dayId === firstDay.id && s.type === "ferry")
         .map((s) => `${s.ferryRouteHint ?? s.name}`.toLowerCase()),
     );
+
+    const geometry = trip.routeGeometry ?? [];
+    // Nearest geometry point index for a given coord.
+    const nearestIdx = (p?: { lat: number; lng: number }): number => {
+      if (!p || geometry.length === 0) return -1;
+      let best = 0;
+      let bestD = Infinity;
+      for (let i = 0; i < geometry.length; i++) {
+        const g = geometry[i];
+        const dx = g.lat - p.lat;
+        const dy = g.lng - p.lng;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      return best;
+    };
+
     let inserted = 0;
     for (const seg of segments) {
       const hint = `${seg.fromLabel ?? "?"} → ${seg.toLabel ?? "?"}`;
       if (existingFerryHints.has(hint.toLowerCase())) continue;
       const name = seg.fromLabel && seg.toLabel ? `Ferje: ${seg.fromLabel} → ${seg.toLabel}` : "Ferje";
-      this.addStop(firstDay.id, {
+
+      // Compute target insertion order on the first day based on geometry index.
+      const daySiblings = state.stops
+        .filter((s) => s.dayId === firstDay.id)
+        .sort((a, b) => a.order - b.order);
+      const ferryStartIdx = nearestIdx(seg.start);
+      // For each existing stop, compute a geometry index. If a stop has no
+      // lat/lng, fall back to interpolating by its order position.
+      const siblingIdx = daySiblings.map((s, i) => {
+        if (typeof s.lat === "number" && typeof s.lng === "number" && geometry.length > 0) {
+          return nearestIdx({ lat: s.lat, lng: s.lng });
+        }
+        if (geometry.length === 0 || daySiblings.length <= 1) return i;
+        // Avgang (first) → 0; Ankomst (last) → last; others interpolate.
+        return Math.round((i / Math.max(1, daySiblings.length - 1)) * (geometry.length - 1));
+      });
+
+      // Find insertion position: first sibling whose geometry idx is greater
+      // than ferryStartIdx. If ferryStartIdx unknown, insert before the last
+      // stop (so it lands between origin and destination).
+      let insertOrder = daySiblings.length; // append fallback
+      if (ferryStartIdx >= 0) {
+        for (let i = 0; i < daySiblings.length; i++) {
+          if (siblingIdx[i] > ferryStartIdx) { insertOrder = daySiblings[i].order; break; }
+        }
+        // Never insert before Avgang (order 0) — push to at least 1.
+        if (insertOrder === 0) insertOrder = 1;
+      } else if (daySiblings.length >= 2) {
+        insertOrder = daySiblings[daySiblings.length - 1].order;
+      }
+
+      // Shift orders of existing stops on this day at/after insertOrder by +1.
+      state = {
+        ...state,
+        stops: state.stops.map((s) =>
+          s.dayId === firstDay.id && s.order >= insertOrder ? { ...s, order: s.order + 1 } : s,
+        ),
+      };
+
+      const ferryStop: Stop = {
+        id: uid(),
+        dayId: firstDay.id,
+        order: insertOrder,
         name,
         type: "ferry",
         durationMin: seg.durationMin,
@@ -932,14 +1029,19 @@ export const tripsApi = {
         isAutoDetected: true,
         ferryRouteHint: hint,
         reason: "Automatisk oppdaget ferge langs ruta.",
-      });
+        lat: seg.start?.lat,
+        lng: seg.start?.lng,
+      };
+      state = { ...state, stops: [...state.stops, ferryStop] };
       inserted++;
     }
+
     if (inserted > 0) {
       state = {
         ...state,
         trips: state.trips.map((t) => (t.id === tripId ? { ...t, ferryDetectionHash: hash } : t)),
       };
+      refreshTripDerivedState(tripId);
       persist();
     }
     return inserted;

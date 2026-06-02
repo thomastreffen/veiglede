@@ -3,7 +3,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import {
   useTripsStore, tripsApi, stopMeta, stopDisplayMeta, STOP_TYPES, vehicleMeta, styleMeta,
   COVERS, type CoverKey, fetchRouteSuggestions, getPartnerTips, getPhotoMemories,
-  LODGING_PLACE_TYPES,
+  LODGING_PLACE_TYPES, looksLikeLodging,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
@@ -117,6 +117,28 @@ function TripPlanner() {
     window.addEventListener("trip:scroll-to-stop", onScroll);
     return () => window.removeEventListener("trip:scroll-to-stop", onScroll);
   }, []);
+
+  // Retroactive lodging detection: if the final "Ankomst {…}" destination
+  // stop is named after a known hotel chain or has lodging placeTypes,
+  // upgrade its type to "lodging" so the booking prompt appears.
+  useEffect(() => {
+    if (!trip) return;
+    for (const day of tripDays) {
+      const dayStops = tripStops
+        .filter((s) => s.dayId === day.id)
+        .sort((a, b) => a.order - b.order);
+      const last = dayStops[dayStops.length - 1];
+      if (!last) continue;
+      if (last.type === "lodging") continue;
+      const isAnkomst = last.name.toLowerCase().startsWith("ankomst ");
+      const matchName = isAnkomst && looksLikeLodging(last.name.slice("ankomst ".length), last.placeTypes);
+      const matchTypes = last.placeTypes?.some((t) => LODGING_PLACE_TYPES.includes(t));
+      if (matchName || matchTypes) {
+        tripsApi.updateStop(last.id, { type: "lodging" });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id, tripStops.length]);
 
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
@@ -1183,21 +1205,21 @@ function PlannerActions({
   return (
     <section className="mt-4 space-y-3">
       {isLongLeg && (
-        <div className="relative z-20 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
-          <p className="text-sm font-semibold text-amber-200">Denne etappen er lang ({trip.drivingTime}).</p>
-          <p className="mt-1 text-xs text-amber-100/80">
+        <div className="relative z-20 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-lg">
+          <p className="text-sm font-semibold text-amber-900">Denne etappen er lang ({trip.drivingTime}).</p>
+          <p className="mt-1 text-xs text-amber-900/80">
             Lengre enn dine {maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() => { tripsApi.splitIntoDays(trip.id, 2); setLodgingOpen(true); }}
-              className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-950 hover:brightness-110"
+              className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:brightness-110"
             >
               Ja, foreslå overnatting
             </button>
             <button
               onClick={() => { /* keep as-is */ }}
-              className="rounded-full border border-amber-500/40 bg-background/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-100 hover:bg-amber-500/20"
+              className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-900 hover:bg-amber-100"
             >
               Nei, behold som én dag
             </button>
