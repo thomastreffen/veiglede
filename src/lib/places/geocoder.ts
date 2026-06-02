@@ -25,6 +25,9 @@ export interface ResolvedPlace {
   /** True when this entry is from autocomplete and needs a Place Details
    * lookup to populate lat/lng before it can be used for routing. */
   needsDetails?: boolean;
+  /** Raw Google Places types (e.g. "lodging", "campground"). Used by the
+   * trip planner to auto-classify lodging stops without keyword guessing. */
+  placeTypes?: string[];
 }
 
 // Small curated fallback for offline / "Use anyway" support.
