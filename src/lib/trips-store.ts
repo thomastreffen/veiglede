@@ -79,6 +79,8 @@ export interface Stop {
   ferryCostNok?: number;
   /** Optional ferry route hint (e.g. "Lavik → Oppedal") shown on ferry stops. */
   ferryRouteHint?: string;
+  /** Raw Google Places types (e.g. "lodging", "campground") — used for auto-classification. */
+  placeTypes?: string[];
 }
 
 
