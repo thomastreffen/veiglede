@@ -364,6 +364,7 @@ function TripPlanner() {
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
         {[
           { href: "#track", label: td.jumpLive },
+          { href: "#overview", label: "Oversikt" },
           { href: "#days", label: td.jumpDays },
           { href: "#packing", label: td.jumpPacking },
           { href: "#along", label: td.jumpAlong },
