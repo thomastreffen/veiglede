@@ -9,11 +9,13 @@ import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import { manualPlace, type ResolvedPlace } from "@/lib/places/geocoder";
 import {
   tripsApi, ROUTE_STYLES, styleMeta, vehicleMeta, buildAiSummary,
-  type RouteStyle, type CoverKey, looksLikeLodging,
+  type RouteStyle, type CoverKey, type StopType, looksLikeLodging,
 } from "@/lib/trips-store";
 import { getRoute, type RouteResult } from "@/lib/routing";
 import { fetchRoutePartnersFn } from "@/lib/partners.functions";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { generateAiTripPlanFn, type AiPlanResult } from "@/lib/trip-ai-plan.functions";
 
 type Step = 1 | 2 | 3 | 4;
 
