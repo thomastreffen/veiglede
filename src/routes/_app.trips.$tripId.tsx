@@ -353,7 +353,17 @@ function TripPlanner() {
           className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2 hover:border-primary">
           <Share2 className="h-4 w-4" /> {td.shareTrip}
         </button>
-        <OpenInMaps origin={trip.origin} destination={trip.destination} />
+        <OpenInMaps
+          origin={trip.origin}
+          destination={trip.destination}
+          tripTitle={trip.title}
+          distanceKm={trip.distanceKm}
+          stops={tripDays.flatMap((d) =>
+            tripStops
+              .filter((s) => s.dayId === d.id)
+              .sort((a, b) => a.order - b.order)
+          )}
+        />
       </section>
 
       {trip.isPublic && (
