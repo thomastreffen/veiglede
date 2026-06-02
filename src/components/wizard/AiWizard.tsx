@@ -58,6 +58,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
   const defaultVehicle: Vehicle | undefined = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
+  const generateAiPlan = useServerFn(generateAiTripPlanFn);
 
   const [step, setStep] = useState<Step>(1);
 
