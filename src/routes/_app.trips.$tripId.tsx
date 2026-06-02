@@ -1180,7 +1180,7 @@ function PlannerActions({
   return (
     <section className="mt-4 space-y-3">
       {isLongLeg && (
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+        <div className="relative z-20 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
           <p className="text-sm font-semibold text-amber-200">Denne etappen er lang ({trip.drivingTime}).</p>
           <p className="mt-1 text-xs text-amber-100/80">
             Lengre enn dine {maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
@@ -1203,7 +1203,7 @@ function PlannerActions({
       )}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         <PlannerBtn label={isSplitting ? "Deler opp…" : "Del opp i flere dager"} onClick={handleSplit} disabled={isSplitting} />
-        <PlannerBtn label="Legg til overnatting" onClick={() => setLodgingOpen(true)} />
+        <PlannerBtn label="Legg til overnatting" onClick={() => setLodgingOpen(true)} primary />
         <PlannerBtn label="+ Legg til neste destinasjon" onClick={() => setDestOpen(true)} />
       </div>
       {destOpen && (
