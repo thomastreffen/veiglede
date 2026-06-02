@@ -17,6 +17,7 @@ import { Route as PersonvernRouteImport } from './routes/personvern'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HjelpRouteImport } from './routes/hjelp'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -109,6 +110,11 @@ const MapTestRoute = MapTestRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HjelpRoute = HjelpRouteImport.update({
+  id: '/hjelp',
+  path: '/hjelp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -390,6 +396,7 @@ const AppTripsTripIdStopsStopIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/partner': typeof PartnerRouteWithChildren
@@ -451,6 +458,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/personvern': typeof PersonvernRoute
@@ -513,6 +521,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/partner': typeof PartnerRouteWithChildren
@@ -577,6 +586,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/hjelp'
     | '/login'
     | '/map-test'
     | '/partner'
@@ -638,6 +648,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/hjelp'
     | '/login'
     | '/map-test'
     | '/personvern'
@@ -699,6 +710,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/admin'
+    | '/hjelp'
     | '/login'
     | '/map-test'
     | '/partner'
@@ -763,6 +775,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  HjelpRoute: typeof HjelpRoute
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
   PartnerRoute: typeof PartnerRouteWithChildren
@@ -849,6 +862,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hjelp': {
+      id: '/hjelp'
+      path: '/hjelp'
+      fullPath: '/hjelp'
+      preLoaderRoute: typeof HjelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -1343,6 +1363,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  HjelpRoute: HjelpRoute,
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
   PartnerRoute: PartnerRouteWithChildren,
