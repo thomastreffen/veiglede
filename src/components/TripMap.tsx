@@ -457,36 +457,90 @@ function SvgTripMap({
         })}
 
         {/* Stop pins */}
-        {projected.mapped.map((m) => {
-          const pt = project(m.loc);
-          const meta = stopDisplayMeta(m.stop);
-          const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
-          const selected = selectedStopId === m.stop.id;
-          const r = selected ? 16 : compact ? 9 : 12;
-          return (
-            <g
-              key={m.stop.id}
-              className="cursor-pointer"
-              onClick={() => onSelectStop?.(selected ? null : m.stop.id)}
-            >
-              {selected && (
-                <circle cx={pt.x} cy={pt.y} r={r + 10} fill={color} opacity="0.2" />
-              )}
-              <circle cx={pt.x} cy={pt.y} r={r + 2} fill="oklch(0.14 0.012 250)" />
-              <circle cx={pt.x} cy={pt.y} r={r} fill={color} stroke="oklch(0.95 0.02 250)" strokeWidth={selected ? 2.5 : 1.5} />
-              <text x={pt.x} y={pt.y + (selected ? 6 : 4)} textAnchor="middle" fontSize={selected ? 16 : compact ? 10 : 13} style={{ pointerEvents: "none" }}>{meta.emoji}</text>
-              {selected && !compact && (
-                <g>
-                  <rect x={pt.x + 18} y={pt.y - 22} rx="6" ry="6" width={Math.min(220, m.stop.name.length * 8 + 24)} height="26" fill="oklch(0.14 0.012 250)" stroke={color} strokeWidth="1" />
-                  <text x={pt.x + 30} y={pt.y - 4} fontSize="13" fill="oklch(0.95 0.02 250)">{m.stop.name}</text>
-                </g>
-              )}
-              {m.approximated && !selected && (
-                <circle cx={pt.x + r + 1} cy={pt.y - r - 1} r="3" fill="oklch(0.55 0.02 250)" />
-              )}
-            </g>
-          );
-        })}
+        {(() => {
+          // Number lodging stops in trip order so each overnight gets a stable
+          // 1, 2, 3 badge instead of an emoji.
+          let lodgingCounter = 0;
+          const lodgingIndex = new Map<string, number>();
+          projected.mapped.forEach((m) => {
+            if (m.stop.type === "lodging") {
+              lodgingCounter += 1;
+              lodgingIndex.set(m.stop.id, lodgingCounter);
+            }
+          });
+          return projected.mapped.map((m) => {
+            const pt = project(m.loc);
+            const meta = stopDisplayMeta(m.stop);
+            const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
+            const selected = selectedStopId === m.stop.id;
+            const r = selected ? 16 : compact ? 9 : 12;
+            const isFerry = m.stop.type === "ferry";
+            const lodgingNum = lodgingIndex.get(m.stop.id);
+            return (
+              <g
+                key={m.stop.id}
+                className="cursor-pointer"
+                onClick={() => {
+                  onSelectStop?.(selected ? null : m.stop.id);
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("trip:scroll-to-stop", { detail: m.stop.id }));
+                  }
+                }}
+              >
+                {selected && (
+                  <circle cx={pt.x} cy={pt.y} r={r + 10} fill={color} opacity="0.2" />
+                )}
+                <circle cx={pt.x} cy={pt.y} r={r + 2} fill="oklch(0.14 0.012 250)" />
+                {isFerry ? (
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={r}
+                    fill="oklch(0.14 0.012 250)"
+                    stroke="oklch(0.85 0.02 250)"
+                    strokeWidth="1.8"
+                    strokeDasharray="3 2"
+                  />
+                ) : (
+                  <circle cx={pt.x} cy={pt.y} r={r} fill={color} stroke="oklch(0.95 0.02 250)" strokeWidth={selected ? 2.5 : 1.5} />
+                )}
+                {lodgingNum ? (
+                  <text
+                    x={pt.x}
+                    y={pt.y + (selected ? 6 : 4)}
+                    textAnchor="middle"
+                    fontSize={selected ? 14 : compact ? 10 : 12}
+                    fontWeight="800"
+                    fill="oklch(0.14 0.012 250)"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {lodgingNum}
+                  </text>
+                ) : (
+                  <text
+                    x={pt.x}
+                    y={pt.y + (selected ? 6 : 4)}
+                    textAnchor="middle"
+                    fontSize={selected ? 16 : compact ? 10 : 13}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {meta.emoji}
+                  </text>
+                )}
+                {selected && !compact && (
+                  <g>
+                    <rect x={pt.x + 18} y={pt.y - 22} rx="6" ry="6" width={Math.min(220, m.stop.name.length * 8 + 24)} height="26" fill="oklch(0.14 0.012 250)" stroke={color} strokeWidth="1" />
+                    <text x={pt.x + 30} y={pt.y - 4} fontSize="13" fill="oklch(0.95 0.02 250)">{m.stop.name}</text>
+                  </g>
+                )}
+                {m.approximated && !selected && (
+                  <circle cx={pt.x + r + 1} cy={pt.y - r - 1} r="3" fill="oklch(0.55 0.02 250)" />
+                )}
+              </g>
+            );
+          });
+        })()}
+
 
         {/* Origin marker */}
         <g>
