@@ -317,11 +317,12 @@ function TripPlanner() {
       {/* OVERSIKT — at-a-glance timeline + per-day cost */}
       <section id="overview" className="mt-6 scroll-mt-24">
         <div className="flex items-end justify-between mb-3">
-          <h2 className="font-display text-2xl uppercase">Oversikt</h2>
-          <p className="text-[11px] text-muted-foreground">Trykk på et stopp for å hoppe ned</p>
+          <h2 className="font-display text-2xl uppercase">{td.overview.title}</h2>
+          <p className="text-[11px] text-muted-foreground">{td.overview.jumpHint}</p>
         </div>
         <TripOverview trip={trip} days={tripDays} stops={tripStops} />
       </section>
+
 
 
 
