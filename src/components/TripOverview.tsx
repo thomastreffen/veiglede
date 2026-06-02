@@ -10,7 +10,7 @@ import {
   Fuel, Zap, Calculator,
 } from "lucide-react";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
-import { tripFuelKind, stopDisplayMeta } from "@/lib/trips-store";
+import { tripFuelKind, stopDisplayMeta, computeEnergyCost } from "@/lib/trips-store";
 import {
   computeTimeBreakdown,
   computeDayBreakdowns,
