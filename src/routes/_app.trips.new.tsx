@@ -332,6 +332,8 @@ function NewTripWizard() {
         aiSummary: ai,
         originLoc: fromResolved ? { lat: fromResolved.lat, lng: fromResolved.lng } : undefined,
         destinationLoc: toResolved ? { lat: toResolved.lat, lng: toResolved.lng } : undefined,
+        destinationPlaceTypes: toResolved?.placeTypes,
+        originPlaceTypes: fromResolved?.placeTypes,
         routeGeometry: route?.geometry,
         routeDistanceKm: route?.distanceKm,
         routeDurationMin: route?.durationMin,
