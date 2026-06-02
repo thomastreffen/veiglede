@@ -297,6 +297,16 @@ function TripPlanner() {
         <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title={td.tripBudget} />
       </section>
 
+      {/* OVERSIKT — at-a-glance timeline + per-day cost */}
+      <section id="overview" className="mt-6 scroll-mt-24">
+        <div className="flex items-end justify-between mb-3">
+          <h2 className="font-display text-2xl uppercase">Oversikt</h2>
+          <p className="text-[11px] text-muted-foreground">Trykk på et stopp for å hoppe ned</p>
+        </div>
+        <TripOverview trip={trip} days={tripDays} stops={tripStops} />
+      </section>
+
+
 
 
       {/* AI explanation */}
