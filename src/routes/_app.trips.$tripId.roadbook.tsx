@@ -19,6 +19,7 @@ import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 import { dayDate, dayCoords } from "@/lib/weather";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed, FileDown } from "lucide-react";
 import { downloadGpx } from "@/lib/gpx-export";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
   head: () => ({ meta: [{ title: "Roadbook — Veiglede" }] }),
@@ -26,14 +27,16 @@ export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
 });
 
 function Roadbook() {
+  const t = useT();
+  const rb = t.app.roadbook;
   const { tripId } = Route.useParams();
   const { trips, days, stops } = useTripsStore();
   const prefs = useDriverPrefs();
   const tracking = useTripTracking(tripId);
   const trackMeta = statusMeta(tracking.status);
   const [shareOpen, setShareOpen] = useState(false);
-  const trip = trips.find((t) => t.id === tripId);
-  if (!trip) return <div className="py-10">Tur ikke funnet.</div>;
+  const trip = trips.find((tr) => tr.id === tripId);
+  if (!trip) return <div className="py-10">{rb.notFound}</div>;
 
   const tripDays = days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
   const tripStops = stops.filter((s) => tripDays.some((d) => d.id === s.dayId));
