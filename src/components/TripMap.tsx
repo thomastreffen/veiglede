@@ -73,6 +73,25 @@ const DAY_COLORS = [
   "oklch(0.78 0.14 90)",
 ];
 
+/** Distance² between two LatLng points (cheap proxy for nearest-index search). */
+function dist2(a: LatLng, b: LatLng): number {
+  const dx = a.lng - b.lng;
+  const dy = a.lat - b.lat;
+  return dx * dx + dy * dy;
+}
+
+/** Return the geometry index closest to a target lat/lng. */
+function nearestGeomIdx(geom: LatLng[], target: LatLng): number {
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < geom.length; i++) {
+    const d = dist2(geom[i], target);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+
+
 /**
  * TripMap — provider-agnostic trip map.
  *
