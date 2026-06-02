@@ -533,6 +533,9 @@ function TripPlanner() {
           {trip.vehicle === "rv" && <li>· {td.rvNote}</li>}
           {trip.vehicle === "motorcycle" && <li>· {td.mcNote}</li>}
           {trip.startDate && <li>· {td.departure(new Date(trip.startDate).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }))}</li>}
+          {tripStops.filter((st) => st.type === "ferry").map((f) => (
+            <li key={f.id}>· ⛴️ Inkluderer ferje: {f.ferryRouteHint ?? f.name}</li>
+          ))}
           <li>· {td.remember}</li>
         </ul>
 
