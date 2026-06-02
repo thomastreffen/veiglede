@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, Sparkles, Users, ArrowLeft } from "lucide-react";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { HelpBot } from "@/components/HelpBot";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -117,8 +118,9 @@ function PricingPage() {
       </main>
 
       <footer className="border-t border-border/60 mt-20 py-8 text-center text-xs text-muted-foreground">
-        Veiglede · Bygget for nordmenn på veien
+        Veiglede · Bygget for nordmenn på veien · <Link to="/hjelp" className="hover:text-foreground underline">Trenger du hjelp?</Link>
       </footer>
+      <HelpBot />
     </div>
   );
 }

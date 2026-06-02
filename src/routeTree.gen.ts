@@ -17,6 +17,7 @@ import { Route as PersonvernRouteImport } from './routes/personvern'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HjelpRouteImport } from './routes/hjelp'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -39,6 +40,7 @@ import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscript
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPartnersRouteImport } from './routes/admin.partners'
 import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
+import { Route as AdminHelpRouteImport } from './routes/admin.help'
 import { Route as AdminBenefitsRouteImport } from './routes/admin.benefits'
 import { Route as AdminAudienceRouteImport } from './routes/admin.audience'
 import { Route as AdminAdvertisersRouteImport } from './routes/admin.advertisers'
@@ -109,6 +111,11 @@ const MapTestRoute = MapTestRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HjelpRoute = HjelpRouteImport.update({
+  id: '/hjelp',
+  path: '/hjelp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -218,6 +225,11 @@ const AdminPartnersRoute = AdminPartnersRouteImport.update({
 const AdminInvoicesRoute = AdminInvoicesRouteImport.update({
   id: '/invoices',
   path: '/invoices',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminHelpRoute = AdminHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminBenefitsRoute = AdminBenefitsRouteImport.update({
@@ -390,6 +402,7 @@ const AppTripsTripIdStopsStopIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/partner': typeof PartnerRouteWithChildren
@@ -409,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/admin/advertisers': typeof AdminAdvertisersRoute
   '/admin/audience': typeof AdminAudienceRoute
   '/admin/benefits': typeof AdminBenefitsRoute
+  '/admin/help': typeof AdminHelpRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -451,6 +465,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/personvern': typeof PersonvernRoute
@@ -469,6 +484,7 @@ export interface FileRoutesByTo {
   '/admin/advertisers': typeof AdminAdvertisersRoute
   '/admin/audience': typeof AdminAudienceRoute
   '/admin/benefits': typeof AdminBenefitsRoute
+  '/admin/help': typeof AdminHelpRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -513,6 +529,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
   '/partner': typeof PartnerRouteWithChildren
@@ -532,6 +549,7 @@ export interface FileRoutesById {
   '/admin/advertisers': typeof AdminAdvertisersRoute
   '/admin/audience': typeof AdminAudienceRoute
   '/admin/benefits': typeof AdminBenefitsRoute
+  '/admin/help': typeof AdminHelpRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -577,6 +595,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/hjelp'
     | '/login'
     | '/map-test'
     | '/partner'
@@ -596,6 +615,7 @@ export interface FileRouteTypes {
     | '/admin/advertisers'
     | '/admin/audience'
     | '/admin/benefits'
+    | '/admin/help'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -638,6 +658,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/hjelp'
     | '/login'
     | '/map-test'
     | '/personvern'
@@ -656,6 +677,7 @@ export interface FileRouteTypes {
     | '/admin/advertisers'
     | '/admin/audience'
     | '/admin/benefits'
+    | '/admin/help'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -699,6 +721,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/admin'
+    | '/hjelp'
     | '/login'
     | '/map-test'
     | '/partner'
@@ -718,6 +741,7 @@ export interface FileRouteTypes {
     | '/admin/advertisers'
     | '/admin/audience'
     | '/admin/benefits'
+    | '/admin/help'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -763,6 +787,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  HjelpRoute: typeof HjelpRoute
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
   PartnerRoute: typeof PartnerRouteWithChildren
@@ -849,6 +874,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hjelp': {
+      id: '/hjelp'
+      path: '/hjelp'
+      fullPath: '/hjelp'
+      preLoaderRoute: typeof HjelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -1003,6 +1035,13 @@ declare module '@tanstack/react-router' {
       path: '/invoices'
       fullPath: '/admin/invoices'
       preLoaderRoute: typeof AdminInvoicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/help': {
+      id: '/admin/help'
+      path: '/help'
+      fullPath: '/admin/help'
+      preLoaderRoute: typeof AdminHelpRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/benefits': {
@@ -1281,6 +1320,7 @@ interface AdminRouteChildren {
   AdminAdvertisersRoute: typeof AdminAdvertisersRoute
   AdminAudienceRoute: typeof AdminAudienceRoute
   AdminBenefitsRoute: typeof AdminBenefitsRoute
+  AdminHelpRoute: typeof AdminHelpRoute
   AdminInvoicesRoute: typeof AdminInvoicesRoute
   AdminPartnersRoute: typeof AdminPartnersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -1294,6 +1334,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdvertisersRoute: AdminAdvertisersRoute,
   AdminAudienceRoute: AdminAudienceRoute,
   AdminBenefitsRoute: AdminBenefitsRoute,
+  AdminHelpRoute: AdminHelpRoute,
   AdminInvoicesRoute: AdminInvoicesRoute,
   AdminPartnersRoute: AdminPartnersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
@@ -1343,6 +1384,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  HjelpRoute: HjelpRoute,
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
   PartnerRoute: PartnerRouteWithChildren,

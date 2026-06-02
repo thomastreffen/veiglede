@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { getOnboardingStatus } from "@/lib/account";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { HelpBot } from "@/components/HelpBot";
 import { useBrowserNotifications } from "@/lib/useBrowserNotifications";
 import { amIAdminFn } from "@/lib/admin.functions";
 import { useT } from "@/i18n/provider";
@@ -136,8 +137,17 @@ export function AppShell() {
         <Outlet />
       </main>
 
+      <footer className="hidden md:block border-t border-border/40 mt-8">
+        <div className="mx-auto max-w-5xl px-4 md:px-6 py-5 flex items-center justify-between text-xs text-muted-foreground">
+          <span>© Veiglede</span>
+          <Link to="/hjelp" className="hover:text-foreground">Trenger du hjelp?</Link>
+        </div>
+      </footer>
+
       {/* Mobile bottom nav */}
       <MobileBottomNav pathname={pathname} nav={nav} quickActionsLabel={t.app.nav.quickActions} />
+
+      <HelpBot />
     </div>
   );
 }

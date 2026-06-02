@@ -340,6 +340,39 @@ export type Database = {
         }
         Relationships: []
       }
+      help_bot_feedback: {
+        Row: {
+          answer: string
+          created_at: string
+          feedback_text: string | null
+          helpful: boolean
+          id: string
+          question: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          feedback_text?: string | null
+          helpful: boolean
+          id?: string
+          question: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          feedback_text?: string | null
+          helpful?: boolean
+          id?: string
+          question?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
