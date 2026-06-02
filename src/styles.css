@@ -233,7 +233,42 @@
   .print-only {
     display: block !important;
   }
+
+  /* ===== OVERSIKT timeline — print as a clean table ===== */
+  .trip-overview {
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .trip-overview * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .trip-overview-day {
+    display: grid !important;
+    grid-template-columns: 1fr 1.4fr 1fr !important;
+    gap: 12pt !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4pt !important;
+    padding: 8pt !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .trip-overview-day + .trip-overview-day {
+    margin-top: 8pt;
+  }
+  /* One day per page for long trips */
+  .trip-overview-day:nth-of-type(n+3) {
+    break-before: page;
+    page-break-before: always;
+  }
+  /* Ferry rows: highlight with a left border */
+  .trip-overview-day [class*="bg-slate-400"] {
+    border-left: 3pt solid #555 !important;
+    padding-left: 6pt !important;
+  }
 }
+
 
 /* Hide print-only elements on screen */
 @media screen {

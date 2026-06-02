@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { TripMap } from "@/components/TripMap";
 import { TripTimeBudget } from "@/components/TripTimeBudget";
+import { TripOverview } from "@/components/TripOverview";
 import { BookingInfo } from "@/components/BookingInfo";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
@@ -35,6 +36,7 @@ import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
   Navigation, CornerDownRight, Check, Pencil, MoreHorizontal, Copy, BedDouble, ArrowRightLeft,
+  Ship,
 } from "lucide-react";
 import { toast } from "sonner";
 import { flushTripsNow } from "@/lib/cloud-sync";
@@ -296,6 +298,16 @@ function TripPlanner() {
         <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title={td.tripBudget} />
       </section>
 
+      {/* OVERSIKT — at-a-glance timeline + per-day cost */}
+      <section id="overview" className="mt-6 scroll-mt-24">
+        <div className="flex items-end justify-between mb-3">
+          <h2 className="font-display text-2xl uppercase">Oversikt</h2>
+          <p className="text-[11px] text-muted-foreground">Trykk på et stopp for å hoppe ned</p>
+        </div>
+        <TripOverview trip={trip} days={tripDays} stops={tripStops} />
+      </section>
+
+
 
 
       {/* AI explanation */}
@@ -353,6 +365,7 @@ function TripPlanner() {
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
         {[
           { href: "#track", label: td.jumpLive },
+          { href: "#overview", label: "Oversikt" },
           { href: "#days", label: td.jumpDays },
           { href: "#packing", label: td.jumpPacking },
           { href: "#along", label: td.jumpAlong },
@@ -754,6 +767,32 @@ function DayCard({
                   )}
                 </div>
               </div>
+              {stop.type === "ferry" && (
+                <div className="px-4 pb-3 -mt-1 flex items-center gap-2 text-xs text-muted-foreground bg-slate-400/5 border-t border-border/40">
+                  <Ship className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <label className="inline-flex items-center gap-1.5">
+                    Billettpris (NOK)
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step={10}
+                      value={stop.ferryCostNok ?? ""}
+                      placeholder="0"
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        tripsApi.updateStop(stop.id, { ferryCostNok: Number.isFinite(v) ? v : undefined });
+                      }}
+                      className="w-24 rounded-md border border-border bg-background px-2 py-1 text-xs font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </label>
+                  {stop.isAutoDetected && (
+                    <span className="ml-auto inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
+                      Auto-oppdaget
+                    </span>
+                  )}
+                </div>
+              )}
               <StopPhotos stop={stop} tripId={tripId} userId={userId} onLightbox={onLightbox} />
             </li>
           );
