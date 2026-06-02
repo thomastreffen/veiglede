@@ -766,6 +766,32 @@ function DayCard({
                   )}
                 </div>
               </div>
+              {stop.type === "ferry" && (
+                <div className="px-4 pb-3 -mt-1 flex items-center gap-2 text-xs text-muted-foreground bg-slate-400/5 border-t border-border/40">
+                  <Ship className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <label className="inline-flex items-center gap-1.5">
+                    Billettpris (NOK)
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step={10}
+                      value={stop.ferryCostNok ?? ""}
+                      placeholder="0"
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        tripsApi.updateStop(stop.id, { ferryCostNok: Number.isFinite(v) ? v : undefined });
+                      }}
+                      className="w-24 rounded-md border border-border bg-background px-2 py-1 text-xs font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </label>
+                  {stop.isAutoDetected && (
+                    <span className="ml-auto inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
+                      Auto-oppdaget
+                    </span>
+                  )}
+                </div>
+              )}
               <StopPhotos stop={stop} tripId={tripId} userId={userId} onLightbox={onLightbox} />
             </li>
           );
