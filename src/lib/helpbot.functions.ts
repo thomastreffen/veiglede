@@ -92,39 +92,41 @@ export const helpBotChatFn = createServerFn({ method: "POST" })
     z.object({ messages: z.array(MessageSchema).min(1).max(20) }).parse(d),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return { reply: "Hjelpe-boten er ikke konfigurert ennå. Prøv igjen om litt." };
     }
-    
+
     const recent = data.messages.slice(-10);
-    
+
     try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20240620",
+          model: "claude-sonnet-4-20250514",
           max_tokens: 500,
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...recent],
+          system: SYSTEM_PROMPT,
+          messages: recent,
         }),
       });
-      
+
       if (res.status === 429) return { reply: "Boten er litt sliten akkurat nå — prøv igjen om et øyeblikk." };
       if (res.status === 402) return { reply: "AI-kvoten er brukt opp. Kontakt support på kontakt@veiglede.no." };
-      
+
       if (!res.ok) {
         const t = await res.text();
-        console.error("HelpBot AI error", res.status, t);
+        console.error("HelpBot Anthropic error", res.status, t);
         return { reply: "Beklager — noe gikk galt. Prøv igjen, eller kontakt kontakt@veiglede.no." };
       }
-      
+
       const json = await res.json();
       const reply: string =
-        json?.choices?.[0]?.message?.content ??
+        json?.content?.[0]?.text ??
         "Det vet jeg ikke sikkert — kontakt oss på kontakt@veiglede.no.";
       return { reply };
     } catch (err) {
@@ -132,6 +134,7 @@ export const helpBotChatFn = createServerFn({ method: "POST" })
       return { reply: "Beklager — noe gikk galt. Prøv igjen senere." };
     }
   });
+
 
 export const helpBotFeedbackFn = createServerFn({ method: "POST" })
   .inputValidator((d: {
