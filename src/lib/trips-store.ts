@@ -674,6 +674,14 @@ export const tripsApi = {
       photos: input.photos,
       booking,
       energy: input.energy,
+      isAutoDetected: input.isAutoDetected,
+      ferryRouteHint: input.ferryRouteHint,
+      ferryCostNok: input.ferryCostNok,
+      isPartner: input.isPartner,
+      partnerId: input.partnerId,
+      partnerWebsite: input.partnerWebsite,
+      partnerLogoUrl: input.partnerLogoUrl,
+      placeTypes: input.placeTypes,
       order,
     };
     state = { ...state, stops: [...state.stops, stop] };
