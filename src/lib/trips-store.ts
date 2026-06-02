@@ -177,6 +177,9 @@ export interface Trip {
   // every time the planner / roadbook mounts. All optional.
   originLoc?: { lat: number; lng: number };
   destinationLoc?: { lat: number; lng: number };
+  /** Raw Google Places types for the destination — propagated to the Ankomst stop. */
+  destinationPlaceTypes?: string[];
+  originPlaceTypes?: string[];
   routeGeometry?: { lat: number; lng: number }[];
   routeDistanceKm?: number;
   routeDurationMin?: number;
