@@ -102,11 +102,24 @@ export interface TripDay {
 
 /** Keywords that strongly suggest a stop is a lodging/overnight. */
 export const LODGING_KEYWORDS = [
-  "hotell", "hotel", "hostel", "camping", "overnatting", "airbnb", "hytte", "cabin", "resort",
-  "rorbu", "fjellstove", "vandrerhjem", "motell", "motel", "pensjonat", "lodge", "inn",
+  // Generic
+  "hotell", "hotel", "hostel", "camping", "campingplass", "overnatting", "airbnb", "booking.com",
+  "hytte", "cabin", "resort", "rorbu", "fjellstove", "vandrerhjem", "vandrehjem", "motell", "motel",
+  "pensjonat", "lodge", "inn", "gjestgiveri", "bed and breakfast", "b&b", "feriesenter",
+  // Norwegian/Nordic chains
+  "scandic", "thon", "clarion", "nordic choice", "quality hotel", "comfort hotel", "rica", "first hotel",
+  // International chains
+  "radisson", "marriott", "hilton", "hyatt", "best western", "moxy", "ibis", "novotel",
+  "holiday inn", "sheraton", "wyndham",
 ];
 
-export function looksLikeLodging(name?: string): boolean {
+/** Google Places API types that indicate a lodging/overnight stay. */
+export const LODGING_PLACE_TYPES = [
+  "lodging", "hotel", "motel", "hostel", "campground", "rv_park",
+];
+
+export function looksLikeLodging(name?: string, placeTypes?: string[]): boolean {
+  if (placeTypes && placeTypes.some((t) => LODGING_PLACE_TYPES.includes(t))) return true;
   if (!name) return false;
   const n = name.toLowerCase();
   return LODGING_KEYWORDS.some((k) => n.includes(k));
