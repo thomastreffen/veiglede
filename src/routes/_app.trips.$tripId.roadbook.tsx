@@ -365,12 +365,12 @@ function Roadbook() {
 
       </div>
 
-      <div className="mt-12 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">— slutt på roadbook —</div>
+      <div className="mt-12 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{rb.endOfRoadbook}</div>
 
       {/* Print-only footer block (per-page footer comes from @page) */}
       <div className="print-only" style={{ marginTop: "16px", paddingTop: "8px", borderTop: "1px solid #000", textAlign: "center", fontSize: "9pt" }}>
         <p style={{ fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" }}>Veiglede</p>
-        <p style={{ fontStyle: "italic", marginTop: "2px" }}>Veiviseren for den fineste veien · veiglede.no</p>
+        <p style={{ fontStyle: "italic", marginTop: "2px" }}>{rb.veigledeTagline}</p>
       </div>
     </div>
   );
