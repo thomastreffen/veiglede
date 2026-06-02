@@ -45,8 +45,8 @@ export function CostCalculator({ trip, stops }: { trip: Trip; stops: Stop[] }) {
   const other = settings.otherCosts ?? 0;
   const people = Math.max(1, settings.people ?? 1);
 
-  const distanceKm = trip.distanceKm ?? 0;
-  const energyCost = (distanceKm * consumption * energyPrice) / 100;
+  const distanceKm = trip.distanceKm ?? trip.routeDistanceKm ?? 0;
+  const energyCost = computeEnergyCost(distanceKm, consumption, energyPrice, `trip ${trip.id}`);
 
   const lodgingCost = useMemo(
     () =>
