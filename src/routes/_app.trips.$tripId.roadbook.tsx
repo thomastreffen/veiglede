@@ -200,7 +200,7 @@ function Roadbook() {
                     </li>
                   );
                 })}
-                {dayStops.length === 0 && <li className="pl-6 text-sm text-muted-foreground italic">En åpen dag.</li>}
+                {dayStops.length === 0 && <li className="pl-6 text-sm text-muted-foreground italic">{rb.emptyDay}</li>}
               </ol>
             </section>
           );
