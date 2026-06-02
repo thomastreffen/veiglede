@@ -458,12 +458,30 @@ export const tripsApi = {
         description: "Start på dagen — sjekk dekktrykk, fyll tanken.",
         reason: "Felles startpunkt for ruta.", durationMin: 15,
       },
-      {
-        id: uid(), dayId: day1.id, order: 1,
-        name: `Ankomst ${trip.destination}`, type: "city", location: trip.destination,
-        description: "Veis ende for denne etappen.",
-        reason: "Ankomst.", durationMin: 0,
-      },
+      (() => {
+        const destLooksLikeLodging = looksLikeLodging(trip.destination, trip.destinationPlaceTypes);
+        const ankomstType: StopType = destLooksLikeLodging ? "lodging" : "city";
+        return {
+          id: uid(), dayId: day1.id, order: 1,
+          name: `Ankomst ${trip.destination}`, type: ankomstType, location: trip.destination,
+          description: destLooksLikeLodging ? "Innsjekk og overnatting." : "Veis ende for denne etappen.",
+          reason: "Ankomst.", durationMin: destLooksLikeLodging ? 720 : 0,
+          lat: trip.destinationLoc?.lat,
+          lng: trip.destinationLoc?.lng,
+          placeTypes: trip.destinationPlaceTypes,
+          ...(destLooksLikeLodging && trip.startDate
+            ? {
+                booking: (() => {
+                  const ci = trip.startDate;
+                  const d = new Date(ci);
+                  let co: string | undefined;
+                  if (!isNaN(d.getTime())) { d.setDate(d.getDate() + 1); co = d.toISOString().slice(0, 10); }
+                  return { checkinDate: ci, checkoutDate: co, nights: 1, status: "none" as const };
+                })(),
+              }
+            : {}),
+        };
+      })(),
     ];
 
     const finalTrip = { ...trip, stopsCount: newStops.length };
