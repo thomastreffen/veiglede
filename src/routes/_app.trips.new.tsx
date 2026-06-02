@@ -13,6 +13,7 @@ import { TripTimeBudget } from "@/components/TripTimeBudget";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchRoutePartnersFn } from "@/lib/partners.functions";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/trips/new")({
   head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
@@ -140,6 +141,8 @@ function createRestoredSnapshot({
 }
 
 function NewTripWizard() {
+  const t = useT();
+  const nt = t.app.newTrip;
   const navigate = useNavigate();
   const { restoreDraft: restoreParam, ts } = Route.useSearch();
   const prefs = useDriverPrefs();
@@ -413,11 +416,11 @@ function NewTripWizard() {
       <div className="flex items-center justify-between">
         {step > 1 ? (
           <button onClick={prev} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Tilbake
+            <ArrowLeft className="h-4 w-4" /> {nt.back}
           </button>
         ) : (
           <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Avbryt
+            <ArrowLeft className="h-4 w-4" /> {nt.cancel}
           </Link>
         )}
         <div className="flex gap-1.5">
@@ -427,12 +430,12 @@ function NewTripWizard() {
         </div>
       </div>
 
-      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">Steg {step} av 4 · {["Kjøretøy", "Stil", "Rute", "Forslag"][step - 1]}</p>
+      <p className="mt-8 text-[11px] uppercase tracking-[0.28em] text-primary">{nt.stepHeader(step, 4, [nt.stepVehicle, nt.stepStyle, nt.stepRoute, nt.stepSuggestion][step - 1])}</p>
 
       {step === 1 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hva kjører du?</h1>
-          <p className="mt-3 text-muted-foreground">Velg kjøretøyet for denne turen. Stoppene tilpasses bil, drivstoff og dine preferanser.</p>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">{nt.step1Title}</h1>
+          <p className="mt-3 text-muted-foreground">{nt.step1Body}</p>
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {vehicles.map((v) => {
               const tm = vehicleMeta(v.type);
@@ -458,15 +461,15 @@ function NewTripWizard() {
             })}
           </div>
           <Link to="/settings" className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
-            <span className="underline">Administrer kjøretøy i Profil</span>
+            <span className="underline">{nt.manageInProfile}</span>
           </Link>
         </>
       )}
 
       {step === 2 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hvordan vil du kjøre?</h1>
-          <p className="mt-3 text-muted-foreground">Velg en stil — vi bygger ruta rundt opplevelsen, ikke bare avstanden.</p>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">{nt.step2Title}</h1>
+          <p className="mt-3 text-muted-foreground">{nt.step2Body}</p>
           <div className="mt-8 grid grid-cols-2 gap-3">
             {ROUTE_STYLES.map((s) => (
               <button key={s.value} onClick={() => setStyle(s.value)}
@@ -485,17 +488,15 @@ function NewTripWizard() {
               </button>
             ))}
           </div>
-          <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-            ℹ️ Rutestilen påvirker vegvalg (motorvei/ferge) og hvilke stopp AI foreslår.
-          </p>
+          <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{nt.styleNote}</p>
 
         </>
       )}
 
       {step === 3 && (
         <>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">Hvor skal du?</h1>
-          <p className="mt-3 text-muted-foreground">Fra, til og dato — vi tar oss av resten.</p>
+          <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase">{nt.step3Title}</h1>
+          <p className="mt-3 text-muted-foreground">{nt.step3Body}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Chip>{vehicleMeta(selectedVehicle.type).emoji} {selectedVehicle.name}</Chip>
             <Chip>{energyMeta(selectedVehicle.energy).emoji} {energyMeta(selectedVehicle.energy).label}</Chip>
@@ -503,7 +504,7 @@ function NewTripWizard() {
           </div>
 
           <div className="mt-6 space-y-5">
-            <Field label="Fra">
+            <Field label={nt.from}>
               <div className="flex items-stretch gap-2">
                 <div className="flex-1 min-w-0">
                   <PlaceAutocomplete
@@ -511,7 +512,7 @@ function NewTripWizard() {
                     onTextChange={setOrigin}
                     selected={fromPlace}
                     onSelect={setFromPlace}
-                    ariaLabel="Fra"
+                    ariaLabel={nt.from}
                   
                   />
                 </div>
@@ -520,17 +521,17 @@ function NewTripWizard() {
                 />
               </div>
             </Field>
-            <Field label="Til">
+            <Field label={nt.to}>
               <PlaceAutocomplete
                 value={destination}
                 onTextChange={setDestination}
                 selected={toPlace}
                 onSelect={setToPlace}
-                ariaLabel="Til"
+                ariaLabel={nt.to}
                 
               />
             </Field>
-            <Field label="Dato">
+            <Field label={nt.date}>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary" />
             </Field>
 
@@ -547,13 +548,13 @@ function NewTripWizard() {
             <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
               <div className="flex items-center justify-between">
                 <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-                  <Sparkles className="h-4 w-4" /> Planlegg med AI
+                  <Sparkles className="h-4 w-4" /> {nt.aiPlannerTitle}
                 </p>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">valgfritt</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{nt.optional}</span>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">Beskriv turen, så hjelper AI-ko-piloten med stopp og rute.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{nt.aiPlannerBody}</p>
               <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="F.eks: MC-tur, 5 timer, svingete veier"
+                placeholder={nt.aiPlaceholder}
                 className="mt-3 w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground/60" />
             </div>
           </div>
@@ -580,7 +581,7 @@ function NewTripWizard() {
             onClick={step === 3 ? generate : next}
             className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20"
           >
-            {step === 3 ? (<><Sparkles className="h-5 w-5" /> Generer rute</>) : (<>Fortsett <ArrowRight className="h-5 w-5" strokeWidth={3} /></>)}
+            {step === 3 ? (<><Sparkles className="h-5 w-5" /> {nt.generateRoute}</>) : (<>{nt.continueBtn} <ArrowRight className="h-5 w-5" strokeWidth={3} /></>)}
           </button>
         </div>
       )}
@@ -591,17 +592,18 @@ function NewTripWizard() {
 function PreviewStep({
   generating, tripId, onRegenerate, onOpen,
 }: { generating: boolean; tripId: string | null; onRegenerate: () => void; onOpen: () => void }) {
-  const navigate = useNavigate();
+  const t = useT();
+  const nt = t.app.newTrip;
   const { trips, days, stops } = useTripsStore();
   const prefs = useDriverPrefs();
-  const trip = tripId ? trips.find((t) => t.id === tripId) : null;
+  const trip = tripId ? trips.find((tr) => tr.id === tripId) : null;
 
   if (generating || !trip) {
     return (
       <div className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-10 text-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-        <p className="mt-5 font-display text-2xl uppercase">AI tegner ruta di</p>
-        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">Vurderer landskap, lys og naturlige pauser. Bare et øyeblikk.</p>
+        <p className="mt-5 font-display text-2xl uppercase">{nt.generatingTitle}</p>
+        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">{nt.generatingBody}</p>
         <div className="mt-6 flex justify-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: "150ms" }} />
@@ -625,28 +627,24 @@ function PreviewStep({
   return (
     <div className="mt-6 space-y-5">
       <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary">
-        <Check className="h-3.5 w-3.5" /> Rutekladd klar
+        <Check className="h-3.5 w-3.5" /> {nt.draftReady}
       </div>
       <h1 className="font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
-      <p className="text-sm text-muted-foreground">Dette er en kladd av første etappe — du bestemmer hvordan turen skal bygges videre.</p>
+      <p className="text-sm text-muted-foreground">{nt.draftBody}</p>
 
       <TripMap trip={trip} days={tripDays} stops={tripStops} compact height="h-64 md:h-[420px]" />
 
       <div className="grid grid-cols-3 gap-3">
-        <PreviewStat label="Distanse" value={`${trip.distanceKm} km`} />
-        <PreviewStat label="Beregnet kjøretid" value={trip.drivingTime} />
-        <PreviewStat label="Kjøretøy" value={trip.vehicleName ?? vehicleMeta(trip.vehicle).label} />
+        <PreviewStat label={nt.distance} value={`${trip.distanceKm} km`} />
+        <PreviewStat label={nt.drivingTime} value={trip.drivingTime} />
+        <PreviewStat label={nt.vehicle} value={trip.vehicleName ?? vehicleMeta(trip.vehicle).label} />
       </div>
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
-        Beregnet av rutemotor. Kan avvike fra Google Maps, trafikk, ferge og lokale forhold.
-      </p>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">{nt.routeDisclaimer}</p>
 
       {isLongLeg && (
         <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
-          <p className="text-sm font-semibold text-amber-200">Denne etappen er lang ({trip.drivingTime}).</p>
-          <p className="mt-1 text-xs text-amber-100/80">
-            Lengre enn dine {prefs.maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
-          </p>
+          <p className="text-sm font-semibold text-amber-200">{nt.longLegTitle(trip.drivingTime)}</p>
+          <p className="mt-1 text-xs text-amber-100/80">{nt.longLegBody(prefs.maxDrivingHours)}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() => {
@@ -657,56 +655,56 @@ function PreviewStep({
               }}
               className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-950 hover:brightness-110"
             >
-              Ja, foreslå overnatting
+              {nt.suggestOvernight}
             </button>
             <button
               onClick={goToPlanner}
               className="rounded-full border border-amber-500/40 bg-background/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-100 hover:bg-amber-500/20"
             >
-              Nei, behold som én dag
+              {nt.keepOneDay}
             </button>
             <button
               onClick={goToPlanner}
               className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:border-primary"
             >
-              Velg selv senere
+              {nt.decideLater}
             </button>
           </div>
         </div>
       )}
 
       <div>
-        <p className="text-[11px] uppercase tracking-[0.28em] text-primary font-bold">Neste steg</p>
+        <p className="text-[11px] uppercase tracking-[0.28em] text-primary font-bold">{nt.nextSteps}</p>
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           <ActionBtn
             onClick={() => { if (!tripId) return; goToPlanner(); }}
-            label="Kjør som én dag"
-            sub="Behold som én etappe og åpne planlegger"
+            label={nt.actionKeepOneDay}
+            sub={nt.actionKeepOneDaySub}
           />
           <ActionBtn
             onClick={() => { if (!tripId) return; tripsApi.splitIntoDays(tripId, 2); goToPlanner(); }}
-            label="Del opp i flere dager"
-            sub="Legger til en ny tom dag"
+            label={nt.actionSplitDays}
+            sub={nt.actionSplitDaysSub}
           />
           <ActionBtn
             onClick={() => { if (!tripId) return; tripsApi.addOvernight(tripId); goToPlanner(); }}
-            label="Legg til overnatting"
-            sub={`Overnatting i ${trip.destination}`}
+            label={nt.actionAddOvernight}
+            sub={nt.actionAddOvernightSub(trip.destination)}
           />
           <ActionBtn
             onClick={goToPlanner}
-            label="Legg til neste destinasjon"
-            sub="Bygg ruta videre fra planleggeren"
+            label={nt.actionAddNextDest}
+            sub={nt.actionAddNextDestSub}
           />
           <ActionBtn
             onClick={goToPlanner}
-            label="Legg til stopp langs ruta"
-            sub="Se forslag og velg plassering"
+            label={nt.actionAddStop}
+            sub={nt.actionAddStopSub}
           />
           <ActionBtn
             onClick={goToPlanner}
-            label="Åpne roadbook"
-            sub="Detaljert dag-for-dag oversikt"
+            label={nt.actionOpenRoadbook}
+            sub={nt.actionOpenRoadbookSub}
           />
         </div>
       </div>
@@ -714,7 +712,7 @@ function PreviewStep({
       {trip.aiSummary && (
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
           <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-            <Sparkles className="h-4 w-4" /> AI ko-pilot
+            <Sparkles className="h-4 w-4" /> {nt.aiCopilot}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-foreground/90">{trip.aiSummary}</p>
         </div>
@@ -722,10 +720,10 @@ function PreviewStep({
 
       <div className="sticky bottom-24 md:bottom-0 md:static flex gap-3 pt-2">
         <button onClick={onRegenerate} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-4 py-4 text-sm font-medium hover:border-primary">
-          <RotateCcw className="h-4 w-4" /> Ny variant
+          <RotateCcw className="h-4 w-4" /> {nt.newVariant}
         </button>
         <button onClick={onOpen} className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20">
-          <BookOpen className="h-5 w-5" /> Åpne planlegger
+          <BookOpen className="h-5 w-5" /> {nt.openPlanner}
         </button>
       </div>
     </div>
@@ -776,13 +774,15 @@ function pickCover(s: RouteStyle): CoverKey {
 }
 
 function UseMyLocationButton({ onResolved }: { onResolved: (name: string, place: ResolvedPlace | null) => void }) {
+  const t = useT();
+  const nt = t.app.newTrip;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const run = async () => {
     setError(null);
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setError("Posisjon ikke tilgjengelig"); return;
+      setError(nt.locationUnavailable); return;
     }
     setLoading(true);
     try {
@@ -793,14 +793,14 @@ function UseMyLocationButton({ onResolved }: { onResolved: (name: string, place:
       const { getRuntimeMapConfig } = await import("@/lib/map/runtime-config");
       const cfg = await getRuntimeMapConfig();
       const key = cfg.maptilerKey;
-      if (!key) { setError("Posisjon ikke tilgjengelig"); return; }
+      if (!key) { setError(nt.locationUnavailable); return; }
       const url = `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${encodeURIComponent(key)}&language=nb&limit=1`;
       const res = await fetch(url);
-      if (!res.ok) { setError("Posisjon ikke tilgjengelig"); return; }
+      if (!res.ok) { setError(nt.locationUnavailable); return; }
       const data = await res.json() as { features?: Array<{ text?: string; place_name?: string; center?: [number, number] }> };
       const f = data.features?.[0];
       const name = (f?.text || f?.place_name || "").trim();
-      if (!name) { setError("Posisjon ikke tilgjengelig"); return; }
+      if (!name) { setError(nt.locationUnavailable); return; }
       const place: ResolvedPlace = {
         id: `geo-${lat.toFixed(4)},${lng.toFixed(4)}`,
         name, label: f?.place_name || name, secondary: f?.place_name, type: "city",
@@ -808,7 +808,7 @@ function UseMyLocationButton({ onResolved }: { onResolved: (name: string, place:
       };
       onResolved(name, place);
     } catch {
-      setError("Posisjon ikke tilgjengelig");
+      setError(nt.locationUnavailable);
     } finally {
       setLoading(false);
     }
@@ -820,8 +820,8 @@ function UseMyLocationButton({ onResolved }: { onResolved: (name: string, place:
         type="button"
         onClick={run}
         disabled={loading}
-        aria-label="Bruk min posisjon"
-        title="Bruk min posisjon"
+        aria-label={nt.useMyLocation}
+        title={nt.useMyLocation}
         className="inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground hover:text-primary hover:border-primary disabled:opacity-60"
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
