@@ -63,13 +63,13 @@ function computeDayCosts(trip: Trip, days: TripDay[], stops: Stop[]): DayCostRow
     : (cs.fuelPricePerLiter ?? (trip.vehicle === "motorcycle" ? 22 : 20));
 
   const sortedDays = [...days].sort((a, b) => a.dayNumber - b.dayNumber);
-  const totalKm = trip.distanceKm ?? 0;
+  const totalKm = trip.distanceKm ?? trip.routeDistanceKm ?? 0;
   const perDayKmFallback = sortedDays.length > 0 ? totalKm / sortedDays.length : 0;
 
   return sortedDays.map((day) => {
     const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
     const dayKm = dayStops.reduce((acc, s) => acc + (s.distanceFromPrevKm ?? 0), 0) || perDayKmFallback;
-    const energyCost = (dayKm * consumption * price) / 100;
+    const energyCost = computeEnergyCost(dayKm, consumption, price, `day ${day.dayNumber}`);
     const lodgingCost = dayStops
       .filter((s) => s.type === "lodging" && s.booking?.pricePerNight)
       .reduce((acc, s) => acc + (s.booking!.pricePerNight! * (s.booking!.nights ?? 1)), 0);
