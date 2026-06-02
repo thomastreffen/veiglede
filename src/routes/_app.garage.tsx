@@ -13,6 +13,7 @@ import { VehicleCard } from "@/components/VehicleCard";
 import { VehiclePhotoStrip } from "@/components/VehiclePhotoStrip";
 import { PublicUserCard } from "@/components/PublicUserCard";
 import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/garage")({
   head: () => ({ meta: [{ title: "Min garasje — Veiglede" }] }),
@@ -20,6 +21,8 @@ export const Route = createFileRoute("/_app/garage")({
 });
 
 function GaragePage() {
+  const t = useT();
+  const g = t.app.garage;
   const { vehicles, defaultId } = useVehicles();
   const { trips } = useTripsStore();
   const { user } = useAuth();
@@ -40,30 +43,30 @@ function GaragePage() {
 
   const copyProfileLink = async () => {
     if (!username) {
-      toast.error("Sett brukernavn i Profil først");
+      toast.error(g.toastSetUsernameFirst);
       return;
     }
     const url = `https://veiglede.no/u/${username}`;
-    try { await navigator.clipboard.writeText(url); toast.success("Profillenke kopiert! 🔗"); }
-    catch { toast.error("Kunne ikke kopiere"); }
+    try { await navigator.clipboard.writeText(url); toast.success(g.toastProfileLinkCopied); }
+    catch { toast.error(g.toastCopyFailed); }
   };
 
   const shareVehicle = async (vehicleId: string) => {
     if (!username) {
-      toast.error("Sett brukernavn i Profil først");
+      toast.error(g.toastSetUsernameFirst);
       return;
     }
     const url = `https://veiglede.no/u/${username}#${vehicleId}`;
-    try { await navigator.clipboard.writeText(url); toast.success("Kjøretøy-lenke kopiert! 🔗"); }
-    catch { toast.error("Kunne ikke kopiere"); }
+    try { await navigator.clipboard.writeText(url); toast.success(g.toastVehicleLinkCopied); }
+    catch { toast.error(g.toastCopyFailed); }
   };
 
   return (
     <div className="py-5 md:py-8 max-w-5xl mx-auto">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Dine kjøretøy og statistikk</p>
-          <h1 className="mt-1 font-display text-3xl md:text-5xl uppercase">Min garasje</h1>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{g.eyebrow}</p>
+          <h1 className="mt-1 font-display text-3xl md:text-5xl uppercase">{g.title}</h1>
         </div>
         <div className="flex items-center gap-2">
           {user && (
@@ -71,34 +74,34 @@ function GaragePage() {
               onClick={copyProfileLink}
               className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
             >
-              <Share2 className="h-4 w-4" /> Del profilen min
+              <Share2 className="h-4 w-4" /> {g.shareProfile}
             </button>
           )}
           <button
             onClick={openNew}
             className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20"
           >
-            <Plus className="h-4 w-4" strokeWidth={3} /> Legg til kjøretøy
+            <Plus className="h-4 w-4" strokeWidth={3} /> {g.addVehicle}
           </button>
         </div>
       </div>
 
       {vehicles.length === 0 ? (
-        <EmptyState onAdd={openNew} />
+        <EmptyState onAdd={openNew} g={g} />
       ) : (
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {vehicles.map((vh) => {
             const vehicleTrips = trips.filter(
-              (t) =>
-                t.status !== "draft" &&
-                (t.vehicleId === vh.id || (!t.vehicleId && t.vehicle === vh.type))
+              (tr) =>
+                tr.status !== "draft" &&
+                (tr.vehicleId === vh.id || (!tr.vehicleId && tr.vehicle === vh.type))
             );
-            const totalKm = vehicleTrips.reduce((sum, t) => sum + t.distanceKm, 0);
+            const totalKm = vehicleTrips.reduce((sum, tr) => sum + tr.distanceKm, 0);
             const completedTrips = vehicleTrips.filter(
-              (t) => typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0,
+              (tr) => typeof tr.actualDistanceKm === "number" && tr.actualDistanceKm > 0,
             );
             const actualKm = completedTrips.reduce(
-              (sum, t) => sum + (t.actualDistanceKm ?? 0),
+              (sum, tr) => sum + (tr.actualDistanceKm ?? 0),
               0,
             );
 
@@ -113,25 +116,25 @@ function GaragePage() {
                   <>
                     <div className="mt-3 pt-3 border-t border-border/60 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Planlagte turer</span>
+                        <span className="text-muted-foreground">{g.plannedTrips}</span>
                         <span className="font-medium">{vehicleTrips.length}</span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Planlagt totalt</span>
+                        <span className="text-muted-foreground">{g.plannedTotal}</span>
                         <span className="font-medium">
                           {totalKm.toLocaleString("nb-NO")} km
-                          <span className="ml-1 text-[9px] uppercase tracking-wider text-muted-foreground">planlagt</span>
+                          <span className="ml-1 text-[9px] uppercase tracking-wider text-muted-foreground">{g.plannedTag}</span>
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Faktisk kjørt</span>
+                        <span className="text-muted-foreground">{g.actualDriven}</span>
                         {completedTrips.length > 0 ? (
                           <span className="font-medium text-primary">
                             {Math.round(actualKm).toLocaleString("nb-NO")} km
-                            <span className="ml-1 text-[9px] uppercase tracking-wider text-primary">kjørt</span>
+                            <span className="ml-1 text-[9px] uppercase tracking-wider text-primary">{g.drivenTag}</span>
                           </span>
                         ) : (
-                          <span className="text-muted-foreground italic">Ingen fullførte turer enda</span>
+                          <span className="text-muted-foreground italic">{g.noCompletedTrips}</span>
                         )}
                       </div>
                     </div>
@@ -148,6 +151,7 @@ function GaragePage() {
         <SameVehicleSection
           ownUserId={user.id}
           types={Array.from(new Set(vehicles.map((v) => v.type)))}
+          g={g}
         />
       )}
 
@@ -156,14 +160,13 @@ function GaragePage() {
   );
 }
 
-function SameVehicleSection({ ownUserId, types }: { ownUserId: string; types: VehicleType[] }) {
+function SameVehicleSection({ ownUserId, types, g }: { ownUserId: string; types: VehicleType[]; g: { communityEyebrow: string; otherDrivers: (v: string) => string; seeAll: string } }) {
   const fetcher = useServerFn(fetchPublicProfilesFn);
   const { data } = useQuery({
     queryKey: ["public-profiles"],
     queryFn: () => fetcher(),
     staleTime: 60_000,
   });
-  // Pick the primary type to highlight (first vehicle the user owns).
   const focusType = types[0];
   const matches = useMemo(() => {
     if (!data) return [];
@@ -178,15 +181,15 @@ function SameVehicleSection({ ownUserId, types }: { ownUserId: string; types: Ve
     <section className="mt-10">
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Fellesskap</p>
-          <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">Andre som kjører {meta.emoji} {meta.label.toLowerCase()}</h2>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{g.communityEyebrow}</p>
+          <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">{g.otherDrivers(`${meta.emoji} ${meta.label.toLowerCase()}`)}</h2>
         </div>
         <Link
           to="/explore"
           search={{ tab: "brukere", vehicle: focusType }}
           className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
         >
-          Se alle <ArrowRight className="h-3 w-3" />
+          {g.seeAll} <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
       <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -196,19 +199,19 @@ function SameVehicleSection({ ownUserId, types }: { ownUserId: string; types: Ve
   );
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState({ onAdd, g }: { onAdd: () => void; g: { emptyTitle: string; emptyBody: string; emptyCta: string } }) {
   return (
     <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
       <div className="mx-auto grid place-items-center h-16 w-16 rounded-2xl bg-surface-2 text-3xl mb-4">
         <Car className="h-8 w-8 text-muted-foreground" />
       </div>
-      <p className="font-display text-2xl uppercase">Ingen kjøretøy enda</p>
-      <p className="mt-2 text-sm text-muted-foreground">Legg til ditt første kjøretøy for å se statistikk og få ruter tilpasset deg.</p>
+      <p className="font-display text-2xl uppercase">{g.emptyTitle}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{g.emptyBody}</p>
       <button
         onClick={onAdd}
         className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
       >
-        <Plus className="h-4 w-4" /> Legg til ditt første kjøretøy
+        <Plus className="h-4 w-4" /> {g.emptyCta}
       </button>
     </div>
   );

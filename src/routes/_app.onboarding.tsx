@@ -8,6 +8,7 @@ import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { useTripsStore } from "@/lib/trips-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { UsernamePicker } from "@/components/UsernamePicker";
+import { useT } from "@/i18n/provider";
 import { Check, ArrowRight, Sparkles, Info } from "lucide-react";
 
 export const Route = createFileRoute("/_app/onboarding")({
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/_app/onboarding")({
 });
 
 function Onboarding() {
+  const t = useT();
+  const ob = t.app.onboarding;
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -32,8 +35,6 @@ function Onboarding() {
     setUsernameOk(ok);
   }, []);
 
-  // Read the post-deletion notice exactly once, before any other effect can
-  // clear localStorage.
   useEffect(() => {
     if (consumeProfileDeletedNotice()) setFreshAfterDelete(true);
   }, []);
@@ -77,25 +78,21 @@ function Onboarding() {
             <div className="mb-5 flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
               <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
               <div>
-                <p className="font-semibold text-foreground">Velkommen tilbake til Veiglede</p>
-                <p className="mt-1 text-muted-foreground">
-                  Google-kontoen din ble gjenkjent, men Veiglede-profilen din finnes ikke lenger. Vi setter derfor opp en ny profil for deg nå.
-                </p>
+                <p className="font-semibold text-foreground">{ob.freshTitle}</p>
+                <p className="mt-1 text-muted-foreground">{ob.freshBody}</p>
               </div>
             </div>
           )}
-          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Steg 1 av 4</p>
-          <h1 className="mt-2 font-display text-4xl uppercase">{freshAfterDelete ? "La oss sette opp profilen din på nytt" : "Velkommen til Veiglede"}</h1>
-          <p className="mt-3 text-muted-foreground">
-            Veiglede planlegger roadtrips tilpasset deg — kjørestil, kjøretøy og hvilke stopp du faktisk har lyst på. Vi setter opp profilen din på under et minutt.
-          </p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">{ob.stepOf(1, 4)}</p>
+          <h1 className="mt-2 font-display text-4xl uppercase">{freshAfterDelete ? ob.welcomeBackTitle : ob.welcomeTitle}</h1>
+          <p className="mt-3 text-muted-foreground">{ob.intro}</p>
           <div className="mt-6 space-y-2 text-sm text-foreground">
-            <Bullet>Personlige ruter basert på kjørestil og kjøretøy</Bullet>
-            <Bullet>AI-genererte roadbooks med stopp som matcher deg</Bullet>
-            <Bullet>Alt lagres på kontoen din — synkronisert mellom enheter</Bullet>
+            <Bullet>{ob.bullet1}</Bullet>
+            <Bullet>{ob.bullet2}</Bullet>
+            <Bullet>{ob.bullet3}</Bullet>
           </div>
           <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Velg ditt brukernavn</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">{ob.chooseUsername}</p>
             <UsernamePicker
               suggested={(user?.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name
                 ?? (user?.user_metadata as { full_name?: string; name?: string } | undefined)?.name
@@ -104,23 +101,21 @@ function Onboarding() {
               onChange={onUsernameChange}
             />
           </div>
-          <NavRow onNext={() => setStep(2)} onSkip={skip} />
+          <NavRow onNext={() => setStep(2)} onSkip={skip} t={ob} />
         </Card>
       )}
 
       {step === 2 && (
         <Card>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Steg 2 av 4</p>
-          <h1 className="mt-2 font-display text-3xl uppercase">Ditt første kjøretøy</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Legg til ditt eget kjøretøy — eller bruk et eksempel under for å komme i gang. Du kan endre dette når som helst.
-          </p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">{ob.stepOf(2, 4)}</p>
+          <h1 className="mt-2 font-display text-3xl uppercase">{ob.step2Title}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{ob.step2Body}</p>
 
           <button
             onClick={() => setEditorOpen(true)}
             className="mt-5 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:brightness-110"
           >
-            + Legg til kjøretøy
+            {ob.addVehicle}
           </button>
 
           {vehicles.length > 0 && (
@@ -140,7 +135,7 @@ function Onboarding() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium truncate">{v.name}</p>
                         {isDefault && (
-                          <span className="text-[10px] uppercase tracking-wider rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground">Standard</span>
+                          <span className="text-[10px] uppercase tracking-wider rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground">{ob.defaultBadge}</span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
@@ -160,20 +155,18 @@ function Onboarding() {
             vehicle={undefined}
             onSaved={(v) => vehiclesApi.setDefault(v.id)}
           />
-          <NavRow onBack={() => setStep(1)} onNext={() => setStep(3)} onSkip={skip} />
+          <NavRow onBack={() => setStep(1)} onNext={() => setStep(3)} onSkip={skip} t={ob} />
         </Card>
       )}
 
       {step === 3 && (
         <Card>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Steg 3 av 4</p>
-          <h1 className="mt-2 font-display text-3xl uppercase">Din kjørestil</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Velg det som passer deg. Vi bruker det for å foreslå riktige ruter og stopp.
-          </p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">{ob.stepOf(3, 4)}</p>
+          <h1 className="mt-2 font-display text-3xl uppercase">{ob.step3Title}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{ob.step3Body}</p>
 
           <div className="mt-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Vei og kjøring</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{ob.roadAndDriving}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {DRIVING_FLAGS.map((f) => {
                 const on = prefs.drivingFlags[f.key];
@@ -188,7 +181,7 @@ function Onboarding() {
           </div>
 
           <div className="mt-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Stopp jeg liker</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{ob.stopsILike}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {STOP_INTERESTS.map((s) => {
                 const on = prefs.stopInterests.includes(s.value);
@@ -204,14 +197,14 @@ function Onboarding() {
 
           <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
             <label className="block">
-              <span className="text-xs text-muted-foreground">Maks timer/dag</span>
+              <span className="text-xs text-muted-foreground">{ob.maxHoursPerDay}</span>
               <input type="number" min={2} max={12} value={prefs.maxDrivingHours}
                 onChange={(e) => updateDriverPrefs({ maxDrivingHours: Number(e.target.value) })}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-1 px-2 py-1.5"
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Pause hver (min)</span>
+              <span className="text-xs text-muted-foreground">{ob.pauseEveryMin}</span>
               <input type="number" min={45} max={240} step={15} value={prefs.pauseEveryMin}
                 onChange={(e) => updateDriverPrefs({ pauseEveryMin: Number(e.target.value) })}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-1 px-2 py-1.5"
@@ -219,39 +212,39 @@ function Onboarding() {
             </label>
           </div>
 
-          <NavRow onBack={() => setStep(2)} onNext={() => setStep(4)} onSkip={skip} />
+          <NavRow onBack={() => setStep(2)} onNext={() => setStep(4)} onSkip={skip} t={ob} />
         </Card>
       )}
 
       {step === 4 && (
         <Card>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Steg 4 av 4</p>
-          <h1 className="mt-2 font-display text-3xl uppercase">Klar til å rulle</h1>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-primary">{ob.stepOf(4, 4)}</p>
+          <h1 className="mt-2 font-display text-3xl uppercase">{ob.step4Title}</h1>
           <p className="mt-3 text-muted-foreground">
-            Profilen din er satt opp. Vi har lagret alt på kontoen din — du kan endre når som helst i <Link to="/settings" className="underline text-foreground">profilen</Link>.
+            {ob.step4BodyPre}<Link to="/settings" className="underline text-foreground">{ob.step4BodyLink}</Link>{ob.step4BodyPost}
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <button onClick={() => finish()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
-              <Sparkles className="h-4 w-4" /> Planlegg min første tur
+              <Sparkles className="h-4 w-4" /> {ob.planFirstTrip}
             </button>
             <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext(trips.length === 0 ? "/garage" : "/trips")); }}
               className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm hover:bg-surface-2">
-              {trips.length === 0 ? "Til min garasje" : "Til mine turer"}
+              {trips.length === 0 ? ob.toGarage : ob.toMyTrips}
             </button>
           </div>
 
           <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface/50 p-4">
-            <p className="text-sm font-medium text-foreground">Hva skjer nå?</p>
-            <p className="mt-1 text-xs text-muted-foreground">Du er klar. Start din første tur, eller utforsk ruter andre har delt.</p>
+            <p className="text-sm font-medium text-foreground">{ob.whatsNextTitle}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{ob.whatsNextBody}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110">
-                Planlegg min første tur <ArrowRight className="h-3.5 w-3.5" />
+                {ob.planFirstTrip} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link to="/explore" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
-                Utforsk turer <ArrowRight className="h-3.5 w-3.5" />
+                {ob.exploreTrips} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link to="/hjelp" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
-                Har du spørsmål? Chat med vår hjelpebot <ArrowRight className="h-3.5 w-3.5" />
+                {ob.askHelpBot} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           </div>
@@ -272,14 +265,14 @@ function Bullet({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-function NavRow({ onBack, onNext, onSkip }: { onBack?: () => void; onNext: () => void; onSkip: () => void }) {
+function NavRow({ onBack, onNext, onSkip, t }: { onBack?: () => void; onNext: () => void; onSkip: () => void; t: { back: string; skip: string; next: string } }) {
   return (
     <div className="mt-7 flex items-center justify-between">
       {onBack ? (
-        <button onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">← Tilbake</button>
-      ) : <button onClick={onSkip} className="text-sm text-muted-foreground hover:text-foreground">Hopp over</button>}
+        <button onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">{t.back}</button>
+      ) : <button onClick={onSkip} className="text-sm text-muted-foreground hover:text-foreground">{t.skip}</button>}
       <button onClick={onNext} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
-        Neste <ArrowRight className="h-4 w-4" />
+        {t.next} <ArrowRight className="h-4 w-4" />
       </button>
     </div>
   );
