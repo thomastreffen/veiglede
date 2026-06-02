@@ -80,12 +80,12 @@ function Roadbook() {
 
       <div className="flex items-center justify-between print:hidden">
         <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Planlegger
+          <ArrowLeft className="h-4 w-4" /> {rb.planner}
         </Link>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> Del</button>
-          <button onClick={handleExportPdf} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Download className="h-3.5 w-3.5" /> Eksporter PDF</button>
-          <button onClick={() => downloadGpx(trip, tripStops)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><FileDown className="h-3.5 w-3.5" /> Last ned GPX</button>
+          <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> {rb.share}</button>
+          <button onClick={handleExportPdf} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Download className="h-3.5 w-3.5" /> {rb.exportPdf}</button>
+          <button onClick={() => downloadGpx(trip, tripStops)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><FileDown className="h-3.5 w-3.5" /> {rb.downloadGpx}</button>
         </div>
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
@@ -96,7 +96,7 @@ function Roadbook() {
 
       <header className="mt-6 text-center max-w-2xl mx-auto">
         <div className="flex justify-center mb-3"><VeigledeLogo size="sm" /></div>
-        <p className="text-[11px] uppercase tracking-[0.3em] text-primary">Roadbook</p>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-primary">{rb.eyebrow}</p>
         <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
         <p className="mt-3 text-muted-foreground">{trip.origin} → {trip.destination}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -109,16 +109,16 @@ function Roadbook() {
         <div className="mt-5 flex justify-center gap-2 flex-wrap print:hidden">
           {tracking.status === "idle" && (
             <button onClick={() => trackingApi.start(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-              <Play className="h-4 w-4" /> Start tur
+              <Play className="h-4 w-4" /> {rb.startTrip}
             </button>
           )}
           {tracking.status === "active" && (
             <button onClick={() => trackingApi.complete(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-              <Flag className="h-4 w-4" /> Fullfør tur
+              <Flag className="h-4 w-4" /> {rb.completeTrip}
             </button>
           )}
           <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-5 py-2.5 text-xs uppercase tracking-wider hover:border-primary">
-            Tilbake til planlegger
+            {rb.backToPlanner}
           </Link>
         </div>
       </header>
