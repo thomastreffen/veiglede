@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, Sparkles, Users, ArrowLeft } from "lucide-react";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { HelpBot } from "@/components/HelpBot";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
