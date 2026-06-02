@@ -442,14 +442,14 @@ export const tripsApi = {
       id: uid(),
       tripId: trip.id,
       dayNumber: 1,
-      title: `${trip.origin} → ${trip.destination}`,
+      title: `${displayPlaceLabel(trip.origin)} → ${displayPlaceLabel(trip.destination)}`,
       date: trip.startDate,
       summary: trip.aiSummary,
     };
     const newStops: Stop[] = [
       {
         id: uid(), dayId: day1.id, order: 0,
-        name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin,
+        name: `Avgang ${displayPlaceLabel(trip.origin)}`, type: "rest", location: displayPlaceLabel(trip.origin),
         description: "Start på dagen — sjekk dekktrykk, fyll tanken.",
         reason: "Felles startpunkt for ruta.", durationMin: 15,
       },
