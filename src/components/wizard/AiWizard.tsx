@@ -68,6 +68,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
   const [toPlace, setToPlace] = useState<ResolvedPlace | null>(null);
   const [date, setDate] = useState(DEFAULT_DATE);
   const [days, setDays] = useState<number>(1);
+  const [roundTrip, setRoundTrip] = useState<boolean>(true);
 
   // Step 2
   const [waypoints, setWaypoints] = useState<WaypointRow[]>([]);
