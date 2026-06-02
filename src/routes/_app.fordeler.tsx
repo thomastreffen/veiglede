@@ -73,9 +73,9 @@ function FordelerPage() {
     <div className="space-y-8 py-6 md:py-10">
       <header className="flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Veiglede Fordeler</p>
-          <h1 className="mt-1 font-display text-3xl md:text-4xl uppercase">Rabatter for deg på veien</h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-xl">Eksklusive rabatter for Veiglede-brukere — hos verksteder, utstyrsbutikker, ladeoperatører og mer.</p>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{fd.eyebrow}</p>
+          <h1 className="mt-1 font-display text-3xl md:text-4xl uppercase">{fd.title}</h1>
+          <p className="mt-2 text-sm text-muted-foreground max-w-xl">{fd.subtitle}</p>
         </div>
       </header>
 
@@ -83,7 +83,7 @@ function FordelerPage() {
         <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 flex items-start gap-3 text-sm">
           <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
           <div className="flex-1">
-            <p>Slå på fordeler i <Link to="/settings" className="underline font-medium">profilen din</Link> for å se tilbud tilpasset ditt kjøretøy.</p>
+            <p>{fd.enableHintPre}<Link to="/settings" className="underline font-medium">{fd.profileLink}</Link>{fd.enableHintPost}</p>
           </div>
         </div>
       )}
@@ -115,7 +115,7 @@ function FordelerPage() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <h2 className="font-display text-lg uppercase tracking-wide">Basert på din garasje 🏍️</h2>
+                <h2 className="font-display text-lg uppercase tracking-wide">{fd.basedOnGarage}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {personalized.map((b) => (
@@ -126,9 +126,9 @@ function FordelerPage() {
           )}
 
           <section>
-            <h2 className="font-display text-lg uppercase tracking-wide mb-3">Alle fordeler</h2>
+            <h2 className="font-display text-lg uppercase tracking-wide mb-3">{fd.allBenefits}</h2>
             {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ingen fordeler i denne kategorien enda.</p>
+              <p className="text-sm text-muted-foreground">{fd.noneInCategory}</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filtered.map((b) => (
@@ -142,6 +142,7 @@ function FordelerPage() {
     </div>
   );
 }
+
 
 type Provider = { id: string; name: string; logo_url: string | null; category: string };
 type Benefit = {
