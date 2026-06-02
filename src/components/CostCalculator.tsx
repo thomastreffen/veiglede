@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Calculator, Fuel, Zap, Ship, Bed, Receipt, Users, ChevronDown } from "lucide-react";
 import type { Trip, Stop, CostSettings } from "@/lib/trips-store";
-import { tripsApi, tripFuelKind } from "@/lib/trips-store";
+import { tripsApi, tripFuelKind, computeEnergyCost } from "@/lib/trips-store";
 
 interface VehicleDefaults {
   consumption: number;
@@ -45,8 +45,8 @@ export function CostCalculator({ trip, stops }: { trip: Trip; stops: Stop[] }) {
   const other = settings.otherCosts ?? 0;
   const people = Math.max(1, settings.people ?? 1);
 
-  const distanceKm = trip.distanceKm ?? 0;
-  const energyCost = (distanceKm * consumption * energyPrice) / 100;
+  const distanceKm = trip.distanceKm ?? trip.routeDistanceKm ?? 0;
+  const energyCost = computeEnergyCost(distanceKm, consumption, energyPrice, `trip ${trip.id}`);
 
   const lodgingCost = useMemo(
     () =>

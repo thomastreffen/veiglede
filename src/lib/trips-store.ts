@@ -1600,6 +1600,43 @@ export function tripFuelKind(trip: Pick<Trip, "energy">): "petrol" | "diesel" | 
   }
 }
 
+/**
+ * Energy cost for a leg: NOK = distanceKm × consumption (units/100km) × pricePerUnit / 100.
+ *
+ * Centralized so CostCalculator + TripOverview (OVERSIKT) can never drift.
+ * Sanity-checks inputs and warns in dev when the result is suspiciously small
+ * for a long trip (a symptom of a unit error like consumption stored as
+ * units-per-km instead of units-per-100km).
+ */
+export function computeEnergyCost(
+  distanceKm: number,
+  consumptionPer100km: number,
+  pricePerUnit: number,
+  context?: string,
+): number {
+  const km = Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : 0;
+  const cons = Number.isFinite(consumptionPer100km) && consumptionPer100km > 0 ? consumptionPer100km : 0;
+  const price = Number.isFinite(pricePerUnit) && pricePerUnit > 0 ? pricePerUnit : 0;
+  const cost = (km * cons * price) / 100;
+  if (typeof window !== "undefined" && (import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
+    if (km > 50 && cost > 0 && cost < 10) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[cost] Suspicious low energy cost ${cost.toFixed(2)} kr for ${km} km`,
+        { distanceKm: km, consumptionPer100km: cons, pricePerUnit: price, context },
+      );
+    } else if (km > 0) {
+      // eslint-disable-next-line no-console
+      console.debug(
+        `[cost] ${context ?? "energy"} → ${cost.toFixed(2)} kr ` +
+          `(${km} km × ${cons}/100km × ${price} kr)`,
+      );
+    }
+  }
+  return cost;
+}
+
+
 
 export const VEHICLES: { value: VehicleType; label: string; emoji: string; sub: string }[] = [
   { value: "motorcycle", label: "Motorsykkel", emoji: "🏍️", sub: "Tur-MC · ADV · Sport · Vintage" },
