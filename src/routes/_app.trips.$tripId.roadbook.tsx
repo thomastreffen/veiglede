@@ -217,8 +217,8 @@ function Roadbook() {
           }, 0);
           return (
             <section className="rounded-2xl border border-border bg-surface p-5">
-              <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Bed className="h-3.5 w-3.5" /> Overnatting</p>
-              <h2 className="mt-2 font-display text-2xl uppercase">Hvor du sover</h2>
+              <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Bed className="h-3.5 w-3.5" /> {rb.lodgingEyebrow}</p>
+              <h2 className="mt-2 font-display text-2xl uppercase">{rb.lodgingTitle}</h2>
               <ul className="mt-4 space-y-3">
                 {lodgingStops.map((s) => {
                   const b = s.booking;
@@ -232,9 +232,9 @@ function Roadbook() {
                           <BookingBadge status={b?.status} />
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {nights} {nights === 1 ? "natt" : "netter"}
-                          {b?.checkinDate ? ` · innsjekk ${b.checkinDate}` : ""}
-                          {b?.guests ? ` · ${b.guests} gjester` : ""}
+                          {nights} {nights === 1 ? rb.nightSingular : rb.nightPlural}
+                          {b?.checkinDate ? ` · ${rb.checkinPrefix} ${b.checkinDate}` : ""}
+                          {b?.guests ? ` · ${b.guests} ${rb.guestsSuffix}` : ""}
                         </p>
                       </div>
                       {lineTotal != null && (
@@ -245,7 +245,7 @@ function Roadbook() {
                 })}
                 {total > 0 && (
                   <li className="flex items-center justify-between pt-2 border-t border-border text-sm font-semibold">
-                    <span>Total overnatting</span>
+                    <span>{rb.totalLodging}</span>
                     <span className="font-mono tabular-nums text-primary">{total.toFixed(0)} kr</span>
                   </li>
                 )}
