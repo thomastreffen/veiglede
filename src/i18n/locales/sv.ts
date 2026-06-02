@@ -817,14 +817,6 @@ export const sv: Dict = {
         roadbook: "Skapar roadbook…",
         ready: "Din resa är klar!",
       },
-      poweredBy: "Powered by Veiglede AI 🧡",
-      steps: {
-        route: (from: string, to: string) => `Beräknar rutt mellan ${from} och ${to}…`,
-        stops: (style: string) => `Väljer stopp baserat på ${style.toLowerCase()}…`,
-        legs: (n: number) => `Planerar ${n} ${n === 1 ? "etapp" : "etapper"}…`,
-        roadbook: "Skapar roadbook…",
-        ready: "Din resa är klar!",
-      },
     },
   },
 };

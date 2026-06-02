@@ -818,14 +818,6 @@ export const de: Dict = {
         roadbook: "Erstelle Roadbook…",
         ready: "Deine Tour ist bereit!",
       },
-      poweredBy: "Powered by Veiglede AI 🧡",
-      steps: {
-        route: (from: string, to: string) => `Berechne Route von ${from} nach ${to}…`,
-        stops: (style: string) => `Wähle Stopps nach ${style.toLowerCase()}…`,
-        legs: (n: number) => `Plane ${n} ${n === 1 ? "Etappe" : "Etappen"}…`,
-        roadbook: "Erstelle Roadbook…",
-        ready: "Deine Tour ist bereit!",
-      },
     },
   },
 };
