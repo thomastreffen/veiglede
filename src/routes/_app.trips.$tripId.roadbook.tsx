@@ -57,15 +57,15 @@ function Roadbook() {
     <div className="py-4 print-roadbook">
       {/* Print-only header */}
       <div className="print-only mb-4" style={{ borderBottom: "1px solid #000", paddingBottom: "8px" }}>
-        <p style={{ fontSize: "10pt", letterSpacing: "0.2em", textTransform: "uppercase" }}>Veiglede · Roadbook</p>
+        <p style={{ fontSize: "10pt", letterSpacing: "0.2em", textTransform: "uppercase" }}>{rb.printRoadbook}</p>
         <h1 style={{ fontSize: "22pt", margin: "4px 0 2px", fontWeight: 700 }}>{trip.title}</h1>
         {trip.subtitle && <p style={{ fontSize: "10pt", fontStyle: "italic" }}>{trip.subtitle}</p>}
         <p style={{ fontSize: "10pt", marginTop: "4px" }}>
           {trip.origin} → {trip.destination}{trip.region ? ` · ${trip.region}` : ""}
         </p>
         <p style={{ fontSize: "9pt", marginTop: "6px" }}>
-          {trip.distanceKm} km · {trip.drivingTime} · {tripStops.length} stopp · {vehicleDisplay} · {s.label}
-          {trip.startDate ? ` · Avreise ${new Date(trip.startDate).toLocaleDateString("nb-NO")}` : ""}
+          {trip.distanceKm} km · {trip.drivingTime} · {tripStops.length} {rb.stops ?? "stopp"} · {vehicleDisplay} · {s.label}
+          {trip.startDate ? ` · ${rb.departure_pre ?? "Avreise "}${new Date(trip.startDate).toLocaleDateString("nb-NO")}` : ""}
         </p>
       </div>
       <DemoDebugPanel
