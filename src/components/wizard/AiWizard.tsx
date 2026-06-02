@@ -656,25 +656,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function GenerateProgress({
-  steps, run, onDone, onError, onCancel,
+  initialSteps, run, onDone, onError, onCancel,
 }: {
-  steps: string[];
-  run: () => Promise<string>;
+  initialSteps: string[];
+  run: (report: (msg: string) => void) => Promise<string>;
   onDone: (tripId: string) => void;
   onError: (err: unknown) => void;
   onCancel: () => void;
 }) {
   const t = useT();
   const w = t.wizard;
-  const [active, setActive] = useState(0);
+  const [steps, setSteps] = useState<string[]>(initialSteps);
   const tripIdRef = useRef<string | null>(null);
   const errorRef = useRef<unknown>(null);
+  const [done, setDone] = useState(false);
 
   // Kick off the real work once
   useEffect(() => {
     let mounted = true;
-    run()
-      .then((id) => { if (mounted) tripIdRef.current = id; })
+    const report = (msg: string) => {
+      if (!mounted) return;
+      setSteps((prev) => (prev[prev.length - 1] === msg ? prev : [...prev, msg]));
+    };
+    run(report)
+      .then((id) => { if (mounted) { tripIdRef.current = id; setDone(true); } })
       .catch((err) => {
         console.error("[ai-wizard] generate failed", err);
         if (mounted) errorRef.current = err;
@@ -683,19 +688,20 @@ function GenerateProgress({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Animate steps
+  // When done or errored, transition out after a brief beat
   useEffect(() => {
-    if (active >= steps.length - 1) {
-      // hold on last step until trip is ready
-      const poll = setInterval(() => {
-        if (errorRef.current) { clearInterval(poll); onError(errorRef.current); }
-        else if (tripIdRef.current) { clearInterval(poll); onDone(tripIdRef.current); }
-      }, 200);
-      return () => clearInterval(poll);
-    }
-    const tm = setTimeout(() => setActive((a) => a + 1), 1000);
-    return () => clearTimeout(tm);
-  }, [active, steps.length, onDone, onError]);
+    const poll = setInterval(() => {
+      if (errorRef.current) { clearInterval(poll); onError(errorRef.current); }
+      else if (done && tripIdRef.current) {
+        clearInterval(poll);
+        const id = tripIdRef.current;
+        setTimeout(() => onDone(id), 600);
+      }
+    }, 200);
+    return () => clearInterval(poll);
+  }, [done, onDone, onError]);
+
+  const activeIndex = done ? steps.length - 1 : Math.max(0, steps.length - 1);
 
   return (
     <div className="fixed inset-0 z-40 bg-background flex flex-col items-center justify-center px-6 py-10">
@@ -704,24 +710,21 @@ function GenerateProgress({
 
         <p className="mt-8 text-center text-[11px] uppercase tracking-[0.28em] text-primary">{w.generate.loading}</p>
 
-        <ul className="mt-6 space-y-3">
+        <ul className="mt-6 space-y-3 max-h-[40vh] overflow-y-auto">
           {steps.map((label, i) => {
-            const done = i < active || (i === steps.length - 1 && tripIdRef.current);
-            const current = i === active && !done;
+            const isDone = i < activeIndex || (i === steps.length - 1 && done);
+            const current = i === activeIndex && !isDone;
             return (
-              <li key={i} className={cn(
-                "flex items-start gap-3 text-sm transition-opacity",
-                i > active ? "opacity-30" : "opacity-100"
-              )}>
+              <li key={i} className="flex items-start gap-3 text-sm">
                 <span className={cn(
                   "mt-0.5 h-5 w-5 grid place-items-center rounded-full border shrink-0 transition-colors",
-                  done ? "bg-primary border-primary text-primary-foreground"
+                  isDone ? "bg-primary border-primary text-primary-foreground"
                     : current ? "border-primary text-primary animate-pulse"
                     : "border-border text-muted-foreground"
                 )}>
-                  {done ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[10px]">{i + 1}</span>}
+                  {isDone ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[10px]">{i + 1}</span>}
                 </span>
-                <span className={cn(done ? "text-foreground" : current ? "text-foreground" : "text-muted-foreground")}>
+                <span className={isDone || current ? "text-foreground" : "text-muted-foreground"}>
                   {label}
                 </span>
               </li>
