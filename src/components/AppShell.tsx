@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { getOnboardingStatus } from "@/lib/account";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { HelpBot } from "@/components/HelpBot";
 import { useBrowserNotifications } from "@/lib/useBrowserNotifications";
 import { amIAdminFn } from "@/lib/admin.functions";
 import { useT } from "@/i18n/provider";
