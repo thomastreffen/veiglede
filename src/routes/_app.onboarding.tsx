@@ -250,6 +250,9 @@ function Onboarding() {
               <Link to="/explore" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
                 Utforsk turer <ArrowRight className="h-3.5 w-3.5" />
               </Link>
+              <Link to="/hjelp" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
+                Har du spørsmål? Chat med vår hjelpebot <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
           </div>
         </Card>
