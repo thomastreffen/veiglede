@@ -180,7 +180,21 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                 >
                   <Plus className="h-4 w-4" />
                 </button>
-              </div>
+          </div>
+
+          {days > 1 && (
+            <label className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={roundTrip}
+                onChange={(e) => setRoundTrip(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+              />
+              <span className="text-sm">
+                {w.ai.roundTripLabel?.(origin || "start") ?? `Rundtur tilbake til ${origin || "start"}`}
+              </span>
+            </label>
+          )}
             </Field>
           </div>
 
