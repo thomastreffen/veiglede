@@ -817,14 +817,6 @@ export const nl: Dict = {
         roadbook: "Roadbook maken…",
         ready: "Je reis is klaar!",
       },
-      poweredBy: "Powered by Veiglede AI 🧡",
-      steps: {
-        route: (from: string, to: string) => `Route berekenen van ${from} naar ${to}…`,
-        stops: (style: string) => `Stops kiezen op basis van ${style.toLowerCase()}…`,
-        legs: (n: number) => `${n} ${n === 1 ? "etappe" : "etappes"} plannen…`,
-        roadbook: "Roadbook maken…",
-        ready: "Je reis is klaar!",
-      },
     },
   },
 };
