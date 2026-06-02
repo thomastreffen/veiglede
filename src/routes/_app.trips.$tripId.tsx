@@ -101,6 +101,22 @@ function TripPlanner() {
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, trip?.routeGeometry, mergedInterests.join(",")]);
+
+  // Map → list: scroll a stop card into view when its map pin is clicked.
+  useEffect(() => {
+    const onScroll = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (!id) return;
+      const el = document.getElementById(`stop-${id}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary");
+      window.setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1600);
+    };
+    window.addEventListener("trip:scroll-to-stop", onScroll);
+    return () => window.removeEventListener("trip:scroll-to-stop", onScroll);
+  }, []);
+
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
