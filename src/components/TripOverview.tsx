@@ -18,6 +18,7 @@ import {
   addMinutesToHHMM,
   inferTimeCategory,
 } from "@/lib/trip-time";
+import { useT } from "@/i18n/provider";
 
 interface Props {
   trip: Trip;
@@ -67,7 +68,6 @@ function computeDayCosts(trip: Trip, days: TripDay[], stops: Stop[]): DayCostRow
 
   return sortedDays.map((day) => {
     const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
-    // Prefer explicit per-stop distances when present, else even split.
     const dayKm = dayStops.reduce((acc, s) => acc + (s.distanceFromPrevKm ?? 0), 0) || perDayKmFallback;
     const energyCost = (dayKm * consumption * price) / 100;
     const lodgingCost = dayStops
@@ -97,6 +97,8 @@ function scrollToStop(stopId: string) {
 }
 
 export function TripOverview({ trip, days, stops }: Props) {
+  const t = useT();
+  const ov = t.app.tripDetail.overview;
   const breakdown = useMemo(() => computeTimeBreakdown(trip, days, stops), [trip, days, stops]);
   const perDayTime = useMemo(() => computeDayBreakdowns(trip, days, stops), [trip, days, stops]);
   const dayCosts = useMemo(() => computeDayCosts(trip, days, stops), [trip, days, stops]);
@@ -115,28 +117,28 @@ export function TripOverview({ trip, days, stops }: Props) {
       <section className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-surface to-surface p-5 md:p-6 shadow-lg">
         <div className="flex items-baseline justify-between gap-3">
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary font-bold">
-            <Sparkles className="h-3.5 w-3.5" /> Oversikt
+            <Sparkles className="h-3.5 w-3.5" /> {ov.title}
           </p>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            {days.length} {days.length === 1 ? "dag" : "dager"}
+            {days.length} {days.length === 1 ? ov.daysSingular : ov.daysPlural}
           </span>
         </div>
 
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat icon={<RouteIcon className="h-4 w-4" />} label="Distanse" value={`${trip.distanceKm} km`} />
-          <Stat icon={<Clock className="h-4 w-4" />} label="Kjøretid" value={formatDuration(breakdown.drivingMin)} />
-          <Stat icon={<Bed className="h-4 w-4" />} label="Overnattinger" value={String(overnights)} />
-          <Stat icon={<Ship className="h-4 w-4" />} label="Ferger" value={String(ferries)} />
+          <Stat icon={<RouteIcon className="h-4 w-4" />} label={ov.distance} value={`${trip.distanceKm} km`} />
+          <Stat icon={<Clock className="h-4 w-4" />} label={ov.drivingTime} value={formatDuration(breakdown.drivingMin)} />
+          <Stat icon={<Bed className="h-4 w-4" />} label={ov.overnights} value={String(overnights)} />
+          <Stat icon={<Ship className="h-4 w-4" />} label={ov.ferries} value={String(ferries)} />
         </div>
 
         <div className="mt-4 pt-3 border-t border-border/60 flex items-baseline justify-between flex-wrap gap-2">
           <span className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-            <Wallet className="h-3.5 w-3.5" /> Estimert totalkostnad
+            <Wallet className="h-3.5 w-3.5" /> {ov.totalEstimate}
           </span>
           <div className="text-right">
             <p className="text-2xl font-bold text-primary font-mono tabular-nums">ca. {fmtNok(totalCost)}</p>
             {people > 1 && (
-              <p className="text-[11px] text-muted-foreground">per person: {fmtNok(totalCost / people)}</p>
+              <p className="text-[11px] text-muted-foreground">{ov.perPerson}: {fmtNok(totalCost / people)}</p>
             )}
           </div>
         </div>
@@ -167,7 +169,6 @@ export function TripOverview({ trip, days, stops }: Props) {
               key={day.id}
               className="trip-overview-day rounded-2xl border border-border bg-surface p-4 md:grid md:grid-cols-[1fr_1.4fr_1fr] md:gap-5 md:items-start"
             >
-              {/* Left: day header */}
               <header className="md:pr-4 md:border-r md:border-border/60">
                 <div className="flex items-center gap-2">
                   <span className="h-9 w-9 rounded-xl bg-primary text-primary-foreground grid place-items-center font-display text-lg shrink-0">
@@ -181,26 +182,25 @@ export function TripOverview({ trip, days, stops }: Props) {
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {hasLodging && (
                     <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
-                      <Bed className="h-3 w-3" /> Overnatting
+                      <Bed className="h-3 w-3" /> {ov.lodgingBadge}
                     </span>
                   )}
                   {hasFerry && (
                     <span className="inline-flex items-center gap-1 rounded-md border border-slate-400/40 bg-slate-400/10 text-slate-300 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
-                      <Ship className="h-3 w-3" /> Ferje
+                      <Ship className="h-3 w-3" /> {ov.ferryBadge}
                     </span>
                   )}
                 </div>
                 {day.departureTime && (
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    Avreise {day.departureTime}{arrival ? ` → ankomst ca. ${arrival}` : ""}
+                    {arrival ? ov.departureToArrival(day.departureTime, arrival) : ov.departureOnly(day.departureTime)}
                   </p>
                 )}
               </header>
 
-              {/* Middle: vertical timeline */}
               <div className="mt-4 md:mt-0 md:px-2 relative">
                 {dayStops.length === 0 ? (
-                  <p className="text-xs italic text-muted-foreground">Ingen stopp på denne dagen.</p>
+                  <p className="text-xs italic text-muted-foreground">{ov.noStopsToday}</p>
                 ) : (
                   <ol className="relative border-l-2 border-border/60 ml-1.5 space-y-2.5">
                     {dayStops.map((stop) => {
@@ -211,8 +211,8 @@ export function TripOverview({ trip, days, stops }: Props) {
                             type="button"
                             onClick={() => scrollToStop(stop.id)}
                             className={`absolute -left-[7px] top-1 h-3 w-3 rounded-full ring-4 ${dotClass(stop)} hover:scale-125 transition-transform`}
-                            title="Hopp til stopp"
-                            aria-label={`Hopp til ${stop.name}`}
+                            title={ov.jumpToStop}
+                            aria-label={`${ov.jumpToStop}: ${stop.name}`}
                           />
                           <button
                             type="button"
@@ -237,38 +237,37 @@ export function TripOverview({ trip, days, stops }: Props) {
                 )}
               </div>
 
-              {/* Right: per-day stats + cost */}
               <aside className="mt-4 md:mt-0 md:pl-4 md:border-l md:border-border/60">
                 <ul className="space-y-1.5 text-xs">
                   <li className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 text-muted-foreground"><RouteIcon className="h-3 w-3" />Km</span>
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground"><RouteIcon className="h-3 w-3" />{ov.km}</span>
                     <span className="font-mono tabular-nums">{cost?.km ?? 0} km</span>
                   </li>
                   <li className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3 w-3" />Total tid</span>
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3 w-3" />{ov.totalTime}</span>
                     <span className="font-mono tabular-nums">{formatDuration(dayT.totalActiveDayMin)}</span>
                   </li>
                   {cost && cost.energyCost > 0 && (
                     <li className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><EnergyIcon className="h-3 w-3" />{isElectric ? "Lading" : "Drivstoff"}</span>
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><EnergyIcon className="h-3 w-3" />{isElectric ? ov.charging : ov.fuel}</span>
                       <span className="font-mono tabular-nums">ca. {fmtNok(cost.energyCost)}</span>
                     </li>
                   )}
                   {cost && cost.lodgingCost > 0 && (
                     <li className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Bed className="h-3 w-3" />Overnatting</span>
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Bed className="h-3 w-3" />{ov.lodging}</span>
                       <span className="font-mono tabular-nums">ca. {fmtNok(cost.lodgingCost)}</span>
                     </li>
                   )}
                   {cost && cost.ferryCost > 0 && (
                     <li className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Ship className="h-3 w-3" />Ferje</span>
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Ship className="h-3 w-3" />{ov.ferry}</span>
                       <span className="font-mono tabular-nums">ca. {fmtNok(cost.ferryCost)}</span>
                     </li>
                   )}
                   {cost && (
                     <li className="flex items-center justify-between pt-1.5 mt-1 border-t border-border/60 text-sm font-semibold">
-                      <span className="inline-flex items-center gap-1.5"><Calculator className="h-3.5 w-3.5" />Sum</span>
+                      <span className="inline-flex items-center gap-1.5"><Calculator className="h-3.5 w-3.5" />{ov.sum}</span>
                       <span className="font-mono tabular-nums text-primary">ca. {fmtNok(cost.total)}</span>
                     </li>
                   )}
@@ -282,12 +281,12 @@ export function TripOverview({ trip, days, stops }: Props) {
       {/* Grand total */}
       <section className="mt-4 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 flex items-baseline justify-between flex-wrap gap-2 print:break-inside-avoid">
         <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold">
-          <Calculator className="h-4 w-4" /> Total tur
+          <Calculator className="h-4 w-4" /> {ov.totalTrip}
         </span>
         <div className="text-right">
           <p className="text-2xl font-bold text-primary font-mono tabular-nums">ca. {fmtNok(totalCost)}</p>
           {people > 1 && (
-            <p className="text-[11px] text-muted-foreground">delt på {people}: {fmtNok(totalCost / people)} per person</p>
+            <p className="text-[11px] text-muted-foreground">{ov.sharedAmong(people, fmtNok(totalCost / people))}</p>
           )}
         </div>
       </section>

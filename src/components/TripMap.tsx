@@ -73,6 +73,25 @@ const DAY_COLORS = [
   "oklch(0.78 0.14 90)",
 ];
 
+/** Distance² between two LatLng points (cheap proxy for nearest-index search). */
+function dist2(a: LatLng, b: LatLng): number {
+  const dx = a.lng - b.lng;
+  const dy = a.lat - b.lat;
+  return dx * dx + dy * dy;
+}
+
+/** Return the geometry index closest to a target lat/lng. */
+function nearestGeomIdx(geom: LatLng[], target: LatLng): number {
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < geom.length; i++) {
+    const d = dist2(geom[i], target);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+
+
 /**
  * TripMap — provider-agnostic trip map.
  *
@@ -297,21 +316,48 @@ function SvgTripMap({
   const originPt = project(projected.origin);
   const destPt = project(projected.destination);
 
-  // If we have a real route geometry, draw it as the single primary route
-  // line and skip per-day schematic segments (they'd duplicate the path).
-  const geometryPath = geometry
-    ? geometry.map((p, i) => {
-        const pt = project(p);
-        return `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
-      }).join(" ")
-    : null;
-
-  // Build per-day polyline segments
   const sortedDays = [...days].sort((a, b) => a.dayNumber - b.dayNumber);
+
+  // Split the real geometry into per-day sub-paths so we can color each day
+  // with its own shade of orange/teal/etc. We pick the geometry index closest
+  // to each day's last stop and slice between them.
+  const geometrySegments: { color: string; d: string; dayId: string; isFerry?: boolean }[] = geometry
+    ? (() => {
+        const segs: { color: string; d: string; dayId: string }[] = [];
+        if (sortedDays.length === 0) {
+          const d = geometry
+            .map((p, i) => `${i === 0 ? "M" : "L"}${project(p).x.toFixed(1)},${project(p).y.toFixed(1)}`)
+            .join(" ");
+          return [{ color: DAY_COLORS[0], d, dayId: "" }];
+        }
+        // Compute split indices: end of each day = nearest geom idx to that
+        // day's last stop. Final day always ends at the last geometry point.
+        const breakpoints: number[] = [];
+        sortedDays.slice(0, -1).forEach((day) => {
+          const dayMapped = projected.mapped.filter((m) => m.day.id === day.id);
+          const last = dayMapped[dayMapped.length - 1]?.loc;
+          if (last) breakpoints.push(nearestGeomIdx(geometry, last));
+        });
+        // Build segments
+        let start = 0;
+        sortedDays.forEach((day, dayIdx) => {
+          const end = dayIdx < breakpoints.length ? breakpoints[dayIdx] : geometry.length - 1;
+          if (end <= start) return;
+          const slice = geometry.slice(start, end + 1);
+          const d = slice
+            .map((p, i) => `${i === 0 ? "M" : "L"}${project(p).x.toFixed(1)},${project(p).y.toFixed(1)}`)
+            .join(" ");
+          segs.push({ color: DAY_COLORS[dayIdx % DAY_COLORS.length], d, dayId: day.id });
+          start = end;
+        });
+        return segs;
+      })()
+    : [];
+
+  // Schematic per-day segments (used only when no real geometry exists).
   const segments = geometry ? [] : sortedDays.map((day, dayIdx) => {
     const dayMapped = projected.mapped.filter((m) => m.day.id === day.id);
     const dayPoints: LatLng[] = [];
-    // Connect previous day's last point (or origin) → this day's stops → next day's first (or destination handled at end)
     if (dayIdx === 0) dayPoints.push(projected.origin);
     else {
       const prevDay = projected.mapped.filter((m) => m.day.id === sortedDays[dayIdx - 1].id);
@@ -319,7 +365,6 @@ function SvgTripMap({
       else dayPoints.push(projected.origin);
     }
     dayMapped.forEach((m) => dayPoints.push(m.loc));
-    // For the final day, close with destination
     if (dayIdx === sortedDays.length - 1) dayPoints.push(projected.destination);
     return {
       day,
@@ -328,6 +373,7 @@ function SvgTripMap({
       color: DAY_COLORS[dayIdx % DAY_COLORS.length],
     };
   });
+
 
   // Empty-state fallback path: straight origin→destination
   const fallbackPath = !geometry && sortedDays.length === 0
@@ -370,14 +416,14 @@ function SvgTripMap({
           <ellipse cx={W * 0.5} cy={H * 0.75} rx={220} ry={60} fill="oklch(0.20 0.016 250)" />
         </g>
 
-        {/* Real route geometry takes precedence over per-day schematic */}
-        {geometryPath && (
-          <g>
-            <path d={geometryPath} fill="none" stroke={DAY_COLORS[0]} strokeWidth="10" opacity="0.18" strokeLinecap="round" filter="url(#vg-soft-glow)" />
-            <path d={geometryPath} fill="none" stroke={DAY_COLORS[0]} strokeWidth={compact ? 2.5 : 3.5} strokeLinecap="round" strokeLinejoin="round" />
+        {/* Real route geometry — colored per day */}
+        {geometrySegments.map((seg, i) => (
+          <g key={`geom-${i}`}>
+            <path d={seg.d} fill="none" stroke={seg.color} strokeWidth="10" opacity="0.18" strokeLinecap="round" filter="url(#vg-soft-glow)" />
+            <path d={seg.d} fill="none" stroke={seg.color} strokeWidth={compact ? 2.5 : 3.5} strokeLinecap="round" strokeLinejoin="round" />
           </g>
-        )}
-        {/* Day-colored route segments */}
+        ))}
+        {/* Day-colored route segments (schematic — only when no geometry) */}
         {fallbackPath && (
           <path d={fallbackPath} fill="none" stroke="oklch(0.78 0.17 65)" strokeWidth="3" strokeDasharray="6 6" strokeLinecap="round" />
         )}
@@ -397,6 +443,7 @@ function SvgTripMap({
         })}
 
 
+
         {/* Suggestion pins (semi-transparent until hovered) */}
         {suggestionPins.map((p) => {
           const pt = project(p.loc);
@@ -410,36 +457,90 @@ function SvgTripMap({
         })}
 
         {/* Stop pins */}
-        {projected.mapped.map((m) => {
-          const pt = project(m.loc);
-          const meta = stopDisplayMeta(m.stop);
-          const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
-          const selected = selectedStopId === m.stop.id;
-          const r = selected ? 16 : compact ? 9 : 12;
-          return (
-            <g
-              key={m.stop.id}
-              className="cursor-pointer"
-              onClick={() => onSelectStop?.(selected ? null : m.stop.id)}
-            >
-              {selected && (
-                <circle cx={pt.x} cy={pt.y} r={r + 10} fill={color} opacity="0.2" />
-              )}
-              <circle cx={pt.x} cy={pt.y} r={r + 2} fill="oklch(0.14 0.012 250)" />
-              <circle cx={pt.x} cy={pt.y} r={r} fill={color} stroke="oklch(0.95 0.02 250)" strokeWidth={selected ? 2.5 : 1.5} />
-              <text x={pt.x} y={pt.y + (selected ? 6 : 4)} textAnchor="middle" fontSize={selected ? 16 : compact ? 10 : 13} style={{ pointerEvents: "none" }}>{meta.emoji}</text>
-              {selected && !compact && (
-                <g>
-                  <rect x={pt.x + 18} y={pt.y - 22} rx="6" ry="6" width={Math.min(220, m.stop.name.length * 8 + 24)} height="26" fill="oklch(0.14 0.012 250)" stroke={color} strokeWidth="1" />
-                  <text x={pt.x + 30} y={pt.y - 4} fontSize="13" fill="oklch(0.95 0.02 250)">{m.stop.name}</text>
-                </g>
-              )}
-              {m.approximated && !selected && (
-                <circle cx={pt.x + r + 1} cy={pt.y - r - 1} r="3" fill="oklch(0.55 0.02 250)" />
-              )}
-            </g>
-          );
-        })}
+        {(() => {
+          // Number lodging stops in trip order so each overnight gets a stable
+          // 1, 2, 3 badge instead of an emoji.
+          let lodgingCounter = 0;
+          const lodgingIndex = new Map<string, number>();
+          projected.mapped.forEach((m) => {
+            if (m.stop.type === "lodging") {
+              lodgingCounter += 1;
+              lodgingIndex.set(m.stop.id, lodgingCounter);
+            }
+          });
+          return projected.mapped.map((m) => {
+            const pt = project(m.loc);
+            const meta = stopDisplayMeta(m.stop);
+            const color = DAY_COLORS[m.dayIndex % DAY_COLORS.length];
+            const selected = selectedStopId === m.stop.id;
+            const r = selected ? 16 : compact ? 9 : 12;
+            const isFerry = m.stop.type === "ferry";
+            const lodgingNum = lodgingIndex.get(m.stop.id);
+            return (
+              <g
+                key={m.stop.id}
+                className="cursor-pointer"
+                onClick={() => {
+                  onSelectStop?.(selected ? null : m.stop.id);
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("trip:scroll-to-stop", { detail: m.stop.id }));
+                  }
+                }}
+              >
+                {selected && (
+                  <circle cx={pt.x} cy={pt.y} r={r + 10} fill={color} opacity="0.2" />
+                )}
+                <circle cx={pt.x} cy={pt.y} r={r + 2} fill="oklch(0.14 0.012 250)" />
+                {isFerry ? (
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={r}
+                    fill="oklch(0.14 0.012 250)"
+                    stroke="oklch(0.85 0.02 250)"
+                    strokeWidth="1.8"
+                    strokeDasharray="3 2"
+                  />
+                ) : (
+                  <circle cx={pt.x} cy={pt.y} r={r} fill={color} stroke="oklch(0.95 0.02 250)" strokeWidth={selected ? 2.5 : 1.5} />
+                )}
+                {lodgingNum ? (
+                  <text
+                    x={pt.x}
+                    y={pt.y + (selected ? 6 : 4)}
+                    textAnchor="middle"
+                    fontSize={selected ? 14 : compact ? 10 : 12}
+                    fontWeight="800"
+                    fill="oklch(0.14 0.012 250)"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {lodgingNum}
+                  </text>
+                ) : (
+                  <text
+                    x={pt.x}
+                    y={pt.y + (selected ? 6 : 4)}
+                    textAnchor="middle"
+                    fontSize={selected ? 16 : compact ? 10 : 13}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {meta.emoji}
+                  </text>
+                )}
+                {selected && !compact && (
+                  <g>
+                    <rect x={pt.x + 18} y={pt.y - 22} rx="6" ry="6" width={Math.min(220, m.stop.name.length * 8 + 24)} height="26" fill="oklch(0.14 0.012 250)" stroke={color} strokeWidth="1" />
+                    <text x={pt.x + 30} y={pt.y - 4} fontSize="13" fill="oklch(0.95 0.02 250)">{m.stop.name}</text>
+                  </g>
+                )}
+                {m.approximated && !selected && (
+                  <circle cx={pt.x + r + 1} cy={pt.y - r - 1} r="3" fill="oklch(0.55 0.02 250)" />
+                )}
+              </g>
+            );
+          });
+        })()}
+
 
         {/* Origin marker */}
         <g>

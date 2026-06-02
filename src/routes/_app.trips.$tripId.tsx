@@ -101,6 +101,22 @@ function TripPlanner() {
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, trip?.routeGeometry, mergedInterests.join(",")]);
+
+  // Map → list: scroll a stop card into view when its map pin is clicked.
+  useEffect(() => {
+    const onScroll = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (!id) return;
+      const el = document.getElementById(`stop-${id}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary");
+      window.setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1600);
+    };
+    window.addEventListener("trip:scroll-to-stop", onScroll);
+    return () => window.removeEventListener("trip:scroll-to-stop", onScroll);
+  }, []);
+
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
@@ -301,11 +317,12 @@ function TripPlanner() {
       {/* OVERSIKT — at-a-glance timeline + per-day cost */}
       <section id="overview" className="mt-6 scroll-mt-24">
         <div className="flex items-end justify-between mb-3">
-          <h2 className="font-display text-2xl uppercase">Oversikt</h2>
-          <p className="text-[11px] text-muted-foreground">Trykk på et stopp for å hoppe ned</p>
+          <h2 className="font-display text-2xl uppercase">{td.overview.title}</h2>
+          <p className="text-[11px] text-muted-foreground">{td.overview.jumpHint}</p>
         </div>
         <TripOverview trip={trip} days={tripDays} stops={tripStops} />
       </section>
+
 
 
 
@@ -365,7 +382,7 @@ function TripPlanner() {
       <nav className="mt-4 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto pb-1">
         {[
           { href: "#track", label: td.jumpLive },
-          { href: "#overview", label: "Oversikt" },
+          { href: "#overview", label: td.overview.title },
           { href: "#days", label: td.jumpDays },
           { href: "#packing", label: td.jumpPacking },
           { href: "#along", label: td.jumpAlong },
@@ -745,7 +762,7 @@ function DayCard({
                   </button>
                   {otherDays.length > 0 && (
                     <button onClick={(e) => { e.preventDefault(); setMoveStopId(moveStopId === stop.id ? null : stop.id); }}
-                      className="p-1.5 text-muted-foreground hover:text-primary" aria-label="Flytt til annen dag" title="Flytt til annen dag">
+                      className="p-1.5 text-muted-foreground hover:text-primary" aria-label={td.overview.moveToOtherDay} title={td.overview.moveToOtherDay}>
                       <ArrowRightLeft className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -755,14 +772,14 @@ function DayCard({
                   </button>
                   {moveStopId === stop.id && (
                     <div className="absolute right-full top-1/2 -translate-y-1/2 mr-1 z-30 w-48 rounded-xl border border-border bg-surface-2 shadow-xl p-1 text-sm">
-                      <p className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">Flytt til dag</p>
+                      <p className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">{td.overview.moveToOtherDay}</p>
                       {otherDays.map((d) => (
-                        <button key={d.id} onClick={() => { tripsApi.moveStopToDay(stop.id, d.id); setMoveStopId(null); toast.success(`Flyttet til Dag ${d.dayNumber}`); }}
+                        <button key={d.id} onClick={() => { tripsApi.moveStopToDay(stop.id, d.id); setMoveStopId(null); toast.success(`${td.overview.moveToOtherDay} → ${d.dayNumber}`); }}
                           className="w-full text-left rounded-lg px-2 py-1.5 text-xs hover:bg-primary/10 hover:text-primary">
-                          Dag {d.dayNumber}{d.title ? ` — ${d.title}` : ""}
+                          {d.dayNumber}{d.title ? ` — ${d.title}` : ""}
                         </button>
                       ))}
-                      <button onClick={() => setMoveStopId(null)} className="mt-0.5 w-full text-left rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-background">Avbryt</button>
+                      <button onClick={() => setMoveStopId(null)} className="mt-0.5 w-full text-left rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-background">×</button>
                     </div>
                   )}
                 </div>
@@ -771,7 +788,7 @@ function DayCard({
                 <div className="px-4 pb-3 -mt-1 flex items-center gap-2 text-xs text-muted-foreground bg-slate-400/5 border-t border-border/40">
                   <Ship className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                   <label className="inline-flex items-center gap-1.5">
-                    Billettpris (NOK)
+                    {td.overview.ferryPrice}
                     <input
                       type="number"
                       inputMode="decimal"
@@ -788,7 +805,7 @@ function DayCard({
                   </label>
                   {stop.isAutoDetected && (
                     <span className="ml-auto inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
-                      Auto-oppdaget
+                      {td.overview.ferryAutoDetected}
                     </span>
                   )}
                 </div>
