@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, stopMeta, buildAiSummary } from "@/lib/trips-store";
+import { tripsApi, ROUTE_STYLES, type RouteStyle, vehicleMeta, styleMeta, type CoverKey, useTripsStore, buildAiSummary } from "@/lib/trips-store";
 import { useVehicles, energyMeta, energyTypeToSource, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { TripMap } from "@/components/TripMap";
@@ -9,29 +9,56 @@ import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { manualPlace } from "@/lib/places/geocoder";
 import { getRoute, type RouteResult } from "@/lib/routing";
-import { TripTimeBudget } from "@/components/TripTimeBudget";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RotateCcw, BookOpen, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchRoutePartnersFn } from "@/lib/partners.functions";
 import { useT } from "@/i18n/provider";
+import { ModeSelect } from "@/components/wizard/ModeSelect";
+import { ManualWizard } from "@/components/wizard/ManualWizard";
+
+type WizardMode = "ai" | "manual";
 
 export const Route = createFileRoute("/_app/trips/new")({
   head: () => ({ meta: [{ title: "Ny tur — Veiglede" }] }),
-  validateSearch: (s: Record<string, unknown>): { restoreDraft?: "force" | "fresh"; ts?: string } => {
+  validateSearch: (s: Record<string, unknown>): { restoreDraft?: "force" | "fresh"; ts?: string; mode?: WizardMode } => {
     const raw = s.restoreDraft;
     const v = typeof raw === "boolean" ? String(raw) : typeof raw === "number" ? String(raw) : typeof raw === "string" ? raw.trim().toLowerCase() : undefined;
     const tsRaw = s.ts;
     const ts = tsRaw == null ? undefined : String(tsRaw);
-    if (v === undefined || v === "") return {};
+    const modeRaw = typeof s.mode === "string" ? s.mode.toLowerCase() : undefined;
+    const mode: WizardMode | undefined = modeRaw === "ai" || modeRaw === "manual" ? modeRaw : undefined;
+    if (v === undefined || v === "") return { mode };
     const FORCE = new Set(["1", "true", "force", "yes"]);
     const FRESH = new Set(["0", "false", "fresh", "no"]);
-    if (FORCE.has(v)) return { restoreDraft: "force", ts };
-    if (FRESH.has(v)) return { restoreDraft: "fresh", ts };
-    // Unknown values: treat as fresh to avoid hijacking with stale drafts.
-    return { restoreDraft: "fresh", ts };
+    if (FORCE.has(v)) return { restoreDraft: "force", ts, mode };
+    if (FRESH.has(v)) return { restoreDraft: "fresh", ts, mode };
+    return { restoreDraft: "fresh", ts, mode };
   },
-  component: NewTripWizard,
+  component: NewTripRoute,
 });
+
+function NewTripRoute() {
+  const { mode } = Route.useSearch();
+  const navigate = useNavigate();
+  if (!mode) {
+    return (
+      <ModeSelect
+        onSelect={(m) =>
+          navigate({ to: "/trips/new", search: { mode: m }, replace: true })
+        }
+      />
+    );
+  }
+  if (mode === "manual") {
+    return (
+      <ManualWizard
+        onBack={() => navigate({ to: "/trips/new", search: {}, replace: true })}
+      />
+    );
+  }
+  return <NewTripWizard />;
+}
+
 
 type Step = 1 | 2 | 3 | 4;
 
