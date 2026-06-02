@@ -1214,7 +1214,18 @@ function PlannerActions({
               value={destText}
               onTextChange={setDestText}
               selected={destPlace}
-              onSelect={setDestPlace}
+              onSelect={(p) => {
+                setDestPlace(p);
+                // If user picked a hotel/camping etc., switch to lodging flow automatically.
+                if (p?.placeTypes?.some((t) => LODGING_PLACE_TYPES.includes(t))) {
+                  setLodgingPlace(p);
+                  setLodgingText(p.name);
+                  setLodgingOpen(true);
+                  setDestOpen(false);
+                  setDestText("");
+                  setDestPlace(null);
+                }
+              }}
               placeholder="Sted eller hotell"
               ariaLabel="Neste destinasjon"
             />
