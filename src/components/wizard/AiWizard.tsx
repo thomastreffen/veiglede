@@ -191,7 +191,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                 className="h-4 w-4 accent-primary"
               />
               <span className="text-sm">
-                {w.ai.roundTripLabel?.(origin || "start") ?? `Rundtur tilbake til ${origin || "start"}`}
+                Rundtur tilbake til <strong>{origin || "start"}</strong>
               </span>
             </label>
           )}
