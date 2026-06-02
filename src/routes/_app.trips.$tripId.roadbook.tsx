@@ -258,9 +258,9 @@ function Roadbook() {
         {/* Photo opportunities */}
         {memories.length > 0 && (
           <section className="rounded-2xl border border-border bg-surface p-5">
-            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Camera className="h-3.5 w-3.5" /> Fotomuligheter</p>
-            <h2 className="mt-2 font-display text-2xl uppercase">Bilder fra denne ruta</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Senere kobles bildene dine automatisk hit basert på tid og posisjon.</p>
+            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Camera className="h-3.5 w-3.5" /> {rb.photoEyebrow}</p>
+            <h2 className="mt-2 font-display text-2xl uppercase">{rb.photoTitle}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{rb.photoNote}</p>
             <div className="mt-4 grid grid-cols-3 gap-2">
               {memories.map((m) => (
                 <div key={m.id} className="aspect-square rounded-xl border border-border bg-gradient-to-br from-surface to-surface-2 grid place-items-center relative overflow-hidden">
@@ -276,14 +276,14 @@ function Roadbook() {
 
         {/* Partner tips */}
         <section className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Langs ruta</p>
-          <h2 className="mt-2 font-display text-2xl uppercase">Lokale tips</h2>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{rb.alongRoute}</p>
+          <h2 className="mt-2 font-display text-2xl uppercase">{rb.localTips}</h2>
           <div className="mt-4 space-y-3">
             {partnerTips.map((tip) => {
               const badgeMap = {
-                partner:  { label: "Partner",   cls: "border-primary/40 text-primary",                 Icon: Tag },
-                promoted: { label: "Promotert", cls: "border-primary/40 text-primary bg-primary/10",   Icon: Star },
-                local:    { label: "Lokalt tips", cls: "border-border text-muted-foreground",          Icon: MapPin },
+                partner:  { label: rb.badgePartner,   cls: "border-primary/40 text-primary",                 Icon: Tag },
+                promoted: { label: rb.badgePromoted, cls: "border-primary/40 text-primary bg-primary/10",   Icon: Star },
+                local:    { label: rb.badgeLocal, cls: "border-border text-muted-foreground",          Icon: MapPin },
               } as const;
               const b = badgeMap[tip.badge]; const Bi = b.Icon;
               return (
@@ -307,19 +307,18 @@ function Roadbook() {
 
         {/* Personalized driving style */}
         <section className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
+          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">{rb.drivingStyle}</p>
           <p className="mt-1.5 text-sm text-foreground/90">
-            Dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
-            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
+            {rb.dailyDriving(prefs.maxDrivingHours, formatPauseLabel(prefs.pauseEveryMin))}
           </p>
           {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
             <p className="mt-1.5 text-sm text-foreground/90">
-              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+              {rb.avoidLine([prefs.drivingFlags["no-highway"] && rb.highway, prefs.drivingFlags["no-ferry"] && rb.ferry].filter(Boolean).join(` ${rb.and} `))}
             </p>
           )}
           {prefs.stopInterests.length > 0 && (
             <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Interesser fra profilen: {prefs.stopInterests.map((t) => stopMeta(t).label).join(" · ")}
+              {rb.interestsFromProfile}: {prefs.stopInterests.map((tt) => stopMeta(tt).label).join(" · ")}
             </p>
           )}
         </section>
@@ -327,24 +326,19 @@ function Roadbook() {
         {/* Completion summary */}
         {tracking.status === "completed" && (
           <section className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-5">
-            <p className="text-[11px] uppercase tracking-wider text-emerald-500 font-bold">Tur fullført</p>
+            <p className="text-[11px] uppercase tracking-wider text-emerald-500 font-bold">{rb.tripCompleted}</p>
             <p className="mt-2 text-sm text-foreground/90">
               {typeof trip.actualDistanceKm === "number" && trip.actualDistanceKm > 0 ? (
                 <>
-                  Du kjørte <span className="font-semibold">{Math.round(trip.actualDistanceKm)} km</span> mot planlagt{" "}
-                  <span className="font-semibold">{trip.distanceKm} km</span>
+                  {rb.droveLine(Math.round(trip.actualDistanceKm), trip.distanceKm)}
                   {(() => {
                     const diff = Math.round(trip.actualDistanceKm! - trip.distanceKm);
-                    if (diff === 0) return " — akkurat som planlagt.";
-                    return diff > 0
-                      ? ` — ${diff} km lengre enn planlagt.`
-                      : ` — ${Math.abs(diff)} km kortere enn planlagt.`;
+                    if (diff === 0) return rb.asPlanned;
+                    return diff > 0 ? rb.longerThanPlanned(diff) : rb.shorterThanPlanned(Math.abs(diff));
                   })()}
                 </>
               ) : (
-                <>
-                  Planlagt distanse: <span className="font-semibold">{trip.distanceKm} km</span>. Slå på live-deling neste gang for å logge faktisk kjørt distanse.
-                </>
+                <>{rb.noActualDistance(trip.distanceKm)}</>
               )}
             </p>
           </section>
@@ -352,20 +346,21 @@ function Roadbook() {
 
         {/* Practical info */}
         <section className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-          <p className="font-display uppercase text-foreground text-base">Praktisk info</p>
+          <p className="font-display uppercase text-foreground text-base">{rb.practicalInfo}</p>
           <ul className="mt-3 space-y-1.5">
-            <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
-            <li>· Beregnet kjøretid: {trip.drivingTime} <span className="text-[11px] text-muted-foreground/80">(rutemotor — kan avvike fra Google Maps, trafikk, ferge og lokale forhold)</span></li>
-            <li>· Kjøretøy: {vehicleDisplay} ({v.label}{em ? ` · ${em.label}` : ""}) · stil: {s.label}</li>
-            {trip.energy === "electric" && <li>· Ladestrategi: hurtigladere prioriteres — bensinstasjoner filtreres bort.</li>}
-            {trip.energy === "hybrid" && <li>· Hybrid: både lading og bensinstopp foreslås der det passer.</li>}
-            {trip.vehicle === "rv" && <li>· Camper/bobil: stopp med plass, høyde, camping og overnatting prioriteres.</li>}
-            {trip.vehicle === "motorcycle" && <li>· MC: korte, trygge pauser og svingete strekk foretrekkes.</li>}
-            {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</li>}
-            <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
-            <li>· Veiglede er gratis for deg som planlegger turen.</li>
+            <li>· {rb.totalDistance(trip.distanceKm, tripDays.length, tripDays.length === 1 ? rb.daySingular : rb.dayPlural)}</li>
+            <li>· {rb.drivingTime(trip.drivingTime)} <span className="text-[11px] text-muted-foreground/80">{rb.drivingTimeNote}</span></li>
+            <li>· {rb.vehicleLine(vehicleDisplay, v.label, em ? em.label : "", s.label)}</li>
+            {trip.energy === "electric" && <li>· {rb.electricNote}</li>}
+            {trip.energy === "hybrid" && <li>· {rb.hybridNote}</li>}
+            {trip.vehicle === "rv" && <li>· {rb.rvNote}</li>}
+            {trip.vehicle === "motorcycle" && <li>· {rb.mcNote}</li>}
+            {trip.startDate && <li>· {rb.departure(new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))}</li>}
+            <li>· {rb.remember}</li>
+            <li>· {rb.freeNote}</li>
           </ul>
         </section>
+
 
 
       </div>
