@@ -19,6 +19,7 @@ import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 import { dayDate, dayCoords } from "@/lib/weather";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed, FileDown } from "lucide-react";
 import { downloadGpx } from "@/lib/gpx-export";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
   head: () => ({ meta: [{ title: "Roadbook — Veiglede" }] }),
@@ -26,14 +27,16 @@ export const Route = createFileRoute("/_app/trips/$tripId/roadbook")({
 });
 
 function Roadbook() {
+  const t = useT();
+  const rb = t.app.roadbook;
   const { tripId } = Route.useParams();
   const { trips, days, stops } = useTripsStore();
   const prefs = useDriverPrefs();
   const tracking = useTripTracking(tripId);
   const trackMeta = statusMeta(tracking.status);
   const [shareOpen, setShareOpen] = useState(false);
-  const trip = trips.find((t) => t.id === tripId);
-  if (!trip) return <div className="py-10">Tur ikke funnet.</div>;
+  const trip = trips.find((tr) => tr.id === tripId);
+  if (!trip) return <div className="py-10">{rb.notFound}</div>;
 
   const tripDays = days.filter((d) => d.tripId === tripId).sort((a, b) => a.dayNumber - b.dayNumber);
   const tripStops = stops.filter((s) => tripDays.some((d) => d.id === s.dayId));
@@ -54,15 +57,15 @@ function Roadbook() {
     <div className="py-4 print-roadbook">
       {/* Print-only header */}
       <div className="print-only mb-4" style={{ borderBottom: "1px solid #000", paddingBottom: "8px" }}>
-        <p style={{ fontSize: "10pt", letterSpacing: "0.2em", textTransform: "uppercase" }}>Veiglede · Roadbook</p>
+        <p style={{ fontSize: "10pt", letterSpacing: "0.2em", textTransform: "uppercase" }}>{rb.printRoadbook}</p>
         <h1 style={{ fontSize: "22pt", margin: "4px 0 2px", fontWeight: 700 }}>{trip.title}</h1>
         {trip.subtitle && <p style={{ fontSize: "10pt", fontStyle: "italic" }}>{trip.subtitle}</p>}
         <p style={{ fontSize: "10pt", marginTop: "4px" }}>
           {trip.origin} → {trip.destination}{trip.region ? ` · ${trip.region}` : ""}
         </p>
         <p style={{ fontSize: "9pt", marginTop: "6px" }}>
-          {trip.distanceKm} km · {trip.drivingTime} · {tripStops.length} stopp · {vehicleDisplay} · {s.label}
-          {trip.startDate ? ` · Avreise ${new Date(trip.startDate).toLocaleDateString("nb-NO")}` : ""}
+          {trip.distanceKm} km · {trip.drivingTime} · {tripStops.length} · {vehicleDisplay} · {s.label}
+          {trip.startDate ? ` · ${rb.departure(new Date(trip.startDate).toLocaleDateString("nb-NO"))}` : ""}
         </p>
       </div>
       <DemoDebugPanel
@@ -77,12 +80,12 @@ function Roadbook() {
 
       <div className="flex items-center justify-between print:hidden">
         <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Planlegger
+          <ArrowLeft className="h-4 w-4" /> {rb.planner}
         </Link>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> Del</button>
-          <button onClick={handleExportPdf} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Download className="h-3.5 w-3.5" /> Eksporter PDF</button>
-          <button onClick={() => downloadGpx(trip, tripStops)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><FileDown className="h-3.5 w-3.5" /> Last ned GPX</button>
+          <button onClick={() => setShareOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Share2 className="h-3.5 w-3.5" /> {rb.share}</button>
+          <button onClick={handleExportPdf} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><Download className="h-3.5 w-3.5" /> {rb.exportPdf}</button>
+          <button onClick={() => downloadGpx(trip, tripStops)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"><FileDown className="h-3.5 w-3.5" /> {rb.downloadGpx}</button>
         </div>
       </div>
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpen} />
@@ -93,7 +96,7 @@ function Roadbook() {
 
       <header className="mt-6 text-center max-w-2xl mx-auto">
         <div className="flex justify-center mb-3"><VeigledeLogo size="sm" /></div>
-        <p className="text-[11px] uppercase tracking-[0.3em] text-primary">Roadbook</p>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-primary">{rb.eyebrow}</p>
         <h1 className="mt-3 font-display text-5xl md:text-6xl uppercase leading-[0.95]">{trip.title}</h1>
         <p className="mt-3 text-muted-foreground">{trip.origin} → {trip.destination}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -106,16 +109,16 @@ function Roadbook() {
         <div className="mt-5 flex justify-center gap-2 flex-wrap print:hidden">
           {tracking.status === "idle" && (
             <button onClick={() => trackingApi.start(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-              <Play className="h-4 w-4" /> Start tur
+              <Play className="h-4 w-4" /> {rb.startTrip}
             </button>
           )}
           {tracking.status === "active" && (
             <button onClick={() => trackingApi.complete(tripId)} className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
-              <Flag className="h-4 w-4" /> Fullfør tur
+              <Flag className="h-4 w-4" /> {rb.completeTrip}
             </button>
           )}
           <Link to="/trips/$tripId" params={{ tripId }} className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-5 py-2.5 text-xs uppercase tracking-wider hover:border-primary">
-            Tilbake til planlegger
+            {rb.backToPlanner}
           </Link>
         </div>
       </header>
@@ -134,10 +137,10 @@ function Roadbook() {
         <section className="mt-8 mx-auto max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 p-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-              <Sparkles className="h-4 w-4" /> Hvorfor denne ruta
+              <Sparkles className="h-4 w-4" /> {rb.whyThisRoute}
             </p>
             <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-primary">
-              Tilpasset profilen din · {prefs.stopInterests.length} interesser
+              {rb.tailoredInterests(prefs.stopInterests.length)}
             </span>
           </div>
           <p className="mt-2 text-sm leading-relaxed">{trip.aiSummary}</p>
@@ -145,13 +148,13 @@ function Roadbook() {
       )}
 
       <div className="mt-10 space-y-10 max-w-2xl mx-auto">
-        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title={rb.timeBudget} />
         {tripDays.map((day) => {
           const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
           return (
             <section key={day.id} className="print-day rounded-2xl border border-border bg-surface p-5 md:p-6">
               <div className="flex items-baseline gap-3">
-                <span className="font-display text-3xl uppercase text-primary">Dag {day.dayNumber}</span>
+                <span className="font-display text-3xl uppercase text-primary">{rb.dayLabel} {day.dayNumber}</span>
                 {day.date && <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{day.date}</span>}
               </div>
               <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">{day.title}</h2>
@@ -197,7 +200,7 @@ function Roadbook() {
                     </li>
                   );
                 })}
-                {dayStops.length === 0 && <li className="pl-6 text-sm text-muted-foreground italic">En åpen dag.</li>}
+                {dayStops.length === 0 && <li className="pl-6 text-sm text-muted-foreground italic">{rb.emptyDay}</li>}
               </ol>
             </section>
           );
@@ -214,8 +217,8 @@ function Roadbook() {
           }, 0);
           return (
             <section className="rounded-2xl border border-border bg-surface p-5">
-              <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Bed className="h-3.5 w-3.5" /> Overnatting</p>
-              <h2 className="mt-2 font-display text-2xl uppercase">Hvor du sover</h2>
+              <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Bed className="h-3.5 w-3.5" /> {rb.lodgingEyebrow}</p>
+              <h2 className="mt-2 font-display text-2xl uppercase">{rb.lodgingTitle}</h2>
               <ul className="mt-4 space-y-3">
                 {lodgingStops.map((s) => {
                   const b = s.booking;
@@ -229,9 +232,9 @@ function Roadbook() {
                           <BookingBadge status={b?.status} />
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {nights} {nights === 1 ? "natt" : "netter"}
-                          {b?.checkinDate ? ` · innsjekk ${b.checkinDate}` : ""}
-                          {b?.guests ? ` · ${b.guests} gjester` : ""}
+                          {nights} {nights === 1 ? rb.nightSingular : rb.nightPlural}
+                          {b?.checkinDate ? ` · ${rb.checkinPrefix} ${b.checkinDate}` : ""}
+                          {b?.guests ? ` · ${b.guests} ${rb.guestsSuffix}` : ""}
                         </p>
                       </div>
                       {lineTotal != null && (
@@ -242,7 +245,7 @@ function Roadbook() {
                 })}
                 {total > 0 && (
                   <li className="flex items-center justify-between pt-2 border-t border-border text-sm font-semibold">
-                    <span>Total overnatting</span>
+                    <span>{rb.totalLodging}</span>
                     <span className="font-mono tabular-nums text-primary">{total.toFixed(0)} kr</span>
                   </li>
                 )}
@@ -255,9 +258,9 @@ function Roadbook() {
         {/* Photo opportunities */}
         {memories.length > 0 && (
           <section className="rounded-2xl border border-border bg-surface p-5">
-            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Camera className="h-3.5 w-3.5" /> Fotomuligheter</p>
-            <h2 className="mt-2 font-display text-2xl uppercase">Bilder fra denne ruta</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Senere kobles bildene dine automatisk hit basert på tid og posisjon.</p>
+            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-primary"><Camera className="h-3.5 w-3.5" /> {rb.photoEyebrow}</p>
+            <h2 className="mt-2 font-display text-2xl uppercase">{rb.photoTitle}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{rb.photoNote}</p>
             <div className="mt-4 grid grid-cols-3 gap-2">
               {memories.map((m) => (
                 <div key={m.id} className="aspect-square rounded-xl border border-border bg-gradient-to-br from-surface to-surface-2 grid place-items-center relative overflow-hidden">
@@ -273,14 +276,14 @@ function Roadbook() {
 
         {/* Partner tips */}
         <section className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Langs ruta</p>
-          <h2 className="mt-2 font-display text-2xl uppercase">Lokale tips</h2>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{rb.alongRoute}</p>
+          <h2 className="mt-2 font-display text-2xl uppercase">{rb.localTips}</h2>
           <div className="mt-4 space-y-3">
             {partnerTips.map((tip) => {
               const badgeMap = {
-                partner:  { label: "Partner",   cls: "border-primary/40 text-primary",                 Icon: Tag },
-                promoted: { label: "Promotert", cls: "border-primary/40 text-primary bg-primary/10",   Icon: Star },
-                local:    { label: "Lokalt tips", cls: "border-border text-muted-foreground",          Icon: MapPin },
+                partner:  { label: rb.badgePartner,   cls: "border-primary/40 text-primary",                 Icon: Tag },
+                promoted: { label: rb.badgePromoted, cls: "border-primary/40 text-primary bg-primary/10",   Icon: Star },
+                local:    { label: rb.badgeLocal, cls: "border-border text-muted-foreground",          Icon: MapPin },
               } as const;
               const b = badgeMap[tip.badge]; const Bi = b.Icon;
               return (
@@ -304,19 +307,18 @@ function Roadbook() {
 
         {/* Personalized driving style */}
         <section className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">Din kjørestil</p>
+          <p className="text-[11px] uppercase tracking-wider text-primary font-bold">{rb.drivingStyle}</p>
           <p className="mt-1.5 text-sm text-foreground/90">
-            Dagsetapper holdes innenfor <span className="font-semibold">{prefs.maxDrivingHours} timer</span> kjøring,
-            med pause omtrent <span className="font-semibold">{formatPauseLabel(prefs.pauseEveryMin)}</span>.
+            {rb.dailyDriving(prefs.maxDrivingHours, formatPauseLabel(prefs.pauseEveryMin))}
           </p>
           {(prefs.drivingFlags["no-highway"] || prefs.drivingFlags["no-ferry"]) && (
             <p className="mt-1.5 text-sm text-foreground/90">
-              Vi prøver å unngå {[prefs.drivingFlags["no-highway"] && "motorvei", prefs.drivingFlags["no-ferry"] && "ferger"].filter(Boolean).join(" og ")} der ruta tillater det.
+              {rb.avoidLine([prefs.drivingFlags["no-highway"] && rb.highway, prefs.drivingFlags["no-ferry"] && rb.ferry].filter(Boolean).join(` ${rb.and} `))}
             </p>
           )}
           {prefs.stopInterests.length > 0 && (
             <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Interesser fra profilen: {prefs.stopInterests.map((t) => stopMeta(t).label).join(" · ")}
+              {rb.interestsFromProfile}: {prefs.stopInterests.map((tt) => stopMeta(tt).label).join(" · ")}
             </p>
           )}
         </section>
@@ -324,24 +326,19 @@ function Roadbook() {
         {/* Completion summary */}
         {tracking.status === "completed" && (
           <section className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-5">
-            <p className="text-[11px] uppercase tracking-wider text-emerald-500 font-bold">Tur fullført</p>
+            <p className="text-[11px] uppercase tracking-wider text-emerald-500 font-bold">{rb.tripCompleted}</p>
             <p className="mt-2 text-sm text-foreground/90">
               {typeof trip.actualDistanceKm === "number" && trip.actualDistanceKm > 0 ? (
                 <>
-                  Du kjørte <span className="font-semibold">{Math.round(trip.actualDistanceKm)} km</span> mot planlagt{" "}
-                  <span className="font-semibold">{trip.distanceKm} km</span>
+                  {rb.droveLine(Math.round(trip.actualDistanceKm), trip.distanceKm)}
                   {(() => {
                     const diff = Math.round(trip.actualDistanceKm! - trip.distanceKm);
-                    if (diff === 0) return " — akkurat som planlagt.";
-                    return diff > 0
-                      ? ` — ${diff} km lengre enn planlagt.`
-                      : ` — ${Math.abs(diff)} km kortere enn planlagt.`;
+                    if (diff === 0) return rb.asPlanned;
+                    return diff > 0 ? rb.longerThanPlanned(diff) : rb.shorterThanPlanned(Math.abs(diff));
                   })()}
                 </>
               ) : (
-                <>
-                  Planlagt distanse: <span className="font-semibold">{trip.distanceKm} km</span>. Slå på live-deling neste gang for å logge faktisk kjørt distanse.
-                </>
+                <>{rb.noActualDistance(trip.distanceKm)}</>
               )}
             </p>
           </section>
@@ -349,30 +346,31 @@ function Roadbook() {
 
         {/* Practical info */}
         <section className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-          <p className="font-display uppercase text-foreground text-base">Praktisk info</p>
+          <p className="font-display uppercase text-foreground text-base">{rb.practicalInfo}</p>
           <ul className="mt-3 space-y-1.5">
-            <li>· Total distanse: {trip.distanceKm} km over {tripDays.length} {tripDays.length === 1 ? "dag" : "dager"}</li>
-            <li>· Beregnet kjøretid: {trip.drivingTime} <span className="text-[11px] text-muted-foreground/80">(rutemotor — kan avvike fra Google Maps, trafikk, ferge og lokale forhold)</span></li>
-            <li>· Kjøretøy: {vehicleDisplay} ({v.label}{em ? ` · ${em.label}` : ""}) · stil: {s.label}</li>
-            {trip.energy === "electric" && <li>· Ladestrategi: hurtigladere prioriteres — bensinstasjoner filtreres bort.</li>}
-            {trip.energy === "hybrid" && <li>· Hybrid: både lading og bensinstopp foreslås der det passer.</li>}
-            {trip.vehicle === "rv" && <li>· Camper/bobil: stopp med plass, høyde, camping og overnatting prioriteres.</li>}
-            {trip.vehicle === "motorcycle" && <li>· MC: korte, trygge pauser og svingete strekk foretrekkes.</li>}
-            {trip.startDate && <li>· Avreise: {new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</li>}
-            <li>· Husk: offline kart, kontanter til bom, lader/strøm</li>
-            <li>· Veiglede er gratis for deg som planlegger turen.</li>
+            <li>· {rb.totalDistance(trip.distanceKm, tripDays.length, tripDays.length === 1 ? rb.daySingular : rb.dayPlural)}</li>
+            <li>· {rb.drivingTime(trip.drivingTime)} <span className="text-[11px] text-muted-foreground/80">{rb.drivingTimeNote}</span></li>
+            <li>· {rb.vehicleLine(vehicleDisplay, v.label, em ? em.label : "", s.label)}</li>
+            {trip.energy === "electric" && <li>· {rb.electricNote}</li>}
+            {trip.energy === "hybrid" && <li>· {rb.hybridNote}</li>}
+            {trip.vehicle === "rv" && <li>· {rb.rvNote}</li>}
+            {trip.vehicle === "motorcycle" && <li>· {rb.mcNote}</li>}
+            {trip.startDate && <li>· {rb.departure(new Date(trip.startDate).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))}</li>}
+            <li>· {rb.remember}</li>
+            <li>· {rb.freeNote}</li>
           </ul>
         </section>
 
 
+
       </div>
 
-      <div className="mt-12 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">— slutt på roadbook —</div>
+      <div className="mt-12 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{rb.endOfRoadbook}</div>
 
       {/* Print-only footer block (per-page footer comes from @page) */}
       <div className="print-only" style={{ marginTop: "16px", paddingTop: "8px", borderTop: "1px solid #000", textAlign: "center", fontSize: "9pt" }}>
         <p style={{ fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" }}>Veiglede</p>
-        <p style={{ fontStyle: "italic", marginTop: "2px" }}>Veiviseren for den fineste veien · veiglede.no</p>
+        <p style={{ fontStyle: "italic", marginTop: "2px" }}>{rb.veigledeTagline}</p>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { SaveTripButton } from "@/components/SaveTripButton";
+import { useT } from "@/i18n/provider";
 
 const ExploreSearch = z.object({
   tab: z.enum(["turer", "brukere"]).optional(),
@@ -39,6 +40,8 @@ export const Route = createFileRoute("/_app/explore")({
 });
 
 function ExplorePage() {
+  const t = useT();
+  const ex = t.app.explore;
   const { tab = "turer", vehicle: vehicleFromUrl } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -50,16 +53,16 @@ function ExplorePage() {
     <div className="py-5 md:py-8">
       <header className="text-center md:text-left">
         <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
-          <Compass className="h-3 w-3" /> Fellesskap
+          <Compass className="h-3 w-3" /> {ex.eyebrow}
         </p>
-        <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase leading-[0.95]">Utforsk</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Ruter og reisende på Veiglede</p>
+        <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{ex.title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{ex.subtitle}</p>
       </header>
 
       {/* Tabs */}
       <div className="mt-6 inline-flex rounded-2xl border border-border bg-surface p-1">
-        <TabButton active={tab === "turer"} onClick={() => setTab("turer")} icon={<RouteIcon className="h-3.5 w-3.5" />}>Turer</TabButton>
-        <TabButton active={tab === "brukere"} onClick={() => setTab("brukere")} icon={<Users className="h-3.5 w-3.5" />}>Brukere</TabButton>
+        <TabButton active={tab === "turer"} onClick={() => setTab("turer")} icon={<RouteIcon className="h-3.5 w-3.5" />}>{ex.tabTrips}</TabButton>
+        <TabButton active={tab === "brukere"} onClick={() => setTab("brukere")} icon={<Users className="h-3.5 w-3.5" />}>{ex.tabUsers}</TabButton>
       </div>
 
       {tab === "brukere"
@@ -83,6 +86,8 @@ function TabButton({ active, onClick, icon, children }: { active: boolean; onCli
 /* ============ TRIPS TAB ============ */
 
 function TripsTab() {
+  const t = useT();
+  const ex = t.app.explore;
   const fetcher = useServerFn(fetchPublicTrips);
   const { data, isLoading } = useQuery({
     queryKey: ["public-trips"],
@@ -97,14 +102,14 @@ function TripsTab() {
 
   const regions = useMemo(() => {
     const set = new Set<string>();
-    trips.forEach((t) => { if (t.region) set.add(t.region); });
+    trips.forEach((tr) => { if (tr.region) set.add(tr.region); });
     return Array.from(set).sort();
   }, [trips]);
 
-  const filtered = useMemo(() => trips.filter((t) => {
-    if (region !== "all" && t.region !== region) return false;
-    if (vehicle !== "all" && t.vehicle !== vehicle) return false;
-    if (style !== "all" && t.style !== style) return false;
+  const filtered = useMemo(() => trips.filter((tr) => {
+    if (region !== "all" && tr.region !== region) return false;
+    if (vehicle !== "all" && tr.vehicle !== vehicle) return false;
+    if (style !== "all" && tr.style !== style) return false;
     return true;
   }), [trips, region, vehicle, style]);
 
@@ -113,23 +118,23 @@ function TripsTab() {
       {/* Filters */}
       <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Select value={region} onValueChange={setRegion}>
-          <SelectTrigger><SelectValue placeholder="Region" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={ex.region} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle regioner</SelectItem>
+            <SelectItem value="all">{ex.allRegions}</SelectItem>
             {regions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={vehicle} onValueChange={(v) => setVehicle(v as "all" | VehicleType)}>
-          <SelectTrigger><SelectValue placeholder="Kjøretøy" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={ex.vehicle} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle kjøretøy</SelectItem>
+            <SelectItem value="all">{ex.allVehicles}</SelectItem>
             {VEHICLES.map((v) => <SelectItem key={v.value} value={v.value}>{v.emoji} {v.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={style} onValueChange={(v) => setStyle(v as "all" | RouteStyle)}>
-          <SelectTrigger><SelectValue placeholder="Rutestil" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={ex.routeStyle} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle stiler</SelectItem>
+            <SelectItem value="all">{ex.allStyles}</SelectItem>
             {ROUTE_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.emoji} {s.label}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -144,16 +149,13 @@ function TripsTab() {
           </div>
         ) : filtered.length === 0 ? (
           trips.length === 0 ? (
-            <EmptyState
-              title="Ingen offentlige turer enda — del din første!"
-              body="Slå på «Offentlig deling» på en av dine turer for å vise den her."
-            />
+            <EmptyState title={ex.emptyTripsTitle} body={ex.emptyTripsBody} />
           ) : (
-            <EmptyState title="Ingen turer matcher filtrene" body="Prøv å nullstille filtrene." />
+            <EmptyState title={ex.noMatchTitle} body={ex.noMatchBody} />
           )
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((t) => <PublicTripCard key={t.shareToken} t={t} />)}
+            {filtered.map((tr) => <PublicTripCard key={tr.shareToken} t={tr} />)}
           </ul>
         )}
       </section>
@@ -164,6 +166,8 @@ function TripsTab() {
 /* ============ USERS TAB ============ */
 
 function UsersTab({ vehicleFromUrl }: { vehicleFromUrl?: VehicleType }) {
+  const tt = useT();
+  const ex = tt.app.explore;
   const fetcher = useServerFn(fetchPublicProfilesFn);
   const { data, isLoading } = useQuery({
     queryKey: ["public-profiles"],
@@ -186,7 +190,7 @@ function UsersTab({ vehicleFromUrl }: { vehicleFromUrl?: VehicleType }) {
     <>
       <section className="mt-6 flex flex-wrap gap-2">
         <FilterPill active={vehicleFilter === "all"} onClick={() => { setVehicleFilter("all"); setVisible(PAGE_SIZE); }}>
-          Alle
+          {ex.filterAll}
         </FilterPill>
         {VEHICLES.map((v) => (
           <FilterPill
@@ -208,12 +212,9 @@ function UsersTab({ vehicleFromUrl }: { vehicleFromUrl?: VehicleType }) {
           </div>
         ) : filtered.length === 0 ? (
           users.length === 0 ? (
-            <EmptyState
-              title="Ingen offentlige profiler enda"
-              body="Sett brukernavn i Profil og slå på offentlig profil for å vises her."
-            />
+            <EmptyState title={ex.emptyUsersTitle} body={ex.emptyUsersBody} />
           ) : (
-            <EmptyState title="Ingen brukere matcher filteret" body="Prøv «Alle» eller bytt kjøretøytype." />
+            <EmptyState title={ex.noUsersMatchTitle} body={ex.noUsersMatchBody} />
           )
         ) : (
           <>
@@ -226,7 +227,7 @@ function UsersTab({ vehicleFromUrl }: { vehicleFromUrl?: VehicleType }) {
                   onClick={() => setVisible((v) => v + PAGE_SIZE)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-5 py-2 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
                 >
-                  Last inn flere <ArrowRight className="h-3 w-3" />
+                  {ex.loadMore} <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
             )}
@@ -251,6 +252,8 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
 /* ============ TRIP CARD ============ */
 
 function PublicTripCard({ t }: { t: PublicTripSummary }) {
+  const tt = useT();
+  const ex = tt.app.explore;
   const v = vehicleMeta(t.vehicle as VehicleType);
   const s = styleMeta(t.style as RouteStyle);
   const cover = (t.cover as CoverKey) ?? "fjord";
@@ -264,8 +267,8 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try { await navigator.share(data); return; } catch { /* cancelled */ }
     }
-    try { await navigator.clipboard.writeText(shareUrl); toast.success("Lenke kopiert! 🔗"); }
-    catch { toast.error("Kunne ikke dele"); }
+    try { await navigator.clipboard.writeText(shareUrl); toast.success(ex.linkCopied); }
+    catch { toast.error(ex.shareFailed); }
   };
   return (
     <li>
@@ -277,14 +280,14 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
         <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
           <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
           <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">
-            <Sparkles className="h-3 w-3 text-primary" /> Offentlig
+            <Sparkles className="h-3 w-3 text-primary" /> {ex.publicBadge}
           </span>
           <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider border border-border">
             {v.emoji} {s.emoji}
           </span>
           <button
             onClick={onShare}
-            aria-label="Del tur"
+            aria-label={ex.shareTrip}
             className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur border border-border text-foreground hover:bg-primary hover:text-primary-foreground"
           >
             <Share2 className="h-3.5 w-3.5" />
@@ -297,7 +300,7 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
           <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
             <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
             <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
-            <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} stopp`} />
+            <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} ${ex.stops}`} />
           </div>
           <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground border-t border-border/60 pt-3">
             <span className="inline-flex items-center gap-1 truncate min-w-0"><MapPin className="h-3 w-3 shrink-0" /> {t.origin} → {t.destination}</span>
@@ -311,8 +314,8 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
               origin: t.origin, destination: t.destination, distanceKm: t.distanceKm,
               drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
             }} />
-            <span className="text-muted-foreground truncate">{t.ownerName ? `av ${t.ownerName}` : "av en reisende"}</span>
-            <span className="inline-flex items-center gap-1 text-primary group-hover:translate-x-0.5 transition-transform">Se tur <ArrowRight className="h-3 w-3" /></span>
+            <span className="text-muted-foreground truncate">{t.ownerName ? `${ex.by} ${t.ownerName}` : ex.byTraveler}</span>
+            <span className="inline-flex items-center gap-1 text-primary group-hover:translate-x-0.5 transition-transform">{ex.seeTrip} <ArrowRight className="h-3 w-3" /></span>
           </div>
         </div>
       </Link>

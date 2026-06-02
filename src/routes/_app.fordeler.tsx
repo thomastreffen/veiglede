@@ -12,6 +12,7 @@ import {
   trackBenefitCodeCopyFn,
 } from "@/lib/benefits.functions";
 import { useVehicles } from "@/lib/vehicles-store";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/fordeler")({
   head: () => ({ meta: [
@@ -21,28 +22,17 @@ export const Route = createFileRoute("/_app/fordeler")({
   component: FordelerPage,
 });
 
-const CATEGORIES = [
-  { value: "all", label: "Alle" },
-  { value: "utstyr", label: "MC-utstyr" },
-  { value: "verksted", label: "Verksted" },
-  { value: "forsikring", label: "Forsikring" },
-  { value: "lading", label: "Lading" },
-  { value: "camping", label: "Camping" },
-] as const;
-
-const VEHICLE_BADGES: Record<string, { emoji: string; label: string }> = {
-  motorcycle: { emoji: "🏍️", label: "MC" },
-  car: { emoji: "🚗", label: "Bil" },
-  rv: { emoji: "🚐", label: "Bobil" },
-};
-const ENERGY_BADGES: Record<string, { emoji: string; label: string }> = {
-  electric: { emoji: "⚡", label: "Elbil" },
-  petrol: { emoji: "⛽", label: "Bensin" },
-  diesel: { emoji: "🛢️", label: "Diesel" },
-  hybrid: { emoji: "🔋", label: "Hybrid" },
-};
-
 function FordelerPage() {
+  const t = useT();
+  const fd = t.fordeler;
+  const CATEGORIES = [
+    { value: "all", label: fd.catAll },
+    { value: "utstyr", label: fd.catUtstyr },
+    { value: "verksted", label: fd.catVerksted },
+    { value: "forsikring", label: fd.catForsikring },
+    { value: "lading", label: fd.catLading },
+    { value: "camping", label: fd.catCamping },
+  ] as const;
   const listFn = useServerFn(listBenefitsFn);
   const consentFn = useServerFn(getMyConsentFn);
   const { data, isLoading } = useQuery({ queryKey: ["benefits-list"], queryFn: () => listFn() });
@@ -83,9 +73,9 @@ function FordelerPage() {
     <div className="space-y-8 py-6 md:py-10">
       <header className="flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Veiglede Fordeler</p>
-          <h1 className="mt-1 font-display text-3xl md:text-4xl uppercase">Rabatter for deg på veien</h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-xl">Eksklusive rabatter for Veiglede-brukere — hos verksteder, utstyrsbutikker, ladeoperatører og mer.</p>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-primary">{fd.eyebrow}</p>
+          <h1 className="mt-1 font-display text-3xl md:text-4xl uppercase">{fd.title}</h1>
+          <p className="mt-2 text-sm text-muted-foreground max-w-xl">{fd.subtitle}</p>
         </div>
       </header>
 
@@ -93,7 +83,7 @@ function FordelerPage() {
         <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 flex items-start gap-3 text-sm">
           <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
           <div className="flex-1">
-            <p>Slå på fordeler i <Link to="/settings" className="underline font-medium">profilen din</Link> for å se tilbud tilpasset ditt kjøretøy.</p>
+            <p>{fd.enableHintPre}<Link to="/settings" className="underline font-medium">{fd.profileLink}</Link>{fd.enableHintPost}</p>
           </div>
         </div>
       )}
@@ -125,7 +115,7 @@ function FordelerPage() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <h2 className="font-display text-lg uppercase tracking-wide">Basert på din garasje 🏍️</h2>
+                <h2 className="font-display text-lg uppercase tracking-wide">{fd.basedOnGarage}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {personalized.map((b) => (
@@ -136,9 +126,9 @@ function FordelerPage() {
           )}
 
           <section>
-            <h2 className="font-display text-lg uppercase tracking-wide mb-3">Alle fordeler</h2>
+            <h2 className="font-display text-lg uppercase tracking-wide mb-3">{fd.allBenefits}</h2>
             {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ingen fordeler i denne kategorien enda.</p>
+              <p className="text-sm text-muted-foreground">{fd.noneInCategory}</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filtered.map((b) => (
@@ -152,6 +142,7 @@ function FordelerPage() {
     </div>
   );
 }
+
 
 type Provider = { id: string; name: string; logo_url: string | null; category: string };
 type Benefit = {
@@ -169,6 +160,19 @@ type Benefit = {
 };
 
 function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provider }) {
+  const t = useT();
+  const fd = t.fordeler;
+  const VEHICLE_BADGES: Record<string, { emoji: string; label: string }> = {
+    motorcycle: { emoji: "🏍️", label: fd.vbMC },
+    car: { emoji: "🚗", label: fd.vbCar },
+    rv: { emoji: "🚐", label: fd.vbRv },
+  };
+  const ENERGY_BADGES: Record<string, { emoji: string; label: string }> = {
+    electric: { emoji: "⚡", label: fd.ebElectric },
+    petrol: { emoji: "⛽", label: fd.ebPetrol },
+    diesel: { emoji: "🛢️", label: fd.ebDiesel },
+    hybrid: { emoji: "🔋", label: fd.ebHybrid },
+  };
   const impFn = useServerFn(trackBenefitImpressionFn);
   const clickFn = useServerFn(trackBenefitClickFn);
   const copyFn = useServerFn(trackBenefitCodeCopyFn);
@@ -191,10 +195,10 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
     if (!benefit.discount_code) return;
     try {
       await navigator.clipboard.writeText(benefit.discount_code);
-      toast.success(`Kode kopiert: ${benefit.discount_code} ✓`);
+      toast.success(fd.codeCopied(benefit.discount_code));
       trackCopy.mutate();
     } catch {
-      toast.error("Kunne ikke kopiere");
+      toast.error(fd.copyFailed);
     }
   };
 
@@ -215,7 +219,7 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{provider?.name ?? "Leverandør"}</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{provider?.name ?? fd.provider}</p>
           <h3 className="font-display text-base leading-tight">{benefit.title}</h3>
         </div>
       </header>
@@ -225,14 +229,14 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
       )}
 
       <div className="flex gap-1.5 flex-wrap text-[10px]">
-        {benefit.vehicle_types.map((t) => VEHICLE_BADGES[t] && (
-          <span key={t} className="rounded-full bg-background border border-border px-2 py-0.5">
-            {VEHICLE_BADGES[t].emoji} {VEHICLE_BADGES[t].label}
+        {benefit.vehicle_types.map((vt) => VEHICLE_BADGES[vt] && (
+          <span key={vt} className="rounded-full bg-background border border-border px-2 py-0.5">
+            {VEHICLE_BADGES[vt].emoji} {VEHICLE_BADGES[vt].label}
           </span>
         ))}
-        {benefit.energy_types.map((t) => ENERGY_BADGES[t] && (
-          <span key={t} className="rounded-full bg-background border border-border px-2 py-0.5">
-            {ENERGY_BADGES[t].emoji} {ENERGY_BADGES[t].label}
+        {benefit.energy_types.map((et) => ENERGY_BADGES[et] && (
+          <span key={et} className="rounded-full bg-background border border-border px-2 py-0.5">
+            {ENERGY_BADGES[et].emoji} {ENERGY_BADGES[et].label}
           </span>
         ))}
       </div>
@@ -258,11 +262,12 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
           onClick={onGoto}
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110"
         >
-          Gå til {provider?.name ?? "leverandør"} <ExternalLink className="h-3.5 w-3.5" />
+          {fd.goTo(provider?.name ?? fd.provider)} <ExternalLink className="h-3.5 w-3.5" />
         </button>
       </div>
     </article>
   );
 }
+
 
 export { Tag };
