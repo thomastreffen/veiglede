@@ -316,21 +316,48 @@ function SvgTripMap({
   const originPt = project(projected.origin);
   const destPt = project(projected.destination);
 
-  // If we have a real route geometry, draw it as the single primary route
-  // line and skip per-day schematic segments (they'd duplicate the path).
-  const geometryPath = geometry
-    ? geometry.map((p, i) => {
-        const pt = project(p);
-        return `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
-      }).join(" ")
-    : null;
-
-  // Build per-day polyline segments
   const sortedDays = [...days].sort((a, b) => a.dayNumber - b.dayNumber);
+
+  // Split the real geometry into per-day sub-paths so we can color each day
+  // with its own shade of orange/teal/etc. We pick the geometry index closest
+  // to each day's last stop and slice between them.
+  const geometrySegments: { color: string; d: string; dayId: string; isFerry?: boolean }[] = geometry
+    ? (() => {
+        const segs: { color: string; d: string; dayId: string }[] = [];
+        if (sortedDays.length === 0) {
+          const d = geometry
+            .map((p, i) => `${i === 0 ? "M" : "L"}${project(p).x.toFixed(1)},${project(p).y.toFixed(1)}`)
+            .join(" ");
+          return [{ color: DAY_COLORS[0], d, dayId: "" }];
+        }
+        // Compute split indices: end of each day = nearest geom idx to that
+        // day's last stop. Final day always ends at the last geometry point.
+        const breakpoints: number[] = [];
+        sortedDays.slice(0, -1).forEach((day) => {
+          const dayMapped = projected.mapped.filter((m) => m.day.id === day.id);
+          const last = dayMapped[dayMapped.length - 1]?.loc;
+          if (last) breakpoints.push(nearestGeomIdx(geometry, last));
+        });
+        // Build segments
+        let start = 0;
+        sortedDays.forEach((day, dayIdx) => {
+          const end = dayIdx < breakpoints.length ? breakpoints[dayIdx] : geometry.length - 1;
+          if (end <= start) return;
+          const slice = geometry.slice(start, end + 1);
+          const d = slice
+            .map((p, i) => `${i === 0 ? "M" : "L"}${project(p).x.toFixed(1)},${project(p).y.toFixed(1)}`)
+            .join(" ");
+          segs.push({ color: DAY_COLORS[dayIdx % DAY_COLORS.length], d, dayId: day.id });
+          start = end;
+        });
+        return segs;
+      })()
+    : [];
+
+  // Schematic per-day segments (used only when no real geometry exists).
   const segments = geometry ? [] : sortedDays.map((day, dayIdx) => {
     const dayMapped = projected.mapped.filter((m) => m.day.id === day.id);
     const dayPoints: LatLng[] = [];
-    // Connect previous day's last point (or origin) → this day's stops → next day's first (or destination handled at end)
     if (dayIdx === 0) dayPoints.push(projected.origin);
     else {
       const prevDay = projected.mapped.filter((m) => m.day.id === sortedDays[dayIdx - 1].id);
@@ -338,7 +365,6 @@ function SvgTripMap({
       else dayPoints.push(projected.origin);
     }
     dayMapped.forEach((m) => dayPoints.push(m.loc));
-    // For the final day, close with destination
     if (dayIdx === sortedDays.length - 1) dayPoints.push(projected.destination);
     return {
       day,
@@ -347,6 +373,7 @@ function SvgTripMap({
       color: DAY_COLORS[dayIdx % DAY_COLORS.length],
     };
   });
+
 
   // Empty-state fallback path: straight origin→destination
   const fallbackPath = !geometry && sortedDays.length === 0
