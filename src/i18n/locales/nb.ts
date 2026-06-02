@@ -819,14 +819,6 @@ export const nb = {
         roadbook: "Lager roadbook…",
         ready: "Din tur er klar!",
       },
-      poweredBy: "Powered by Veiglede AI 🧡",
-      steps: {
-        route: (from: string, to: string) => `Beregner rute mellom ${from} og ${to}…`,
-        stops: (style: string) => `Velger stopp basert på ${style.toLowerCase()}…`,
-        legs: (n: number) => `Planlegger ${n} ${n === 1 ? "etappe" : "etapper"}…`,
-        roadbook: "Lager roadbook…",
-        ready: "Din tur er klar!",
-      },
     },
   },
 };
