@@ -1183,21 +1183,21 @@ function PlannerActions({
   return (
     <section className="mt-4 space-y-3">
       {isLongLeg && (
-        <div className="relative z-20 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
-          <p className="text-sm font-semibold text-amber-200">Denne etappen er lang ({trip.drivingTime}).</p>
-          <p className="mt-1 text-xs text-amber-100/80">
+        <div className="relative z-20 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-lg">
+          <p className="text-sm font-semibold text-amber-900">Denne etappen er lang ({trip.drivingTime}).</p>
+          <p className="mt-1 text-xs text-amber-900/80">
             Lengre enn dine {maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() => { tripsApi.splitIntoDays(trip.id, 2); setLodgingOpen(true); }}
-              className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-950 hover:brightness-110"
+              className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:brightness-110"
             >
               Ja, foreslå overnatting
             </button>
             <button
               onClick={() => { /* keep as-is */ }}
-              className="rounded-full border border-amber-500/40 bg-background/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-100 hover:bg-amber-500/20"
+              className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-900 hover:bg-amber-100"
             >
               Nei, behold som én dag
             </button>
