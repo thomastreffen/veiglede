@@ -259,49 +259,72 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           <h1 className="mt-6 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{w.manual.title}</h1>
           <p className="mt-3 text-muted-foreground">{w.manual.subtitle}</p>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-2">
             {rows.map((r, idx) => {
               const tp = detectType(r.text, r.type);
               const icon = tp === "lodging" ? "🏨" : "🏙️";
+              const next = rows[idx + 1];
+              const nights = tp === "lodging" && r.date && next?.date
+                ? Math.max(1, Math.round((new Date(next.date).getTime() - new Date(r.date).getTime()) / 86400000))
+                : null;
+              const isLast = idx === rows.length - 1;
               return (
-                <div key={r.key} className="rounded-2xl border border-border bg-surface p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="uppercase tracking-wider font-bold text-primary">{w.manual.dayLabel(r.dayNumber)}</span>
-                    <input
-                      type="date"
-                      value={r.date}
-                      onChange={(e) => updateRow(r.key, { date: e.target.value })}
-                      className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-xs"
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      value={r.dayNumber}
-                      onChange={(e) => updateRow(r.key, { dayNumber: Math.max(1, parseInt(e.target.value || "1", 10)) })}
-                      className="w-14 bg-background border border-border rounded-md px-2 py-1 text-xs"
-                      aria-label="dayNumber"
-                    />
-                    <button
-                      onClick={() => removeRow(r.key)}
-                      className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-30"
-                      aria-label={w.manual.removeStop}
-                      disabled={rows.length <= 2}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl shrink-0">{idx === 0 ? "📍" : idx === rows.length - 1 ? "🏁" : icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <PlaceAutocomplete
-                        value={r.text}
-                        onTextChange={(v) => updateRow(r.key, { text: v })}
-                        selected={r.place}
-                        onSelect={(p) => updateRow(r.key, { place: p })}
-                        placeholder={w.manual.placeholder}
+                <div key={r.key}>
+                  <div className="rounded-2xl border border-border bg-surface p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs uppercase tracking-wider font-bold text-primary">{w.manual.dayLabel(r.dayNumber)}</span>
+                      <span className="text-sm font-semibold text-foreground">
+                        📅 {r.date ? formatDateLong(r.date) : <span className="text-muted-foreground italic">velg dato</span>}
+                      </span>
+                      <input
+                        type="date"
+                        value={r.date}
+                        onChange={(e) => updateRow(r.key, { date: e.target.value })}
+                        className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-xs"
+                        aria-label={w.manual.dateLabel}
                       />
+                      <button
+                        onClick={() => removeRow(r.key)}
+                        className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-30"
+                        aria-label={w.manual.removeStop}
+                        disabled={rows.length <= 2}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl shrink-0">{idx === 0 ? "📍" : idx === rows.length - 1 ? "🏁" : icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <PlaceAutocomplete
+                          value={r.text}
+                          onTextChange={(v) => updateRow(r.key, { text: v })}
+                          selected={r.place}
+                          onSelect={(p) => updateRow(r.key, { place: p })}
+                          placeholder={w.manual.placeholder}
+                        />
+                      </div>
+                    </div>
+                    {tp === "lodging" && (
+                      <p className="text-[11px] text-muted-foreground pl-7">
+                        🌙 {nights ? `${nights} ${nights === 1 ? "natt" : "netter"}` : "Legg til neste stopp for å beregne netter"}
+                      </p>
+                    )}
+                    {tp !== "lodging" && !r.date && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 pl-7">Dato anbefales</p>
+                    )}
                   </div>
+
+                  {!isLast && (
+                    <div className="flex justify-center -my-1 relative z-10">
+                      <button
+                        type="button"
+                        onClick={() => insertLodgingAfter(r.key)}
+                        className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-background px-3 py-1 text-[11px] text-muted-foreground hover:border-primary hover:text-primary"
+                      >
+                        <Plus className="h-3 w-3" /> Legg til overnatting mellom stopp
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
