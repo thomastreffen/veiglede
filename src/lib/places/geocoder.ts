@@ -129,6 +129,7 @@ export async function resolveGooglePlace(place: ResolvedPlace): Promise<Resolved
       secondary: p.address || place.secondary,
       label: p.address ? `${p.name || place.name}, ${p.address}` : (place.label || p.name || place.name),
       type: pickType(p.types ?? []),
+      placeTypes: p.types ?? place.placeTypes ?? [],
       needsDetails: false,
     };
   } catch {
