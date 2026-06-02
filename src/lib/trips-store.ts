@@ -984,7 +984,7 @@ interface SuggestedSeed {
 
 function suggestStops(trip: Trip): SuggestedSeed[] {
   const base: SuggestedSeed[] = [
-    { name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin, time: "08:30", description: "Sjekk dekktrykk, fyll tanken, klar for tur.", reason: "Felles start gjør resten av dagen lettere å planlegge.", durationMin: 15 },
+    { name: `Avgang ${displayPlaceLabel(trip.origin)}`, type: "rest", location: displayPlaceLabel(trip.origin), time: "08:30", description: "Sjekk dekktrykk, fyll tanken, klar for tur.", reason: "Felles start gjør resten av dagen lettere å planlegge.", durationMin: 15 },
   ];
   switch (trip.style) {
     case "scenic":
