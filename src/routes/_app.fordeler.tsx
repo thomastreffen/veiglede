@@ -159,6 +159,19 @@ type Benefit = {
 };
 
 function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provider }) {
+  const t = useT();
+  const fd = t.fordeler;
+  const VEHICLE_BADGES: Record<string, { emoji: string; label: string }> = {
+    motorcycle: { emoji: "🏍️", label: fd.vbMC },
+    car: { emoji: "🚗", label: fd.vbCar },
+    rv: { emoji: "🚐", label: fd.vbRv },
+  };
+  const ENERGY_BADGES: Record<string, { emoji: string; label: string }> = {
+    electric: { emoji: "⚡", label: fd.ebElectric },
+    petrol: { emoji: "⛽", label: fd.ebPetrol },
+    diesel: { emoji: "🛢️", label: fd.ebDiesel },
+    hybrid: { emoji: "🔋", label: fd.ebHybrid },
+  };
   const impFn = useServerFn(trackBenefitImpressionFn);
   const clickFn = useServerFn(trackBenefitClickFn);
   const copyFn = useServerFn(trackBenefitCodeCopyFn);
@@ -181,10 +194,10 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
     if (!benefit.discount_code) return;
     try {
       await navigator.clipboard.writeText(benefit.discount_code);
-      toast.success(`Kode kopiert: ${benefit.discount_code} ✓`);
+      toast.success(fd.codeCopied(benefit.discount_code));
       trackCopy.mutate();
     } catch {
-      toast.error("Kunne ikke kopiere");
+      toast.error(fd.copyFailed);
     }
   };
 
@@ -205,7 +218,7 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{provider?.name ?? "Leverandør"}</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{provider?.name ?? fd.provider}</p>
           <h3 className="font-display text-base leading-tight">{benefit.title}</h3>
         </div>
       </header>
@@ -215,14 +228,14 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
       )}
 
       <div className="flex gap-1.5 flex-wrap text-[10px]">
-        {benefit.vehicle_types.map((t) => VEHICLE_BADGES[t] && (
-          <span key={t} className="rounded-full bg-background border border-border px-2 py-0.5">
-            {VEHICLE_BADGES[t].emoji} {VEHICLE_BADGES[t].label}
+        {benefit.vehicle_types.map((vt) => VEHICLE_BADGES[vt] && (
+          <span key={vt} className="rounded-full bg-background border border-border px-2 py-0.5">
+            {VEHICLE_BADGES[vt].emoji} {VEHICLE_BADGES[vt].label}
           </span>
         ))}
-        {benefit.energy_types.map((t) => ENERGY_BADGES[t] && (
-          <span key={t} className="rounded-full bg-background border border-border px-2 py-0.5">
-            {ENERGY_BADGES[t].emoji} {ENERGY_BADGES[t].label}
+        {benefit.energy_types.map((et) => ENERGY_BADGES[et] && (
+          <span key={et} className="rounded-full bg-background border border-border px-2 py-0.5">
+            {ENERGY_BADGES[et].emoji} {ENERGY_BADGES[et].label}
           </span>
         ))}
       </div>
@@ -248,11 +261,12 @@ function BenefitCard({ benefit, provider }: { benefit: Benefit; provider?: Provi
           onClick={onGoto}
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110"
         >
-          Gå til {provider?.name ?? "leverandør"} <ExternalLink className="h-3.5 w-3.5" />
+          {fd.goTo(provider?.name ?? fd.provider)} <ExternalLink className="h-3.5 w-3.5" />
         </button>
       </div>
     </article>
   );
 }
+
 
 export { Tag };
