@@ -125,6 +125,21 @@ export function looksLikeLodging(name?: string, placeTypes?: string[]): boolean 
   return LODGING_KEYWORDS.some((k) => n.includes(k));
 }
 
+/** True when a label looks like a bare Norwegian postal code (4 digits). */
+export function isPostalCode(s?: string): boolean {
+  return !!s && /^\d{4}$/.test(s.trim());
+}
+
+/** Friendly display name for a trip origin/destination label.
+ *  Replaces bare zip codes with "Din posisjon" and truncates long names. */
+export function displayPlaceLabel(label: string | undefined, max = 20): string {
+  const v = (label ?? "").trim();
+  if (!v) return "";
+  if (isPostalCode(v)) return "Din posisjon";
+  if (v.length <= max) return v;
+  return v.slice(0, max - 1).trimEnd() + "…";
+}
+
 export type TripStatus = "draft" | "saved";
 
 export interface Trip {
