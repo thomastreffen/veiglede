@@ -137,10 +137,10 @@ function Roadbook() {
         <section className="mt-8 mx-auto max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 p-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-              <Sparkles className="h-4 w-4" /> Hvorfor denne ruta
+              <Sparkles className="h-4 w-4" /> {rb.whyThisRoute}
             </p>
             <span className="text-[10px] uppercase tracking-wider rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-primary">
-              Tilpasset profilen din · {prefs.stopInterests.length} interesser
+              {rb.tailoredInterests(prefs.stopInterests.length)}
             </span>
           </div>
           <p className="mt-2 text-sm leading-relaxed">{trip.aiSummary}</p>
@@ -148,13 +148,13 @@ function Roadbook() {
       )}
 
       <div className="mt-10 space-y-10 max-w-2xl mx-auto">
-        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title="Turregnskap" />
+        <TripTimeBudget trip={trip} days={tripDays} stops={tripStops} showPerDay title={rb.timeBudget} />
         {tripDays.map((day) => {
           const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
           return (
             <section key={day.id} className="print-day rounded-2xl border border-border bg-surface p-5 md:p-6">
               <div className="flex items-baseline gap-3">
-                <span className="font-display text-3xl uppercase text-primary">Dag {day.dayNumber}</span>
+                <span className="font-display text-3xl uppercase text-primary">{rb.dayLabel} {day.dayNumber}</span>
                 {day.date && <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{day.date}</span>}
               </div>
               <h2 className="mt-1 font-display text-2xl md:text-3xl uppercase">{day.title}</h2>
