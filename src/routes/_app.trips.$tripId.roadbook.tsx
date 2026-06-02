@@ -64,8 +64,8 @@ function Roadbook() {
           {trip.origin} → {trip.destination}{trip.region ? ` · ${trip.region}` : ""}
         </p>
         <p style={{ fontSize: "9pt", marginTop: "6px" }}>
-          {trip.distanceKm} km · {trip.drivingTime} · {tripStops.length} {rb.stops ?? "stopp"} · {vehicleDisplay} · {s.label}
-          {trip.startDate ? ` · ${rb.departure_pre ?? "Avreise "}${new Date(trip.startDate).toLocaleDateString("nb-NO")}` : ""}
+          {trip.distanceKm} km · {trip.drivingTime} · {tripStops.length} · {vehicleDisplay} · {s.label}
+          {trip.startDate ? ` · ${rb.departure(new Date(trip.startDate).toLocaleDateString("nb-NO"))}` : ""}
         </p>
       </div>
       <DemoDebugPanel
