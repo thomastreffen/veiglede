@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Calculator, Fuel, Zap, Ship, Bed, Receipt, Users, ChevronDown } from "lucide-react";
 import type { Trip, Stop, CostSettings } from "@/lib/trips-store";
-import { tripsApi, tripFuelKind } from "@/lib/trips-store";
+import { tripsApi, tripFuelKind, computeEnergyCost } from "@/lib/trips-store";
 
 interface VehicleDefaults {
   consumption: number;
