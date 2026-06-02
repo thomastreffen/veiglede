@@ -12,6 +12,7 @@ import {
   trackBenefitCodeCopyFn,
 } from "@/lib/benefits.functions";
 import { useVehicles } from "@/lib/vehicles-store";
+import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/_app/fordeler")({
   head: () => ({ meta: [
@@ -21,28 +22,17 @@ export const Route = createFileRoute("/_app/fordeler")({
   component: FordelerPage,
 });
 
-const CATEGORIES = [
-  { value: "all", label: "Alle" },
-  { value: "utstyr", label: "MC-utstyr" },
-  { value: "verksted", label: "Verksted" },
-  { value: "forsikring", label: "Forsikring" },
-  { value: "lading", label: "Lading" },
-  { value: "camping", label: "Camping" },
-] as const;
-
-const VEHICLE_BADGES: Record<string, { emoji: string; label: string }> = {
-  motorcycle: { emoji: "🏍️", label: "MC" },
-  car: { emoji: "🚗", label: "Bil" },
-  rv: { emoji: "🚐", label: "Bobil" },
-};
-const ENERGY_BADGES: Record<string, { emoji: string; label: string }> = {
-  electric: { emoji: "⚡", label: "Elbil" },
-  petrol: { emoji: "⛽", label: "Bensin" },
-  diesel: { emoji: "🛢️", label: "Diesel" },
-  hybrid: { emoji: "🔋", label: "Hybrid" },
-};
-
 function FordelerPage() {
+  const t = useT();
+  const fd = t.fordeler;
+  const CATEGORIES = [
+    { value: "all", label: fd.catAll },
+    { value: "utstyr", label: fd.catUtstyr },
+    { value: "verksted", label: fd.catVerksted },
+    { value: "forsikring", label: fd.catForsikring },
+    { value: "lading", label: fd.catLading },
+    { value: "camping", label: fd.catCamping },
+  ] as const;
   const listFn = useServerFn(listBenefitsFn);
   const consentFn = useServerFn(getMyConsentFn);
   const { data, isLoading } = useQuery({ queryKey: ["benefits-list"], queryFn: () => listFn() });
