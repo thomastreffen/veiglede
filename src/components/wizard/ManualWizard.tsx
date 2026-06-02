@@ -25,6 +25,23 @@ interface Row {
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function newRow(): Row { return { key: uid(), text: "", place: null, date: "", dayNumber: 1 }; }
 
+function addDays(iso: string, n: number): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDateLong(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  try {
+    return d.toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" });
+  } catch { return iso; }
+}
+
 function rowsFromImported(stops: ImportedStop[]): Row[] {
   return stops.map((s) => ({
     key: uid(), text: s.name, place: null,
