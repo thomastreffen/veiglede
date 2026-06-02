@@ -233,23 +233,44 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
       startLocation?: { latLng?: { latitude?: number; longitude?: number } };
       endLocation?: { latLng?: { latitude?: number; longitude?: number } };
     }
+    const FERRY_KEYWORDS = [
+      "ferje", "ferga", "ferje-", "fergeleie", "fergekai", "ferry", "car ferry",
+      "fjord1", "norled", "boreal", "torghatten", "bastø fosen", "color line", "fjordline",
+    ];
+    const isFerryStep = (step: StepShape): boolean => {
+      if (step?.travelMode === "FERRY") return true;
+      const text = (step?.navigationInstruction?.instructions ?? "").toLowerCase();
+      if (text && FERRY_KEYWORDS.some((k) => text.includes(k))) return true;
+      // Heuristic: short distance (<5km) but long duration (>15min) — likely a ferry crossing.
+      const sd = typeof step.staticDuration === "string" ? Number(step.staticDuration.replace(/s$/, "")) : 0;
+      const dm = typeof step.distanceMeters === "number" ? step.distanceMeters : 0;
+      if (dm > 0 && dm < 5000 && sd > 15 * 60) return true;
+      return false;
+    };
     const legs: Array<{ steps?: StepShape[] }> = Array.isArray(route?.legs) ? route.legs : [];
     for (const leg of legs) {
       const steps: StepShape[] = Array.isArray(leg?.steps) ? leg.steps! : [];
       for (const step of steps) {
-        if (step?.travelMode !== "FERRY") continue;
+        if (!isFerryStep(step)) continue;
         const sd = typeof step.staticDuration === "string" ? Number(step.staticDuration.replace(/s$/, "")) : 0;
         const dm = typeof step.distanceMeters === "number" ? step.distanceMeters : 0;
         ferryDistanceMeters += dm;
         ferryDurationSec += sd || 0;
         const text: string = step?.navigationInstruction?.instructions ?? "";
-        // Try to parse "Take ferry from X to Y"
-        const m = text.match(/(?:from|fra)\s+(.+?)\s+(?:to|til)\s+(.+?)(?:\.|$)/i);
+        // Try to parse "Take ferry from X to Y" / "Ta X-Y-ferga" / "X → Y"
+        let from: string | undefined;
+        let to: string | undefined;
+        const m1 = text.match(/(?:from|fra)\s+(.+?)\s+(?:to|til)\s+(.+?)(?:\.|$)/i);
+        const m2 = text.match(/([A-Za-zÆØÅæøå]+)[-–]([A-Za-zÆØÅæøå]+)[-\s]?(?:ferga|ferja|ferry|ferje)/i);
+        const m3 = text.match(/([A-Za-zÆØÅæøå]+)\s*→\s*([A-Za-zÆØÅæøå]+)/);
+        if (m1) { from = m1[1]?.trim(); to = m1[2]?.trim(); }
+        else if (m2) { from = m2[1]?.trim(); to = m2[2]?.trim(); }
+        else if (m3) { from = m3[1]?.trim(); to = m3[2]?.trim(); }
         const startLL = step?.startLocation?.latLng;
         const endLL = step?.endLocation?.latLng;
         ferrySegments.push({
-          fromLabel: m?.[1]?.trim(),
-          toLabel: m?.[2]?.trim(),
+          fromLabel: from,
+          toLabel: to,
           durationMin: Math.max(5, Math.round((sd || 0) / 60)),
           distanceKm: dm ? Math.round(dm / 100) / 10 : 0,
           start: startLL ? { lat: Number(startLL.latitude), lng: Number(startLL.longitude) } : undefined,

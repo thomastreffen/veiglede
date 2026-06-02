@@ -102,14 +102,42 @@ export interface TripDay {
 
 /** Keywords that strongly suggest a stop is a lodging/overnight. */
 export const LODGING_KEYWORDS = [
-  "hotell", "hotel", "hostel", "camping", "overnatting", "airbnb", "hytte", "cabin", "resort",
-  "rorbu", "fjellstove", "vandrerhjem", "motell", "motel", "pensjonat", "lodge", "inn",
+  // Generic
+  "hotell", "hotel", "hostel", "camping", "campingplass", "overnatting", "airbnb", "booking.com",
+  "hytte", "cabin", "resort", "rorbu", "fjellstove", "vandrerhjem", "vandrehjem", "motell", "motel",
+  "pensjonat", "lodge", "inn", "gjestgiveri", "bed and breakfast", "b&b", "feriesenter",
+  // Norwegian/Nordic chains
+  "scandic", "thon", "clarion", "nordic choice", "quality hotel", "comfort hotel", "rica", "first hotel",
+  // International chains
+  "radisson", "marriott", "hilton", "hyatt", "best western", "moxy", "ibis", "novotel",
+  "holiday inn", "sheraton", "wyndham",
 ];
 
-export function looksLikeLodging(name?: string): boolean {
+/** Google Places API types that indicate a lodging/overnight stay. */
+export const LODGING_PLACE_TYPES = [
+  "lodging", "hotel", "motel", "hostel", "campground", "rv_park",
+];
+
+export function looksLikeLodging(name?: string, placeTypes?: string[]): boolean {
+  if (placeTypes && placeTypes.some((t) => LODGING_PLACE_TYPES.includes(t))) return true;
   if (!name) return false;
   const n = name.toLowerCase();
   return LODGING_KEYWORDS.some((k) => n.includes(k));
+}
+
+/** True when a label looks like a bare Norwegian postal code (4 digits). */
+export function isPostalCode(s?: string): boolean {
+  return !!s && /^\d{4}$/.test(s.trim());
+}
+
+/** Friendly display name for a trip origin/destination label.
+ *  Replaces bare zip codes with "Din posisjon" and truncates long names. */
+export function displayPlaceLabel(label: string | undefined, max = 20): string {
+  const v = (label ?? "").trim();
+  if (!v) return "";
+  if (isPostalCode(v)) return "Din posisjon";
+  if (v.length <= max) return v;
+  return v.slice(0, max - 1).trimEnd() + "…";
 }
 
 export type TripStatus = "draft" | "saved";
@@ -414,14 +442,14 @@ export const tripsApi = {
       id: uid(),
       tripId: trip.id,
       dayNumber: 1,
-      title: `${trip.origin} → ${trip.destination}`,
+      title: `${displayPlaceLabel(trip.origin)} → ${displayPlaceLabel(trip.destination)}`,
       date: trip.startDate,
       summary: trip.aiSummary,
     };
     const newStops: Stop[] = [
       {
         id: uid(), dayId: day1.id, order: 0,
-        name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin,
+        name: `Avgang ${displayPlaceLabel(trip.origin)}`, type: "rest", location: displayPlaceLabel(trip.origin),
         description: "Start på dagen — sjekk dekktrykk, fyll tanken.",
         reason: "Felles startpunkt for ruta.", durationMin: 15,
       },
@@ -956,7 +984,7 @@ interface SuggestedSeed {
 
 function suggestStops(trip: Trip): SuggestedSeed[] {
   const base: SuggestedSeed[] = [
-    { name: `Avgang ${trip.origin}`, type: "rest", location: trip.origin, time: "08:30", description: "Sjekk dekktrykk, fyll tanken, klar for tur.", reason: "Felles start gjør resten av dagen lettere å planlegge.", durationMin: 15 },
+    { name: `Avgang ${displayPlaceLabel(trip.origin)}`, type: "rest", location: displayPlaceLabel(trip.origin), time: "08:30", description: "Sjekk dekktrykk, fyll tanken, klar for tur.", reason: "Felles start gjør resten av dagen lettere å planlegge.", durationMin: 15 },
   ];
   switch (trip.style) {
     case "scenic":

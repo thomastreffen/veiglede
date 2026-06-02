@@ -25,6 +25,9 @@ export interface ResolvedPlace {
   /** True when this entry is from autocomplete and needs a Place Details
    * lookup to populate lat/lng before it can be used for routing. */
   needsDetails?: boolean;
+  /** Raw Google Places types (e.g. "lodging", "campground"). Used by the
+   * trip planner to auto-classify lodging stops without keyword guessing. */
+  placeTypes?: string[];
 }
 
 // Small curated fallback for offline / "Use anyway" support.
@@ -95,6 +98,7 @@ async function searchGoogle(q: string, signal: AbortSignal, opts: SearchOptions)
     type: pickType(r.types),
     source: "google",
     needsDetails: true,
+    placeTypes: r.types ?? [],
   }));
 }
 
@@ -125,6 +129,7 @@ export async function resolveGooglePlace(place: ResolvedPlace): Promise<Resolved
       secondary: p.address || place.secondary,
       label: p.address ? `${p.name || place.name}, ${p.address}` : (place.label || p.name || place.name),
       type: pickType(p.types ?? []),
+      placeTypes: p.types ?? place.placeTypes ?? [],
       needsDetails: false,
     };
   } catch {

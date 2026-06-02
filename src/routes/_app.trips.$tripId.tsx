@@ -3,6 +3,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import {
   useTripsStore, tripsApi, stopMeta, stopDisplayMeta, STOP_TYPES, vehicleMeta, styleMeta,
   COVERS, type CoverKey, fetchRouteSuggestions, getPartnerTips, getPhotoMemories,
+  LODGING_PLACE_TYPES,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
@@ -532,6 +533,9 @@ function TripPlanner() {
           {trip.vehicle === "rv" && <li>· {td.rvNote}</li>}
           {trip.vehicle === "motorcycle" && <li>· {td.mcNote}</li>}
           {trip.startDate && <li>· {td.departure(new Date(trip.startDate).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }))}</li>}
+          {tripStops.filter((st) => st.type === "ferry").map((f) => (
+            <li key={f.id}>· ⛴️ Inkluderer ferje: {f.ferryRouteHint ?? f.name}</li>
+          ))}
           <li>· {td.remember}</li>
         </ul>
 
@@ -1179,7 +1183,7 @@ function PlannerActions({
   return (
     <section className="mt-4 space-y-3">
       {isLongLeg && (
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+        <div className="relative z-20 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
           <p className="text-sm font-semibold text-amber-200">Denne etappen er lang ({trip.drivingTime}).</p>
           <p className="mt-1 text-xs text-amber-100/80">
             Lengre enn dine {maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
@@ -1202,7 +1206,7 @@ function PlannerActions({
       )}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         <PlannerBtn label={isSplitting ? "Deler opp…" : "Del opp i flere dager"} onClick={handleSplit} disabled={isSplitting} />
-        <PlannerBtn label="Legg til overnatting" onClick={() => setLodgingOpen(true)} />
+        <PlannerBtn label="Legg til overnatting" onClick={() => setLodgingOpen(true)} primary />
         <PlannerBtn label="+ Legg til neste destinasjon" onClick={() => setDestOpen(true)} />
       </div>
       {destOpen && (
@@ -1214,7 +1218,18 @@ function PlannerActions({
               value={destText}
               onTextChange={setDestText}
               selected={destPlace}
-              onSelect={setDestPlace}
+              onSelect={(p) => {
+                setDestPlace(p);
+                // If user picked a hotel/camping etc., switch to lodging flow automatically.
+                if (p?.placeTypes?.some((t) => LODGING_PLACE_TYPES.includes(t))) {
+                  setLodgingPlace(p);
+                  setLodgingText(p.name);
+                  setLodgingOpen(true);
+                  setDestOpen(false);
+                  setDestText("");
+                  setDestPlace(null);
+                }
+              }}
               placeholder="Sted eller hotell"
               ariaLabel="Neste destinasjon"
             />
@@ -1398,12 +1413,15 @@ function PlannerActions({
   );
 }
 
-function PlannerBtn({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+function PlannerBtn({ label, onClick, disabled, primary }: { label: string; onClick: () => void; disabled?: boolean; primary?: boolean }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-2xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:bg-surface-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className={primary
+        ? "rounded-2xl bg-primary text-primary-foreground px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+        : "rounded-2xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:bg-surface-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      }
     >
       {label}
     </button>
