@@ -405,6 +405,9 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
         if (!day || s.isRestDay) continue;
         const leg = legs[i];
         const stopType = detectType(s.row.text, s.row.type);
+        const nights = stopType === "lodging" ? Math.max(1, s.row.nights ?? 1) : undefined;
+        const checkin = stopType === "lodging" ? (s.date || undefined) : undefined;
+        const checkout = stopType === "lodging" && checkin && nights ? addDays(checkin, nights) : undefined;
         tripsApi.addStop(day.id, {
           name: s.row.text.trim(),
           type: stopType,
@@ -413,6 +416,9 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           lng: s.place?.lng,
           placeTypes: s.place?.placeTypes,
           distanceFromPrevKm: leg ? Math.round(leg.distanceKm) : undefined,
+          booking: stopType === "lodging"
+            ? { checkinDate: checkin, checkoutDate: checkout, nights, status: "none" as const }
+            : undefined,
         });
       }
 
