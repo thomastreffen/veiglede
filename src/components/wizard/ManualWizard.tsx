@@ -422,11 +422,10 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           <p className="mt-3 text-muted-foreground">{w.manual.subtitle}</p>
 
           {(() => {
-            const first = validRows[0];
             const last = validRows[validRows.length - 1];
-            if (!first?.place || !last?.place || first === last) return null;
+            if (!originPlace || !last?.place) return null;
             const km = haversineKm(
-              { lat: first.place.lat, lng: first.place.lng },
+              { lat: originPlace.lat, lng: originPlace.lng },
               { lat: last.place.lat, lng: last.place.lng },
             );
             if (km >= 5) return null;
@@ -437,7 +436,25 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
             );
           })()}
 
-          <div className="mt-6 space-y-2">
+          <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
+            <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-primary">
+              📍 Avreisested
+            </span>
+            <PlaceAutocomplete
+              value={originText}
+              onTextChange={setOriginText}
+              selected={originPlace}
+              onSelect={setOriginPlace}
+              placeholder="Hjemmeadresse eller by"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Startpunktet for turen — første etappe kjøres herfra til første overnatting.
+            </p>
+          </div>
+
+          <div className="mt-4 space-y-2">
+
+
 
             {rows.map((r, idx) => {
               const tp = detectType(r.text, r.type);
