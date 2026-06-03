@@ -75,6 +75,23 @@ export function AppShell() {
     return () => { cancelled = true; };
   }, [user, pathname, navigate]);
 
+  const isOnboarding = pathname === "/onboarding";
+
+  if (isOnboarding) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
+        <header className="border-b border-border/60">
+          <div className="mx-auto max-w-5xl flex items-center justify-between px-4 md:px-6 py-3.5">
+            <Link to="/"><VeigledeMark /></Link>
+          </div>
+        </header>
+        <main className="flex-1 mx-auto w-full max-w-5xl px-4 md:px-6 py-2">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
