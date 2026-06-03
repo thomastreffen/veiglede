@@ -378,6 +378,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           ? `Hviledag i ${curCity}`
           : `${prevCity} → ${curCity}`;
         tripsApi.updateDay(day.id, {
+          dayNumber: i + 1,
           date: s.date || undefined,
           title: dayTitle,
           dayDistanceKm: leg ? Math.round(leg.distanceKm) : 0,
