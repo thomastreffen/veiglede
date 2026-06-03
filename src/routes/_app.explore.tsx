@@ -314,7 +314,7 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
           <div className="mt-2 flex items-center justify-between gap-2 text-[11px]" onClick={(e) => e.preventDefault()}>
             <SaveTripButton payload={{
               sourceTripId: t.id, title: t.title, subtitle: t.subtitle, region: t.region,
-              origin: t.origin, destination: t.destination, distanceKm: t.distanceKm,
+              origin: pubOrigin, destination: pubDest, distanceKm: t.distanceKm,
               drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
             }} />
             <span className="text-muted-foreground truncate">{t.ownerName ? `${ex.by} ${t.ownerName}` : ex.byTraveler}</span>
