@@ -94,6 +94,31 @@ export const registerPartnerFn = createServerFn({ method: "POST" })
       );
     }
 
+    // 5. Add to contact ticket inbox so admin sees it alongside other enquiries
+    try {
+      const summary = [
+        `Kontaktperson: ${data.contactName}`,
+        `Kategori: ${data.category}`,
+        `Adresse: ${data.address}`,
+        data.orgNumber ? `Org.nr: ${data.orgNumber}` : null,
+        data.website ? `Nettside: ${data.website}` : null,
+        data.description ? `\nBeskrivelse:\n${data.description}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      await supabaseAdmin.from("contact_tickets").insert({
+        source: "partner",
+        status: "ny",
+        name: data.contactName,
+        email: data.email,
+        subject: `Ny partnerhenvendelse: ${data.businessName}`,
+        message: summary,
+        user_id: userId,
+      });
+    } catch {
+      /* non-fatal */
+    }
+
     return { ok: true as const, userId };
   });
 

@@ -9,6 +9,7 @@ import {
 import { Search } from "lucide-react";
 import { HelpBot } from "@/components/HelpBot";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { ContactForm } from "@/components/ContactForm";
 import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/hjelp")({
@@ -99,12 +100,11 @@ function HjelpPage() {
         <div className="mt-12 rounded-2xl border border-border bg-surface-2/40 p-5 text-sm">
           <p className="font-semibold">{hj.cantFind}</p>
           <p className="mt-1 text-muted-foreground">
-            {hj.emailUsPre}
-            <a href="mailto:kontakt@veiglede.no" className="text-primary underline">
-              kontakt@veiglede.no
-            </a>
-            {hj.emailUsPost}
+            Send oss en melding under, så svarer vi innen 1–2 virkedager.
           </p>
+          <div className="mt-5">
+            <ContactForm variant="dark" />
+          </div>
         </div>
       </main>
 

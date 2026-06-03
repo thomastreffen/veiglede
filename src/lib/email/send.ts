@@ -6,7 +6,8 @@ export interface SendTransactionalEmailParams {
     | "trip-invitation"
     | "trip-shared"
     | "account-deletion"
-    | "trip-reminder";
+    | "trip-reminder"
+    | "contact-reply";
   recipientEmail: string;
   idempotencyKey?: string;
   templateData?: Record<string, unknown>;
