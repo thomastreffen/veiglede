@@ -62,7 +62,7 @@ function pickCover(s: RouteStyle): CoverKey {
 
 function isInNorway(p: ResolvedPlace | null): boolean {
   if (!p) return false;
-  return p.lat >= 57 && p.lat <= 72 && p.lng >= 3 && p.lng <= 32;
+  return p.lat >= 56 && p.lat <= 72 && p.lng >= 3 && p.lng <= 32;
 }
 
 export function AiWizard({ onBack }: { onBack: () => void }) {
