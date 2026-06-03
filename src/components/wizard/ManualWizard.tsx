@@ -58,10 +58,35 @@ function cityNameFromLabel(label: string, place: ResolvedPlace | null): string {
 
 function addDays(iso: string, n: number): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  const parts = iso.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((x) => Number.isNaN(x))) return "";
+  const [y, m, d] = parts;
+  const date = new Date(Date.UTC(y, m - 1, d + n));
+  if (isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+// Recalculate date + dayNumber for all rows after the first based on each
+// previous row's nights (lodging rows can span multiple days).
+function cascadeDates(rows: Row[]): Row[] {
+  if (rows.length === 0) return rows;
+  const out: Row[] = [];
+  let prev: Row | undefined;
+  for (const r of rows) {
+    if (!prev) {
+      out.push({ ...r, dayNumber: 1 });
+      prev = out[0];
+      continue;
+    }
+    const prevType = detectType(prev.text, prev.type);
+    const prevNights = prevType === "lodging" ? Math.max(1, prev.nights ?? 1) : 1;
+    const date = prev.date ? addDays(prev.date, prevNights) : "";
+    const dayNumber = (prev.dayNumber ?? 0) + prevNights;
+    const next: Row = { ...r, date, dayNumber };
+    out.push(next);
+    prev = next;
+  }
+  return out;
 }
 
 function formatDateLong(iso: string): string {
