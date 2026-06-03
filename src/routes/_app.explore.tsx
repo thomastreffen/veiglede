@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { fetchPublicTrips, type PublicTripSummary } from "@/lib/public-trips";
+import { publicPlaceName } from "@/lib/public-place";
 import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
 import { PublicUserCard } from "@/components/PublicUserCard";
 import {
@@ -260,10 +261,12 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/shared/${t.shareToken}`
     : `/shared/${t.shareToken}`;
+  const pubOrigin = publicPlaceName(t.origin);
+  const pubDest = publicPlaceName(t.destination);
   const onShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const data = { title: t.title, text: t.subtitle ?? `${t.origin} → ${t.destination}`, url: shareUrl };
+    const data = { title: t.title, text: t.subtitle ?? `${pubOrigin} → ${pubDest}`, url: shareUrl };
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try { await navigator.share(data); return; } catch { /* cancelled */ }
     }
@@ -303,7 +306,7 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
             <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} ${ex.stops}`} />
           </div>
           <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground border-t border-border/60 pt-3">
-            <span className="inline-flex items-center gap-1 truncate min-w-0"><MapPin className="h-3 w-3 shrink-0" /> {t.origin} → {t.destination}</span>
+            <span className="inline-flex items-center gap-1 truncate min-w-0"><MapPin className="h-3 w-3 shrink-0" /> {pubOrigin} → {pubDest}</span>
           </div>
           <div className="mt-3" onClick={(e) => e.preventDefault()}>
             <TripReactionsRow tripId={t.id} />
@@ -311,7 +314,7 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
           <div className="mt-2 flex items-center justify-between gap-2 text-[11px]" onClick={(e) => e.preventDefault()}>
             <SaveTripButton payload={{
               sourceTripId: t.id, title: t.title, subtitle: t.subtitle, region: t.region,
-              origin: t.origin, destination: t.destination, distanceKm: t.distanceKm,
+              origin: pubOrigin, destination: pubDest, distanceKm: t.distanceKm,
               drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
             }} />
             <span className="text-muted-foreground truncate">{t.ownerName ? `${ex.by} ${t.ownerName}` : ex.byTraveler}</span>

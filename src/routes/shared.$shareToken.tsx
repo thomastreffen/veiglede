@@ -6,6 +6,7 @@ import {
   type Trip, type TripDay, type Stop, type CoverKey,
 } from "@/lib/trips-store";
 import { getPublicTripByToken } from "@/lib/public-trips.functions";
+import { publicPlaceName } from "@/lib/public-place";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { TripComments } from "@/components/TripComments";
 import { LiveSharedBlock } from "@/components/LiveSharedBlock";
@@ -40,8 +41,10 @@ export const Route = createFileRoute("/shared/$shareToken")({
       return { meta: [{ title: "Delt tur — Veiglede" }] };
     }
     const pageTitle = `${loaderData.title} — Veiglede`;
+    const pubOrigin = publicPlaceName(loaderData.origin);
+    const pubDest = publicPlaceName(loaderData.destination);
     const desc = loaderData.subtitle
-      ?? `${loaderData.origin} → ${loaderData.destination}${loaderData.region ? ` · ${loaderData.region}` : ""} · ${loaderData.distanceKm} km`;
+      ?? `${pubOrigin} → ${pubDest}${loaderData.region ? ` · ${loaderData.region}` : ""} · ${loaderData.distanceKm} km`;
     return {
       meta: [
         { title: pageTitle },
@@ -105,8 +108,8 @@ function SharedTripByToken() {
                 title: trip.title,
                 subtitle: trip.subtitle,
                 region: trip.region,
-                origin: trip.origin,
-                destination: trip.destination,
+                origin: publicPlaceName(trip.origin),
+                destination: publicPlaceName(trip.destination),
                 distanceKm: trip.distanceKm,
                 drivingTime: trip.drivingTime,
                 cover: trip.cover,
@@ -128,7 +131,7 @@ function SharedTripByToken() {
             <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Delt av en reisende</p>
             <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
             {trip.subtitle && <p className="mt-2 text-sm text-foreground/80">{trip.subtitle}</p>}
-            <p className="mt-3 inline-flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 text-primary" /> {trip.origin} → {trip.destination}</p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 text-primary" /> {publicPlaceName(trip.origin)} → {publicPlaceName(trip.destination)}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{v.emoji} {v.label}</span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{s.emoji} {s.label}</span>

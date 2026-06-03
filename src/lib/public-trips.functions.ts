@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { publicPlaceName } from "@/lib/public-place";
 
 const TokenSchema = z.object({
   token: z.string().min(8).max(128).regex(/^[a-zA-Z0-9_-]+$/),
@@ -68,7 +69,15 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
           typeof s === "object" && s !== null && !Array.isArray(s) && dayIds.has((s as Record<string, Json | undefined>)["dayId"] as string | undefined),
       );
       console.log("Share token lookup:", token, "result:", tripId, "days:", days.length, "stops:", stops.length);
-      return { found: true, trip: match, days, stops };
+      // Strip full street address before returning publicly.
+      const safeTrip: { [key: string]: Json | undefined } = {
+        ...match,
+        origin: publicPlaceName(match["origin"] as string | undefined),
+        destination: publicPlaceName(match["destination"] as string | undefined),
+        originLoc: undefined,
+        destinationLoc: undefined,
+      };
+      return { found: true, trip: safeTrip, days, stops };
     }
 
     return { found: false };
@@ -127,8 +136,8 @@ export const fetchPublicTripsFn = createServerFn({ method: "GET" })
           title: String(t.title ?? "Tur"),
           subtitle: typeof t.subtitle === "string" ? t.subtitle : undefined,
           region: typeof t.region === "string" ? t.region : undefined,
-          origin: String(t.origin ?? ""),
-          destination: String(t.destination ?? ""),
+          origin: publicPlaceName(String(t.origin ?? "")),
+          destination: publicPlaceName(String(t.destination ?? "")),
           distanceKm: Number(t.distanceKm ?? 0),
           drivingTime: String(t.drivingTime ?? ""),
           stopsCount: Number(t.stopsCount ?? 0),
