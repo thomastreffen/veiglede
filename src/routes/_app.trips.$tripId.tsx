@@ -422,6 +422,22 @@ function TripPlanner() {
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
       <EditTripSheet trip={trip} open={editOpen} onOpenChange={setEditOpen} />
       <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title={td.saveAndSharePromptTitle} description={td.saveAndSharePromptBody} redirectTo={`/trips/${tripId}`} />
+      <ShareOnSaveDialog
+        open={shareOnSaveOpen}
+        onOpenChange={setShareOnSaveOpen}
+        onChoose={(makePublic) => {
+          tripsApi.updateTrip(trip.id, { status: "saved" });
+          if (makePublic) {
+            if (!trip.shareToken) tripsApi.ensureShareToken(trip.id);
+            tripsApi.setTripPublic(trip.id, true);
+          } else {
+            tripsApi.setTripPublic(trip.id, false);
+          }
+          void flushTripsNow();
+          setShareOnSaveOpen(false);
+          toast.success(makePublic ? td.publicToast : td.tripSavedToast);
+        }}
+      />
 
       <section className="mt-4">
         <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
