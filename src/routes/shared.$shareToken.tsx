@@ -6,6 +6,7 @@ import {
   type Trip, type TripDay, type Stop, type CoverKey,
 } from "@/lib/trips-store";
 import { getPublicTripByToken } from "@/lib/public-trips.functions";
+import { publicPlaceName } from "@/lib/public-place";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { TripComments } from "@/components/TripComments";
 import { LiveSharedBlock } from "@/components/LiveSharedBlock";
