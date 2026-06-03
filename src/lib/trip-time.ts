@@ -169,7 +169,8 @@ export function computeDayBreakdowns(
   const sortedDays = [...days].sort((a, b) => a.dayNumber - b.dayNumber);
   if (sortedDays.length === 0) return [];
   const driving = tripDrivingMin(trip);
-  const drivingPerDay = Math.round(driving.min / sortedDays.length);
+  const drivingDays = sortedDays.filter((d) => d.dayDrivingTimeMin !== 0).length || sortedDays.length;
+  const drivingPerDay = Math.round(driving.min / drivingDays);
 
   return sortedDays.map((day) => {
     const dayStops = stops.filter((s) => s.dayId === day.id);
@@ -207,7 +208,8 @@ export function computeDayBreakdowns(
 
 /** Format minutes as "Xt Ymin" / "Ymin". */
 export function formatDuration(totalMin: number | undefined | null): string {
-  if (totalMin == null || !Number.isFinite(totalMin) || totalMin <= 0) return "—";
+  if (totalMin == null || !Number.isFinite(totalMin)) return "—";
+  if (totalMin <= 0) return "0 min";
   const min = Math.round(totalMin);
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
