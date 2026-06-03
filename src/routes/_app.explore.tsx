@@ -261,10 +261,12 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/shared/${t.shareToken}`
     : `/shared/${t.shareToken}`;
+  const pubOrigin = publicPlaceName(t.origin);
+  const pubDest = publicPlaceName(t.destination);
   const onShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const data = { title: t.title, text: t.subtitle ?? `${t.origin} → ${t.destination}`, url: shareUrl };
+    const data = { title: t.title, text: t.subtitle ?? `${pubOrigin} → ${pubDest}`, url: shareUrl };
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try { await navigator.share(data); return; } catch { /* cancelled */ }
     }
