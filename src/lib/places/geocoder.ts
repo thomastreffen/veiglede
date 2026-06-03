@@ -144,6 +144,7 @@ export async function resolveGooglePlace(place: ResolvedPlace): Promise<Resolved
     const data = (await res.json()) as { place?: { id: string; name: string; address: string; lat: number; lng: number; types?: string[] } };
     const p = data.place;
     if (!p || typeof p.lat !== "number" || typeof p.lng !== "number") return null;
+    const type = pickType(p.types ?? []);
     return {
       ...place,
       lat: p.lat,
@@ -151,8 +152,9 @@ export async function resolveGooglePlace(place: ResolvedPlace): Promise<Resolved
       name: p.name || place.name,
       secondary: p.address || place.secondary,
       label: p.address ? `${p.name || place.name}, ${p.address}` : (place.label || p.name || place.name),
-      type: pickType(p.types ?? []),
+      type,
       placeTypes: p.types ?? place.placeTypes ?? [],
+      cityName: extractCityName(p.address ?? "", p.name || place.name, type) ?? place.cityName,
       needsDetails: false,
     };
   } catch {
