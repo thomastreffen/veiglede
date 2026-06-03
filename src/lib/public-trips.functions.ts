@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { publicPlaceName } from "@/lib/public-place";
 
 const TokenSchema = z.object({
   token: z.string().min(8).max(128).regex(/^[a-zA-Z0-9_-]+$/),
