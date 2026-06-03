@@ -31,7 +31,7 @@ export const nb = {
       style: { k: "Kjørestil", v: "Svingete vei / Fototur / Rolig cruise" },
       stops: { k: "Stopp", v: "Utsikt, mat, drivstoff, lokale tips" },
       share: { k: "Deling", v: "Roadbook-lenke og fellestur" },
-      distance: "12 km",
+      distance: "Din rute",
     },
   },
   features: [
@@ -84,7 +84,7 @@ export const nb = {
         { title: "Lagre andres ruter", body: "Finn en rute du liker? Lagre den til din egen planlegger med ett klikk." },
       ]},
       { category: "Praktisk", items: [
-        { title: "PDF og GPX-eksport", body: "Eksporter roadbooken til PDF for utskrift, eller GPX-fil til Garmin og andre GPS-enheter." },
+        { title: "GPX-eksport til Garmin og GPS-enheter", body: "Last ned GPX-fil til Garmin, BMW Motorrad Navigator og andre GPS-enheter. PDF-eksport kommer snart." },
         { title: "Åpne i Google Maps/Waze", body: "Send ruten direkte til din foretrukne navigasjonsapp med ett trykk." },
         { title: "Pakkeliste med AI", body: "Få AI-genererte pakkelister tilpasset kjøretøy, rute og årstid — ikke glem noe hjemmefra." },
       ]},
@@ -697,7 +697,7 @@ export const nb = {
       label: "Regioner",
       title: "Norge på veien",
       subtitle: "Fra Lindesnes til Nordkapp — opplev landet fra rattet.",
-      kmTrips: "km turer",
+      kmTrips: "turer",
       explore: "Utforsk ruter",
       tags: {
         Vestlandet: "Fjorder, fjell og nasjonale turistveier",
