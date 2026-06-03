@@ -390,7 +390,24 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           <h1 className="mt-6 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{w.manual.title}</h1>
           <p className="mt-3 text-muted-foreground">{w.manual.subtitle}</p>
 
+          {(() => {
+            const first = validRows[0];
+            const last = validRows[validRows.length - 1];
+            if (!first?.place || !last?.place || first === last) return null;
+            const km = haversineKm(
+              { lat: first.place.lat, lng: first.place.lng },
+              { lat: last.place.lat, lng: last.place.lng },
+            );
+            if (km >= 5) return null;
+            return (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                ✓ Rundtur detektert — slutter der den startet
+              </div>
+            );
+          })()}
+
           <div className="mt-6 space-y-2">
+
             {rows.map((r, idx) => {
               const tp = detectType(r.text, r.type);
               const icon = tp === "lodging" ? "🏨" : "🏙️";
