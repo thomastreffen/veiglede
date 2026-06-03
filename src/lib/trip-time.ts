@@ -181,11 +181,16 @@ export function computeDayBreakdowns(
     const otherMin = sumByCat(dayStops, "other");
     const overnightMin = sumByCat(dayStops, "overnight");
     const plannedStopsMin = chargingMin + mealMin + photoMin + restMin + otherMin;
-    const totalActiveDayMin = drivingPerDay + ferryMin + plannedStopsMin;
+    // Prefer per-day driving time when the wizard stored it (real leg
+    // calculation); fall back to evenly-distributed average otherwise.
+    const dayDriving = typeof day.dayDrivingTimeMin === "number"
+      ? Math.round(day.dayDrivingTimeMin)
+      : drivingPerDay;
+    const totalActiveDayMin = dayDriving + ferryMin + plannedStopsMin;
     return {
       dayId: day.id,
       dayNumber: day.dayNumber,
-      drivingMin: drivingPerDay,
+      drivingMin: dayDriving,
       ferryMin: ferryMin || undefined,
       plannedStopsMin,
       chargingMin: chargingMin || undefined,

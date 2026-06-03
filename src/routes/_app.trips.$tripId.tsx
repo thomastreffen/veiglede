@@ -329,7 +329,7 @@ function TripPlanner() {
 
 
       {/* Planning actions — flexible trip model */}
-      <PlannerActions trip={trip} tripDays={tripDays} maxDrivingHours={prefs.maxDrivingHours} />
+      <PlannerActions trip={trip} tripDays={tripDays} tripStops={tripStops} maxDrivingHours={prefs.maxDrivingHours} />
 
 
       {/* Time budget */}
@@ -1107,10 +1107,11 @@ function PlacementBtn({ label, onClick }: { label: string; onClick: () => void }
 }
 
 function PlannerActions({
-  trip, tripDays, maxDrivingHours,
+  trip, tripDays, tripStops, maxDrivingHours,
 }: {
-  trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string; startDate?: string };
+  trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string; startDate?: string; source?: "manual" | "ai" | "template" };
   tripDays: { id: string; dayNumber: number }[];
+  tripStops: { dayId: string; type: string }[];
   maxDrivingHours: number;
 }) {
   const [destOpen, setDestOpen] = useState(false);
@@ -1200,7 +1201,10 @@ function PlannerActions({
 
 
   const durationMin = trip.routeDurationMin ?? 0;
-  const isLongLeg = durationMin > 0 && durationMin > maxDrivingHours * 60;
+  const allDaysHaveLodging = tripDays.length > 0 && tripDays.every((d) =>
+    tripStops.some((s) => s.dayId === d.id && s.type === "lodging"));
+  const suppressLongLeg = trip.source === "manual" || allDaysHaveLodging;
+  const isLongLeg = !suppressLongLeg && durationMin > 0 && durationMin > maxDrivingHours * 60;
 
   return (
     <section className="mt-4 space-y-3">

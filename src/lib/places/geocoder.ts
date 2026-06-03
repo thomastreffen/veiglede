@@ -28,6 +28,25 @@ export interface ResolvedPlace {
   /** Raw Google Places types (e.g. "lodging", "campground"). Used by the
    * trip planner to auto-classify lodging stops without keyword guessing. */
   placeTypes?: string[];
+  /** Extracted city/locality name (e.g. "Trondheim" for a hotel at
+   * "Havnegata 1, 7010 Trondheim, Norge"). Used for friendly day titles. */
+  cityName?: string;
+}
+
+/** Extract a city/locality name from a Google formatted address. */
+export function extractCityName(address: string, name: string, type: PlaceType): string | undefined {
+  if (type === "city" || type === "region") return name;
+  if (!address) return undefined;
+  const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
+  if (!parts.length) return undefined;
+  const COUNTRIES = /^(norge|norway|sverige|sweden|danmark|denmark|deutschland|germany|nederland|netherlands)$/i;
+  const segs = parts.slice();
+  if (COUNTRIES.test(segs[segs.length - 1])) segs.pop();
+  if (!segs.length) return undefined;
+  const last = segs[segs.length - 1];
+  // Strip Norwegian/EU postal prefix: "7010 Trondheim" -> "Trondheim"
+  const cleaned = last.replace(/^\d{3,5}\s+/, "").trim();
+  return cleaned || undefined;
 }
 
 // Small curated fallback for offline / "Use anyway" support.
@@ -89,17 +108,21 @@ async function searchGoogle(q: string, signal: AbortSignal, opts: SearchOptions)
   if (!res.ok) throw new Error(`google ${res.status}`);
   const data = (await res.json()) as { results?: GoogleAutocompleteResult[] };
   const items = data.results ?? [];
-  return items.map((r): ResolvedPlace => ({
-    id: `g-${r.id}`,
-    label: r.address ? `${r.name}, ${r.address}` : r.name,
-    name: r.name,
-    secondary: r.address || undefined,
-    lat: 0, lng: 0,
-    type: pickType(r.types),
-    source: "google",
-    needsDetails: true,
-    placeTypes: r.types ?? [],
-  }));
+  return items.map((r): ResolvedPlace => {
+    const type = pickType(r.types);
+    return {
+      id: `g-${r.id}`,
+      label: r.address ? `${r.name}, ${r.address}` : r.name,
+      name: r.name,
+      secondary: r.address || undefined,
+      lat: 0, lng: 0,
+      type,
+      source: "google",
+      needsDetails: true,
+      placeTypes: r.types ?? [],
+      cityName: extractCityName(r.address ?? "", r.name, type),
+    };
+  });
 }
 
 function pickType(types: string[]): PlaceType {
@@ -121,6 +144,7 @@ export async function resolveGooglePlace(place: ResolvedPlace): Promise<Resolved
     const data = (await res.json()) as { place?: { id: string; name: string; address: string; lat: number; lng: number; types?: string[] } };
     const p = data.place;
     if (!p || typeof p.lat !== "number" || typeof p.lng !== "number") return null;
+    const type = pickType(p.types ?? []);
     return {
       ...place,
       lat: p.lat,
@@ -128,8 +152,9 @@ export async function resolveGooglePlace(place: ResolvedPlace): Promise<Resolved
       name: p.name || place.name,
       secondary: p.address || place.secondary,
       label: p.address ? `${p.name || place.name}, ${p.address}` : (place.label || p.name || place.name),
-      type: pickType(p.types ?? []),
+      type,
       placeTypes: p.types ?? place.placeTypes ?? [],
+      cityName: extractCityName(p.address ?? "", p.name || place.name, type) ?? place.cityName,
       needsDetails: false,
     };
   } catch {

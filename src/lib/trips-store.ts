@@ -220,6 +220,8 @@ export interface Trip {
   ferryDetectionHash?: string;
   /** True when the trip returns to (or near) its origin. */
   isRoundTrip?: boolean;
+  /** How the trip was created — used by UI to suppress generic warnings. */
+  source?: "manual" | "ai" | "template";
 }
 
 
