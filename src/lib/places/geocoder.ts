@@ -108,17 +108,21 @@ async function searchGoogle(q: string, signal: AbortSignal, opts: SearchOptions)
   if (!res.ok) throw new Error(`google ${res.status}`);
   const data = (await res.json()) as { results?: GoogleAutocompleteResult[] };
   const items = data.results ?? [];
-  return items.map((r): ResolvedPlace => ({
-    id: `g-${r.id}`,
-    label: r.address ? `${r.name}, ${r.address}` : r.name,
-    name: r.name,
-    secondary: r.address || undefined,
-    lat: 0, lng: 0,
-    type: pickType(r.types),
-    source: "google",
-    needsDetails: true,
-    placeTypes: r.types ?? [],
-  }));
+  return items.map((r): ResolvedPlace => {
+    const type = pickType(r.types);
+    return {
+      id: `g-${r.id}`,
+      label: r.address ? `${r.name}, ${r.address}` : r.name,
+      name: r.name,
+      secondary: r.address || undefined,
+      lat: 0, lng: 0,
+      type,
+      source: "google",
+      needsDetails: true,
+      placeTypes: r.types ?? [],
+      cityName: extractCityName(r.address ?? "", r.name, type),
+    };
+  });
 }
 
 function pickType(types: string[]): PlaceType {
