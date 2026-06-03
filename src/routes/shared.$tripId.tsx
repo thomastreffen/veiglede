@@ -60,7 +60,7 @@ function SharedTrip() {
             <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Delt av en reisende</p>
             <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{trip.title}</h1>
             {trip.subtitle && <p className="mt-2 text-sm text-foreground/80">{trip.subtitle}</p>}
-            <p className="mt-3 inline-flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 text-primary" /> {trip.origin} → {trip.destination}</p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 text-primary" /> {publicPlaceName(trip.origin)} → {publicPlaceName(trip.destination)}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{v.emoji} {v.label}</span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{s.emoji} {s.label}</span>
