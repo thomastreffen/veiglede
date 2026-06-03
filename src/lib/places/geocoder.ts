@@ -28,6 +28,25 @@ export interface ResolvedPlace {
   /** Raw Google Places types (e.g. "lodging", "campground"). Used by the
    * trip planner to auto-classify lodging stops without keyword guessing. */
   placeTypes?: string[];
+  /** Extracted city/locality name (e.g. "Trondheim" for a hotel at
+   * "Havnegata 1, 7010 Trondheim, Norge"). Used for friendly day titles. */
+  cityName?: string;
+}
+
+/** Extract a city/locality name from a Google formatted address. */
+export function extractCityName(address: string, name: string, type: PlaceType): string | undefined {
+  if (type === "city" || type === "region") return name;
+  if (!address) return undefined;
+  const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
+  if (!parts.length) return undefined;
+  const COUNTRIES = /^(norge|norway|sverige|sweden|danmark|denmark|deutschland|germany|nederland|netherlands)$/i;
+  const segs = parts.slice();
+  if (COUNTRIES.test(segs[segs.length - 1])) segs.pop();
+  if (!segs.length) return undefined;
+  const last = segs[segs.length - 1];
+  // Strip Norwegian/EU postal prefix: "7010 Trondheim" -> "Trondheim"
+  const cleaned = last.replace(/^\d{3,5}\s+/, "").trim();
+  return cleaned || undefined;
 }
 
 // Small curated fallback for offline / "Use anyway" support.
