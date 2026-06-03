@@ -881,7 +881,7 @@ export const tripsApi = {
     return stop;
   },
 
-  /** Generate a stable share token for a trip (idempotent). Defaults to public ON. */
+  /** Generate a stable share token for a trip (idempotent). Does NOT change visibility. */
   ensureShareToken(tripId: string): string {
     ensureInit();
     const trip = state.trips.find((t) => t.id === tripId);
@@ -894,7 +894,7 @@ export const tripsApi = {
     state = {
       ...state,
       trips: state.trips.map((t) =>
-        t.id === tripId ? { ...t, shareToken: token, isPublic: t.isPublic ?? true } : t,
+        t.id === tripId ? { ...t, shareToken: token } : t,
       ),
     };
     persist();
@@ -903,6 +903,10 @@ export const tripsApi = {
 
   setTripPublic(tripId: string, isPublic: boolean) {
     ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    if (!trip) return;
+    // Drafts can never be public.
+    if (isPublic && trip.status === "draft") return;
     state = {
       ...state,
       trips: state.trips.map((t) => (t.id === tripId ? { ...t, isPublic } : t)),
