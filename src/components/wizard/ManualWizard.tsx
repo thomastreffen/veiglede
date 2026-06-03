@@ -150,7 +150,8 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   });
 
   const validRows = rows.filter((r) => r.text.trim().length > 0);
-  const canContinue = validRows.length >= 2;
+  const hasOrigin = originText.trim().length > 0 || !!originPlace;
+  const canContinue = validRows.length >= 1 && hasOrigin;
 
   const ensurePlace = async (r: Row): Promise<ResolvedPlace | null> => {
     if (r.place) return r.place;
