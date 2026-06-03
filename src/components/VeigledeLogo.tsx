@@ -94,7 +94,7 @@ export function VeigledeLogo({
     tone === "light"
       ? "text-white"
       : tone === "dark"
-        ? "text-foreground"
+        ? "text-slate-900"
         : "text-foreground";
 
   return (
