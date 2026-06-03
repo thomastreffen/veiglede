@@ -507,18 +507,15 @@ function Landing() {
 
       {/* ============ BETA FEEDBACK ============ */}
       <section className="bg-white border-y border-black/5">
-        <div className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28 text-center">
+        <div className="mx-auto max-w-2xl px-4 md:px-8 py-24 md:py-28 text-center">
           <p className="text-[11px] uppercase tracking-[0.32em] text-primary">Tilbakemelding</p>
           <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">Vi er i beta</h2>
           <p className="mt-5 text-[#1a1a1a]/70 max-w-xl mx-auto">
             Veiglede er under kontinuerlig utvikling. Har du forslag, feil å rapportere, eller bare vil si hei?
           </p>
-          <a
-            href="mailto:kontakt@veiglede.no"
-            className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#1a1a1a] px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#1a1a1a]/90 transition-all"
-          >
-            Send oss tilbakemelding på kontakt@veiglede.no <ArrowRight className="h-4 w-4" />
-          </a>
+          <div className="mt-8">
+            <ContactForm variant="light" />
+          </div>
         </div>
       </section>
 
