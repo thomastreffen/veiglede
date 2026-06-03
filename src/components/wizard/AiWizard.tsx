@@ -645,13 +645,20 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             report("Legger til anbefalte partnere…");
             try {
               const b2 = tripsApi.getTripBundle(trip.id);
-              const firstDay = b2.days[0];
-              if (firstDay && routePartners.length > 0) {
+              const allDays = b2.days.slice().sort((a, b) => a.dayNumber - b.dayNumber);
+              if (allDays.length > 0 && routePartners.length > 0) {
                 const map: Record<string, "food" | "lodging" | "attraction" | "fuel"> = {
                   mat: "food", overnatting: "lodging", attraksjon: "attraction", drivstoff: "fuel",
                 };
-                for (const p of routePartners.slice(0, 2)) {
-                  tripsApi.addStop(firstDay.id, {
+                const partners = routePartners.slice(0, 2);
+                partners.forEach((p, i) => {
+                  // Distribute partner stops proportionally across days
+                  const dayIdx = Math.min(
+                    allDays.length - 1,
+                    Math.floor((i / partners.length) * allDays.length),
+                  );
+                  const targetDay = allDays[dayIdx];
+                  tripsApi.addStop(targetDay.id, {
                     name: p.name,
                     type: map[p.category] ?? "attraction",
                     description: p.description ?? undefined,
@@ -663,7 +670,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                     partnerLogoUrl: p.logo_url ?? undefined,
                     reason: "Anbefalt partner langs ruta — tydelig merket.",
                   });
-                }
+                });
               }
             } catch { /* ignore */ }
 
