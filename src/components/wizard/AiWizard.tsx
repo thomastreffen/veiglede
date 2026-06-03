@@ -622,6 +622,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                 }
               }
             } else {
+              toast.warning("AI klarte ikke å generere en detaljert plan. Turen er opprettet uten stopp — du kan legge til manuelt.");
               // Fallback: distribute typed waypoints across days
               const n = wpResolved.length;
               wpResolved.forEach((wp, i) => {
@@ -636,6 +637,20 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                   reason: "Lagt til som ønsket stopp.",
                 });
               });
+              // Ensure at least a start and end stop so the trip isn't blank
+              if (tripDays[0]) {
+                tripsApi.addStop(tripDays[0].id, {
+                  name: origin, type: "city", location: origin,
+                  description: "Startpunkt for turen.", durationMin: 15,
+                });
+              }
+              const lastDay = tripDays[tripDays.length - 1];
+              if (lastDay) {
+                tripsApi.addStop(lastDay.id, {
+                  name: finalDestinationText, type: "city", location: finalDestinationText,
+                  description: "Endepunkt for turen.", durationMin: 15,
+                });
+              }
             }
 
             // Ferry segments
