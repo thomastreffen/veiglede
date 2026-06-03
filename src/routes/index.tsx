@@ -17,8 +17,6 @@ import {
   Radio,
   ShieldCheck,
   Route as RouteIcon,
-  Instagram,
-  Facebook,
   Snowflake,
   Sun,
   Leaf,
@@ -98,7 +96,7 @@ const STEP_ICONS = [Bike, Sparkles, Share2, Camera];
 const STEP_IMAGES = [groupMotorcycles, routeSognefjellet, routeHardanger, routeLofoten];
 const AUDIENCE_EMOJIS = ["🏍️", "🚗", "🚐"];
 const AUDIENCE_IMAGES = [groupMotorcycles, heroFjord, routeHardanger];
-const TESTIMONIAL_EMOJIS = ["🏍️", "🚐", "🚗"];
+
 const ROW_EMOJIS: string[][] = [
   ["🗺️", "📍", "📅"],
   ["🏍️", "⛽", "🌤️"],
