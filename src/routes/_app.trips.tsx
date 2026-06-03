@@ -24,8 +24,8 @@ function TripsDashboard() {
   const { trips: allTrips, stops } = useTripsStore();
   const { vehicles } = useVehicles();
   const t = useT();
-  // Drafts only appear in "Mine turer" after the user explicitly saves them.
-  const trips = allTrips.filter((tr) => tr.status !== "draft");
+  // Show all trips (drafts included) so users see status badges at a glance.
+  const trips = allTrips;
   const photoStops = stops.filter((s) => s.photoOp === true).length;
 
   if (pathname !== "/trips") {
