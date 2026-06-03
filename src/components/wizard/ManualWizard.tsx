@@ -436,9 +436,27 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                       </div>
                     </div>
                     {tp === "lodging" && (
-                      <p className="text-[11px] text-muted-foreground pl-7">
-                        🌙 {nights ? `${nights} ${nights === 1 ? "natt" : "netter"}` : "Legg til neste stopp for å beregne netter"}
-                      </p>
+                      <div className="flex items-center gap-2 pl-7 text-[11px] text-muted-foreground">
+                        <span>🌙 Netter:</span>
+                        <button
+                          type="button"
+                          onClick={() => updateRow(r.key, { nights: Math.max(1, (r.nights ?? 1) - 1) })}
+                          className="h-6 w-6 rounded-md border border-border bg-background hover:border-primary"
+                          aria-label="Færre netter"
+                        >−</button>
+                        <span className="font-mono tabular-nums text-foreground min-w-[1.5rem] text-center">{r.nights ?? 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateRow(r.key, { nights: Math.min(14, (r.nights ?? 1) + 1) })}
+                          className="h-6 w-6 rounded-md border border-border bg-background hover:border-primary"
+                          aria-label="Flere netter"
+                        >+</button>
+                        {r.text.trim() && (
+                          <span className="ml-2 italic truncate">
+                            {(r.nights ?? 1)} {(r.nights ?? 1) === 1 ? "natt" : "netter"} på {r.text.trim()}
+                          </span>
+                        )}
+                      </div>
                     )}
                     {tp !== "lodging" && !r.date && (
                       <p className="text-[11px] text-amber-600 dark:text-amber-400 pl-7">Dato anbefales</p>
