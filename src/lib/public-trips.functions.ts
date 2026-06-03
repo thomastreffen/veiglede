@@ -118,6 +118,7 @@ export const fetchPublicTripsFn = createServerFn({ method: "GET" })
       if (!blob?.trips) continue;
       for (const t of blob.trips) {
         if (t?.isPublic !== true) continue;
+        if (t?.status === "draft") continue; // never show drafts publicly
         const shareToken = typeof t.shareToken === "string" ? t.shareToken : undefined;
         if (!shareToken) continue;
         collected.push({
