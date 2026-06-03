@@ -297,26 +297,21 @@ export function useLiveSessionByToken(token: string | null | undefined): {
 
     const load = async () => {
       const { data } = await (supabase as any)
-        .from("trip_live_sessions")
-        .select("*")
-        .eq("live_share_token", token)
-        .maybeSingle();
+        .rpc("get_live_session_by_token", { p_token: token });
       if (cancelled) return;
-      setSession((data as LiveSession | null) ?? null);
+      // RPC returns the row directly (or null if no match)
+      const row = Array.isArray(data) ? data[0] : data;
+      setSession((row as LiveSession | null) ?? null);
       setLoading(false);
     };
     void load();
 
-    const channel = subscribeAndSet({ column: "live_share_token", value: token }, setSession);
-
-    // Auto-refresh: if session is null, retry every 15s in case the driver
-    // starts broadcasting after the page loaded.
+    // Auto-refresh poll (anon viewers cannot use realtime — RLS scopes to authenticated owners/companions).
     const retry = setInterval(() => { if (!cancelled) void load(); }, 15_000);
 
     return () => {
       cancelled = true;
       clearInterval(retry);
-      void supabase.removeChannel(channel);
     };
   }, [token]);
 
