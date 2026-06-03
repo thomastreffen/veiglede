@@ -549,28 +549,45 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
 
             // 3) Apply AI plan: per-day title + stops
             if (plan && plan.days.length > 0) {
+              const totalDriveMin = plan.days.reduce((a, d) => a + (d.drivingMinutes || 0), 0);
+              const fallbackKm = plan.days.length > 0 ? distanceKm / plan.days.length : 0;
               for (const aiDay of plan.days) {
                 const day = tripDays[aiDay.dayNumber - 1];
                 if (!day) continue;
+                const isLastDay = aiDay.dayNumber === plan.days.length;
                 report(`Planlegger dag ${aiDay.dayNumber}: ${aiDay.start} → ${aiDay.end}…`);
                 tripsApi.updateDay(day.id, {
                   title: `${aiDay.start} → ${aiDay.end}`,
                   summary: aiDay.summary,
                 });
+                const dayKm = Math.round(
+                  totalDriveMin > 0 && aiDay.drivingMinutes
+                    ? distanceKm * (aiDay.drivingMinutes / totalDriveMin)
+                    : fallbackKm
+                );
+                let isFirstStopOfDay = true;
                 for (const s of aiDay.stops) {
+                  // Skip lodging on final day of a round trip — traveler is home.
+                  if (s.type === "lodging" && isLastDay && isRoundTrip) continue;
+                  const name = safeStopName(s.name, s.type as StopType);
                   tripsApi.addStop(day.id, {
-                    name: s.name,
+                    name,
                     type: s.type as StopType,
-                    location: s.name,
+                    location: name,
                     description: s.description,
                     durationMin: s.durationMin,
                     durationSource: "ai",
                     reason: "AI-foreslått stopp.",
+                    distanceFromPrevKm: isFirstStopOfDay ? dayKm : undefined,
                   });
+                  isFirstStopOfDay = false;
                 }
-                if (aiDay.lodging && !aiDay.stops.some((s) => s.type === "lodging")) {
+                const lodgingName = (aiDay.lodging ?? "").trim();
+                const skipLodging = isLastDay && isRoundTrip;
+                const validLodging = lodgingName.length > 0 && !/^ingen$/i.test(lodgingName);
+                if (validLodging && !skipLodging && !aiDay.stops.some((s) => s.type === "lodging")) {
                   tripsApi.addStop(day.id, {
-                    name: aiDay.lodging,
+                    name: safeStopName(lodgingName, "lodging"),
                     type: "lodging",
                     location: aiDay.end,
                     description: "Foreslått overnatting.",
