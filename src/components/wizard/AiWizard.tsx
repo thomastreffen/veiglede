@@ -34,6 +34,17 @@ const DEFAULT_DATE = (() => {
 const uid = () => Math.random().toString(36).slice(2, 10);
 const newWaypoint = (): WaypointRow => ({ key: uid(), text: "", place: null });
 
+function safeStopName(raw: string | null | undefined, type: StopType): string {
+  const v = (raw ?? "").trim();
+  if (!v || /^ingen$/i.test(v)) {
+    if (type === "lodging") return "Overnatting";
+    if (type === "food") return "Matpause";
+    if (type === "viewpoint") return "Utsiktspunkt";
+    return "Stopp";
+  }
+  return v;
+}
+
 function pickCover(s: RouteStyle): CoverKey {
   switch (s) {
     case "scenic": return "fjord";
