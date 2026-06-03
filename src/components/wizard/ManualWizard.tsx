@@ -20,10 +20,39 @@ interface Row {
   date: string;
   dayNumber: number;
   type?: "lodging" | "city" | "waypoint";
+  nights?: number;
 }
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function newRow(): Row { return { key: uid(), text: "", place: null, date: "", dayNumber: 1 }; }
+
+// Haversine km between two coords.
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+// Extract a friendly city/place name from a free-form label, stripping
+// hotel chain prefixes and trailing administrative parts.
+function cityNameFromLabel(label: string, place: ResolvedPlace | null): string {
+  // Prefer the place's structured city/locality if available.
+  const candidate = place?.label ?? label;
+  if (!candidate) return label;
+  // Split on commas → first segment is usually the name, rest is city/region.
+  const parts = candidate.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return label;
+  // If first part looks like a hotel/lodging chain, prefer the next part.
+  const first = parts[0];
+  const looksHotel = /scandic|thon|clarion|radisson|hilton|marriott|comfort|quality|first hotel|hotel|hotell|hostel|camping/i.test(first);
+  if (looksHotel && parts.length > 1) return parts[1];
+  return first;
+}
 
 function addDays(iso: string, n: number): string {
   if (!iso) return "";
