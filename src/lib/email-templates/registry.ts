@@ -15,6 +15,7 @@ import { template as tripShared } from './trip-shared'
 import { template as accountDeletion } from './account-deletion'
 import { template as tripReminder } from './trip-reminder'
 import { template as partnerInvoice } from './partner-invoice'
+import { template as contactReply } from './contact-reply'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   welcome,
@@ -23,4 +24,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'account-deletion': accountDeletion,
   'trip-reminder': tripReminder,
   'partner-invoice': partnerInvoice,
+  'contact-reply': contactReply,
 }
