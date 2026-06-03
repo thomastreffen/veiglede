@@ -67,7 +67,7 @@ export function LogoGlyph({ className }: { className?: string }) {
           d="M6 0 C 9.3 0, 12 2.7, 12 6 C 12 10, 6 16, 6 16 C 6 16, 0 10, 0 6 C 0 2.7, 2.7 0, 6 0 Z"
           fill="oklch(0.78 0.17 65)"
         />
-        <circle cx="6" cy="6" r="2.2" fill="oklch(0.16 0.012 250)" />
+        <circle cx="6" cy="6" r="2.2" fill="white" />
       </g>
     </svg>
   );
