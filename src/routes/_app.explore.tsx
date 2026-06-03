@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { fetchPublicTrips, type PublicTripSummary } from "@/lib/public-trips";
+import { publicPlaceName } from "@/lib/public-place";
 import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
 import { PublicUserCard } from "@/components/PublicUserCard";
 import {
