@@ -531,6 +531,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
               region: "Norge",
               origin, destination: finalDestinationText, startDate: date,
               vehicle: vt, vehicleId: selectedVehicle.id, vehicleName: selectedVehicle.name, energy,
+              source: "ai",
               style,
               distanceKm, drivingTime,
               cover: pickCover(style),
