@@ -242,29 +242,19 @@ function Onboarding() {
           <p className="mt-3 text-muted-foreground">
             {ob.step4BodyPre}<Link to="/settings" className="underline text-foreground">{ob.step4BodyLink}</Link>{ob.step4BodyPost}
           </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <button onClick={() => finish()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110">
-              <Sparkles className="h-4 w-4" /> {ob.planFirstTrip}
-            </button>
-            <button onClick={async () => { if (user) await supabase.from("profiles").upsert({ id: user.id, onboarded_at: new Date().toISOString() }); window.location.assign(getNext(trips.length === 0 ? "/garage" : "/trips")); }}
-              className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm hover:bg-surface-2">
-              {trips.length === 0 ? ob.toGarage : ob.toMyTrips}
-            </button>
-          </div>
-
           <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface/50 p-4">
             <p className="text-sm font-medium text-foreground">{ob.whatsNextTitle}</p>
             <p className="mt-1 text-xs text-muted-foreground">{ob.whatsNextBody}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Link to="/trips/new" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110">
-                {ob.planFirstTrip} <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link to="/explore" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
+              <button onClick={() => finish("/trips/new")} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110">
+                <Sparkles className="h-3.5 w-3.5" /> {ob.planFirstTrip} <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={() => finish("/explore")} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
                 {ob.exploreTrips} <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link to="/hjelp" className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
+              </button>
+              <button onClick={() => finish("/hjelp")} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:bg-surface-2">
                 {ob.askHelpBot} <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
+              </button>
             </div>
           </div>
         </Card>
