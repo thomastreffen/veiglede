@@ -1107,10 +1107,11 @@ function PlacementBtn({ label, onClick }: { label: string; onClick: () => void }
 }
 
 function PlannerActions({
-  trip, tripDays, maxDrivingHours,
+  trip, tripDays, tripStops, maxDrivingHours,
 }: {
-  trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string; startDate?: string };
+  trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string; startDate?: string; source?: "manual" | "ai" | "template" };
   tripDays: { id: string; dayNumber: number }[];
+  tripStops: { dayId: string; type: string }[];
   maxDrivingHours: number;
 }) {
   const [destOpen, setDestOpen] = useState(false);
