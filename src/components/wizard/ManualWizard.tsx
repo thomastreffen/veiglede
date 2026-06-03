@@ -120,6 +120,10 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   const [importOpen, setImportOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  // Trip origin — the actual departure point, separate from the first overnight stop.
+  const [originText, setOriginText] = useState<string>("");
+  const [originPlace, setOriginPlace] = useState<ResolvedPlace | null>(null);
+
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId) ?? defaultVehicle;
 
   const updateRow = (key: string, patch: Partial<Row>) =>
