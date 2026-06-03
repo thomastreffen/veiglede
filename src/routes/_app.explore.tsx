@@ -306,7 +306,7 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
             <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} ${ex.stops}`} />
           </div>
           <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground border-t border-border/60 pt-3">
-            <span className="inline-flex items-center gap-1 truncate min-w-0"><MapPin className="h-3 w-3 shrink-0" /> {t.origin} → {t.destination}</span>
+            <span className="inline-flex items-center gap-1 truncate min-w-0"><MapPin className="h-3 w-3 shrink-0" /> {pubOrigin} → {pubDest}</span>
           </div>
           <div className="mt-3" onClick={(e) => e.preventDefault()}>
             <TripReactionsRow tripId={t.id} />
