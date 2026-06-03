@@ -98,7 +98,12 @@ function TripPlanner() {
     const ctrl = new AbortController();
     fetchRouteSuggestions(trip, mergedInterests, ctrl.signal)
       .then((s) => setSuggestions(s))
-      .catch(() => setSuggestions([]));
+      .catch((err) => {
+        if ((err as { name?: string })?.name !== "AbortError") {
+          console.warn("[trip] fetchRouteSuggestions failed", err);
+        }
+        setSuggestions([]);
+      });
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, trip?.routeGeometry, mergedInterests.join(",")]);
