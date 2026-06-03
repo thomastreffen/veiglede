@@ -100,6 +100,12 @@ export interface TripDay {
   summary?: string;
   /** Optional planned departure time (HH:MM, 24h). Used to estimate arrival at each stop. */
   departureTime?: string;
+  /** Per-day leg distance in km (from this day's start location to its end). */
+  dayDistanceKm?: number;
+  /** Per-day driving time in minutes. */
+  dayDrivingTimeMin?: number;
+  /** Per-day route geometry from routing provider. */
+  dayRouteGeometry?: { lat: number; lng: number }[];
 }
 
 /** Keywords that strongly suggest a stop is a lodging/overnight. */
@@ -212,6 +218,8 @@ export interface Trip {
   costSettings?: CostSettings;
   /** Route hash of the last ferrySegments[] applied — prevents duplicate auto-inserts. */
   ferryDetectionHash?: string;
+  /** True when the trip returns to (or near) its origin. */
+  isRoundTrip?: boolean;
 }
 
 

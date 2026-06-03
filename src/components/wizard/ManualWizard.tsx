@@ -20,10 +20,39 @@ interface Row {
   date: string;
   dayNumber: number;
   type?: "lodging" | "city" | "waypoint";
+  nights?: number;
 }
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function newRow(): Row { return { key: uid(), text: "", place: null, date: "", dayNumber: 1 }; }
+
+// Haversine km between two coords.
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+// Extract a friendly city/place name from a free-form label, stripping
+// hotel chain prefixes and trailing administrative parts.
+function cityNameFromLabel(label: string, place: ResolvedPlace | null): string {
+  // Prefer the place's structured city/locality if available.
+  const candidate = place?.label ?? label;
+  if (!candidate) return label;
+  // Split on commas → first segment is usually the name, rest is city/region.
+  const parts = candidate.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return label;
+  // If first part looks like a hotel/lodging chain, prefer the next part.
+  const first = parts[0];
+  const looksHotel = /scandic|thon|clarion|radisson|hilton|marriott|comfort|quality|first hotel|hotel|hotell|hostel|camping/i.test(first);
+  if (looksHotel && parts.length > 1) return parts[1];
+  return first;
+}
 
 function addDays(iso: string, n: number): string {
   if (!iso) return "";
@@ -134,93 +163,195 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     }
     setGenerating(true);
     try {
-      const origin = validRows[0];
-      const destination = validRows[validRows.length - 1];
-      const middle = validRows.slice(1, -1);
+      // 1) Resolve places for every row in parallel.
+      const resolvedPlaces = await Promise.all(validRows.map((r) => ensurePlace(r)));
 
-      const fromResolved = await ensurePlace(origin);
-      const toResolved = await ensurePlace(destination);
+      // 2) Expand multi-night lodging rows into consecutive days.
+      // Each "step" represents one travel day. A lodging row with nights = N
+      // produces 1 driving day + (N-1) rest days at the same location.
+      type Step = {
+        row: Row;
+        place: ResolvedPlace | null;
+        date: string;
+        isRestDay: boolean;
+      };
+      const steps: Step[] = [];
+      validRows.forEach((r, i) => {
+        const place = resolvedPlaces[i];
+        const tp = detectType(r.text, r.type);
+        const nights = tp === "lodging" ? Math.max(1, r.nights ?? 1) : 1;
+        for (let n = 0; n < nights; n++) {
+          steps.push({
+            row: r,
+            place,
+            date: r.date ? addDays(r.date, n) : "",
+            isRestDay: n > 0,
+          });
+        }
+      });
 
+      // 3) Compute per-leg routes sequentially (step i → step i+1).
+      // A "rest day" or same-location leg yields a 0-km leg.
       const energy = energyTypeToSource(selectedVehicle.energy);
       const vt = selectedVehicle.type;
+      type Leg = { distanceKm: number; durationMin: number; geometry?: { lat: number; lng: number }[] };
+      const legs: Leg[] = [];
+      let firstLegRoute: Awaited<ReturnType<typeof getRoute>> | null = null;
+      const fullGeometry: { lat: number; lng: number }[] = [];
 
-      let route: Awaited<ReturnType<typeof getRoute>> | null = null;
-      if (fromResolved && toResolved) {
-        route = await getRoute({
-          origin: { lat: fromResolved.lat, lng: fromResolved.lng },
-          destination: { lat: toResolved.lat, lng: toResolved.lng },
+      for (let i = 1; i < steps.length; i++) {
+        const prev = steps[i - 1];
+        const cur = steps[i];
+        if (cur.isRestDay || !prev.place || !cur.place) {
+          legs.push({ distanceKm: 0, durationMin: 0 });
+          continue;
+        }
+        // Skip identical points.
+        if (prev.place.lat === cur.place.lat && prev.place.lng === cur.place.lng) {
+          legs.push({ distanceKm: 0, durationMin: 0 });
+          continue;
+        }
+        const r = await getRoute({
+          origin: { lat: prev.place.lat, lng: prev.place.lng },
+          destination: { lat: cur.place.lat, lng: cur.place.lng },
           vehicleType: vt,
           routeStyle: style,
           avoidHighways: avoidHighway,
           avoidFerries: !!selectedVehicle.drivingFlags?.["no-ferry"],
         });
+        if (i === 1) firstLegRoute = r;
+        legs.push({ distanceKm: r.distanceKm, durationMin: r.durationMin, geometry: r.geometry });
+        if (r.geometry?.length) fullGeometry.push(...r.geometry);
       }
 
-      const distanceKm = route?.distanceKm ?? 0;
-      const dur = route?.durationMin ?? 0;
-      const drivingTime = dur ? `${Math.floor(dur / 60)}t ${dur % 60}min` : "—";
+      const totalDistanceKm = Math.round(legs.reduce((a, l) => a + l.distanceKm, 0));
+      const totalDurationMin = legs.reduce((a, l) => a + l.durationMin, 0);
+      const drivingTime = totalDurationMin
+        ? `${Math.floor(totalDurationMin / 60)}t ${Math.round(totalDurationMin % 60)}min`
+        : "—";
 
-      const startDate = origin.date || validRows.find((r) => r.date)?.date || undefined;
+      // 4) Round-trip detection (last step ≈ first step location, within 5 km).
+      const first = steps[0];
+      const last = steps[steps.length - 1];
+      const isRoundTrip = !!(first.place && last.place &&
+        haversineKm(
+          { lat: first.place.lat, lng: first.place.lng },
+          { lat: last.place.lat, lng: last.place.lng },
+        ) < 5);
+
+      // 5) Build a smart title using city names of meaningful stops.
+      const cityNames = steps.map((s) => cityNameFromLabel(s.row.text, s.place));
+      let title: string;
+      if (isRoundTrip && cityNames.length >= 2) {
+        const middle = Array.from(new Set(cityNames.slice(1, -1))).slice(0, 2);
+        title = middle.length
+          ? `${cityNames[0]} → ${middle.join(" → ")} → ${cityNames[0]}`
+          : `Rundtur ${cityNames[0]}`;
+      } else {
+        // Dedupe consecutive duplicates from rest days.
+        const dedup = cityNames.filter((c, i) => i === 0 || c !== cityNames[i - 1]);
+        title = dedup.length <= 3
+          ? dedup.join(" → ")
+          : `${dedup[0]} → ${dedup.slice(1, -1).slice(0, 2).join(" → ")} → ${dedup[dedup.length - 1]}`;
+      }
+
+      const startDate = first.date || validRows.find((r) => r.date)?.date || undefined;
+      const destinationLabel = last.row.text;
+      const originLabel = first.row.text;
+      const fromResolved = first.place;
+      const toResolved = last.place;
 
       const trip = tripsApi.createTrip({
-        title: `${origin.text} → ${destination.text}`,
+        title,
         subtitle: `${styleMeta(style).label} med ${selectedVehicle.name}`,
         region: "Norge",
-        origin: origin.text,
-        destination: destination.text,
+        origin: originLabel,
+        destination: destinationLabel,
         startDate,
         vehicle: vt,
         vehicleId: selectedVehicle.id,
         vehicleName: selectedVehicle.name,
         energy,
         style,
-        distanceKm,
+        distanceKm: totalDistanceKm,
         drivingTime,
         cover: pickCover(style),
+        isRoundTrip,
         originLoc: fromResolved ? { lat: fromResolved.lat, lng: fromResolved.lng } : undefined,
         destinationLoc: toResolved ? { lat: toResolved.lat, lng: toResolved.lng } : undefined,
         destinationPlaceTypes: toResolved?.placeTypes,
         originPlaceTypes: fromResolved?.placeTypes,
-        routeGeometry: route?.geometry,
-        routeDistanceKm: route?.distanceKm,
-        routeDurationMin: route?.durationMin,
-        routeProvider: route?.provider,
-        routeProfile: route?.profile,
-        routeAvoidHighways: route?.avoidOptions?.highways,
-        routeAvoidFerries: route?.avoidOptions?.ferries,
-        routeRawDistanceMeters: route?.rawDistanceMeters,
-        routeRawDurationSeconds: route?.rawDurationSeconds,
-        routeFerryDistanceKm: route?.ferryDistanceKm,
-        routeFerryDurationMin: route?.ferryDurationMin,
+        routeGeometry: fullGeometry.length ? fullGeometry : firstLegRoute?.geometry,
+        routeDistanceKm: totalDistanceKm,
+        routeDurationMin: totalDurationMin,
+        routeProvider: firstLegRoute?.provider,
+        routeProfile: firstLegRoute?.profile,
+        routeAvoidHighways: firstLegRoute?.avoidOptions?.highways,
+        routeAvoidFerries: firstLegRoute?.avoidOptions?.ferries,
       });
 
-      const maxDay = Math.max(1, ...validRows.map((r) => r.dayNumber));
-      if (maxDay > 1) tripsApi.splitIntoDays(trip.id, maxDay);
+      // 6) Ensure we have one day per step (skip any trailing empty steps).
+      const dayCount = steps.length;
+      if (dayCount > 1) tripsApi.splitIntoDays(trip.id, dayCount);
 
       const bundle = tripsApi.getTripBundle(trip.id);
-      const daysByNumber = new Map(bundle.days.map((d) => [d.dayNumber, d]));
+      const orderedDays = [...bundle.days].sort((a, b) => a.dayNumber - b.dayNumber);
 
-      validRows.forEach((r) => {
-        const day = daysByNumber.get(r.dayNumber);
-        if (day && r.date) tripsApi.updateDay(day.id, { date: r.date });
+      // 7) Set per-day route data + date + title.
+      steps.forEach((s, i) => {
+        const day = orderedDays[i];
+        if (!day) return;
+        const leg = legs[i - 1]; // leg INTO this day
+        const prevCity = i > 0 ? cityNameFromLabel(steps[i - 1].row.text, steps[i - 1].place) : "";
+        const curCity = cityNameFromLabel(s.row.text, s.place);
+        const dayTitle = s.isRestDay
+          ? `Hviledag — ${curCity}`
+          : i === 0
+            ? `${curCity}`
+            : `${prevCity} → ${curCity}`;
+        tripsApi.updateDay(day.id, {
+          date: s.date || undefined,
+          title: dayTitle,
+          dayDistanceKm: leg ? Math.round(leg.distanceKm) : 0,
+          dayDrivingTimeMin: leg ? Math.round(leg.durationMin) : 0,
+          dayRouteGeometry: leg?.geometry,
+        });
       });
 
-      for (const r of middle) {
-        const place = await ensurePlace(r);
-        const day = daysByNumber.get(r.dayNumber) ?? daysByNumber.get(1);
-        if (!day) continue;
-        tripsApi.addStop(day.id, {
-          name: r.text.trim(),
-          type: detectType(r.text, r.type),
-          location: r.text.trim(),
-          lat: place?.lat,
-          lng: place?.lng,
-          placeTypes: place?.placeTypes,
+      // 8) The auto-created "Ankomst {destination}" stop sits on day 1 from
+      // createTrip(). Move it to the actual last day so multi-day trips
+      // show arrival on the correct day.
+      const ankomst = bundle.stops.find((s) =>
+        s.dayId === orderedDays[0]?.id && s.name?.startsWith("Ankomst "));
+      const lastDay = orderedDays[orderedDays.length - 1];
+      if (ankomst && lastDay && lastDay.id !== ankomst.dayId) {
+        tripsApi.updateStop(ankomst.id, {
+          dayId: lastDay.id,
+          name: `Ankomst ${cityNameFromLabel(last.row.text, last.place)}`,
+          distanceFromPrevKm: legs[legs.length - 1] ? Math.round(legs[legs.length - 1].distanceKm) : undefined,
         });
       }
 
-      if (route?.ferrySegments && route.ferrySegments.length > 0) {
-        try { tripsApi.applyFerrySegments(trip.id, route.ferrySegments); } catch { /* no-op */ }
+      // 9) Add intermediate stops on the right days (skip origin & destination).
+      for (let i = 1; i < steps.length - 1; i++) {
+        const s = steps[i];
+        const day = orderedDays[i];
+        if (!day || s.isRestDay) continue;
+        const leg = legs[i - 1];
+        const stopType = detectType(s.row.text, s.row.type);
+        tripsApi.addStop(day.id, {
+          name: s.row.text.trim(),
+          type: stopType,
+          location: s.row.text.trim(),
+          lat: s.place?.lat,
+          lng: s.place?.lng,
+          placeTypes: s.place?.placeTypes,
+          distanceFromPrevKm: leg ? Math.round(leg.distanceKm) : undefined,
+        });
+      }
+
+      if (firstLegRoute?.ferrySegments && firstLegRoute.ferrySegments.length > 0) {
+        try { tripsApi.applyFerrySegments(trip.id, firstLegRoute.ferrySegments); } catch { /* no-op */ }
       }
 
       toast.success(w.generate.success);
@@ -259,14 +390,27 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           <h1 className="mt-6 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{w.manual.title}</h1>
           <p className="mt-3 text-muted-foreground">{w.manual.subtitle}</p>
 
+          {(() => {
+            const first = validRows[0];
+            const last = validRows[validRows.length - 1];
+            if (!first?.place || !last?.place || first === last) return null;
+            const km = haversineKm(
+              { lat: first.place.lat, lng: first.place.lng },
+              { lat: last.place.lat, lng: last.place.lng },
+            );
+            if (km >= 5) return null;
+            return (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                ✓ Rundtur detektert — slutter der den startet
+              </div>
+            );
+          })()}
+
           <div className="mt-6 space-y-2">
+
             {rows.map((r, idx) => {
               const tp = detectType(r.text, r.type);
               const icon = tp === "lodging" ? "🏨" : "🏙️";
-              const next = rows[idx + 1];
-              const nights = tp === "lodging" && r.date && next?.date
-                ? Math.max(1, Math.round((new Date(next.date).getTime() - new Date(r.date).getTime()) / 86400000))
-                : null;
               const isLast = idx === rows.length - 1;
               return (
                 <div key={r.key}>
@@ -305,9 +449,27 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                       </div>
                     </div>
                     {tp === "lodging" && (
-                      <p className="text-[11px] text-muted-foreground pl-7">
-                        🌙 {nights ? `${nights} ${nights === 1 ? "natt" : "netter"}` : "Legg til neste stopp for å beregne netter"}
-                      </p>
+                      <div className="flex items-center gap-2 pl-7 text-[11px] text-muted-foreground">
+                        <span>🌙 Netter:</span>
+                        <button
+                          type="button"
+                          onClick={() => updateRow(r.key, { nights: Math.max(1, (r.nights ?? 1) - 1) })}
+                          className="h-6 w-6 rounded-md border border-border bg-background hover:border-primary"
+                          aria-label="Færre netter"
+                        >−</button>
+                        <span className="font-mono tabular-nums text-foreground min-w-[1.5rem] text-center">{r.nights ?? 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateRow(r.key, { nights: Math.min(14, (r.nights ?? 1) + 1) })}
+                          className="h-6 w-6 rounded-md border border-border bg-background hover:border-primary"
+                          aria-label="Flere netter"
+                        >+</button>
+                        {r.text.trim() && (
+                          <span className="ml-2 italic truncate">
+                            {(r.nights ?? 1)} {(r.nights ?? 1) === 1 ? "natt" : "netter"} på {r.text.trim()}
+                          </span>
+                        )}
+                      </div>
                     )}
                     {tp !== "lodging" && !r.date && (
                       <p className="text-[11px] text-amber-600 dark:text-amber-400 pl-7">Dato anbefales</p>

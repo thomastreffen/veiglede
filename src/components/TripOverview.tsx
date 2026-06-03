@@ -68,7 +68,8 @@ function computeDayCosts(trip: Trip, days: TripDay[], stops: Stop[]): DayCostRow
 
   return sortedDays.map((day) => {
     const dayStops = stops.filter((s) => s.dayId === day.id).sort((a, b) => a.order - b.order);
-    const dayKm = dayStops.reduce((acc, s) => acc + (s.distanceFromPrevKm ?? 0), 0) || perDayKmFallback;
+    const stopsKm = dayStops.reduce((acc, s) => acc + (s.distanceFromPrevKm ?? 0), 0);
+    const dayKm = day.dayDistanceKm ?? (stopsKm > 0 ? stopsKm : perDayKmFallback);
     const energyCost = computeEnergyCost(dayKm, consumption, price, `day ${day.dayNumber}`);
     const lodgingCost = dayStops
       .filter((s) => s.type === "lodging" && s.booking?.pricePerNight)
