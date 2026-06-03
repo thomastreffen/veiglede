@@ -461,6 +461,8 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                   language: "nb",
                 },
               });
+              if (planRes.error) console.warn("[ai-wizard] plan failed:", planRes.error);
+              if (!planRes.plan) console.warn("[ai-wizard] plan is null, falling back to empty trip");
               if (planRes.error === "rate_limited") toast.warning("AI er travel — bruker enkel plan.");
               else if (planRes.error === "credits_exhausted") toast.warning("AI-kreditt er brukt opp — bruker enkel plan.");
               plan = planRes.plan;
