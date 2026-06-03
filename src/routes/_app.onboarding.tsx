@@ -131,6 +131,12 @@ function Onboarding() {
             {ob.addVehicle}
           </button>
 
+          {vehicles.length === 0 && (
+            <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+              💡 Du kan legge til kjøretøy nå, eller gjøre det fra garasjen senere.
+            </p>
+          )}
+
           {vehicles.length > 0 && (
             <div className="mt-4 grid gap-2">
               {vehicles.map((v) => {
