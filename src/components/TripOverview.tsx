@@ -104,7 +104,9 @@ export function TripOverview({ trip, days, stops }: Props) {
   const perDayTime = useMemo(() => computeDayBreakdowns(trip, days, stops), [trip, days, stops]);
   const dayCosts = useMemo(() => computeDayCosts(trip, days, stops), [trip, days, stops]);
 
-  const overnights = stops.filter((s) => s.type === "lodging").length;
+  const overnights = stops
+    .filter((s) => s.type === "lodging")
+    .reduce((acc, s) => acc + (s.booking?.nights ?? 1), 0);
   const ferries = stops.filter((s) => s.type === "ferry").length;
   const totalCost = dayCosts.reduce((a, d) => a + d.total, 0);
   const isElectric = tripFuelKind(trip) === "electric";
@@ -177,7 +179,11 @@ export function TripOverview({ trip, days, stops }: Props) {
                   </span>
                   <div className="min-w-0">
                     <p className="font-display text-base uppercase truncate">{day.title}</p>
-                    {day.date && <p className="text-[11px] text-muted-foreground">{day.date}</p>}
+                    {day.date && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {new Date(day.date + "T12:00:00").toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" })}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
