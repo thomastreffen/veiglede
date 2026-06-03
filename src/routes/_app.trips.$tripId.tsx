@@ -65,6 +65,7 @@ function TripPlanner() {
   const [shareOpen, setShareOpenRaw] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [savePromptOpen, setSavePromptOpen] = useState(false);
+  const [shareOnSaveOpen, setShareOnSaveOpen] = useState(false);
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
