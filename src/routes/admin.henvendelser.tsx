@@ -17,7 +17,7 @@ export const Route = createFileRoute("/admin/henvendelser")({
 
 type Ticket = {
   id: string;
-  source: "kontaktskjema" | "partner" | "bruker" | "annet";
+  source: "kontaktskjema" | "partner" | "bruker" | "epost" | "annet";
   status: "ny" | "åpen" | "besvart" | "lukket";
   name: string | null;
   email: string;
@@ -28,12 +28,15 @@ type Ticket = {
   created_at: string;
 };
 
-const SOURCE_LABEL: Record<Ticket["source"], string> = {
-  kontaktskjema: "Kontaktskjema",
-  partner: "Partner",
-  bruker: "Bruker",
-  annet: "Annet",
-};
+function sourceLabel(source: Ticket["source"]): string {
+  switch (source) {
+    case "kontaktskjema": return "📝 Skjema";
+    case "partner": return "🤝 Partner";
+    case "bruker": return "👤 Bruker";
+    case "epost": return "📧 E-post";
+    default: return "Annet";
+  }
+}
 
 const STATUS_LABEL: Record<Ticket["status"], string> = {
   ny: "Ny",
@@ -156,6 +159,7 @@ function AdminTicketsPage() {
           >
             <option value="alle">Alle</option>
             <option value="kontaktskjema">Kontaktskjema</option>
+            <option value="epost">E-post</option>
             <option value="partner">Partner</option>
             <option value="bruker">Bruker</option>
             <option value="annet">Annet</option>
@@ -239,7 +243,7 @@ function TicketRow({
             </span>
           )}
           <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wider text-slate-300">
-            {SOURCE_LABEL[ticket.source]}
+            {sourceLabel(ticket.source)}
           </span>
           {!isNy && (
             <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wider text-slate-400">

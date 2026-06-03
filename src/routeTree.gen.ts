@@ -34,6 +34,7 @@ import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as ApiInboundEmailRouteImport } from './routes/api/inbound-email'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTripsRouteImport } from './routes/admin.trips'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
@@ -196,6 +197,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInboundEmailRoute = ApiInboundEmailRouteImport.update({
+  id: '/api/inbound-email',
+  path: '/api/inbound-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -436,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/trips': typeof AdminTripsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/inbound-email': typeof ApiInboundEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -499,6 +506,7 @@ export interface FileRoutesByTo {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/trips': typeof AdminTripsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/inbound-email': typeof ApiInboundEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -565,6 +573,7 @@ export interface FileRoutesById {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/trips': typeof AdminTripsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/inbound-email': typeof ApiInboundEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -632,6 +641,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/trips'
     | '/admin/users'
+    | '/api/inbound-email'
     | '/auth/callback'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -695,6 +705,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/trips'
     | '/admin/users'
+    | '/api/inbound-email'
     | '/auth/callback'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -760,6 +771,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/trips'
     | '/admin/users'
+    | '/api/inbound-email'
     | '/auth/callback'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -808,6 +820,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   VilkarRoute: typeof VilkarRoute
+  ApiInboundEmailRoute: typeof ApiInboundEmailRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -1005,6 +1018,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/inbound-email': {
+      id: '/api/inbound-email'
+      path: '/api/inbound-email'
+      fullPath: '/api/inbound-email'
+      preLoaderRoute: typeof ApiInboundEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -1414,6 +1434,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   VilkarRoute: VilkarRoute,
+  ApiInboundEmailRoute: ApiInboundEmailRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,

@@ -89,7 +89,7 @@ export const adminListTicketsFn = createServerFn({ method: "GET" })
     z
       .object({
         status: z.enum(["alle", "ny", "åpen", "besvart", "lukket"]).optional(),
-        source: z.enum(["alle", "kontaktskjema", "partner", "bruker", "annet"]).optional(),
+        source: z.enum(["alle", "kontaktskjema", "partner", "bruker", "epost", "annet"]).optional(),
       })
       .parse(input ?? {}),
   )
