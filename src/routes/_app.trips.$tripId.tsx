@@ -1201,7 +1201,10 @@ function PlannerActions({
 
 
   const durationMin = trip.routeDurationMin ?? 0;
-  const isLongLeg = durationMin > 0 && durationMin > maxDrivingHours * 60;
+  const allDaysHaveLodging = tripDays.length > 0 && tripDays.every((d) =>
+    tripStops.some((s) => s.dayId === d.id && s.type === "lodging"));
+  const suppressLongLeg = trip.source === "manual" || allDaysHaveLodging;
+  const isLongLeg = !suppressLongLeg && durationMin > 0 && durationMin > maxDrivingHours * 60;
 
   return (
     <section className="mt-4 space-y-3">
