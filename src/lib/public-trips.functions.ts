@@ -69,7 +69,15 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
           typeof s === "object" && s !== null && !Array.isArray(s) && dayIds.has((s as Record<string, Json | undefined>)["dayId"] as string | undefined),
       );
       console.log("Share token lookup:", token, "result:", tripId, "days:", days.length, "stops:", stops.length);
-      return { found: true, trip: match, days, stops };
+      // Strip full street address before returning publicly.
+      const safeTrip: { [key: string]: Json | undefined } = {
+        ...match,
+        origin: publicPlaceName(match["origin"] as string | undefined),
+        destination: publicPlaceName(match["destination"] as string | undefined),
+        originLoc: undefined,
+        destinationLoc: undefined,
+      };
+      return { found: true, trip: safeTrip, days, stops };
     }
 
     return { found: false };
