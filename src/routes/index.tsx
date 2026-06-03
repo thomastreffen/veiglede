@@ -17,8 +17,6 @@ import {
   Radio,
   ShieldCheck,
   Route as RouteIcon,
-  Instagram,
-  Facebook,
   Snowflake,
   Sun,
   Leaf,
@@ -89,7 +87,7 @@ const REGIONS = [
 ];
 
 const SCENIC_ROUTES = [
-  { name: "Atlanterhavsveien", km: "8 km", img: routeAtlanterhavsveien },
+  { name: "Atlanterhavsveien", km: "~ 160 km", img: routeAtlanterhavsveien },
   { name: "Trollstigen", km: "106 km", img: routeTrollstigen },
   { name: "Sognefjellet", km: "108 km", img: routeSognefjellet },
 ];
@@ -98,7 +96,7 @@ const STEP_ICONS = [Bike, Sparkles, Share2, Camera];
 const STEP_IMAGES = [groupMotorcycles, routeSognefjellet, routeHardanger, routeLofoten];
 const AUDIENCE_EMOJIS = ["🏍️", "🚗", "🚐"];
 const AUDIENCE_IMAGES = [groupMotorcycles, heroFjord, routeHardanger];
-const TESTIMONIAL_EMOJIS = ["🏍️", "🚐", "🚗"];
+
 const ROW_EMOJIS: string[][] = [
   ["🗺️", "📍", "📅"],
   ["🏍️", "⛽", "🌤️"],
@@ -119,7 +117,7 @@ function getSeason(month: number) {
       img: routeLofoten,
     };
   }
-  if (month >= 8 && month <= 9) {
+  if (month >= 8 && month <= 10) {
     return {
       Icon: Leaf,
       title: "Høstfarger i fjellet",
@@ -129,7 +127,7 @@ function getSeason(month: number) {
       img: routeHardanger,
     };
   }
-  if (month >= 10 || month <= 1) {
+  if (month === 11 || month <= 1) {
     return {
       Icon: Snowflake,
       title: "Vinterveier og snødekte pass",
@@ -507,33 +505,20 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ TESTIMONIALS ============ */}
+      {/* ============ BETA FEEDBACK ============ */}
       <section className="bg-white border-y border-black/5">
-        <div className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28">
-          <div className="text-center">
-            <p className="text-[11px] uppercase tracking-[0.32em] text-primary">{t.testimonials.eyebrow}</p>
-            <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">{t.testimonials.title}</h2>
-            <span className="mx-auto mt-4 block h-0.5 w-12 bg-primary/70" />
-          </div>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {t.testimonials.items.map((q, i) => (
-              <figure
-                key={q.author}
-                className="rounded-3xl border border-black/5 bg-[#FAFAF8] p-7 flex flex-col"
-              >
-                <div className="text-3xl leading-none">{TESTIMONIAL_EMOJIS[i]}</div>
-                <blockquote className="mt-4 text-base md:text-lg leading-relaxed text-[#1a1a1a]/85">
-                  &ldquo;{q.quote}&rdquo;
-                </blockquote>
-                <figcaption className="mt-5 pt-4 border-t border-black/5 text-xs uppercase tracking-wider text-[#1a1a1a]/60">
-                  {q.author}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-          <p className="mt-8 text-center text-xs text-[#1a1a1a]/50 italic">
-            {t.testimonials.disclaimer}
+        <div className="mx-auto max-w-7xl px-4 md:px-8 py-24 md:py-28 text-center">
+          <p className="text-[11px] uppercase tracking-[0.32em] text-primary">Tilbakemelding</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl uppercase">Vi er i beta</h2>
+          <p className="mt-5 text-[#1a1a1a]/70 max-w-xl mx-auto">
+            Veiglede er under kontinuerlig utvikling. Har du forslag, feil å rapportere, eller bare vil si hei?
           </p>
+          <a
+            href="mailto:kontakt@veiglede.no"
+            className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#1a1a1a] px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#1a1a1a]/90 transition-all"
+          >
+            Send oss tilbakemelding på kontakt@veiglede.no <ArrowRight className="h-4 w-4" />
+          </a>
         </div>
       </section>
 
@@ -699,6 +684,7 @@ function Landing() {
               Veiglede
             </h4>
             <ul className="mt-4 space-y-2 text-sm">
+              <li><Link to="/hjelp" className="hover:text-white">Hjelp og FAQ</Link></li>
               <li><a href="mailto:kontakt@veiglede.no" className="hover:text-white">Kontakt</a></li>
               <li><Link to="/personvern" className="hover:text-white">Personvern</Link></li>
               <li><Link to="/vilkar" className="hover:text-white">Vilkår</Link></li>
@@ -716,22 +702,9 @@ function Landing() {
           </div>
           <div>
             <h4 className="font-display text-xs uppercase tracking-[0.2em] text-white">Følg</h4>
-            <div className="mt-4 flex gap-3">
-              <a
-                href="#"
-                aria-label="Instagram"
-                className="grid place-items-center h-9 w-9 rounded-full border border-white/20 hover:bg-white/10"
-              >
-                <Instagram className="h-4 w-4" />
-              </a>
-              <a
-                href="#"
-                aria-label="Facebook"
-                className="grid place-items-center h-9 w-9 rounded-full border border-white/20 hover:bg-white/10"
-              >
-                <Facebook className="h-4 w-4" />
-              </a>
-            </div>
+            <p className="mt-4 text-sm text-white/60">
+              Kommer snart på Instagram og Facebook.
+            </p>
             <div className="mt-5">
               <LanguageSwitcher tone="light" />
             </div>
