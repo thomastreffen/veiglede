@@ -40,6 +40,7 @@ import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscript
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminPartnersRouteImport } from './routes/admin.partners'
 import { Route as AdminInvoicesRouteImport } from './routes/admin.invoices'
+import { Route as AdminHenvendelserRouteImport } from './routes/admin.henvendelser'
 import { Route as AdminHelpRouteImport } from './routes/admin.help'
 import { Route as AdminBenefitsRouteImport } from './routes/admin.benefits'
 import { Route as AdminAudienceRouteImport } from './routes/admin.audience'
@@ -225,6 +226,11 @@ const AdminPartnersRoute = AdminPartnersRouteImport.update({
 const AdminInvoicesRoute = AdminInvoicesRouteImport.update({
   id: '/invoices',
   path: '/invoices',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminHenvendelserRoute = AdminHenvendelserRouteImport.update({
+  id: '/henvendelser',
+  path: '/henvendelser',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminHelpRoute = AdminHelpRouteImport.update({
@@ -423,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/admin/audience': typeof AdminAudienceRoute
   '/admin/benefits': typeof AdminBenefitsRoute
   '/admin/help': typeof AdminHelpRoute
+  '/admin/henvendelser': typeof AdminHenvendelserRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -485,6 +492,7 @@ export interface FileRoutesByTo {
   '/admin/audience': typeof AdminAudienceRoute
   '/admin/benefits': typeof AdminBenefitsRoute
   '/admin/help': typeof AdminHelpRoute
+  '/admin/henvendelser': typeof AdminHenvendelserRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -550,6 +558,7 @@ export interface FileRoutesById {
   '/admin/audience': typeof AdminAudienceRoute
   '/admin/benefits': typeof AdminBenefitsRoute
   '/admin/help': typeof AdminHelpRoute
+  '/admin/henvendelser': typeof AdminHenvendelserRoute
   '/admin/invoices': typeof AdminInvoicesRoute
   '/admin/partners': typeof AdminPartnersRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -616,6 +625,7 @@ export interface FileRouteTypes {
     | '/admin/audience'
     | '/admin/benefits'
     | '/admin/help'
+    | '/admin/henvendelser'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -678,6 +688,7 @@ export interface FileRouteTypes {
     | '/admin/audience'
     | '/admin/benefits'
     | '/admin/help'
+    | '/admin/henvendelser'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -742,6 +753,7 @@ export interface FileRouteTypes {
     | '/admin/audience'
     | '/admin/benefits'
     | '/admin/help'
+    | '/admin/henvendelser'
     | '/admin/invoices'
     | '/admin/partners'
     | '/admin/settings'
@@ -1037,6 +1049,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInvoicesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/henvendelser': {
+      id: '/admin/henvendelser'
+      path: '/henvendelser'
+      fullPath: '/admin/henvendelser'
+      preLoaderRoute: typeof AdminHenvendelserRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/help': {
       id: '/admin/help'
       path: '/help'
@@ -1321,6 +1340,7 @@ interface AdminRouteChildren {
   AdminAudienceRoute: typeof AdminAudienceRoute
   AdminBenefitsRoute: typeof AdminBenefitsRoute
   AdminHelpRoute: typeof AdminHelpRoute
+  AdminHenvendelserRoute: typeof AdminHenvendelserRoute
   AdminInvoicesRoute: typeof AdminInvoicesRoute
   AdminPartnersRoute: typeof AdminPartnersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -1335,6 +1355,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAudienceRoute: AdminAudienceRoute,
   AdminBenefitsRoute: AdminBenefitsRoute,
   AdminHelpRoute: AdminHelpRoute,
+  AdminHenvendelserRoute: AdminHenvendelserRoute,
   AdminInvoicesRoute: AdminInvoicesRoute,
   AdminPartnersRoute: AdminPartnersRoute,
   AdminSettingsRoute: AdminSettingsRoute,

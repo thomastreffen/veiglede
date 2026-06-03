@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { amIAdminFn } from "@/lib/admin.functions";
+import { adminUnreadTicketsCountFn } from "@/lib/contact-tickets.functions";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { ArrowLeft } from "lucide-react";
 
@@ -12,12 +13,13 @@ export const Route = createFileRoute("/admin")({
   component: AdminLayout,
 });
 
-const NAV: { to: string; label: string; emoji: string; exact?: boolean }[] = [
+const NAV: { to: string; label: string; emoji: string; exact?: boolean; key?: string }[] = [
   { to: "/admin", label: "Dashboard", exact: true, emoji: "📊" },
   { to: "/admin/users", label: "Brukere", emoji: "👥" },
   { to: "/admin/trips", label: "Turer", emoji: "🗺️" },
   { to: "/admin/partners", label: "Partnere", emoji: "🤝" },
   { to: "/admin/advertisers", label: "Annonsører", emoji: "📢" },
+  { to: "/admin/henvendelser", label: "Henvendelser", emoji: "📬", key: "tickets" },
   { to: "/admin/subscriptions", label: "Abonnementer", emoji: "💳" },
   { to: "/admin/benefits", label: "Fordeler", emoji: "🎁" },
   { to: "/admin/audience", label: "Målgruppe", emoji: "📈" },
@@ -30,12 +32,22 @@ function AdminLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const probe = useServerFn(amIAdminFn);
+  const unreadFn = useServerFn(adminUnreadTicketsCountFn);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["am-i-admin", user?.id],
     queryFn: () => probe(),
     enabled: !!user,
     staleTime: 60_000,
+  });
+
+  const isAdmin = !!data?.isAdmin;
+  const { data: unread } = useQuery({
+    queryKey: ["admin-tickets-unread"],
+    queryFn: () => unreadFn(),
+    enabled: isAdmin,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 
   useEffect(() => {
@@ -59,6 +71,8 @@ function AdminLayout() {
   }
   if (!data.isAdmin) return null;
 
+  const unreadCount = unread?.count ?? 0;
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] min-h-screen">
@@ -72,6 +86,7 @@ function AdminLayout() {
           <nav className="flex-1 p-3 space-y-0.5">
             {NAV.map((n) => {
               const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
+              const showBadge = n.key === "tickets" && unreadCount > 0;
               return (
                 <Link
                   key={n.to}
@@ -83,7 +98,12 @@ function AdminLayout() {
                   }`}
                 >
                   <span className="text-base leading-none">{n.emoji}</span>
-                  <span>{n.label}</span>
+                  <span className="flex-1">{n.label}</span>
+                  {showBadge && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
