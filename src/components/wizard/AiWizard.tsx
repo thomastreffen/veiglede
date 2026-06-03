@@ -173,6 +173,11 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary"
               />
+              {date && date < todayIso() && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  Datoen er i fortiden — er du sikker?
+                </p>
+              )}
             </Field>
             <Field label={w.ai.daysLabel}>
               <div className="flex items-center gap-3">
