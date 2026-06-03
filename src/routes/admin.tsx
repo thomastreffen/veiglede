@@ -79,7 +79,7 @@ function AdminLayout() {
         <aside className="border-r border-slate-800 bg-slate-900/60 md:sticky md:top-0 md:h-screen flex flex-col">
           <div className="p-5 border-b border-slate-800">
             <Link to="/" className="inline-flex items-center gap-2">
-              <VeigledeLogo size="sm" />
+              <VeigledeLogo size="sm" tone="light" />
             </Link>
             <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-slate-500">Admin-panel</p>
           </div>
