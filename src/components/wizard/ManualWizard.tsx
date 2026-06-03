@@ -411,10 +411,6 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
             {rows.map((r, idx) => {
               const tp = detectType(r.text, r.type);
               const icon = tp === "lodging" ? "🏨" : "🏙️";
-              const next = rows[idx + 1];
-              const nights = tp === "lodging" && r.date && next?.date
-                ? Math.max(1, Math.round((new Date(next.date).getTime() - new Date(r.date).getTime()) / 86400000))
-                : null;
               const isLast = idx === rows.length - 1;
               return (
                 <div key={r.key}>
