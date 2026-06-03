@@ -1150,6 +1150,28 @@ export type Database = {
         Returns: number
       }
       get_invite_preview: { Args: { p_token: string }; Returns: Json }
+      get_live_session_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          heading: number | null
+          id: string
+          last_stop_name: string | null
+          lat: number
+          live_share_token: string
+          lng: number
+          speed: number | null
+          status: string
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_live_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_shared_trip: { Args: { p_token: string }; Returns: Json }
       increment_benefit_click: {
         Args: { p_benefit_id: string }
