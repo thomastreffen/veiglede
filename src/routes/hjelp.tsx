@@ -9,6 +9,7 @@ import {
 import { Search } from "lucide-react";
 import { HelpBot } from "@/components/HelpBot";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { ContactForm } from "@/components/ContactForm";
 import { useT } from "@/i18n/provider";
 
 export const Route = createFileRoute("/hjelp")({
