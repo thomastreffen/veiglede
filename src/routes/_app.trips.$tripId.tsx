@@ -1672,4 +1672,49 @@ function VehiclePickerBadge({
   );
 }
 
+function ShareOnSaveDialog({
+  open,
+  onOpenChange,
+  onChoose,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onChoose: (makePublic: boolean) => void;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4"
+      onClick={() => onOpenChange(false)}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl border border-border bg-surface p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="font-display text-2xl uppercase">Lagre tur</h2>
+        <p className="mt-3 text-sm text-foreground/80">
+          Vil du dele denne turen offentlig på Utforsk, slik at andre kan se og bli inspirert?
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => onChoose(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+          >
+            Del offentlig 🌍
+          </button>
+          <button
+            type="button"
+            onClick={() => onChoose(false)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm font-bold uppercase tracking-wider hover:border-primary"
+          >
+            Hold privat 🔒
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
