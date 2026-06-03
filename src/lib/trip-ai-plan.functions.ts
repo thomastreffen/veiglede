@@ -163,8 +163,16 @@ export const generateAiTripPlanFn = createServerFn({ method: "POST" })
     const payload = await res.json() as {
       choices?: Array<{ message?: { tool_calls?: Array<{ function?: { name?: string; arguments?: string } }> } }>;
     };
-    const argsRaw = payload.choices?.[0]?.message?.tool_calls?.find((c) => c.function?.name === TOOL_NAME)?.function?.arguments;
-    if (!argsRaw) return { plan: null, error: "no_tool_call" };
+    const msg = payload.choices?.[0]?.message as { tool_calls?: Array<{ function?: { name?: string; arguments?: string } }>; content?: string } | undefined;
+    let argsRaw = msg?.tool_calls?.find((c) => c.function?.name === TOOL_NAME)?.function?.arguments;
+    if (!argsRaw && msg?.content) {
+      // Fallback: some models return JSON in `content` instead of calling the tool.
+      argsRaw = msg.content.replace(/^```json\s*/im, "").replace(/^```\s*/im, "").replace(/```\s*$/im, "").trim();
+    }
+    if (!argsRaw) {
+      console.error("[trip-ai-plan] no tool call and no text content in response");
+      return { plan: null, error: "no_tool_call" };
+    }
 
     try {
       const parsed = JSON.parse(argsRaw);
