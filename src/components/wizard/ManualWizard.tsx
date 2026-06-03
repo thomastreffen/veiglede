@@ -39,18 +39,20 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 }
 
 // Extract a friendly city/place name from a free-form label, stripping
-// hotel chain prefixes and trailing administrative parts.
+// hotel chain prefixes and trailing administrative parts. Prefers the
+// structured cityName populated by the geocoder when available.
 function cityNameFromLabel(label: string, place: ResolvedPlace | null): string {
-  // Prefer the place's structured city/locality if available.
+  if (place?.cityName) return place.cityName;
   const candidate = place?.label ?? label;
   if (!candidate) return label;
-  // Split on commas → first segment is usually the name, rest is city/region.
   const parts = candidate.split(",").map((p) => p.trim()).filter(Boolean);
   if (parts.length === 0) return label;
-  // If first part looks like a hotel/lodging chain, prefer the next part.
   const first = parts[0];
   const looksHotel = /scandic|thon|clarion|radisson|hilton|marriott|comfort|quality|first hotel|hotel|hotell|hostel|camping/i.test(first);
-  if (looksHotel && parts.length > 1) return parts[1];
+  if (looksHotel && parts.length > 1) {
+    // Strip Norwegian/EU postal prefix on the next segment.
+    return parts[1].replace(/^\d{3,5}\s+/, "").trim() || first;
+  }
   return first;
 }
 
