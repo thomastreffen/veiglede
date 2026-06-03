@@ -24,8 +24,8 @@ function TripsDashboard() {
   const { trips: allTrips, stops } = useTripsStore();
   const { vehicles } = useVehicles();
   const t = useT();
-  // Drafts only appear in "Mine turer" after the user explicitly saves them.
-  const trips = allTrips.filter((tr) => tr.status !== "draft");
+  // Show all trips (drafts included) so users see status badges at a glance.
+  const trips = allTrips;
   const photoStops = stops.filter((s) => s.photoOp === true).length;
 
   if (pathname !== "/trips") {
@@ -126,6 +126,17 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
             <span>{s.emoji}</span> {s.label}
           </span>
           <span className="absolute top-3 right-3 text-xl">{v.emoji}</span>
+          <span
+            className={`absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full backdrop-blur px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border ${
+              t.status === "draft"
+                ? "bg-amber-400/15 border-amber-300/40 text-amber-100"
+                : t.isPublic
+                ? "bg-orange-400/15 border-orange-300/40 text-orange-100"
+                : "bg-background/70 border-border text-muted-foreground"
+            }`}
+          >
+            {t.status === "draft" ? "📝 Utkast" : t.isPublic ? "🌍 Delt" : "🔒 Privat"}
+          </span>
           {tracking.status !== "idle" && (
             <span className={`absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full backdrop-blur px-2.5 py-1 text-[10px] font-semibold border ${tm.cls}`}>
               {tm.emoji} {tm.label}

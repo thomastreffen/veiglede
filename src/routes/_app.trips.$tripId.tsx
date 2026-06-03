@@ -65,6 +65,7 @@ function TripPlanner() {
   const [shareOpen, setShareOpenRaw] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [savePromptOpen, setSavePromptOpen] = useState(false);
+  const [shareOnSaveOpen, setShareOnSaveOpen] = useState(false);
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -226,11 +227,49 @@ function TripPlanner() {
           </span>
           <button
             type="button"
-            onClick={() => { tripsApi.updateTrip(trip.id, { status: "saved" }); toast.success(td.tripSavedToast); }}
+            onClick={() => setShareOnSaveOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-amber-950 hover:brightness-110 shadow-lg shadow-amber-400/20"
           >
             <Check className="h-3.5 w-3.5" /> {td.saveTrip}
           </button>
+        </div>
+      )}
+
+      {/* Privacy banner */}
+      {user && (
+        <div className="mb-4">
+          {trip.status === "draft" ? (
+            <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
+              <span>📝 Ulagret — lagre turen for å dele den</span>
+            </div>
+          ) : trip.isPublic ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-400/50 bg-orange-400/10 px-4 py-3 text-sm text-orange-100">
+              <span className="flex-1 min-w-0 font-semibold">🌍 Delt offentlig — synlig for alle på Utforsk</span>
+              <button
+                type="button"
+                onClick={() => { tripsApi.setTripPublic(trip.id, false); void flushTripsNow(); toast.success(td.privateToast); }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-orange-300/60 bg-background/40 px-3.5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-background/70"
+              >
+                <Lock className="h-3.5 w-3.5" /> Gjør privat
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-sm">
+              <span className="flex-1 min-w-0 text-muted-foreground font-medium">🔒 Privat — kun synlig for deg og reisefølget</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!trip.shareToken) tripsApi.ensureShareToken(trip.id);
+                  tripsApi.setTripPublic(trip.id, true);
+                  void flushTripsNow();
+                  toast.success(td.publicToast);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+              >
+                <Globe className="h-3.5 w-3.5" /> Del offentlig
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -279,26 +318,6 @@ function TripPlanner() {
                 className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 backdrop-blur px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
               >
                 <Pencil className="h-3.5 w-3.5" /> {td.editTrip}
-              </button>
-            )}
-            {user && (
-              <button
-                onClick={() => {
-                  const next = !(trip.isPublic ?? false);
-                  if (next && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
-                  tripsApi.setTripPublic(trip.id, next);
-                  void flushTripsNow();
-                  toast.success(next ? td.publicToast : td.privateToast);
-                }}
-                title={td.publicTooltip}
-                className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  trip.isPublic
-                    ? "border-primary bg-primary/10 text-primary hover:bg-primary/20"
-                    : "border-border bg-background/60 hover:border-primary hover:text-primary"
-                }`}
-              >
-                {trip.isPublic ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                {trip.isPublic ? td.publicLabel : td.privateLabel}
               </button>
             )}
           </div>
@@ -403,6 +422,22 @@ function TripPlanner() {
       <ShareTripModal trip={trip} open={shareOpen} onOpenChange={setShareOpenRaw} />
       <EditTripSheet trip={trip} open={editOpen} onOpenChange={setEditOpen} />
       <SaveTripPrompt open={savePromptOpen} onOpenChange={setSavePromptOpen} title={td.saveAndSharePromptTitle} description={td.saveAndSharePromptBody} redirectTo={`/trips/${tripId}`} />
+      <ShareOnSaveDialog
+        open={shareOnSaveOpen}
+        onOpenChange={setShareOnSaveOpen}
+        onChoose={(makePublic) => {
+          tripsApi.updateTrip(trip.id, { status: "saved" });
+          if (makePublic) {
+            if (!trip.shareToken) tripsApi.ensureShareToken(trip.id);
+            tripsApi.setTripPublic(trip.id, true);
+          } else {
+            tripsApi.setTripPublic(trip.id, false);
+          }
+          void flushTripsNow();
+          setShareOnSaveOpen(false);
+          toast.success(makePublic ? td.publicToast : td.tripSavedToast);
+        }}
+      />
 
       <section className="mt-4">
         <TripCompanions tripId={tripId} onInvite={() => setShareOpen(true)} />
@@ -1636,5 +1671,50 @@ function VehiclePickerBadge({
     </Popover>
   );
 }
+
+function ShareOnSaveDialog({
+  open,
+  onOpenChange,
+  onChoose,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onChoose: (makePublic: boolean) => void;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4"
+      onClick={() => onOpenChange(false)}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl border border-border bg-surface p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="font-display text-2xl uppercase">Lagre tur</h2>
+        <p className="mt-3 text-sm text-foreground/80">
+          Vil du dele denne turen offentlig på Utforsk, slik at andre kan se og bli inspirert?
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => onChoose(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+          >
+            Del offentlig 🌍
+          </button>
+          <button
+            type="button"
+            onClick={() => onChoose(false)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm font-bold uppercase tracking-wider hover:border-primary"
+          >
+            Hold privat 🔒
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
