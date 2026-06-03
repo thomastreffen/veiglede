@@ -25,11 +25,15 @@ interface WaypointRow {
   place: ResolvedPlace | null;
 }
 
-const DEFAULT_DATE = (() => {
+function getDefaultDate(): string {
   const d = new Date();
   d.setDate(d.getDate() + 7);
   return d.toISOString().slice(0, 10);
-})();
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const newWaypoint = (): WaypointRow => ({ key: uid(), text: "", place: null });
