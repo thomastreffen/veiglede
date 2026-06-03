@@ -41,8 +41,10 @@ export const Route = createFileRoute("/shared/$shareToken")({
       return { meta: [{ title: "Delt tur — Veiglede" }] };
     }
     const pageTitle = `${loaderData.title} — Veiglede`;
+    const pubOrigin = publicPlaceName(loaderData.origin);
+    const pubDest = publicPlaceName(loaderData.destination);
     const desc = loaderData.subtitle
-      ?? `${loaderData.origin} → ${loaderData.destination}${loaderData.region ? ` · ${loaderData.region}` : ""} · ${loaderData.distanceKm} km`;
+      ?? `${pubOrigin} → ${pubDest}${loaderData.region ? ` · ${loaderData.region}` : ""} · ${loaderData.distanceKm} km`;
     return {
       meta: [
         { title: pageTitle },
