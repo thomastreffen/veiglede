@@ -558,15 +558,16 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             const bundle = tripsApi.getTripBundle(trip.id);
             const tripDays = bundle.days.sort((a, b) => a.dayNumber - b.dayNumber);
 
-            // Assign sequential dates to days
-            const base = new Date(date);
-            if (!isNaN(base.getTime())) {
+            // Assign sequential dates to days (UTC-safe — avoid timezone day shifts)
+            const parts = date.split("-").map(Number);
+            if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
+              const [y, m, day] = parts;
               tripDays.forEach((d, i) => {
-                const dd = new Date(base);
-                dd.setDate(dd.getDate() + i);
+                const dd = new Date(Date.UTC(y, m - 1, day + i));
                 tripsApi.updateDay(d.id, { date: dd.toISOString().slice(0, 10) });
               });
             }
+
 
             // 3) Apply AI plan: per-day title + stops
             if (plan && plan.days.length > 0) {
