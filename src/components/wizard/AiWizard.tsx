@@ -25,11 +25,15 @@ interface WaypointRow {
   place: ResolvedPlace | null;
 }
 
-const DEFAULT_DATE = (() => {
+function getDefaultDate(): string {
   const d = new Date();
   d.setDate(d.getDate() + 7);
   return d.toISOString().slice(0, 10);
-})();
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const newWaypoint = (): WaypointRow => ({ key: uid(), text: "", place: null });
@@ -58,7 +62,7 @@ function pickCover(s: RouteStyle): CoverKey {
 
 function isInNorway(p: ResolvedPlace | null): boolean {
   if (!p) return false;
-  return p.lat >= 57 && p.lat <= 72 && p.lng >= 3 && p.lng <= 32;
+  return p.lat >= 56 && p.lat <= 72 && p.lng >= 3 && p.lng <= 32;
 }
 
 export function AiWizard({ onBack }: { onBack: () => void }) {
@@ -78,7 +82,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
   const [destination, setDestination] = useState("");
   const [fromPlace, setFromPlace] = useState<ResolvedPlace | null>(null);
   const [toPlace, setToPlace] = useState<ResolvedPlace | null>(null);
-  const [date, setDate] = useState(DEFAULT_DATE);
+  const [date, setDate] = useState(() => getDefaultDate());
   const [days, setDays] = useState<number>(1);
   const [roundTrip, setRoundTrip] = useState<boolean>(true);
 
@@ -169,6 +173,11 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-base outline-none focus:border-primary"
               />
+              {date && date < todayIso() && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  Datoen er i fortiden — er du sikker?
+                </p>
+              )}
             </Field>
             <Field label={w.ai.daysLabel}>
               <div className="flex items-center gap-3">
@@ -522,6 +531,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
               region: "Norge",
               origin, destination: finalDestinationText, startDate: date,
               vehicle: vt, vehicleId: selectedVehicle.id, vehicleName: selectedVehicle.name, energy,
+              source: "ai",
               style,
               distanceKm, drivingTime,
               cover: pickCover(style),
@@ -548,15 +558,16 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             const bundle = tripsApi.getTripBundle(trip.id);
             const tripDays = bundle.days.sort((a, b) => a.dayNumber - b.dayNumber);
 
-            // Assign sequential dates to days
-            const base = new Date(date);
-            if (!isNaN(base.getTime())) {
+            // Assign sequential dates to days (UTC-safe — avoid timezone day shifts)
+            const parts = date.split("-").map(Number);
+            if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
+              const [y, m, day] = parts;
               tripDays.forEach((d, i) => {
-                const dd = new Date(base);
-                dd.setDate(dd.getDate() + i);
+                const dd = new Date(Date.UTC(y, m - 1, day + i));
                 tripsApi.updateDay(d.id, { date: dd.toISOString().slice(0, 10) });
               });
             }
+
 
             // 3) Apply AI plan: per-day title + stops
             if (plan && plan.days.length > 0) {
@@ -634,13 +645,20 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
             report("Legger til anbefalte partnere…");
             try {
               const b2 = tripsApi.getTripBundle(trip.id);
-              const firstDay = b2.days[0];
-              if (firstDay && routePartners.length > 0) {
+              const allDays = b2.days.slice().sort((a, b) => a.dayNumber - b.dayNumber);
+              if (allDays.length > 0 && routePartners.length > 0) {
                 const map: Record<string, "food" | "lodging" | "attraction" | "fuel"> = {
                   mat: "food", overnatting: "lodging", attraksjon: "attraction", drivstoff: "fuel",
                 };
-                for (const p of routePartners.slice(0, 2)) {
-                  tripsApi.addStop(firstDay.id, {
+                const partners = routePartners.slice(0, 2);
+                partners.forEach((p, i) => {
+                  // Distribute partner stops proportionally across days
+                  const dayIdx = Math.min(
+                    allDays.length - 1,
+                    Math.floor((i / partners.length) * allDays.length),
+                  );
+                  const targetDay = allDays[dayIdx];
+                  tripsApi.addStop(targetDay.id, {
                     name: p.name,
                     type: map[p.category] ?? "attraction",
                     description: p.description ?? undefined,
@@ -652,7 +670,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                     partnerLogoUrl: p.logo_url ?? undefined,
                     reason: "Anbefalt partner langs ruta — tydelig merket.",
                   });
-                }
+                });
               }
             } catch { /* ignore */ }
 

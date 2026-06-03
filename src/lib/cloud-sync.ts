@@ -77,6 +77,11 @@ async function pullAll(userId: string) {
 
 async function pushKey(key: string, raw: string) {
   if (!currentUserId) return;
+  // Guard: skip push if payload exceeds 4MB to avoid Supabase jsonb limits
+  if (raw.length > 4 * 1024 * 1024) {
+    console.warn("[cloud-sync] payload too large, skipping push for key:", key, `(${raw.length} bytes)`);
+    return;
+  }
   try {
     if (key === KEYS.language) {
       await supabase

@@ -510,6 +510,11 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                         className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-xs"
                         aria-label={w.manual.dateLabel}
                       />
+                      {idx === 0 && r.date && r.date < new Date().toISOString().slice(0, 10) && (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-1">
+                          Datoen er i fortiden
+                        </span>
+                      )}
                       <button
                         onClick={() => removeRow(r.key)}
                         className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-30"
