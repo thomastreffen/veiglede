@@ -218,6 +218,8 @@ export interface Trip {
   costSettings?: CostSettings;
   /** Route hash of the last ferrySegments[] applied — prevents duplicate auto-inserts. */
   ferryDetectionHash?: string;
+  /** True when the trip returns to (or near) its origin. */
+  isRoundTrip?: boolean;
 }
 
 
