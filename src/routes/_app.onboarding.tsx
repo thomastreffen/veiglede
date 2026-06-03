@@ -62,14 +62,27 @@ function Onboarding() {
     window.location.assign(next);
   };
 
-  const skip = async () => { await finish("/trips"); };
+  const skip = async () => { await finish(trips.length === 0 ? "/trips/new" : "/trips"); };
+
+  const stepDone = (n: number): boolean => {
+    if (n === 1) return usernameOk;
+    if (n === 2) return vehicles.length > 0;
+    if (n === 3) return step > 3;
+    return false;
+  };
 
   return (
     <div className="py-8 max-w-2xl mx-auto">
       <div className="mb-6 flex items-center gap-2">
-        {[1, 2, 3, 4].map((n) => (
-          <div key={n} className={`h-1.5 flex-1 rounded-full ${n <= step ? "bg-primary" : "bg-surface-2"}`} />
-        ))}
+        {[1, 2, 3, 4].map((n) => {
+          const done = stepDone(n);
+          const active = n === step;
+          return (
+            <div key={n} className={`h-1.5 flex-1 rounded-full transition-colors ${
+              done ? "bg-primary" : active ? "bg-primary/60" : "bg-surface-2"
+            }`} />
+          );
+        })}
       </div>
 
       {step === 1 && (
