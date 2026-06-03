@@ -58,10 +58,35 @@ function cityNameFromLabel(label: string, place: ResolvedPlace | null): string {
 
 function addDays(iso: string, n: number): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  const parts = iso.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((x) => Number.isNaN(x))) return "";
+  const [y, m, d] = parts;
+  const date = new Date(Date.UTC(y, m - 1, d + n));
+  if (isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+// Recalculate date + dayNumber for all rows after the first based on each
+// previous row's nights (lodging rows can span multiple days).
+function cascadeDates(rows: Row[]): Row[] {
+  if (rows.length === 0) return rows;
+  const out: Row[] = [];
+  let prev: Row | undefined;
+  for (const r of rows) {
+    if (!prev) {
+      out.push({ ...r, dayNumber: 1 });
+      prev = out[0];
+      continue;
+    }
+    const prevType = detectType(prev.text, prev.type);
+    const prevNights = prevType === "lodging" ? Math.max(1, prev.nights ?? 1) : 1;
+    const date = prev.date ? addDays(prev.date, prevNights) : "";
+    const dayNumber = (prev.dayNumber ?? 0) + prevNights;
+    const next: Row = { ...r, date, dayNumber };
+    out.push(next);
+    prev = next;
+  }
+  return out;
 }
 
 function formatDateLong(iso: string): string {
@@ -127,13 +152,22 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId) ?? defaultVehicle;
 
   const updateRow = (key: string, patch: Partial<Row>) =>
-    setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  const removeRow = (key: string) => setRows((rs) => rs.filter((r) => r.key !== key));
+    setRows((rs) => {
+      const next = rs.map((r) => (r.key === key ? { ...r, ...patch } : r));
+      // If nights or type changed on any row, cascade dates/dayNumber downward.
+      if ("nights" in patch || "type" in patch || "date" in patch || "text" in patch) {
+        return cascadeDates(next);
+      }
+      return next;
+    });
+  const removeRow = (key: string) => setRows((rs) => cascadeDates(rs.filter((r) => r.key !== key)));
 
-  // Auto-fill date for a new row based on the previous row's date (+1 day).
+  // Auto-fill date for a new row based on the previous row's date + its nights.
   const makeRowAfter = (prev: Row | undefined, opts?: { lodging?: boolean }): Row => {
-    const date = prev?.date ? addDays(prev.date, 1) : "";
-    const dayNumber = (prev?.dayNumber ?? 0) + 1;
+    const prevType = prev ? detectType(prev.text, prev.type) : "city";
+    const prevNights = prev && prevType === "lodging" ? Math.max(1, prev.nights ?? 1) : 1;
+    const date = prev?.date ? addDays(prev.date, prevNights) : "";
+    const dayNumber = (prev?.dayNumber ?? 0) + prevNights;
     return {
       key: uid(), text: "", place: null, date, dayNumber,
       type: opts?.lodging ? "lodging" : undefined,
