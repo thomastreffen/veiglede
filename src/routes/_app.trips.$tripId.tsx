@@ -329,7 +329,7 @@ function TripPlanner() {
 
 
       {/* Planning actions — flexible trip model */}
-      <PlannerActions trip={trip} tripDays={tripDays} maxDrivingHours={prefs.maxDrivingHours} />
+      <PlannerActions trip={trip} tripDays={tripDays} tripStops={tripStops} maxDrivingHours={prefs.maxDrivingHours} />
 
 
       {/* Time budget */}
