@@ -466,9 +466,13 @@ export function MapLibreTripMap({
           if (!popupEl) return;
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-remove="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
+            const wasOnRoute = (m.stop.routeStatus ?? "on-route") === "on-route";
             try { tripsApi.deleteStop(m.stop.id); } catch { /* noop */ }
             onSelectStop?.(null);
             toast.success(isDetour ? "Avstikker fjernet." : "Stoppet fjernet. Ruten oppdateres.");
+            if (wasOnRoute) {
+              void recalculateTripRoute(trip.id, "remove-waypoint");
+            }
           });
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-promote="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
@@ -480,6 +484,7 @@ export function MapLibreTripMap({
               });
             } catch { /* noop */ }
             toast.success("Lagt inn som via-punkt. Ruten beregnes på nytt.");
+            void recalculateTripRoute(trip.id, "add-via-point");
           });
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-center="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
