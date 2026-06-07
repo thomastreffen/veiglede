@@ -254,6 +254,7 @@ function TripPlanner() {
           { label: "Last recalc status", value: routeDebug?.status ?? "—" },
           { label: "Route dist", value: trip.routeDistanceKm != null ? `${trip.routeDistanceKm} km` : "—" },
           { label: "Route time", value: trip.routeDurationMin != null ? `${trip.routeDurationMin} min` : "—" },
+          { label: "Snapshot valid", value: isValidRouteSnapshot(trip) ? "yes" : "no" },
         ]}
       />
 
