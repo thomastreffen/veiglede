@@ -245,12 +245,11 @@ export function MapLibreTripMap({
   const addRouteAndFit = useCallback(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    const geom: LatLng[] = (routeGeom && routeGeom.length > 1) ? routeGeom : [
-      projected.origin,
-      ...projected.mapped.map((m) => m.loc),
-      projected.destination,
-    ];
-    if (geom.length < 2) return;
+    const hasRealRoute = !!routeGeom && routeGeom.length > 1;
+    // Only the real ORS/server geometry is drawn as the main orange route.
+    // If it is missing, we still fit bounds to endpoints/stops below but
+    // skip the line layers entirely so we don't fake a route.
+    const geom: LatLng[] = hasRealRoute ? (routeGeom as LatLng[]) : [];
 
     const coords: [number, number][] = geom.map((p) => [p.lng, p.lat]);
     const data: GeoJSON.Feature<GeoJSON.LineString> = {
@@ -285,31 +284,40 @@ export function MapLibreTripMap({
     };
 
     try {
-      const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
-      if (src) {
-        src.setData(data);
+      if (hasRealRoute) {
+        const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
+        if (src) {
+          src.setData(data);
+        } else {
+          map.addSource("vg-route", { type: "geojson", data });
+          map.addLayer({
+            id: "vg-route-casing",
+            type: "line",
+            source: "vg-route",
+            paint: { "line-color": "#ffffff", "line-width": compact ? 7 : 10, "line-opacity": 0.95 },
+            layout: { "line-cap": "round", "line-join": "round" },
+          });
+          map.addLayer({
+            id: "vg-route-line",
+            type: "line",
+            source: "vg-route",
+            paint: { "line-color": DAY_COLORS[0], "line-width": compact ? 4 : 6 },
+            layout: { "line-cap": "round", "line-join": "round" },
+          });
+        }
       } else {
-        map.addSource("vg-route", { type: "geojson", data });
-        map.addLayer({
-          id: "vg-route-casing",
-          type: "line",
-          source: "vg-route",
-          paint: { "line-color": "#ffffff", "line-width": compact ? 7 : 10, "line-opacity": 0.95 },
-          layout: { "line-cap": "round", "line-join": "round" },
-        });
-        map.addLayer({
-          id: "vg-route-line",
-          type: "line",
-          source: "vg-route",
-          paint: { "line-color": DAY_COLORS[0], "line-width": compact ? 4 : 6 },
-          layout: { "line-cap": "round", "line-join": "round" },
-        });
+        // No real route yet — make sure any stale route line is cleared so
+        // we don't show a fake straight-line geometry as the trip route.
+        const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
+        if (src) {
+          src.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } });
+        }
       }
 
       const detourSrc = map.getSource("vg-detours") as maplibregl.GeoJSONSource | undefined;
       if (detourSrc) {
         detourSrc.setData(detourData);
-      } else {
+      } else if (hasRealRoute) {
         map.addSource("vg-detours", { type: "geojson", data: detourData });
         map.addLayer({
           id: "vg-detours-casing",
@@ -331,14 +339,16 @@ export function MapLibreTripMap({
           },
         });
       }
-      onStage?.("routeLayerAdded");
+      if (hasRealRoute) onStage?.("routeLayerAdded");
 
-      // Fit bounds to the route + detour spurs + any known stops so the
-      // user always sees the full trip overview (Drammen → Molde rather
-      // than zooming into one street near the origin).
-      let minLng = coords[0][0], maxLng = coords[0][0];
-      let minLat = coords[0][1], maxLat = coords[0][1];
+      // Fit bounds to whatever real points we know: route geometry (if any),
+      // detour spurs, endpoints and projected stop coords. This ensures
+      // round-trips and routes without geometry still show a regional view
+      // instead of zooming into one local street.
+      let minLng = Infinity, maxLng = -Infinity;
+      let minLat = Infinity, maxLat = -Infinity;
       const include = (lng: number, lat: number) => {
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
         if (lng < minLng) minLng = lng;
         if (lng > maxLng) maxLng = lng;
         if (lat < minLat) minLat = lat;
@@ -348,25 +358,22 @@ export function MapLibreTripMap({
       for (const f of detourFeatures) {
         for (const [lng, lat] of f.geometry.coordinates) include(lng, lat);
       }
-      // Always include known endpoints + stop coords so a round-trip
-      // (origin == destination) or missing geometry still shows the whole area.
       include(projected.origin.lng, projected.origin.lat);
       include(projected.destination.lng, projected.destination.lat);
       for (const m of projected.mapped) include(m.loc.lng, m.loc.lat);
 
-      // If bounds collapsed to ~a single point, pad ~20 km so we don't
-      // zoom into one street and pretend that's the route.
-      const tinySpan = (maxLng - minLng) < 0.05 && (maxLat - minLat) < 0.05;
-      if (tinySpan) {
-        const padDeg = 0.2;
-        minLng -= padDeg; maxLng += padDeg;
-        minLat -= padDeg; maxLat += padDeg;
+      if (Number.isFinite(minLng) && Number.isFinite(minLat)) {
+        const tinySpan = (maxLng - minLng) < 0.05 && (maxLat - minLat) < 0.05;
+        if (tinySpan) {
+          const padDeg = 0.2;
+          minLng -= padDeg; maxLng += padDeg;
+          minLat -= padDeg; maxLat += padDeg;
+        }
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+          padding: compact ? 32 : 56, duration: 400,
+          maxZoom: hasRealRoute ? 11 : 9,
+        });
       }
-      const hasRealRoute = (routeGeom?.length ?? 0) > 1;
-      map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-        padding: compact ? 32 : 56, duration: 400,
-        maxZoom: hasRealRoute ? 11 : 9,
-      });
       emitDiagnostics();
     } catch (err) {
       lastErrorRef.current = `route-layer: ${(err as Error)?.message ?? "unknown"}`;

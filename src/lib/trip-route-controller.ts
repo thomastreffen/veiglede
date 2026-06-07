@@ -96,6 +96,22 @@ function tripDestLoc(trip: Trip): LatLng | null {
   return isValidLoc(trip.destinationLoc) ? trip.destinationLoc : null;
 }
 
+/**
+ * A trip's persisted route is only considered "valid" if every field needed
+ * to render the planner is present. Used by the recalc skip logic and by
+ * the planner UI to decide whether to show "Beregner…".
+ */
+export function isValidRouteSnapshot(trip: Trip | null | undefined): boolean {
+  if (!trip) return false;
+  const geomOk = (trip.routeGeometry?.length ?? 0) > 1;
+  if (!geomOk) return false;
+  const distOk = (trip.routeDistanceKm ?? 0) > 0 || (trip.distanceKm ?? 0) > 0;
+  const dt = (trip.drivingTime ?? "").trim();
+  const timeOk = (trip.routeDurationMin ?? 0) > 0 || (dt !== "" && dt !== "0min" && dt !== "0 min");
+  const hashOk = !!trip.routeWaypointsHash;
+  return distOk && timeOk && hashOk;
+}
+
 function haversineKm(a: LatLng, b: LatLng): number {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -266,10 +282,9 @@ export async function recalculateTripRoute(
     }
     const waypointNames = ["origin", ...plan.viaPoints.map((v) => v.name), "destination"];
 
-    // Cache hit: same waypoints as last persisted result.
+    // Cache hit: same waypoints AND a fully valid persisted snapshot.
     if (plan.hash === bundle.trip.routeWaypointsHash
-      && bundle.trip.routeGeometry
-      && bundle.trip.routeGeometry.length > 1) {
+      && isValidRouteSnapshot(bundle.trip)) {
       const r: RecalcResult = {
         success: true,
         status: "skipped",
@@ -279,7 +294,30 @@ export async function recalculateTripRoute(
         hash: plan.hash,
         reason,
       };
-      writeDebug(r, bundle.trip.routeGeometry.length);
+      writeDebug(r, bundle.trip.routeGeometry?.length);
+      return r;
+    }
+
+    // Repair-only path: hash matches, geometry exists, route stats exist,
+    // but the human-facing distanceKm/drivingTime got cleared on a stale
+    // trip. Re-derive them without spending an ORS call.
+    if (plan.hash === bundle.trip.routeWaypointsHash
+      && (bundle.trip.routeGeometry?.length ?? 0) > 1
+      && (bundle.trip.routeDistanceKm ?? 0) > 0
+      && (bundle.trip.routeDurationMin ?? 0) > 0) {
+      try {
+        tripsApi.updateTrip(tripId, {
+          distanceKm: Math.round(bundle.trip.routeDistanceKm as number),
+          drivingTime: formatDrivingTime(bundle.trip.routeDurationMin as number),
+        });
+      } catch { /* fall through to full recalc below */ }
+      const r: RecalcResult = {
+        success: true, status: "ok",
+        provider: bundle.trip.routeProvider,
+        waypointCount: plan.viaPoints.length + 2,
+        waypointNames, hash: plan.hash, reason,
+      };
+      writeDebug(r, bundle.trip.routeGeometry?.length);
       return r;
     }
 

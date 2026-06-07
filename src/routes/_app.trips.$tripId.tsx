@@ -50,6 +50,7 @@ import {
   recalculateTripRoute,
   getLastRecalcDebug,
   subscribeRouteDebug,
+  isValidRouteSnapshot,
 } from "@/lib/trip-route-controller";
 import { useSyncExternalStore } from "react";
 
@@ -165,10 +166,10 @@ function TripPlanner() {
   const waypointHashKey = waypointPlan?.hash ?? "";
   useEffect(() => {
     if (!trip || !waypointPlan) return;
-    if (waypointPlan.hash === trip.routeWaypointsHash && trip.routeGeometry && trip.routeGeometry.length > 1) return;
+    if (waypointPlan.hash === trip.routeWaypointsHash && isValidRouteSnapshot(trip)) return;
     void recalculateTripRoute(trip.id, "stops-changed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip?.id, waypointHashKey, trip?.routeWaypointsHash]);
+  }, [trip?.id, waypointHashKey, trip?.routeWaypointsHash, trip?.routeGeometry?.length, trip?.routeDistanceKm, trip?.routeDurationMin]);
 
   // Live subscription to the route controller's last debug snapshot so the
   // planner debug panel reflects what the controller actually saw and did.
@@ -253,6 +254,7 @@ function TripPlanner() {
           { label: "Last recalc status", value: routeDebug?.status ?? "—" },
           { label: "Route dist", value: trip.routeDistanceKm != null ? `${trip.routeDistanceKm} km` : "—" },
           { label: "Route time", value: trip.routeDurationMin != null ? `${trip.routeDurationMin} min` : "—" },
+          { label: "Snapshot valid", value: isValidRouteSnapshot(trip) ? "yes" : "no" },
         ]}
       />
 
@@ -365,10 +367,20 @@ function TripPlanner() {
       {/* Stat row — show loading state instead of 0 km / 0 min while the
           route controller is still computing or recovering from an error. */}
       {(() => {
-        const routeReady = trip.distanceKm > 0 && !!trip.drivingTime && trip.drivingTime !== "0min";
-        const recalcInFlight = !routeReady && (routeDebug?.status === undefined || routeDebug?.status === "ok" || routeDebug?.status === "skipped");
-        const distanceLabel = routeReady ? `${trip.distanceKm} km` : recalcInFlight ? "Beregner…" : "—";
-        const timeLabel = routeReady ? trip.drivingTime : recalcInFlight ? "Beregner…" : "—";
+        const routeKm = (trip.routeDistanceKm ?? 0) > 0
+          ? Math.round(trip.routeDistanceKm as number)
+          : (trip.distanceKm ?? 0) > 0 ? trip.distanceKm : 0;
+        const routeMin = (trip.routeDurationMin ?? 0) > 0 ? (trip.routeDurationMin as number) : 0;
+        const dt = (trip.drivingTime ?? "").trim();
+        const dtValid = dt !== "" && dt !== "0min" && dt !== "0 min";
+        const timeFromMin = routeMin > 0
+          ? (() => { const h = Math.floor(routeMin / 60); const m = Math.round(routeMin % 60); return h === 0 ? `${m}min` : m === 0 ? `${h}t` : `${h}t ${m}min`; })()
+          : null;
+        const distanceReady = routeKm > 0;
+        const timeReady = !!timeFromMin || dtValid;
+        const recalcInFlight = (!distanceReady || !timeReady) && (routeDebug?.status === undefined || routeDebug?.status === "ok" || routeDebug?.status === "skipped");
+        const distanceLabel = distanceReady ? `${routeKm} km` : recalcInFlight ? "Beregner…" : "—";
+        const timeLabel = timeFromMin ?? (dtValid ? dt : recalcInFlight ? "Beregner…" : "—");
         return (
           <section className="mt-4 grid grid-cols-3 gap-3">
             <BigStat icon={<RouteIcon className="h-4 w-4" />} label={td.distance} value={distanceLabel} />
