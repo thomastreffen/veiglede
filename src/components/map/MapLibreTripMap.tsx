@@ -111,8 +111,7 @@ export function MapLibreTripMap({
   const mapRef = useRef<MlMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
   const [ready, setReady] = useState(false);
-  const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
-  const [recalculating, setRecalculating] = useState(false);
+  const routeGeom = trip.routeGeometry ?? null;
   const lastErrorRef = useRef<string | null>(null);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
