@@ -189,11 +189,13 @@ function TripPlanner() {
 
   useEffect(() => {
     if (!tripId || !trip) return;
-    const hasValidStats = (trip.routeDistanceKm ?? trip.distanceKm ?? 0) > 0;
+    const hasValidDistance = (trip.routeDistanceKm ?? trip.distanceKm ?? 0) > 0;
+    const hasValidTime = (trip.routeDurationMin ?? 0) > 0 || !!(trip.drivingTime ?? "").trim();
+    const hasValidStats = hasValidDistance && hasValidTime;
     if (!hasValidStats) {
       void recalculateTripRoute(tripId, "missing-stats");
     }
-  }, [tripId, trip?.id, trip?.distanceKm, trip?.routeDistanceKm, trip]);
+  }, [tripId, trip?.id, trip?.distanceKm, trip?.routeDistanceKm, trip?.drivingTime, trip?.routeDurationMin]);
 
 
   const enrichedSuggestions = useMemo(
