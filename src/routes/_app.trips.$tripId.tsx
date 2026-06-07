@@ -178,6 +178,22 @@ function TripPlanner() {
     () => getLastRecalcDebug(),
     () => null,
   );
+  const [calcTimeout, setCalcTimeout] = useState(false);
+
+  useEffect(() => {
+    setCalcTimeout(false);
+    if (!trip?.id) return;
+    const timer = window.setTimeout(() => setCalcTimeout(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, [trip?.id]);
+
+  useEffect(() => {
+    if (!tripId || !trip) return;
+    const hasValidStats = (trip.routeDistanceKm ?? trip.distanceKm ?? 0) > 0;
+    if (!hasValidStats) {
+      void recalculateTripRoute(tripId, "missing-stats");
+    }
+  }, [tripId, trip?.id, trip?.distanceKm, trip?.routeDistanceKm, trip]);
 
 
   const enrichedSuggestions = useMemo(
@@ -378,7 +394,7 @@ function TripPlanner() {
           : null;
         const distanceReady = routeKm > 0;
         const timeReady = !!timeFromMin || dtValid;
-        const recalcInFlight = (!distanceReady || !timeReady) && (routeDebug?.status === undefined || routeDebug?.status === "ok" || routeDebug?.status === "skipped");
+        const recalcInFlight = (!distanceReady || !timeReady) && !calcTimeout && (routeDebug?.status === undefined || routeDebug?.status === "ok" || routeDebug?.status === "skipped");
         const distanceLabel = distanceReady ? `${routeKm} km` : recalcInFlight ? "Beregner…" : "—";
         const timeLabel = timeFromMin ?? (dtValid ? dt : recalcInFlight ? "Beregner…" : "—");
         return (
