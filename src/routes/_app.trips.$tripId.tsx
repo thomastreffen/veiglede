@@ -50,6 +50,7 @@ import {
   recalculateTripRoute,
   getLastRecalcDebug,
   subscribeRouteDebug,
+  isValidRouteSnapshot,
 } from "@/lib/trip-route-controller";
 import { useSyncExternalStore } from "react";
 
