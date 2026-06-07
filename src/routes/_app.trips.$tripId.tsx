@@ -362,12 +362,21 @@ function TripPlanner() {
         </div>
       </section>
 
-      {/* Stat row */}
-      <section className="mt-4 grid grid-cols-3 gap-3">
-        <BigStat icon={<RouteIcon className="h-4 w-4" />} label={td.distance} value={`${trip.distanceKm} km`} />
-        <BigStat icon={<Clock className="h-4 w-4" />} label={td.drivingTime} value={trip.drivingTime} />
-        <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
-      </section>
+      {/* Stat row — show loading state instead of 0 km / 0 min while the
+          route controller is still computing or recovering from an error. */}
+      {(() => {
+        const routeReady = trip.distanceKm > 0 && !!trip.drivingTime && trip.drivingTime !== "0min";
+        const recalcInFlight = !routeReady && (routeDebug?.status === undefined || routeDebug?.status === "ok" || routeDebug?.status === "skipped");
+        const distanceLabel = routeReady ? `${trip.distanceKm} km` : recalcInFlight ? "Beregner…" : "—";
+        const timeLabel = routeReady ? trip.drivingTime : recalcInFlight ? "Beregner…" : "—";
+        return (
+          <section className="mt-4 grid grid-cols-3 gap-3">
+            <BigStat icon={<RouteIcon className="h-4 w-4" />} label={td.distance} value={distanceLabel} />
+            <BigStat icon={<Clock className="h-4 w-4" />} label={td.drivingTime} value={timeLabel} />
+            <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
+          </section>
+        );
+      })()}
 
       {/* Map */}
       <section className="mt-4">
