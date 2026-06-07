@@ -44,6 +44,13 @@ import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 import { useT } from "@/i18n/provider";
+import {
+  buildTripWaypoints,
+  recalculateTripRoute,
+  getLastRecalcDebug,
+  subscribeRouteDebug,
+} from "@/lib/trip-route-controller";
+import { useSyncExternalStore } from "react";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
@@ -146,6 +153,31 @@ function TripPlanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, tripStops.length]);
 
+  // Centralized route recalculation. Whenever the set of route-affecting
+  // stops/endpoints changes (waypoint hash differs from the persisted hash),
+  // the controller recomputes via getRoute and writes back to the trip.
+  // This replaces the recalc effect that used to live inside MapLibreTripMap.
+  const waypointPlan = useMemo(
+    () => (trip ? buildTripWaypoints(trip, tripDays, tripStops) : null),
+    [trip, tripDays, tripStops],
+  );
+  const waypointHashKey = waypointPlan?.hash ?? "";
+  useEffect(() => {
+    if (!trip || !waypointPlan) return;
+    if (waypointPlan.hash === trip.routeWaypointsHash && trip.routeGeometry && trip.routeGeometry.length > 1) return;
+    void recalculateTripRoute(trip.id, "stops-changed");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id, waypointHashKey, trip?.routeWaypointsHash]);
+
+  // Live subscription to the route controller's last debug snapshot so the
+  // planner debug panel reflects what the controller actually saw and did.
+  const routeDebug = useSyncExternalStore(
+    subscribeRouteDebug,
+    () => getLastRecalcDebug(),
+    () => null,
+  );
+
+
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
@@ -213,8 +245,11 @@ function TripPlanner() {
           { label: "Route provider", value: trip.routeProvider ?? "—" },
           { label: "Geometry pts", value: trip.routeGeometry?.length ?? 0 },
           { label: "Waypoints hash", value: (trip.routeWaypointsHash ?? "—").slice(0, 24) },
-          { label: "On-route stops", value: tripStops.filter((s) => (s.routeStatus ?? "on-route") === "on-route" && s.lat != null).length },
-          { label: "Detour stops", value: tripStops.filter((s) => s.routeStatus === "detour").length },
+          { label: "On-route waypoints", value: waypointPlan?.viaPoints.length ?? 0 },
+          { label: "Via names", value: (waypointPlan?.viaPoints.map((v) => v.name).join(" → ") || "—") },
+          { label: "Detour stops", value: waypointPlan?.classification.detours.length ?? 0 },
+          { label: "Last recalc reason", value: routeDebug?.reason ?? "—" },
+          { label: "Last recalc status", value: routeDebug?.status ?? "—" },
           { label: "Route dist", value: trip.routeDistanceKm != null ? `${trip.routeDistanceKm} km` : "—" },
           { label: "Route time", value: trip.routeDurationMin != null ? `${trip.routeDurationMin} min` : "—" },
         ]}
@@ -543,12 +578,14 @@ function TripPlanner() {
                   const coords = added.lat != null && added.lng != null
                     ? `${added.lat.toFixed(3)},${added.lng.toFixed(3)}`
                     : "(no coords)";
-                  // Temporary debug toast — verifies waypoint reaches the routing engine.
                   // eslint-disable-next-line no-console
                   console.info("[veiglede] added stop", { name: added.name, status, placement, coords });
                   if (placement === "along") {
                     toast(`Added waypoint: ${added.name} ${coords} routeStatus=${status}`);
+                    void recalculateTripRoute(tripId, "add-via-point");
                   }
+                  // For non-"along" placements, the centralized hash-change
+                  // effect picks up the new stop automatically.
                 }
               }}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}

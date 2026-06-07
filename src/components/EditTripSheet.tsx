@@ -7,6 +7,7 @@ import { tripsApi, ROUTE_STYLES, type Trip, type RouteStyle, vehicleMeta } from 
 import { useVehicles, energyTypeToSource } from "@/lib/vehicles-store";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { toast } from "sonner";
+import { recalculateTripRoute } from "@/lib/trip-route-controller";
 
 interface Props {
   trip: Trip;
@@ -100,6 +101,9 @@ export function EditTripSheet({ trip, open, onOpenChange }: Props) {
     try {
       tripsApi.updateTrip(trip.id, patch);
       toast.success(recalc ? "Tur oppdatert — ruta beregnes på nytt." : "Tur oppdatert.");
+      if (recalc) {
+        void recalculateTripRoute(trip.id, "edit-trip-endpoints");
+      }
       onOpenChange(false);
     } catch (e) {
       console.error(e);
