@@ -7,6 +7,7 @@ import { tripsApi, ROUTE_STYLES, type Trip, type RouteStyle, vehicleMeta } from 
 import { useVehicles, energyTypeToSource } from "@/lib/vehicles-store";
 import type { ResolvedPlace } from "@/lib/places/geocoder";
 import { toast } from "sonner";
+import { recalculateTripRoute } from "@/lib/trip-route-controller";
 
 interface Props {
   trip: Trip;
