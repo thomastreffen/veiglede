@@ -436,7 +436,7 @@ export function MapLibreTripMap({
       const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
       const isDetour = status === "detour";
       const el = stopEl(meta.emoji, isDetour ? "#f0b429" : color, selected, isDetour ? "detour" : "on-route");
-      el.title = `${m.stop.name} · ${meta.label} · ${isDetour ? "avstikker" : "på rute"}`;
+      el.title = `${m.stop.name} · ${meta.label} · ${isDetour ? "avstikker" : "i ruta"}`;
       const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
       const labelColor = isDetour ? "#b07a00" : color;
       const extraLine = isDetour && (m.stop.extraDistanceKm != null || m.stop.distanceFromRouteKm != null)
@@ -445,11 +445,11 @@ export function MapLibreTripMap({
           ? `<div style="font-size:11px;color:#555;margin-top:2px;">📍 ${m.stop.distanceFromRouteKm} km fra ruta${m.stop.extraDistanceKm != null ? ` · +${m.stop.extraDistanceKm} km` : ""}</div>`
           : "";
       const promoteBtn = isDetour
-        ? `<button data-vg-promote="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #2d8a5f;color:#2d8a5f;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Gjør til via-punkt</button>`
+        ? `<button data-vg-promote="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #2d8a5f;color:#2d8a5f;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Legg inn i ruta</button>`
         : "";
       const removeLabel = isDetour ? "Fjern avstikker" : "Fjern fra rute";
       const popupHtml = `<div style="font-family:inherit;padding:2px 4px;max-width:240px;">
-            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${labelColor};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)} · ${isDetour ? "avstikker" : "på rute"}</div>
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${labelColor};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)} · ${isDetour ? "avstikker" : "i ruta"}</div>
             <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
             ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
             ${extraLine}
@@ -483,7 +483,7 @@ export function MapLibreTripMap({
                 type: m.stop.type === "detour" ? "attraction" : m.stop.type,
               });
             } catch { /* noop */ }
-            toast.success("Lagt inn som via-punkt. Ruten beregnes på nytt.");
+            toast.success("Lagt inn i ruta. Ruten beregnes på nytt.");
             void recalculateTripRoute(trip.id, "add-via-point");
           });
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-center="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
