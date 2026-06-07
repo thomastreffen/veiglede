@@ -96,6 +96,22 @@ function tripDestLoc(trip: Trip): LatLng | null {
   return isValidLoc(trip.destinationLoc) ? trip.destinationLoc : null;
 }
 
+/**
+ * A trip's persisted route is only considered "valid" if every field needed
+ * to render the planner is present. Used by the recalc skip logic and by
+ * the planner UI to decide whether to show "Beregner…".
+ */
+export function isValidRouteSnapshot(trip: Trip | null | undefined): boolean {
+  if (!trip) return false;
+  const geomOk = (trip.routeGeometry?.length ?? 0) > 1;
+  if (!geomOk) return false;
+  const distOk = (trip.routeDistanceKm ?? 0) > 0 || (trip.distanceKm ?? 0) > 0;
+  const dt = (trip.drivingTime ?? "").trim();
+  const timeOk = (trip.routeDurationMin ?? 0) > 0 || (dt !== "" && dt !== "0min" && dt !== "0 min");
+  const hashOk = !!trip.routeWaypointsHash;
+  return distOk && timeOk && hashOk;
+}
+
 function haversineKm(a: LatLng, b: LatLng): number {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;
