@@ -105,12 +105,12 @@ function tripDestLoc(trip: Trip): LatLng | null {
 export function isValidRouteSnapshot(trip: Trip | null | undefined): boolean {
   if (!trip) return false;
   const geomOk = (trip.routeGeometry?.length ?? 0) > 1;
-  if (!geomOk) return false;
   const distOk = (trip.routeDistanceKm ?? 0) > 0 || (trip.distanceKm ?? 0) > 0;
+  if (!geomOk || !distOk) return false;
   const dt = (trip.drivingTime ?? "").trim();
   const timeOk = (trip.routeDurationMin ?? 0) > 0 || (dt !== "" && dt !== "0min" && dt !== "0 min");
   const hashOk = !!trip.routeWaypointsHash;
-  return distOk && timeOk && hashOk;
+  return timeOk && hashOk;
 }
 
 function haversineKm(a: LatLng, b: LatLng): number {
@@ -285,11 +285,11 @@ export async function recalculateTripRoute(
 
     const hashMatches = plan.hash === bundle.trip.routeWaypointsHash;
     const hasGeometry = (bundle.trip.routeGeometry?.length ?? 0) >= 2;
-    const hasDist = (bundle.trip.routeDistanceKm ?? 0) > 0 || (bundle.trip.distanceKm ?? 0) > 0;
+    const hasValidStats = (bundle.trip.routeDistanceKm ?? 0) > 0 || (bundle.trip.distanceKm ?? 0) > 0;
 
-    if (hashMatches && hasGeometry && !hasDist) {
+    if (hashMatches && hasGeometry && !hasValidStats) {
       console.warn("[route-ctrl] geometry present but distance=0 — forcing recalc");
-    } else if (hashMatches && isValidRouteSnapshot(bundle.trip)) {
+    } else if (hashMatches && isValidRouteSnapshot(bundle.trip) && hasValidStats) {
       const r: RecalcResult = {
         success: true,
         status: "skipped",
