@@ -12,16 +12,12 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import { stopDisplayMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
-import { distanceKm, nearestPointOnRoute, projectTrip } from "@/lib/geo";
-import { getCachedRoute, mapConfig } from "@/lib/map";
-import { getRoute } from "@/lib/routing";
+import { nearestPointOnRoute, projectTrip } from "@/lib/geo";
+import { recalculateTripRoute } from "@/lib/trip-route-controller";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-function waypointHash(wps: LatLng[]): string {
-  return wps.map((w) => `${w.lat.toFixed(4)},${w.lng.toFixed(4)}`).join("|");
-}
 function formatDrivingTime(min: number): string {
   if (!min || min < 1) return "0min";
   const h = Math.floor(min / 60);
