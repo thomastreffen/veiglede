@@ -245,12 +245,11 @@ export function MapLibreTripMap({
   const addRouteAndFit = useCallback(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    const geom: LatLng[] = (routeGeom && routeGeom.length > 1) ? routeGeom : [
-      projected.origin,
-      ...projected.mapped.map((m) => m.loc),
-      projected.destination,
-    ];
-    if (geom.length < 2) return;
+    const hasRealRoute = !!routeGeom && routeGeom.length > 1;
+    // Only the real ORS/server geometry is drawn as the main orange route.
+    // If it is missing, we still fit bounds to endpoints/stops below but
+    // skip the line layers entirely so we don't fake a route.
+    const geom: LatLng[] = hasRealRoute ? (routeGeom as LatLng[]) : [];
 
     const coords: [number, number][] = geom.map((p) => [p.lng, p.lat]);
     const data: GeoJSON.Feature<GeoJSON.LineString> = {
