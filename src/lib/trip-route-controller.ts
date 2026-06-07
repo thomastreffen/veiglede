@@ -154,15 +154,16 @@ export function classifyRouteStops(
     const loc: LatLng | null = isValidLoc({ lat: s.lat, lng: s.lng })
       ? { lat: s.lat as number, lng: s.lng as number }
       : null;
-    const placement = s.placement;
-    const status = s.routeStatus ?? (s.type === "detour" ? "detour" : "on-route");
+    const placement = s.placement as string | undefined;
+    const stopType = s.type as string;
+    const status = s.routeStatus ?? (stopType === "detour" ? "detour" : "on-route");
 
     // Endpoint / auto-stop guards
     if (placement === "origin" || placement === "destination") {
       ignored.push({ stopId: s.id, name: s.name, reason: "endpoint-stop" });
       continue;
     }
-    if (s.type === "origin" || s.type === "destination") {
+    if (stopType === "origin" || stopType === "destination") {
       ignored.push({ stopId: s.id, name: s.name, reason: "endpoint-type" });
       continue;
     }
