@@ -101,6 +101,9 @@ export function EditTripSheet({ trip, open, onOpenChange }: Props) {
     try {
       tripsApi.updateTrip(trip.id, patch);
       toast.success(recalc ? "Tur oppdatert — ruta beregnes på nytt." : "Tur oppdatert.");
+      if (recalc) {
+        void recalculateTripRoute(trip.id, "edit-trip-endpoints");
+      }
       onOpenChange(false);
     } catch (e) {
       console.error(e);
