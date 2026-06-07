@@ -245,8 +245,11 @@ function TripPlanner() {
           { label: "Route provider", value: trip.routeProvider ?? "—" },
           { label: "Geometry pts", value: trip.routeGeometry?.length ?? 0 },
           { label: "Waypoints hash", value: (trip.routeWaypointsHash ?? "—").slice(0, 24) },
-          { label: "On-route stops", value: tripStops.filter((s) => (s.routeStatus ?? "on-route") === "on-route" && s.lat != null).length },
-          { label: "Detour stops", value: tripStops.filter((s) => s.routeStatus === "detour").length },
+          { label: "On-route waypoints", value: waypointPlan?.viaPoints.length ?? 0 },
+          { label: "Via names", value: (waypointPlan?.viaPoints.map((v) => v.name).join(" → ") || "—") },
+          { label: "Detour stops", value: waypointPlan?.classification.detours.length ?? 0 },
+          { label: "Last recalc reason", value: routeDebug?.reason ?? "—" },
+          { label: "Last recalc status", value: routeDebug?.status ?? "—" },
           { label: "Route dist", value: trip.routeDistanceKm != null ? `${trip.routeDistanceKm} km` : "—" },
           { label: "Route time", value: trip.routeDurationMin != null ? `${trip.routeDurationMin} min` : "—" },
         ]}
