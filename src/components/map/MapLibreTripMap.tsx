@@ -524,12 +524,6 @@ export function MapLibreTripMap({
   return (
     <div className={cn("relative h-full w-full", className)}>
       <div ref={containerRef} className="h-full w-full" />
-      {recalculating && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2 rounded-full border border-primary/40 bg-background/90 px-3 py-1.5 text-[11px] uppercase tracking-wider text-foreground/90 shadow-md backdrop-blur">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary mr-2 align-middle" />
-          Beregner rute på nytt…
-        </div>
-      )}
     </div>
   );
 }
