@@ -18,6 +18,7 @@ export type RecalcReason =
   | "remove-waypoint"
   | "reorder-waypoints"
   | "edit-trip-endpoints"
+  | "missing-stats"
   | "stops-changed"
   | "manual";
 
@@ -282,9 +283,13 @@ export async function recalculateTripRoute(
     }
     const waypointNames = ["origin", ...plan.viaPoints.map((v) => v.name), "destination"];
 
-    // Cache hit: same waypoints AND a fully valid persisted snapshot.
-    if (plan.hash === bundle.trip.routeWaypointsHash
-      && isValidRouteSnapshot(bundle.trip)) {
+    const hashMatches = plan.hash === bundle.trip.routeWaypointsHash;
+    const hasGeometry = (bundle.trip.routeGeometry?.length ?? 0) >= 2;
+    const hasDist = (bundle.trip.routeDistanceKm ?? 0) > 0 || (bundle.trip.distanceKm ?? 0) > 0;
+
+    if (hashMatches && hasGeometry && !hasDist) {
+      console.warn("[route-ctrl] geometry present but distance=0 — forcing recalc");
+    } else if (hashMatches && isValidRouteSnapshot(bundle.trip)) {
       const r: RecalcResult = {
         success: true,
         status: "skipped",
@@ -301,8 +306,8 @@ export async function recalculateTripRoute(
     // Repair-only path: hash matches, geometry exists, route stats exist,
     // but the human-facing distanceKm/drivingTime got cleared on a stale
     // trip. Re-derive them without spending an ORS call.
-    if (plan.hash === bundle.trip.routeWaypointsHash
-      && (bundle.trip.routeGeometry?.length ?? 0) > 1
+    if (hashMatches
+      && hasGeometry
       && (bundle.trip.routeDistanceKm ?? 0) > 0
       && (bundle.trip.routeDurationMin ?? 0) > 0) {
       try {
