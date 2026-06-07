@@ -44,6 +44,13 @@ import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 import { useT } from "@/i18n/provider";
+import {
+  buildTripWaypoints,
+  recalculateTripRoute,
+  getLastRecalcDebug,
+  subscribeRouteDebug,
+} from "@/lib/trip-route-controller";
+import { useSyncExternalStore } from "react";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
