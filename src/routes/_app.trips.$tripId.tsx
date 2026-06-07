@@ -166,10 +166,10 @@ function TripPlanner() {
   const waypointHashKey = waypointPlan?.hash ?? "";
   useEffect(() => {
     if (!trip || !waypointPlan) return;
-    if (waypointPlan.hash === trip.routeWaypointsHash && trip.routeGeometry && trip.routeGeometry.length > 1) return;
+    if (waypointPlan.hash === trip.routeWaypointsHash && isValidRouteSnapshot(trip)) return;
     void recalculateTripRoute(trip.id, "stops-changed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip?.id, waypointHashKey, trip?.routeWaypointsHash]);
+  }, [trip?.id, waypointHashKey, trip?.routeWaypointsHash, trip?.routeGeometry?.length, trip?.routeDistanceKm, trip?.routeDurationMin]);
 
   // Live subscription to the route controller's last debug snapshot so the
   // planner debug panel reflects what the controller actually saw and did.
