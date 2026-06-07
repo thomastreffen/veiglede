@@ -333,26 +333,39 @@ export function MapLibreTripMap({
       }
       onStage?.("routeLayerAdded");
 
-      // Fit bounds to the route + detour spurs so the user always sees
-      // how the detour relates to the main route.
+      // Fit bounds to the route + detour spurs + any known stops so the
+      // user always sees the full trip overview (Drammen → Molde rather
+      // than zooming into one street near the origin).
       let minLng = coords[0][0], maxLng = coords[0][0];
       let minLat = coords[0][1], maxLat = coords[0][1];
-      for (const [lng, lat] of coords) {
+      const include = (lng: number, lat: number) => {
         if (lng < minLng) minLng = lng;
         if (lng > maxLng) maxLng = lng;
         if (lat < minLat) minLat = lat;
         if (lat > maxLat) maxLat = lat;
-      }
+      };
+      for (const [lng, lat] of coords) include(lng, lat);
       for (const f of detourFeatures) {
-        for (const [lng, lat] of f.geometry.coordinates) {
-          if (lng < minLng) minLng = lng;
-          if (lng > maxLng) maxLng = lng;
-          if (lat < minLat) minLat = lat;
-          if (lat > maxLat) maxLat = lat;
-        }
+        for (const [lng, lat] of f.geometry.coordinates) include(lng, lat);
       }
+      // Always include known endpoints + stop coords so a round-trip
+      // (origin == destination) or missing geometry still shows the whole area.
+      include(projected.origin.lng, projected.origin.lat);
+      include(projected.destination.lng, projected.destination.lat);
+      for (const m of projected.mapped) include(m.loc.lng, m.loc.lat);
+
+      // If bounds collapsed to ~a single point, pad ~20 km so we don't
+      // zoom into one street and pretend that's the route.
+      const tinySpan = (maxLng - minLng) < 0.05 && (maxLat - minLat) < 0.05;
+      if (tinySpan) {
+        const padDeg = 0.2;
+        minLng -= padDeg; maxLng += padDeg;
+        minLat -= padDeg; maxLat += padDeg;
+      }
+      const hasRealRoute = (routeGeom?.length ?? 0) > 1;
       map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-        padding: compact ? 32 : 56, duration: 400, maxZoom: 11,
+        padding: compact ? 32 : 56, duration: 400,
+        maxZoom: hasRealRoute ? 11 : 9,
       });
       emitDiagnostics();
     } catch (err) {
