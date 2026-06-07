@@ -37,8 +37,9 @@ import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
   Navigation, CornerDownRight, Check, Pencil, MoreHorizontal, Copy, BedDouble, ArrowRightLeft,
-  Ship,
+  Ship, FileDown,
 } from "lucide-react";
+import { downloadGpx } from "@/lib/gpx-export";
 import { toast } from "sonner";
 import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
@@ -424,7 +425,7 @@ function TripPlanner() {
         </section>
       )}
 
-      {/* Primary actions */}
+      {/* Primary actions — Roadbook · Del · Naviger · GPX */}
       <section className="mt-4 grid grid-cols-2 gap-3">
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
@@ -446,7 +447,18 @@ function TripPlanner() {
               .sort((a, b) => a.order - b.order)
           )}
         />
+        <button
+          type="button"
+          onClick={() => { downloadGpx(trip, tripStops); toast.success("GPX lastet ned"); }}
+          title="For BMW Motorrad, Garmin, TomTom og andre navigasjonsapper."
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2 hover:border-primary"
+        >
+          <FileDown className="h-4 w-4" /> Eksporter GPX
+        </button>
       </section>
+      <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+        Naviger åpner start, mål og stopp i Google/Apple Maps (Google støtter inntil 9 mellomstopp). GPX tar med hele ruta og fungerer i BMW Motorrad, Garmin og TomTom.
+      </p>
 
       {trip.isPublic && (
         <section className="mt-4">
@@ -574,15 +586,13 @@ function TripPlanner() {
               onAdd={(placement, dayId) => {
                 const added = tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info);
                 if (added) {
-                  const status = added.routeStatus ?? "—";
-                  const coords = added.lat != null && added.lng != null
-                    ? `${added.lat.toFixed(3)},${added.lng.toFixed(3)}`
-                    : "(no coords)";
-                  // eslint-disable-next-line no-console
-                  console.info("[veiglede] added stop", { name: added.name, status, placement, coords });
                   if (placement === "along") {
-                    toast(`Added waypoint: ${added.name} ${coords} routeStatus=${status}`);
+                    toast.success(`Lagt inn i ruta: ${added.name}`);
                     void recalculateTripRoute(tripId, "add-via-point");
+                  } else if (placement === "detour") {
+                    toast.success(`Lagt til som avstikker: ${added.name}`);
+                  } else {
+                    toast.success(`Lagret som forslag: ${added.name}`);
                   }
                   // For non-"along" placements, the centralized hash-change
                   // effect picks up the new stop automatically.

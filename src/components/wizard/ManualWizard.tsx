@@ -375,7 +375,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           : cityNameFromLabel(steps[i - 1].row.text, steps[i - 1].place);
         const curCity = cityNameFromLabel(s.row.text, s.place);
         const dayTitle = s.isRestDay
-          ? `Hviledag i ${curCity}`
+          ? `Opphold i ${curCity}`
           : `${prevCity} → ${curCity}`;
         tripsApi.updateDay(day.id, {
           dayNumber: i + 1,
