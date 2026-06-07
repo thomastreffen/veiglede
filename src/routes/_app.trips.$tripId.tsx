@@ -578,12 +578,14 @@ function TripPlanner() {
                   const coords = added.lat != null && added.lng != null
                     ? `${added.lat.toFixed(3)},${added.lng.toFixed(3)}`
                     : "(no coords)";
-                  // Temporary debug toast — verifies waypoint reaches the routing engine.
                   // eslint-disable-next-line no-console
                   console.info("[veiglede] added stop", { name: added.name, status, placement, coords });
                   if (placement === "along") {
                     toast(`Added waypoint: ${added.name} ${coords} routeStatus=${status}`);
+                    void recalculateTripRoute(tripId, "add-via-point");
                   }
+                  // For non-"along" placements, the centralized hash-change
+                  // effect picks up the new stop automatically.
                 }
               }}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
