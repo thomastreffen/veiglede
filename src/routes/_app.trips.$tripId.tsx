@@ -574,15 +574,13 @@ function TripPlanner() {
               onAdd={(placement, dayId) => {
                 const added = tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info);
                 if (added) {
-                  const status = added.routeStatus ?? "—";
-                  const coords = added.lat != null && added.lng != null
-                    ? `${added.lat.toFixed(3)},${added.lng.toFixed(3)}`
-                    : "(no coords)";
-                  // eslint-disable-next-line no-console
-                  console.info("[veiglede] added stop", { name: added.name, status, placement, coords });
                   if (placement === "along") {
-                    toast(`Added waypoint: ${added.name} ${coords} routeStatus=${status}`);
+                    toast.success(`Lagt inn i ruta: ${added.name}`);
                     void recalculateTripRoute(tripId, "add-via-point");
+                  } else if (placement === "detour") {
+                    toast.success(`Lagt til som avstikker: ${added.name}`);
+                  } else {
+                    toast.success(`Lagret som forslag: ${added.name}`);
                   }
                   // For non-"along" placements, the centralized hash-change
                   // effect picks up the new stop automatically.
