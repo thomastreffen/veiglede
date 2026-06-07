@@ -153,6 +153,31 @@ function TripPlanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, tripStops.length]);
 
+  // Centralized route recalculation. Whenever the set of route-affecting
+  // stops/endpoints changes (waypoint hash differs from the persisted hash),
+  // the controller recomputes via getRoute and writes back to the trip.
+  // This replaces the recalc effect that used to live inside MapLibreTripMap.
+  const waypointPlan = useMemo(
+    () => (trip ? buildTripWaypoints(trip, tripDays, tripStops) : null),
+    [trip, tripDays, tripStops],
+  );
+  const waypointHashKey = waypointPlan?.hash ?? "";
+  useEffect(() => {
+    if (!trip || !waypointPlan) return;
+    if (waypointPlan.hash === trip.routeWaypointsHash && trip.routeGeometry && trip.routeGeometry.length > 1) return;
+    void recalculateTripRoute(trip.id, "stops-changed");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id, waypointHashKey, trip?.routeWaypointsHash]);
+
+  // Live subscription to the route controller's last debug snapshot so the
+  // planner debug panel reflects what the controller actually saw and did.
+  const routeDebug = useSyncExternalStore(
+    subscribeRouteDebug,
+    () => getLastRecalcDebug(),
+    () => null,
+  );
+
+
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
