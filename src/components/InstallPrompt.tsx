@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Share, ArrowDown, Plus, X } from "lucide-react";
 
 type BIPEvent = Event & {
   prompt: () => Promise<void>;
