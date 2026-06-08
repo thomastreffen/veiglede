@@ -152,7 +152,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
         <Navigation className="h-4 w-4" /> Naviger →
       </button>
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
+        <div className="absolute right-0 bottom-full mb-2 z-50 w-64 rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
           <a
             href={gmaps}
             target="_blank"
@@ -162,6 +162,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
           >
             <div className="font-medium">🗺️ Google Maps</div>
             <div className="text-xs text-muted-foreground mt-0.5">{countLabel}</div>
+            {totalCount > 9 && (
+              <div className="text-xs text-amber-400 mt-0.5">Google Maps maks 9 stopp — resten hoppes over</div>
+            )}
           </a>
           <a
             href={amaps}
