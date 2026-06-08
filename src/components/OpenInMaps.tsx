@@ -32,14 +32,14 @@ function isMobile() {
 type WP = { token: string; label: string };
 
 function stopToWP(s: StopLike): WP | null {
+  const loc = s.location || s.name;
+  if (loc && loc.trim() && !loc.trim().toLowerCase().startsWith("ankomst")) {
+    return { token: encodeURIComponent(loc.trim()), label: loc.trim() };
+  }
   if (typeof s.lat === "number" && typeof s.lng === "number") {
     const lat = Math.round(s.lat * 1e6) / 1e6;
     const lng = Math.round(s.lng * 1e6) / 1e6;
     return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
-  }
-  const loc = s.location || s.name;
-  if (loc && loc.trim()) {
-    return { token: encodeURIComponent(loc.trim()), label: loc.trim() };
   }
   return null;
 }
@@ -100,9 +100,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     // Intermediate stops: when round-trip, drop the first stop (origin) and the
     // effective destination, and exclude any trailing home-arrival stop.
     const effectiveLastIndex = effectiveLastStop ? stops.lastIndexOf(effectiveLastStop) : -1;
-    const intermediateStops = isRoundTrip
+    const intermediateStops = (isRoundTrip
       ? stops.slice(1, effectiveLastIndex >= 0 ? effectiveLastIndex : stops.length - 1)
-      : stops;
+      : stops).filter((s) => s.type !== "pause");
 
     const intermediate = intermediateStops
       .map(stopToWP)
