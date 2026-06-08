@@ -182,7 +182,7 @@ function Roadbook() {
                         {stop.photoOp ? " · 📸" : ""}
                       </p>
                       {stop.description && <p className="mt-2 text-sm leading-relaxed">{stop.description}</p>}
-                      {stop.type === "lodging" && stop.booking && <BookingInfo booking={stop.booking} />}
+                      {stop.type === "lodging" && <BookingInfo booking={stop.booking ?? {}} />}
                       {stop.reason && (
                         <p className="mt-2 text-[11px] text-primary/90 flex items-start gap-1 leading-relaxed">
                           <Info className="h-3 w-3 mt-0.5 shrink-0" /><span>{stop.reason}</span>
