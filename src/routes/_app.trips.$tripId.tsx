@@ -655,6 +655,7 @@ function DayCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
   const [moveStopId, setMoveStopId] = useState<string | null>(null);
+  const [summaryFocused, setSummaryFocused] = useState(false);
   const hasLodging = dayStops.some((s) => s.type === "lodging");
   const coords = dayCoords(trip, dayStops);
 
@@ -720,9 +721,24 @@ function DayCard({
               </span>
             )}
           </div>
-          <input value={day.summary ?? ""} placeholder={td.dayDescPlaceholder}
-            onChange={(e) => tripsApi.updateDay(day.id, { summary: e.target.value })}
-            className="mt-1 w-full text-sm text-muted-foreground bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
+          {day.summary || summaryFocused ? (
+            <textarea
+              value={day.summary ?? ""}
+              placeholder={td.dayDescPlaceholder}
+              autoFocus
+              onChange={(e) => tripsApi.updateDay(day.id, { summary: e.target.value })}
+              onBlur={() => { if (!day.summary) setSummaryFocused(false); }}
+              className="mt-1 w-full text-sm text-muted-foreground bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1 resize-none"
+              rows={2}
+            />
+          ) : (
+            <button
+              onClick={() => setSummaryFocused(true)}
+              className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            >
+              <Plus className="h-3 w-3" /> Legg til beskrivelse
+            </button>
+          )}
 
           {/* Departure time */}
           <div className="mt-2 relative">
