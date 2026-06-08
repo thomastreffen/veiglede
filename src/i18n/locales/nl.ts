@@ -211,7 +211,7 @@ export const nl: Dict = {
       explore: "Ontdek",
       fordeler: "Voordelen",
       myTrips: "Mijn reizen",
-      garage: "Mijn garage",
+      garage: "Garage",
       profile: "Profiel",
       newTrip: "Nieuwe reis",
       login: "Inloggen",

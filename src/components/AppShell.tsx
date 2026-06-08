@@ -244,7 +244,7 @@ function NavItem({ n }: { n: NavItemDef }) {
         className={cn("flex flex-col items-center gap-0.5 py-2 text-[9px] uppercase tracking-wide w-full min-w-0")}
       >
         <Icon className="h-5 w-5" />
-        <span className="text-center leading-tight truncate w-full">{n.label}</span>
+        <span className="text-center leading-tight w-full break-words text-[8px] uppercase tracking-normal">{n.label}</span>
       </Link>
     </li>
   );
