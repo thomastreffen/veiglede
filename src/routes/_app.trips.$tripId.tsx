@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   useTripsStore, tripsApi, stopMeta, stopDisplayMeta, STOP_TYPES, vehicleMeta, styleMeta,
@@ -1068,8 +1068,10 @@ function SuggestionCard({
   tripDays: { id: string; dayNumber: number; title: string }[];
   tripDestination: string;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const meta = stopMeta(sug.type);
   const [open, setOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(true);
   const [detourOpen, setDetourOpen] = useState(false);
   const [pendingDayId, setPendingDayId] = useState<string | undefined>(undefined);
   const choose = (p: Placement, dayId?: string) => {
@@ -1091,8 +1093,18 @@ function SuggestionCard({
   // Hover is intentionally passive — no map sync, no popup, no flyTo.
   // (onHover prop kept for API compat; intentionally unused.)
   void onHover;
+
+  useEffect(() => {
+    if (!open || !cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const spaceAbove = rect.top;
+    const dropdownHeight = 280; // approximate
+    setDropUp(spaceAbove >= dropdownHeight);
+  }, [open]);
+
   return (
     <div
+      ref={cardRef}
       className="rounded-2xl border border-border bg-surface p-4 flex flex-col hover:border-primary/50 transition-colors relative"
     >
       <div className="flex items-start gap-3">
@@ -1137,7 +1149,7 @@ function SuggestionCard({
         </button>
       </div>
       {open && (
-        <div className="absolute right-3 bottom-14 z-30 w-64 rounded-2xl border border-border bg-surface-2 shadow-xl p-2 text-sm">
+        <div className={`absolute right-3 z-30 w-64 rounded-2xl border border-border bg-surface-2 shadow-xl p-2 text-sm max-h-72 overflow-y-auto ${dropUp ? "bottom-14" : "top-14"}`}>
           <p className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">Hvor skal det legges?</p>
           <PlacementBtn label="Legg til langs nåværende rute" onClick={() => choose("along")} />
           <PlacementBtn label="Legg til som avstikker" onClick={() => choose("detour")} />
