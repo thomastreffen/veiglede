@@ -26,10 +26,15 @@ function SignupPage() {
         <p className="text-[11px] uppercase tracking-[0.24em] text-primary">Bli med</p>
         <h1 className="mt-2 font-display text-2xl uppercase">Opprett din konto</h1>
         <p className="mt-1 text-sm text-muted-foreground">Gratis. Lagre turer, kjøretøy og kjørestil på tvers av enheter.</p>
+        <div className="mt-4 flex gap-2">
+          <Link to="/signup" className="flex-1 rounded-xl border border-primary bg-primary/10 px-4 py-2.5 text-sm font-semibold text-center text-primary">
+            Ny bruker
+          </Link>
+          <Link to="/login" className="flex-1 rounded-xl border border-border bg-surface-1 px-4 py-2.5 text-sm font-medium text-center text-muted-foreground">
+            Logg inn
+          </Link>
+        </div>
         <div className="mt-6"><AuthButtons mode="signup" redirectTo="/trips" /></div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Har du konto? <Link to="/login" className="text-foreground underline">Logg inn</Link>
-        </p>
       </div>
     </div>
   );

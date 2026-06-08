@@ -29,11 +29,16 @@ function LoginPage() {
       <div className="w-full max-w-sm rounded-3xl border border-border bg-surface-1/70 backdrop-blur p-6 md:p-8 shadow-xl">
         <h1 className="font-display text-2xl uppercase">Velkommen tilbake</h1>
         <p className="mt-1 text-sm text-muted-foreground">Logg inn for å hente turene dine.</p>
+        <div className="mt-4 flex gap-2">
+          <Link to="/signup" className="flex-1 rounded-xl border border-border bg-surface-1 px-4 py-2.5 text-sm font-medium text-center text-muted-foreground">
+            Ny bruker
+          </Link>
+          <Link to="/login" className="flex-1 rounded-xl border border-primary bg-primary/10 px-4 py-2.5 text-sm font-semibold text-center text-primary">
+            Logg inn
+          </Link>
+        </div>
         <div className="mt-6"><AuthButtons mode="signin" /></div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Ikke registrert? <Link to="/signup" className="text-foreground underline">Opprett konto</Link>
-        </p>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
           <Link to="/" className="hover:text-foreground">← Tilbake til demo</Link>
         </p>
       </div>
