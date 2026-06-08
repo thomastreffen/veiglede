@@ -68,7 +68,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  const { gmaps, amaps, waze, shareUrl, shareText, copyText, totalCount, lastStop } = useMemo(() => {
+  const { gmapsWebUrl, gmapsDeepLink, amaps, waze, shareUrl, shareText, copyText, totalCount, lastStop } = useMemo(() => {
     const originWP: WP = { token: encodeURIComponent(origin), label: origin };
     const destWP: WP = { token: encodeURIComponent(destination), label: destination };
 
@@ -82,7 +82,10 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const gmapsWPs = limitedStops.map(stopToWP).filter((w): w is WP => !!w);
 
     const gmapsParts = [originWP.token, ...gmapsWPs.map((w) => w.token), destWP.token];
-    const gmaps = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
+    const gmapsWebUrl = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
+    const gmapsDeepLink = `comgooglemaps://?saddr=${originWP.token}&daddr=${destWP.token}${
+      gmapsWPs.length > 0 ? `&waypoints=${gmapsWPs.map((w) => w.token).join("|")}` : ""
+    }&directionsmode=driving`;
 
     const appleBase = isIos() ? "maps://" : "https://maps.apple.com/";
     const appleParams = [
@@ -103,16 +106,29 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const shareText = distanceKm ? `${chain} (${Math.round(distanceKm)} km)` : chain;
 
     return {
-      gmaps,
+      gmapsWebUrl,
+      gmapsDeepLink,
       amaps,
       waze,
-      shareUrl: gmaps,
+      shareUrl: gmapsWebUrl,
       shareText,
       copyText,
       totalCount: intermediate.length,
       lastStop: last,
     };
   }, [origin, destination, stops, distanceKm]);
+
+  const handleGmaps = () => {
+    if (isIos()) {
+      window.location.href = gmapsDeepLink;
+      setTimeout(() => {
+        window.location.href = gmapsWebUrl;
+      }, 1500);
+    } else {
+      window.open(gmapsWebUrl, "_blank");
+    }
+    setOpen(false);
+  };
 
   const handleCopy = async () => {
     try {
