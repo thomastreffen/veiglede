@@ -658,6 +658,21 @@ function DayCard({
   const hasLodging = dayStops.some((s) => s.type === "lodging");
   const coords = dayCoords(trip, dayStops);
 
+  // Display-only correction: if title is a single city name (no "→") and the day
+  // has a lodging stop in a different city, show "{title} → {lodgingCity}".
+  // Does not mutate the underlying day.title in the database.
+  const displayTitle = useMemo(() => {
+    const t = day.title ?? "";
+    if (t.includes("→")) return t;
+    const lodging = dayStops.find((s) => s.type === "lodging");
+    const loc = lodging?.location?.trim();
+    if (!loc) return t;
+    const cityPart = loc.split(",")[0]?.trim() ?? "";
+    if (!cityPart) return t;
+    if (cityPart.toLowerCase() === t.trim().toLowerCase()) return t;
+    return `${t} → ${cityPart}`;
+  }, [day.title, dayStops]);
+
   // Build time options: 05:00 → 12:00 in 15-min steps.
   const timeOptions = useMemo(() => {
     const out: string[] = [];
@@ -697,7 +712,7 @@ function DayCard({
         <div className="h-11 w-11 rounded-xl bg-primary text-primary-foreground grid place-items-center font-display text-xl shrink-0">{day.dayNumber}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <input value={day.title} onChange={(e) => tripsApi.updateDay(day.id, { title: e.target.value })}
+            <input value={displayTitle} onChange={(e) => tripsApi.updateDay(day.id, { title: e.target.value })}
               className="flex-1 min-w-0 font-display text-xl md:text-2xl uppercase bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
             {hasLodging && (
               <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
