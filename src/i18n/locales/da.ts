@@ -297,7 +297,7 @@ export const da: Dict = {
       tripBudget: "Turoversigt",
       aiCopilot: "AI-co-pilot",
       profileMatched: (n: number) => `Tilpasset din profil · ${n} interesser`,
-      openRoadbook: "Åbn roadbook",
+      openRoadbook: "Roadbook",
       shareTrip: "Del tur",
       saveAndSharePromptTitle: "Gem og del din tur",
       saveAndSharePromptBody: "Opret en gratis konto for at gemme denne tur og dele den med andre — på alle dine enheder.",

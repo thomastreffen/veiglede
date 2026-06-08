@@ -297,7 +297,7 @@ export const nl: Dict = {
       tripBudget: "Tripoverzicht",
       aiCopilot: "AI co-piloot",
       profileMatched: (n: number) => `Op jouw profiel afgestemd · ${n} interesses`,
-      openRoadbook: "Roadbook openen",
+      openRoadbook: "Roadbook",
       shareTrip: "Trip delen",
       saveAndSharePromptTitle: "Sla je trip op en deel hem",
       saveAndSharePromptBody: "Maak een gratis account om deze trip op te slaan en met anderen te delen — op al je apparaten.",
