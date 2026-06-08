@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 
 import { Mail, Loader2 } from "lucide-react";
 
@@ -23,15 +24,14 @@ export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
 
   const oauth = async (provider: "google" | "apple") => {
     setLoading(provider); setMsg(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: callbackUrl },
-    });
-    if (error) {
+    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: callbackUrl });
+    if (result.error) {
       setMsg({ kind: "error", text: `Klarte ikke logge inn med ${provider}. Prøv igjen.` });
       setLoading(null);
       return;
     }
+    if (result.redirected) return;
+    window.location.assign(callbackUrl);
     // Browser will redirect to the provider.
   };
 
