@@ -75,6 +75,20 @@ export function AppShell() {
     return () => { cancelled = true; };
   }, [user, pathname, navigate]);
 
+  // Standalone PWA: when launched from home screen and authed, send "/" to "/trips".
+  useEffect(() => {
+    if (!user) return;
+    if (pathname !== "/") return;
+    if (typeof window === "undefined") return;
+    const isStandalone =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      // iOS Safari
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (isStandalone) {
+      navigate({ to: "/trips", replace: true });
+    }
+  }, [user, pathname, navigate]);
+
   const isOnboarding = pathname === "/onboarding";
 
   if (isOnboarding) {
