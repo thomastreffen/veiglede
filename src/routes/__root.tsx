@@ -7,9 +7,24 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { I18nProvider } from "@/i18n/provider";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/InstallPrompt";
+
+function shouldRegisterSW() {
+  if (typeof window === "undefined") return false;
+  if (!("serviceWorker" in navigator)) return false;
+  if (!import.meta.env.PROD) return false;
+  if (window.top !== window.self) return false;
+  const host = window.location.hostname;
+  if (host.startsWith("id-preview--") || host.startsWith("preview--")) return false;
+  if (host === "lovableproject.com" || host.endsWith(".lovableproject.com")) return false;
+  if (host === "lovableproject-dev.com" || host.endsWith(".lovableproject-dev.com")) return false;
+  if (host === "beta.lovable.dev" || host.endsWith(".beta.lovable.dev")) return false;
+  if (new URLSearchParams(window.location.search).get("sw") === "off") return false;
+  return true;
+}
 
 import appCss from "../styles.css?url";
 
