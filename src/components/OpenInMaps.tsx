@@ -169,19 +169,17 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       </button>
       {open && (
         <div className="absolute right-0 bottom-full mb-2 z-50 w-64 rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
-          <a
-            href={gmaps}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+          <button
+            type="button"
+            onClick={handleGmaps}
+            className="block w-full text-left px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
           >
             <div className="font-medium">🗺️ Google Maps</div>
             <div className="text-xs text-muted-foreground mt-0.5">{countLabel}</div>
             {totalCount > 9 && (
               <div className="text-xs text-amber-400 mt-0.5">Google Maps maks 9 stopp — resten hoppes over</div>
             )}
-          </a>
+          </button>
           <a
             href={amaps}
             target="_blank"
