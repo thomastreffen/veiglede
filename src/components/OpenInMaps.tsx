@@ -202,7 +202,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
         <Navigation className="h-4 w-4" /> Naviger →
       </button>
       {open && (
-        <div className="absolute right-0 bottom-full mb-2 z-50 w-64 rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
           <a
             href={gmaps}
             target="_blank"
@@ -211,7 +211,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
             className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
           >
             <div className="font-medium">🗺️ Google Maps</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{countLabel}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Viser ruten — start navigasjon i appen</div>
             {totalCount > 9 && (
               <div className="text-xs text-amber-400 mt-0.5">Google Maps maks 9 stopp — resten hoppes over</div>
             )}
@@ -224,7 +224,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
             className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
           >
             <div className="font-medium">🍎 Apple Maps</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{countLabel}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Starter navigasjon direkte</div>
           </a>
           <a
             href={waze}
