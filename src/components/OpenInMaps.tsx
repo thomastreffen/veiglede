@@ -99,9 +99,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const limitedStops = pickWaypoints(intermediateStops, 9);
     const gmapsWPs = limitedStops.map(stopToWP).filter((w): w is WP => !!w);
 
-    const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), destToken];
+    const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
     const gmapsWebUrl = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
-    const gmapsDeepLink = `comgooglemaps://?saddr=${originToken}&daddr=${destToken}${
+    const gmapsDeepLink = `comgooglemaps://?saddr=${originToken}&daddr=${effectiveDestination}${
       gmapsWPs.length > 0 ? `&waypoints=${gmapsWPs.map((w) => w.token).join("|")}` : ""
     }&directionsmode=driving`;
 
