@@ -151,10 +151,6 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     };
   }, [origin, destination, stops, distanceKm]);
 
-  const handleGmaps = () => {
-    window.open(gmaps, "_blank");
-    setOpen(false);
-  };
 
   const handleCopy = async () => {
     try {
