@@ -135,6 +135,11 @@ function RootComponent() {
     // Start cloud sync once on the client
     import("@/lib/cloud-sync").then((m) => m.startCloudSync());
   }
+  useEffect(() => {
+    if (shouldRegisterSW()) {
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
