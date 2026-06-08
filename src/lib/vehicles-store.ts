@@ -144,8 +144,16 @@ function persist(next: State) {
 }
 
 function subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); }
+let cloudSyncBound = false;
 function getSnapshot(): State {
   if (!cache) cache = load();
+  if (!cloudSyncBound && typeof window !== "undefined") {
+    cloudSyncBound = true;
+    window.addEventListener("veiglede:cloud-sync", () => {
+      cache = load();
+      listeners.forEach((l) => l());
+    });
+  }
   return cache;
 }
 function getServerSnapshot(): State { return seed(); }

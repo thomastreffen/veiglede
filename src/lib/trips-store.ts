@@ -400,7 +400,14 @@ let initialized = false;
 const listeners = new Set<() => void>();
 
 function ensureInit() {
-  if (!initialized && typeof window !== "undefined") { state = load(); initialized = true; }
+  if (!initialized && typeof window !== "undefined") {
+    state = load();
+    initialized = true;
+    window.addEventListener("veiglede:cloud-sync", () => {
+      state = load();
+      listeners.forEach((l) => l());
+    });
+  }
 }
 function persist() {
   if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(state));
