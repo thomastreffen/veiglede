@@ -31,15 +31,22 @@ function isMobile() {
 /** A waypoint usable in a maps URL. */
 type WP = { token: string; label: string };
 
-function stopToWP(s: StopLike): WP | null {
+function stopToWP(s: StopLike, preferText = false): WP | null {
+  // For intermediate waypoints, prefer coordinates — they route reliably
+  // For destination, prefer readable text name
+  if (!preferText && typeof s.lat === "number" && typeof s.lng === "number") {
+    const lat = Math.round(s.lat * 1e6) / 1e6;
+    const lng = Math.round(s.lng * 1e6) / 1e6;
+    return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
+  }
   const loc = s.location || s.name;
-  if (loc && loc.trim() && !loc.trim().toLowerCase().startsWith("ankomst")) {
+  if (loc && loc.trim()) {
     return { token: encodeURIComponent(loc.trim()), label: loc.trim() };
   }
   if (typeof s.lat === "number" && typeof s.lng === "number") {
     const lat = Math.round(s.lat * 1e6) / 1e6;
     const lng = Math.round(s.lng * 1e6) / 1e6;
-    return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
+    return { token: `${lat},${lng}`, label: `${lat},${lng}` };
   }
   return null;
 }
