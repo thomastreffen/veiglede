@@ -31,15 +31,22 @@ function isMobile() {
 /** A waypoint usable in a maps URL. */
 type WP = { token: string; label: string };
 
-function stopToWP(s: StopLike): WP | null {
+function stopToWP(s: StopLike, preferText = false): WP | null {
+  // For intermediate waypoints, prefer coordinates — they route reliably
+  // For destination, prefer readable text name
+  if (!preferText && typeof s.lat === "number" && typeof s.lng === "number") {
+    const lat = Math.round(s.lat * 1e6) / 1e6;
+    const lng = Math.round(s.lng * 1e6) / 1e6;
+    return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
+  }
   const loc = s.location || s.name;
-  if (loc && loc.trim() && !loc.trim().toLowerCase().startsWith("ankomst")) {
+  if (loc && loc.trim()) {
     return { token: encodeURIComponent(loc.trim()), label: loc.trim() };
   }
   if (typeof s.lat === "number" && typeof s.lng === "number") {
     const lat = Math.round(s.lat * 1e6) / 1e6;
     const lng = Math.round(s.lng * 1e6) / 1e6;
-    return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
+    return { token: `${lat},${lng}`, label: `${lat},${lng}` };
   }
   return null;
 }
@@ -85,16 +92,10 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       lastLodgingStop ?? (isRoundTrip ? stops[stops.length - 2] : stops[stops.length - 1]);
 
     const last = stops[stops.length - 1];
-    const effectiveDestination =
-      isRoundTrip && effectiveLastStop
-        ? effectiveLastStop.location || effectiveLastStop.name
-          ? encodeURIComponent(
-              effectiveLastStop.location || effectiveLastStop.name || destination,
-            )
-          : stopToWP(effectiveLastStop)?.token ?? encodeURIComponent(destination)
-        : encodeURIComponent(destination);
-
-    const effectiveLastWP = effectiveLastStop ? stopToWP(effectiveLastStop) : null;
+    const effectiveLastWP = effectiveLastStop ? stopToWP(effectiveLastStop, true) : null;
+    const effectiveDestination = isRoundTrip && effectiveLastWP
+      ? effectiveLastWP.token
+      : encodeURIComponent(destination);
     const destLabel = isRoundTrip ? effectiveLastWP?.label ?? destination : destination;
 
     // Intermediate stops: when round-trip, drop the first stop (origin) and the
@@ -105,12 +106,12 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       : stops).filter((s) => s.type !== "pause");
 
     const intermediate = intermediateStops
-      .map(stopToWP)
+      .map((s) => stopToWP(s))
       .filter((w): w is WP => !!w);
 
     // Google Maps max 9 waypoints between origin & destination.
     const limitedStops = pickWaypoints(intermediateStops, 9);
-    const gmapsWPs = limitedStops.map(stopToWP).filter((w): w is WP => !!w);
+    const gmapsWPs = limitedStops.map((s) => stopToWP(s)).filter((w): w is WP => !!w);
 
     const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
     const gmaps = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
