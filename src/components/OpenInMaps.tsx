@@ -180,8 +180,8 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
   };
 
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function" && isMobile();
-  const countLabel = totalCount > 0 ? `Åpner med alle ${totalCount + 2} stopp` : "Åpner rute";
-  // count + 2 includes origin & destination for user-facing total
+  const countLabel = totalCount > 0 ? `Åpner med ${totalCount} hotellstopp` : "Åpner rute";
+
   void lastStop;
 
   return (
