@@ -105,13 +105,17 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       ? stops.slice(1, effectiveLastIndex >= 0 ? effectiveLastIndex : stops.length - 1)
       : stops).filter((s) => s.type !== "pause");
 
-    const intermediate = intermediateStops
-      .map((s) => stopToWP(s))
+    // For navigation, only use lodging stops as waypoints — hotels are
+    // recognized by Google Maps; raw coordinates show as "Markert" and block Start.
+    const navigationStops = intermediateStops.filter((s) => s.type === "lodging");
+    const intermediate = navigationStops
+      .map((s) => stopToWP(s, true))
       .filter((w): w is WP => !!w);
 
     // Google Maps max 9 waypoints between origin & destination.
-    const limitedStops = pickWaypoints(intermediateStops, 9);
-    const gmapsWPs = limitedStops.map((s) => stopToWP(s)).filter((w): w is WP => !!w);
+    const limitedStops = pickWaypoints(navigationStops, 9);
+    const gmapsWPs = limitedStops.map((s) => stopToWP(s, true)).filter((w): w is WP => !!w);
+
 
     const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
     const gmaps = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
