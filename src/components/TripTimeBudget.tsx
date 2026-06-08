@@ -105,7 +105,7 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
         <div className="mt-4 pt-3 border-t border-border/60">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Per dag</p>
           <ul className="space-y-1.5">
-            {perDay.map((d) => (
+            {perDay.filter((d) => d.totalActiveDayMin > 0).map((d) => (
               <li key={d.dayId} className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Dag {d.dayNumber}</span>
                 <span className="font-mono tabular-nums">
@@ -137,7 +137,9 @@ interface DayRowProps {
 export function TripDayTimeRow({ trip, days, stops, dayId, startTime }: DayRowProps) {
   const perDay = computeDayBreakdowns(trip, days, stops);
   const row = perDay.find((d) => d.dayId === dayId);
-  if (!row) return null;
+  if (!row || (row.drivingMin === 0 && row.plannedStopsMin === 0)) {
+    return <p className="mt-3 text-[11px] text-muted-foreground italic">Ingen kjøring denne dagen.</p>;
+  }
   const arr = addMinutesToHHMM(startTime, row.totalActiveDayMin);
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
