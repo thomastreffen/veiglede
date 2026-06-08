@@ -658,6 +658,21 @@ function DayCard({
   const hasLodging = dayStops.some((s) => s.type === "lodging");
   const coords = dayCoords(trip, dayStops);
 
+  // Display-only correction: if title is a single city name (no "→") and the day
+  // has a lodging stop in a different city, show "{title} → {lodgingCity}".
+  // Does not mutate the underlying day.title in the database.
+  const displayTitle = useMemo(() => {
+    const t = day.title ?? "";
+    if (t.includes("→")) return t;
+    const lodging = dayStops.find((s) => s.type === "lodging");
+    const loc = lodging?.location?.trim();
+    if (!loc) return t;
+    const cityPart = loc.split(",")[0]?.trim() ?? "";
+    if (!cityPart) return t;
+    if (cityPart.toLowerCase() === t.trim().toLowerCase()) return t;
+    return `${t} → ${cityPart}`;
+  }, [day.title, dayStops]);
+
   // Build time options: 05:00 → 12:00 in 15-min steps.
   const timeOptions = useMemo(() => {
     const out: string[] = [];
