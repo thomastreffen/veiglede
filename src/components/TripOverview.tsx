@@ -249,42 +249,48 @@ export function TripOverview({ trip, days, stops }: Props) {
                 )}
               </div>
 
-              <aside className="mt-4 md:mt-0 md:pl-4 md:border-l md:border-border/60">
-                <ul className="space-y-1.5 text-xs">
-                  <li className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 text-muted-foreground"><RouteIcon className="h-3 w-3" />{ov.km}</span>
-                    <span className="font-mono tabular-nums">{cost?.km ?? 0} km</span>
-                  </li>
-                  <li className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3 w-3" />{ov.totalTime}</span>
-                    <span className="font-mono tabular-nums">{formatDuration(dayT.totalActiveDayMin)}</span>
-                  </li>
-                  {cost && cost.energyCost > 0 && (
+              {cost?.km === 0 && dayT.totalActiveDayMin === 0 ? (
+                <aside className="mt-4 md:mt-0 md:pl-4 md:border-l md:border-border/60 flex items-center justify-center">
+                  <p className="text-xs text-muted-foreground italic">Ingen kjøring denne dagen.</p>
+                </aside>
+              ) : (
+                <aside className="mt-4 md:mt-0 md:pl-4 md:border-l md:border-border/60">
+                  <ul className="space-y-1.5 text-xs">
                     <li className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><EnergyIcon className="h-3 w-3" />{isElectric ? ov.charging : ov.fuel}</span>
-                      <span className="font-mono tabular-nums">ca. {fmtNok(cost.energyCost)}</span>
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><RouteIcon className="h-3 w-3" />{ov.km}</span>
+                      <span className="font-mono tabular-nums">{cost?.km ?? 0} km</span>
                     </li>
-                  )}
-                  {cost && cost.lodgingCost > 0 && (
                     <li className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Bed className="h-3 w-3" />{ov.lodging}</span>
-                      <span className="font-mono tabular-nums">ca. {fmtNok(cost.lodgingCost)}</span>
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3 w-3" />{ov.totalTime}</span>
+                      <span className="font-mono tabular-nums">{formatDuration(dayT.totalActiveDayMin)}</span>
                     </li>
-                  )}
-                  {cost && cost.ferryCost > 0 && (
-                    <li className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Ship className="h-3 w-3" />{ov.ferry}</span>
-                      <span className="font-mono tabular-nums">ca. {fmtNok(cost.ferryCost)}</span>
-                    </li>
-                  )}
-                  {cost && (
-                    <li className="flex items-center justify-between pt-1.5 mt-1 border-t border-border/60 text-sm font-semibold">
-                      <span className="inline-flex items-center gap-1.5"><Calculator className="h-3.5 w-3.5" />{ov.sum}</span>
-                      <span className="font-mono tabular-nums text-primary">ca. {fmtNok(cost.total)}</span>
-                    </li>
-                  )}
-                </ul>
-              </aside>
+                    {cost && cost.energyCost > 0 && (
+                      <li className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-muted-foreground"><EnergyIcon className="h-3 w-3" />{isElectric ? ov.charging : ov.fuel}</span>
+                        <span className="font-mono tabular-nums">ca. {fmtNok(cost.energyCost)}</span>
+                      </li>
+                    )}
+                    {cost && cost.lodgingCost > 0 && (
+                      <li className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Bed className="h-3 w-3" />{ov.lodging}</span>
+                        <span className="font-mono tabular-nums">ca. {fmtNok(cost.lodgingCost)}</span>
+                      </li>
+                    )}
+                    {cost && cost.ferryCost > 0 && (
+                      <li className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Ship className="h-3 w-3" />{ov.ferry}</span>
+                        <span className="font-mono tabular-nums">ca. {fmtNok(cost.ferryCost)}</span>
+                      </li>
+                    )}
+                    {cost && (
+                      <li className="flex items-center justify-between pt-1.5 mt-1 border-t border-border/60 text-sm font-semibold">
+                        <span className="inline-flex items-center gap-1.5"><Calculator className="h-3.5 w-3.5" />{ov.sum}</span>
+                        <span className="font-mono tabular-nums text-primary">ca. {fmtNok(cost.total)}</span>
+                      </li>
+                    )}
+                  </ul>
+                </aside>
+              )}
             </article>
           );
         })}
