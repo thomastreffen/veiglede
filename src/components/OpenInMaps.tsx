@@ -100,9 +100,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     // Intermediate stops: when round-trip, drop the first stop (origin) and the
     // effective destination, and exclude any trailing home-arrival stop.
     const effectiveLastIndex = effectiveLastStop ? stops.lastIndexOf(effectiveLastStop) : -1;
-    const intermediateStops = isRoundTrip
+    const intermediateStops = (isRoundTrip
       ? stops.slice(1, effectiveLastIndex >= 0 ? effectiveLastIndex : stops.length - 1)
-      : stops;
+      : stops).filter((s) => s.type !== "pause");
 
     const intermediate = intermediateStops
       .map(stopToWP)
