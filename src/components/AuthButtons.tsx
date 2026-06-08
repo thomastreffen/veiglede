@@ -23,15 +23,16 @@ export function AuthButtons({ mode, redirectTo = "/trips" }: Props) {
 
   const oauth = async (provider: "google" | "apple") => {
     setLoading(provider); setMsg(null);
-    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: callbackUrl });
-    if (result.error) {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: callbackUrl },
+    });
+    if (error) {
       setMsg({ kind: "error", text: `Klarte ikke logge inn med ${provider}. Prøv igjen.` });
       setLoading(null);
       return;
     }
-    if (result.redirected) return; // browser will navigate
-    // tokens already set — go via callback so onboarding gate runs
-    window.location.assign(callbackUrl);
+    // Browser will redirect to the provider.
   };
 
   const submitEmail = async (e: React.FormEvent) => {
