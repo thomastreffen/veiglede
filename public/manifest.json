@@ -2,7 +2,7 @@
   "name": "Veiglede",
   "short_name": "Veiglede",
   "description": "AI-drevet roadtrip-planlegger for Norge",
-  "start_url": "/",
+  "start_url": "/trips",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#f97316",
