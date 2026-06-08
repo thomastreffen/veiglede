@@ -70,7 +70,7 @@ export function HelpBot() {
 
       {open && (
         <div
-          className="fixed inset-0 md:inset-auto md:bottom-6 md:right-6 z-50 md:w-[380px] md:h-[600px] md:max-h-[85vh] bg-surface md:rounded-2xl md:border md:border-border shadow-2xl flex flex-col overflow-hidden"
+          className="fixed inset-0 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 md:inset-auto md:bottom-6 md:right-6 z-50 md:w-[380px] md:h-[600px] md:max-h-[85vh] bg-surface md:rounded-2xl md:border md:border-border shadow-2xl flex flex-col overflow-hidden"
           role="dialog"
           aria-label={hb.title}
         >
