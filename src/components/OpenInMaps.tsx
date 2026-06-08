@@ -77,7 +77,15 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
 
     const originToken = firstStopWP?.token ?? encodeURIComponent(origin);
     const originLabel = firstStopWP?.label ?? origin;
-    const destToken = lastStopWP?.token ?? encodeURIComponent(destination);
+
+    const last = stops[stops.length - 1];
+    const effectiveDestination =
+      origin === destination && stops.length > 0
+        ? last.location || last.name
+          ? encodeURIComponent(last.location || last.name || destination)
+          : stopToWP(last)?.token ?? encodeURIComponent(destination)
+        : encodeURIComponent(destination);
+
     const destLabel = lastStopWP?.label ?? destination;
 
     // Intermediate stops: when round-trip, drop first and last (used as origin/dest).
