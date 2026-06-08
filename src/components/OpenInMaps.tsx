@@ -114,7 +114,19 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
 
     // Google Maps max 9 waypoints between origin & destination.
     const limitedStops = pickWaypoints(navigationStops, 9);
-    const gmapsWPs = limitedStops.map((s) => stopToWP(s, true)).filter((w): w is WP => !!w);
+    // Intermediate waypoints: always coordinates for Google Maps reliability.
+    // Complex hotel names with |, commas, etc. trigger place search instead of routing.
+    const gmapsWPs = limitedStops
+      .map((s) => {
+        if (typeof s.lat === "number" && typeof s.lng === "number") {
+          const lat = Math.round(s.lat * 1e6) / 1e6;
+          const lng = Math.round(s.lng * 1e6) / 1e6;
+          return { token: `${lat},${lng}`, label: s.name || s.location || "" };
+        }
+        const loc = (s.location || s.name || "").split(/[,|]/)[0].trim();
+        return loc ? { token: encodeURIComponent(loc), label: loc } : null;
+      })
+      .filter((w): w is WP => !!w);
 
 
     const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
