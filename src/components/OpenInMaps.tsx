@@ -70,7 +70,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  const { gmapsWebUrl, gmapsDeepLink, amaps, waze, shareUrl, shareText, copyText, totalCount, lastStop } = useMemo(() => {
+  const { gmaps, amaps, waze, shareUrl, shareText, copyText, totalCount, lastStop } = useMemo(() => {
     const isRoundTrip = origin === destination && stops.length > 0;
     const firstStopWP = isRoundTrip ? stopToWP(stops[0]) : null;
     const originToken = firstStopWP?.token ?? encodeURIComponent(origin);
@@ -113,10 +113,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const gmapsWPs = limitedStops.map(stopToWP).filter((w): w is WP => !!w);
 
     const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
-    const gmapsWebUrl = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
-    const gmapsDeepLink = `comgooglemaps://?saddr=${originToken}&daddr=${effectiveDestination}${
-      gmapsWPs.length > 0 ? `&waypoints=${gmapsWPs.map((w) => w.token).join("|")}` : ""
-    }&directionsmode=driving`;
+    const gmaps = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
 
     const appleBase = isIos() ? "maps://" : "https://maps.apple.com/";
     const appleParams = [
@@ -138,11 +135,10 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
 
 
     return {
-      gmapsWebUrl,
-      gmapsDeepLink,
+      gmaps,
       amaps,
       waze,
-      shareUrl: gmapsWebUrl,
+      shareUrl: gmaps,
       shareText,
       copyText,
       totalCount: intermediate.length,
@@ -151,14 +147,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
   }, [origin, destination, stops, distanceKm]);
 
   const handleGmaps = () => {
-    if (isIos()) {
-      window.location.href = gmapsDeepLink;
-      setTimeout(() => {
-        window.location.href = gmapsWebUrl;
-      }, 1500);
-    } else {
-      window.open(gmapsWebUrl, "_blank");
-    }
+    window.open(gmaps, "_blank");
     setOpen(false);
   };
 
