@@ -36,7 +36,7 @@ export function BookingBadge({ status }: { status?: Status }) {
 }
 
 /** Compact display of booking details for a lodging stop. */
-export function BookingInfo({ booking }: { booking: NonNullable<Stop["booking"]> }) {
+export function BookingInfo({ booking }: { booking: Partial<NonNullable<Stop["booking"]>> }) {
   const nights = booking.nights ?? 1;
   const total = booking.pricePerNight ? booking.pricePerNight * nights : null;
   return (
