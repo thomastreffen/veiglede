@@ -109,11 +109,11 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const appleParams = [
       `saddr=${originToken}`,
       ...gmapsWPs.map((w) => `daddr=${w.token}`),
-      `daddr=${destToken}`,
+      `daddr=${effectiveDestination}`,
     ].join("&");
     const amaps = `${appleBase}?${appleParams}`;
 
-    const last = stops[stops.length - 1];
+    void last;
     const waze =
       last && typeof last.lat === "number" && typeof last.lng === "number"
         ? `https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes`
