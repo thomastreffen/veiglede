@@ -92,16 +92,10 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       lastLodgingStop ?? (isRoundTrip ? stops[stops.length - 2] : stops[stops.length - 1]);
 
     const last = stops[stops.length - 1];
-    const effectiveDestination =
-      isRoundTrip && effectiveLastStop
-        ? effectiveLastStop.location || effectiveLastStop.name
-          ? encodeURIComponent(
-              effectiveLastStop.location || effectiveLastStop.name || destination,
-            )
-          : stopToWP(effectiveLastStop)?.token ?? encodeURIComponent(destination)
-        : encodeURIComponent(destination);
-
-    const effectiveLastWP = effectiveLastStop ? stopToWP(effectiveLastStop) : null;
+    const effectiveLastWP = effectiveLastStop ? stopToWP(effectiveLastStop, true) : null;
+    const effectiveDestination = isRoundTrip && effectiveLastWP
+      ? effectiveLastWP.token
+      : encodeURIComponent(destination);
     const destLabel = isRoundTrip ? effectiveLastWP?.label ?? destination : destination;
 
     // Intermediate stops: when round-trip, drop the first stop (origin) and the
@@ -112,12 +106,12 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       : stops).filter((s) => s.type !== "pause");
 
     const intermediate = intermediateStops
-      .map(stopToWP)
+      .map((s) => stopToWP(s))
       .filter((w): w is WP => !!w);
 
     // Google Maps max 9 waypoints between origin & destination.
     const limitedStops = pickWaypoints(intermediateStops, 9);
-    const gmapsWPs = limitedStops.map(stopToWP).filter((w): w is WP => !!w);
+    const gmapsWPs = limitedStops.map((s) => stopToWP(s)).filter((w): w is WP => !!w);
 
     const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
     const gmaps = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
