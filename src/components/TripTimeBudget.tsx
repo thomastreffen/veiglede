@@ -31,11 +31,15 @@ export function TripTimeBudget({ trip, days, stops, showPerDay, className, title
   const orsFerryMin = trip.routeFerryDurationMin ?? 0;
   const ferryFromOrs = breakdown.source !== "estimated" && orsFerryMin > 0;
   const drivingLabel = breakdown.source === "estimated" ? "Estimert kjøretid" : "Beregnet kjøretid";
-  // Always show "Beregnet kjøretid" in normal UI — separating "ren" vs "med ferge"
-  // is a developer-facing nuance that confused users.
-  const headlineLabel = drivingLabel;
-  const drivingHelper =
-    breakdown.source === "estimated"
+  // We can only call it "Ren kjøretid" when ferries have been excluded from
+  // the route — either ORS confirmed no ferry, or the user asked to avoid it.
+  const isPureDriving =
+    breakdown.source !== "estimated" &&
+    (trip.routeAvoidFerries === true || (orsFerryMin === 0 && trip.routeProvider === "ors"));
+  const headlineLabel = isPureDriving ? "Ren kjøretid" : drivingLabel;
+  const drivingHelper = isPureDriving
+    ? null
+    : breakdown.source === "estimated"
       ? "Estimat: avstand × 60 km/t."
       : "Fra ruteberegning. Kan inkludere ferge/transporttid der ruten krever det.";
 

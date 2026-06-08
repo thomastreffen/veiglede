@@ -147,10 +147,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title="Åpne ruta i Google Maps, Apple Maps eller Waze for navigasjon"
         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2 hover:border-primary"
       >
-        <Navigation className="h-4 w-4" /> Åpne i Google Maps
+        <Navigation className="h-4 w-4" /> Naviger →
       </button>
       {open && (
         <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-border bg-surface shadow-lg overflow-hidden">

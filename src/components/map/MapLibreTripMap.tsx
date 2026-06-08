@@ -12,12 +12,16 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import { stopDisplayMeta, tripsApi } from "@/lib/trips-store";
 import type { LatLng } from "@/lib/geo";
-import { nearestPointOnRoute, projectTrip } from "@/lib/geo";
-import { recalculateTripRoute } from "@/lib/trip-route-controller";
+import { distanceKm, nearestPointOnRoute, projectTrip } from "@/lib/geo";
+import { getCachedRoute, mapConfig } from "@/lib/map";
+import { getRoute } from "@/lib/routing";
 import { buildMaptilerStyleUrl } from "@/lib/map/runtime-config";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+function waypointHash(wps: LatLng[]): string {
+  return wps.map((w) => `${w.lat.toFixed(4)},${w.lng.toFixed(4)}`).join("|");
+}
 function formatDrivingTime(min: number): string {
   if (!min || min < 1) return "0min";
   const h = Math.floor(min / 60);
@@ -111,7 +115,8 @@ export function MapLibreTripMap({
   const mapRef = useRef<MlMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
   const [ready, setReady] = useState(false);
-  const routeGeom = trip.routeGeometry ?? null;
+  const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
+  const [recalculating, setRecalculating] = useState(false);
   const lastErrorRef = useRef<string | null>(null);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
@@ -234,22 +239,138 @@ export function MapLibreTripMap({
     try { map.setStyle(styleUrl); } catch { /* noop */ }
   }, [styleUrl]);
 
-  // NOTE: route recalculation lives in `src/lib/trip-route-controller.ts`
-  // and is triggered by planner code (trip detail page, popup actions,
-  // EditTripSheet). This component is purely presentational and reads
-  // `trip.routeGeometry` only.
+  // Waypoint-driven routing — recompute the route whenever the set of
+  // route-affecting stops changes (origin, destination, and any stop whose
+  // location we can resolve to real coordinates). Persists back to the trip
+  // so distance/time stays honest and the cached geometry is reusable.
+  const lastHashRef = useRef<string>("");
+  const prevHashRef = useRef<string>(trip.routeWaypointsHash ?? "");
+  useEffect(() => {
+    // Only stops with real (non-approximated) coordinates participate in
+    // routing. "detour"-typed stops are excluded — they're spurs, not via.
+    const isValidLoc = (l: LatLng | undefined | null): l is LatLng =>
+      !!l &&
+      typeof l.lat === "number" && typeof l.lng === "number" &&
+      Number.isFinite(l.lat) && Number.isFinite(l.lng) &&
+      l.lat !== 0 && l.lng !== 0;
+    const isAutoEndpoint = (name: string) => {
+      const n = (name ?? "").toLowerCase();
+      return n.includes("ankomst") || n.includes("avgang");
+    };
+    const stopWps = projected.mapped
+      .filter((m) => !m.approximated)
+      .filter((m) => (m.stop.routeStatus ?? "on-route") !== "detour")
+      .filter((m) => {
+        const s = m.stop as { placement?: string; type?: string; name: string };
+        if (s.placement === "origin" || s.placement === "destination") return false;
+        if (s.type === "origin" || s.type === "destination") return false;
+        if (isAutoEndpoint(s.name)) return false;
+        return true;
+      })
+      .filter((m) => {
+        if (!isValidLoc(m.loc)) {
+          // eslint-disable-next-line no-console
+          console.warn("[veiglede] skipping waypoint with invalid coords", { name: m.stop.name, loc: m.loc });
+          return false;
+        }
+        return true;
+      })
+      .filter((m) => distanceKm(m.loc, projected.origin) > 1 && distanceKm(m.loc, projected.destination) > 1)
+      .map((m) => ({ loc: { lat: Number(m.loc.lat), lng: Number(m.loc.lng) }, name: m.stop.name }));
+    const numOrigin: LatLng = { lat: Number(projected.origin.lat), lng: Number(projected.origin.lng) };
+    const numDest: LatLng = { lat: Number(projected.destination.lat), lng: Number(projected.destination.lng) };
+    const wps: LatLng[] = [numOrigin, ...stopWps.map((s) => s.loc), numDest];
+    const hash = waypointHash(wps);
+    if (hash === lastHashRef.current) return;
+    lastHashRef.current = hash;
 
+    // Cache hit on the trip itself — no fetch, no update.
+    if (hash === trip.routeWaypointsHash && trip.routeGeometry && trip.routeGeometry.length > 1) {
+      setRouteGeom(trip.routeGeometry);
+      prevHashRef.current = hash;
+      return;
+    }
 
+    // Debug: log every recalc attempt with the waypoint plan so the user can
+    // verify via-points are reaching ORS.
+    const debug = {
+      ts: new Date().toISOString(),
+      waypointCount: wps.length,
+      waypointNames: ["origin", ...stopWps.map((s) => s.name), "destination"],
+      waypointCoords: wps.map((w) => [Number(w.lng), Number(w.lat)]),
+    };
+    // eslint-disable-next-line no-console
+    console.info("[veiglede] route recalc →", debug);
+    if (typeof window !== "undefined") {
+      (window as unknown as Record<string, unknown>).__veiglede_route_debug = debug;
+    }
+
+    let cancelled = false;
+    const userChanged = prevHashRef.current !== "" && prevHashRef.current !== hash;
+    setRecalculating(true);
+    // Prefer multi-waypoint server route; fall back to direct ORS if the
+    // legacy client-side key is present (single-segment only).
+    const routeP = wps.length > 2
+      ? getRoute({
+          origin: numOrigin,
+          destination: numDest,
+          waypoints: stopWps.map((s) => s.loc),
+          routeStyle: trip.style === "fastest" ? "fastest" : "scenic",
+        }).then((r) => (r && r.geometry.length > 1 ? r : null))
+      : (mapConfig.hasRouting
+          ? getCachedRoute(wps)
+          : getRoute({ origin: projected.origin, destination: projected.destination }).then((r) => r && r.geometry.length > 1 ? r : null));
+
+    routeP.then((res) => {
+      if (cancelled) return;
+      setRecalculating(false);
+      if (!res) {
+        if (userChanged) {
+          toast.error("Ruten kunne ikke beregnes på nytt. Beholder forrige rute.");
+        }
+        return;
+      }
+      // eslint-disable-next-line no-console
+      console.info("[veiglede] route recalc ✓", {
+        provider: res.provider,
+        distanceKm: res.distanceKm,
+        durationMin: res.durationMin,
+        geomPts: res.geometry.length,
+      });
+      setRouteGeom(res.geometry);
+      prevHashRef.current = hash;
+      try {
+        tripsApi.updateTrip(trip.id, {
+          routeGeometry: res.geometry,
+          routeDistanceKm: res.distanceKm,
+          routeDurationMin: res.durationMin,
+          routeWaypointsHash: hash,
+          routeProvider: res.provider,
+          distanceKm: Math.round(res.distanceKm),
+          drivingTime: formatDrivingTime(res.durationMin),
+        });
+      } catch { /* noop */ }
+      if (userChanged) {
+        if (res.provider === "fallback" || res.provider === "demo") {
+          toast.warning(`Ruta kunne ikke snappes til veinettet. Viser foreløpig estimat (${Math.round(res.distanceKm)} km).`);
+        } else {
+          toast.success(`Ruta er oppdatert via ${stopWps.length} via-punkt${stopWps.length === 1 ? "" : "er"} (${Math.round(res.distanceKm)} km).`);
+        }
+      }
+    });
+    return () => { cancelled = true; setRecalculating(false); };
+  }, [projected, trip.id, trip.routeGeometry, trip.routeWaypointsHash, trip.style]);
 
   // Add/update route layer and fit bounds. Also re-runs after setStyle().
   const addRouteAndFit = useCallback(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    const hasRealRoute = !!routeGeom && routeGeom.length > 1;
-    // Only the real ORS/server geometry is drawn as the main orange route.
-    // If it is missing, we still fit bounds to endpoints/stops below but
-    // skip the line layers entirely so we don't fake a route.
-    const geom: LatLng[] = hasRealRoute ? (routeGeom as LatLng[]) : [];
+    const geom: LatLng[] = (routeGeom && routeGeom.length > 1) ? routeGeom : [
+      projected.origin,
+      ...projected.mapped.map((m) => m.loc),
+      projected.destination,
+    ];
+    if (geom.length < 2) return;
 
     const coords: [number, number][] = geom.map((p) => [p.lng, p.lat]);
     const data: GeoJSON.Feature<GeoJSON.LineString> = {
@@ -284,40 +405,31 @@ export function MapLibreTripMap({
     };
 
     try {
-      if (hasRealRoute) {
-        const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
-        if (src) {
-          src.setData(data);
-        } else {
-          map.addSource("vg-route", { type: "geojson", data });
-          map.addLayer({
-            id: "vg-route-casing",
-            type: "line",
-            source: "vg-route",
-            paint: { "line-color": "#ffffff", "line-width": compact ? 7 : 10, "line-opacity": 0.95 },
-            layout: { "line-cap": "round", "line-join": "round" },
-          });
-          map.addLayer({
-            id: "vg-route-line",
-            type: "line",
-            source: "vg-route",
-            paint: { "line-color": DAY_COLORS[0], "line-width": compact ? 4 : 6 },
-            layout: { "line-cap": "round", "line-join": "round" },
-          });
-        }
+      const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
+      if (src) {
+        src.setData(data);
       } else {
-        // No real route yet — make sure any stale route line is cleared so
-        // we don't show a fake straight-line geometry as the trip route.
-        const src = map.getSource("vg-route") as maplibregl.GeoJSONSource | undefined;
-        if (src) {
-          src.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } });
-        }
+        map.addSource("vg-route", { type: "geojson", data });
+        map.addLayer({
+          id: "vg-route-casing",
+          type: "line",
+          source: "vg-route",
+          paint: { "line-color": "#ffffff", "line-width": compact ? 7 : 10, "line-opacity": 0.95 },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
+        map.addLayer({
+          id: "vg-route-line",
+          type: "line",
+          source: "vg-route",
+          paint: { "line-color": DAY_COLORS[0], "line-width": compact ? 4 : 6 },
+          layout: { "line-cap": "round", "line-join": "round" },
+        });
       }
 
       const detourSrc = map.getSource("vg-detours") as maplibregl.GeoJSONSource | undefined;
       if (detourSrc) {
         detourSrc.setData(detourData);
-      } else if (hasRealRoute) {
+      } else {
         map.addSource("vg-detours", { type: "geojson", data: detourData });
         map.addLayer({
           id: "vg-detours-casing",
@@ -339,41 +451,29 @@ export function MapLibreTripMap({
           },
         });
       }
-      if (hasRealRoute) onStage?.("routeLayerAdded");
+      onStage?.("routeLayerAdded");
 
-      // Fit bounds to whatever real points we know: route geometry (if any),
-      // detour spurs, endpoints and projected stop coords. This ensures
-      // round-trips and routes without geometry still show a regional view
-      // instead of zooming into one local street.
-      let minLng = Infinity, maxLng = -Infinity;
-      let minLat = Infinity, maxLat = -Infinity;
-      const include = (lng: number, lat: number) => {
-        if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+      // Fit bounds to the route + detour spurs so the user always sees
+      // how the detour relates to the main route.
+      let minLng = coords[0][0], maxLng = coords[0][0];
+      let minLat = coords[0][1], maxLat = coords[0][1];
+      for (const [lng, lat] of coords) {
         if (lng < minLng) minLng = lng;
         if (lng > maxLng) maxLng = lng;
         if (lat < minLat) minLat = lat;
         if (lat > maxLat) maxLat = lat;
-      };
-      for (const [lng, lat] of coords) include(lng, lat);
+      }
       for (const f of detourFeatures) {
-        for (const [lng, lat] of f.geometry.coordinates) include(lng, lat);
-      }
-      include(projected.origin.lng, projected.origin.lat);
-      include(projected.destination.lng, projected.destination.lat);
-      for (const m of projected.mapped) include(m.loc.lng, m.loc.lat);
-
-      if (Number.isFinite(minLng) && Number.isFinite(minLat)) {
-        const tinySpan = (maxLng - minLng) < 0.05 && (maxLat - minLat) < 0.05;
-        if (tinySpan) {
-          const padDeg = 0.2;
-          minLng -= padDeg; maxLng += padDeg;
-          minLat -= padDeg; maxLat += padDeg;
+        for (const [lng, lat] of f.geometry.coordinates) {
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
         }
-        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-          padding: compact ? 32 : 56, duration: 400,
-          maxZoom: hasRealRoute ? 11 : 9,
-        });
       }
+      map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+        padding: compact ? 32 : 56, duration: 400, maxZoom: 11,
+      });
       emitDiagnostics();
     } catch (err) {
       lastErrorRef.current = `route-layer: ${(err as Error)?.message ?? "unknown"}`;
@@ -456,7 +556,7 @@ export function MapLibreTripMap({
       const status = m.stop.routeStatus ?? (m.stop.type === "detour" ? "detour" : "on-route");
       const isDetour = status === "detour";
       const el = stopEl(meta.emoji, isDetour ? "#f0b429" : color, selected, isDetour ? "detour" : "on-route");
-      el.title = `${m.stop.name} · ${meta.label} · ${isDetour ? "avstikker" : "i ruta"}`;
+      el.title = `${m.stop.name} · ${meta.label} · ${isDetour ? "avstikker" : "på rute"}`;
       const durationStr = m.stop.durationMin ? formatDrivingTime(m.stop.durationMin) : "";
       const labelColor = isDetour ? "#b07a00" : color;
       const extraLine = isDetour && (m.stop.extraDistanceKm != null || m.stop.distanceFromRouteKm != null)
@@ -465,11 +565,11 @@ export function MapLibreTripMap({
           ? `<div style="font-size:11px;color:#555;margin-top:2px;">📍 ${m.stop.distanceFromRouteKm} km fra ruta${m.stop.extraDistanceKm != null ? ` · +${m.stop.extraDistanceKm} km` : ""}</div>`
           : "";
       const promoteBtn = isDetour
-        ? `<button data-vg-promote="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #2d8a5f;color:#2d8a5f;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Legg inn i ruta</button>`
+        ? `<button data-vg-promote="${m.stop.id}" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #2d8a5f;color:#2d8a5f;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Gjør til via-punkt</button>`
         : "";
       const removeLabel = isDetour ? "Fjern avstikker" : "Fjern fra rute";
       const popupHtml = `<div style="font-family:inherit;padding:2px 4px;max-width:240px;">
-            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${labelColor};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)} · ${isDetour ? "avstikker" : "i ruta"}</div>
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${labelColor};font-weight:700;">${meta.emoji} ${escapeHtml(meta.label ?? m.stop.type)} · ${isDetour ? "avstikker" : "på rute"}</div>
             <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(m.stop.name)}</div>
             ${m.stop.location ? `<div style="font-size:11px;color:#555;margin-top:2px;">${escapeHtml(m.stop.location)}</div>` : ""}
             ${extraLine}
@@ -486,13 +586,9 @@ export function MapLibreTripMap({
           if (!popupEl) return;
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-remove="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
-            const wasOnRoute = (m.stop.routeStatus ?? "on-route") === "on-route";
             try { tripsApi.deleteStop(m.stop.id); } catch { /* noop */ }
             onSelectStop?.(null);
             toast.success(isDetour ? "Avstikker fjernet." : "Stoppet fjernet. Ruten oppdateres.");
-            if (wasOnRoute) {
-              void recalculateTripRoute(trip.id, "remove-waypoint");
-            }
           });
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-promote="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
@@ -503,8 +599,7 @@ export function MapLibreTripMap({
                 type: m.stop.type === "detour" ? "attraction" : m.stop.type,
               });
             } catch { /* noop */ }
-            toast.success("Lagt inn i ruta. Ruten beregnes på nytt.");
-            void recalculateTripRoute(trip.id, "add-via-point");
+            toast.success("Lagt inn som via-punkt. Ruten beregnes på nytt.");
           });
           popupEl.querySelector<HTMLButtonElement>(`[data-vg-center="${m.stop.id}"]`)?.addEventListener("click", (ev) => {
             ev.stopPropagation();
@@ -549,6 +644,12 @@ export function MapLibreTripMap({
   return (
     <div className={cn("relative h-full w-full", className)}>
       <div ref={containerRef} className="h-full w-full" />
+      {recalculating && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2 rounded-full border border-primary/40 bg-background/90 px-3 py-1.5 text-[11px] uppercase tracking-wider text-foreground/90 shadow-md backdrop-blur">
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary mr-2 align-middle" />
+          Beregner rute på nytt…
+        </div>
+      )}
     </div>
   );
 }

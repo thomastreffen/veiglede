@@ -287,13 +287,13 @@ export function TripQuickAddSheet({ tripId, open, onClose }: Props) {
               <div className="space-y-2 pt-1">
                 <p className="text-[12px] text-muted-foreground px-1">Hvor i turen?</p>
                 <PlacementButton
-                  title="Legg inn i ruta"
-                  subtitle="Endrer hovedruta så den går gjennom stedet"
+                  title="Langs ruta"
+                  subtitle="Via-punkt på hovedruta"
                   onClick={() => addStopWithPlacement("along")}
                 />
                 <PlacementButton
                   title="Avstikker"
-                  subtitle="Beholder hovedruta, vises som ekstra tur"
+                  subtitle="Sidetur som ikke endrer ruta"
                   onClick={() => addStopWithPlacement("detour")}
                 />
                 <PlacementButton

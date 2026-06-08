@@ -43,18 +43,18 @@ export function DetourPromptDialog({
         <div className="p-3 space-y-2">
           <p className="px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Hvordan vil du legge det til?</p>
           <ChoiceBtn
-            icon={<RouteIcon className="h-4 w-4" />}
-            title="Legg inn i ruta"
-            sub="Hovedruta beregnes på nytt og går gjennom stedet."
-            onClick={() => pick("via")}
-            tone="primary"
-          />
-          <ChoiceBtn
             icon={<CornerDownRight className="h-4 w-4" />}
             title="Legg til som avstikker"
             sub="Tegnes som stiplet avstikker fra hovedruta. Hovedruta endres ikke."
             onClick={() => pick("detour")}
             tone="amber"
+          />
+          <ChoiceBtn
+            icon={<RouteIcon className="h-4 w-4" />}
+            title="Legg inn som via-punkt i hovedruta"
+            sub="Hovedruta beregnes på nytt og går gjennom stedet."
+            onClick={() => pick("via")}
+            tone="primary"
           />
           <ChoiceBtn
             icon={<Bookmark className="h-4 w-4" />}

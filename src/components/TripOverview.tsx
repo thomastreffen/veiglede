@@ -197,19 +197,11 @@ export function TripOverview({ trip, days, stops }: Props) {
                       <Ship className="h-3 w-3" /> {ov.ferryBadge}
                     </span>
                   )}
-                  {cost?.km === 0 && dayT.totalActiveDayMin === 0 && (() => {
-                    const lodging = dayStops.find((s) => s.type === "lodging");
-                    const city =
-                      lodging?.location?.split(",").pop()?.trim() ||
-                      lodging?.name ||
-                      day.title?.replace(/^opphold\s+i\s+/i, "").replace(/^hviledag\s+i\s+/i, "") ||
-                      "";
-                    return (
-                      <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background text-muted-foreground px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
-                        🛏️ {city ? `Opphold i ${city}` : "Opphold"}
-                      </span>
-                    );
-                  })()}
+                  {cost?.km === 0 && dayT.totalActiveDayMin === 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background text-muted-foreground px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
+                      😴 Hviledag
+                    </span>
+                  )}
                 </div>
                 {day.departureTime && (
                   <p className="mt-2 text-[11px] text-muted-foreground">

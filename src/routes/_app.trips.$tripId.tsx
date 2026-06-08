@@ -37,22 +37,13 @@ import {
   Plus, Trash2, ArrowLeft, BookOpen, Clock, MapPin, Route as RouteIcon,
   Camera, Sparkles, Share2, ChevronUp, ChevronDown, Info, Star, Tag, Image as ImageIcon,
   Navigation, CornerDownRight, Check, Pencil, MoreHorizontal, Copy, BedDouble, ArrowRightLeft,
-  Ship, FileDown,
+  Ship,
 } from "lucide-react";
-import { downloadGpx } from "@/lib/gpx-export";
 import { toast } from "sonner";
 import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 import { useT } from "@/i18n/provider";
-import {
-  buildTripWaypoints,
-  recalculateTripRoute,
-  getLastRecalcDebug,
-  subscribeRouteDebug,
-  isValidRouteSnapshot,
-} from "@/lib/trip-route-controller";
-import { useSyncExternalStore } from "react";
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
@@ -155,49 +146,6 @@ function TripPlanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, tripStops.length]);
 
-  // Centralized route recalculation. Whenever the set of route-affecting
-  // stops/endpoints changes (waypoint hash differs from the persisted hash),
-  // the controller recomputes via getRoute and writes back to the trip.
-  // This replaces the recalc effect that used to live inside MapLibreTripMap.
-  const waypointPlan = useMemo(
-    () => (trip ? buildTripWaypoints(trip, tripDays, tripStops) : null),
-    [trip, tripDays, tripStops],
-  );
-  const waypointHashKey = waypointPlan?.hash ?? "";
-  useEffect(() => {
-    if (!trip || !waypointPlan) return;
-    if (waypointPlan.hash === trip.routeWaypointsHash && isValidRouteSnapshot(trip)) return;
-    void recalculateTripRoute(trip.id, "stops-changed");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip?.id, waypointHashKey, trip?.routeWaypointsHash, trip?.routeGeometry?.length, trip?.routeDistanceKm, trip?.routeDurationMin]);
-
-  // Live subscription to the route controller's last debug snapshot so the
-  // planner debug panel reflects what the controller actually saw and did.
-  const routeDebug = useSyncExternalStore(
-    subscribeRouteDebug,
-    () => getLastRecalcDebug(),
-    () => null,
-  );
-  const [calcTimeout, setCalcTimeout] = useState(false);
-
-  useEffect(() => {
-    setCalcTimeout(false);
-    if (!trip?.id) return;
-    const timer = window.setTimeout(() => setCalcTimeout(true), 5000);
-    return () => window.clearTimeout(timer);
-  }, [trip?.id]);
-
-  useEffect(() => {
-    if (!tripId || !trip) return;
-    const hasValidDistance = (trip.routeDistanceKm ?? trip.distanceKm ?? 0) > 0;
-    const hasValidTime = (trip.routeDurationMin ?? 0) > 0 || !!(trip.drivingTime ?? "").trim();
-    const hasValidStats = hasValidDistance && hasValidTime;
-    if (!hasValidStats) {
-      void recalculateTripRoute(tripId, "missing-stats");
-    }
-  }, [tripId, trip?.id, trip?.distanceKm, trip?.routeDistanceKm, trip?.drivingTime, trip?.routeDurationMin]);
-
-
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),
     [suggestions, routePoints],
@@ -265,14 +213,10 @@ function TripPlanner() {
           { label: "Route provider", value: trip.routeProvider ?? "—" },
           { label: "Geometry pts", value: trip.routeGeometry?.length ?? 0 },
           { label: "Waypoints hash", value: (trip.routeWaypointsHash ?? "—").slice(0, 24) },
-          { label: "On-route waypoints", value: waypointPlan?.viaPoints.length ?? 0 },
-          { label: "Via names", value: (waypointPlan?.viaPoints.map((v) => v.name).join(" → ") || "—") },
-          { label: "Detour stops", value: waypointPlan?.classification.detours.length ?? 0 },
-          { label: "Last recalc reason", value: routeDebug?.reason ?? "—" },
-          { label: "Last recalc status", value: routeDebug?.status ?? "—" },
+          { label: "On-route stops", value: tripStops.filter((s) => (s.routeStatus ?? "on-route") === "on-route" && s.lat != null).length },
+          { label: "Detour stops", value: tripStops.filter((s) => s.routeStatus === "detour").length },
           { label: "Route dist", value: trip.routeDistanceKm != null ? `${trip.routeDistanceKm} km` : "—" },
           { label: "Route time", value: trip.routeDurationMin != null ? `${trip.routeDurationMin} min` : "—" },
-          { label: "Snapshot valid", value: isValidRouteSnapshot(trip) ? "yes" : "no" },
         ]}
       />
 
@@ -382,31 +326,12 @@ function TripPlanner() {
         </div>
       </section>
 
-      {/* Stat row — show loading state instead of 0 km / 0 min while the
-          route controller is still computing or recovering from an error. */}
-      {(() => {
-        const routeKm = (trip.routeDistanceKm ?? 0) > 0
-          ? Math.round(trip.routeDistanceKm as number)
-          : (trip.distanceKm ?? 0) > 0 ? trip.distanceKm : 0;
-        const routeMin = (trip.routeDurationMin ?? 0) > 0 ? (trip.routeDurationMin as number) : 0;
-        const dt = (trip.drivingTime ?? "").trim();
-        const dtValid = dt !== "" && dt !== "0min" && dt !== "0 min";
-        const timeFromMin = routeMin > 0
-          ? (() => { const h = Math.floor(routeMin / 60); const m = Math.round(routeMin % 60); return h === 0 ? `${m}min` : m === 0 ? `${h}t` : `${h}t ${m}min`; })()
-          : null;
-        const distanceReady = routeKm > 0;
-        const timeReady = !!timeFromMin || dtValid;
-        const recalcInFlight = (!distanceReady || !timeReady) && !calcTimeout && (routeDebug?.status === undefined || routeDebug?.status === "ok" || routeDebug?.status === "skipped");
-        const distanceLabel = distanceReady ? `${routeKm} km` : recalcInFlight ? "Beregner…" : "—";
-        const timeLabel = timeFromMin ?? (dtValid ? dt : recalcInFlight ? "Beregner…" : "—");
-        return (
-          <section className="mt-4 grid grid-cols-3 gap-3">
-            <BigStat icon={<RouteIcon className="h-4 w-4" />} label={td.distance} value={distanceLabel} />
-            <BigStat icon={<Clock className="h-4 w-4" />} label={td.drivingTime} value={timeLabel} />
-            <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
-          </section>
-        );
-      })()}
+      {/* Stat row */}
+      <section className="mt-4 grid grid-cols-3 gap-3">
+        <BigStat icon={<RouteIcon className="h-4 w-4" />} label={td.distance} value={`${trip.distanceKm} km`} />
+        <BigStat icon={<Clock className="h-4 w-4" />} label={td.drivingTime} value={trip.drivingTime} />
+        <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
+      </section>
 
       {/* Map */}
       <section className="mt-4">
@@ -464,7 +389,7 @@ function TripPlanner() {
         </section>
       )}
 
-      {/* Primary actions — Roadbook · Del · Naviger · GPX */}
+      {/* Primary actions */}
       <section className="mt-4 grid grid-cols-2 gap-3">
         <Link to="/trips/$tripId/roadbook" params={{ tripId }}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110">
@@ -486,18 +411,7 @@ function TripPlanner() {
               .sort((a, b) => a.order - b.order)
           )}
         />
-        <button
-          type="button"
-          onClick={() => { downloadGpx(trip, tripStops); toast.success("GPX lastet ned"); }}
-          title="For BMW Motorrad, Garmin, TomTom og andre navigasjonsapper."
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-5 py-3.5 text-sm font-medium hover:bg-surface-2 hover:border-primary"
-        >
-          <FileDown className="h-4 w-4" /> Eksporter GPX
-        </button>
       </section>
-      <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
-        Naviger åpner start, mål og stopp i Google/Apple Maps (Google støtter inntil 9 mellomstopp). GPX tar med hele ruta og fungerer i BMW Motorrad, Garmin og TomTom.
-      </p>
 
       {trip.isPublic && (
         <section className="mt-4">
@@ -625,16 +539,16 @@ function TripPlanner() {
               onAdd={(placement, dayId) => {
                 const added = tripsApi.addSuggestionAt(tripId, sug, placement, dayId, info);
                 if (added) {
+                  const status = added.routeStatus ?? "—";
+                  const coords = added.lat != null && added.lng != null
+                    ? `${added.lat.toFixed(3)},${added.lng.toFixed(3)}`
+                    : "(no coords)";
+                  // Temporary debug toast — verifies waypoint reaches the routing engine.
+                  // eslint-disable-next-line no-console
+                  console.info("[veiglede] added stop", { name: added.name, status, placement, coords });
                   if (placement === "along") {
-                    toast.success(`Lagt inn i ruta: ${added.name}`);
-                    void recalculateTripRoute(tripId, "add-via-point");
-                  } else if (placement === "detour") {
-                    toast.success(`Lagt til som avstikker: ${added.name}`);
-                  } else {
-                    toast.success(`Lagret som forslag: ${added.name}`);
+                    toast(`Added waypoint: ${added.name} ${coords} routeStatus=${status}`);
                   }
-                  // For non-"along" placements, the centralized hash-change
-                  // effect picks up the new stop automatically.
                 }
               }}
               onHover={(h) => setHoveredSuggestionId(h ? sug.id : null)}
