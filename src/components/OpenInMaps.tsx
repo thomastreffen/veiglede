@@ -69,29 +69,37 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
   }, [open]);
 
   const { gmapsWebUrl, gmapsDeepLink, amaps, waze, shareUrl, shareText, copyText, totalCount, lastStop } = useMemo(() => {
-    const originWP: WP = { token: encodeURIComponent(origin), label: origin };
-    const destWP: WP = { token: encodeURIComponent(destination), label: destination };
+    const isRoundTrip = origin === destination && stops.length > 0;
+    const firstStopWP = isRoundTrip ? stopToWP(stops[0]) : null;
+    const lastStopWP = isRoundTrip ? stopToWP(stops[stops.length - 1]) : null;
 
-    // Intermediate stops only (exclude origin/destination duplicates handled by caller).
-    const intermediate = stops
+    const originToken = firstStopWP?.token ?? encodeURIComponent(origin);
+    const originLabel = firstStopWP?.label ?? origin;
+    const destToken = lastStopWP?.token ?? encodeURIComponent(destination);
+    const destLabel = lastStopWP?.label ?? destination;
+
+    // Intermediate stops: when round-trip, drop first and last (used as origin/dest).
+    const intermediateStops = isRoundTrip ? stops.slice(1, -1) : stops;
+
+    const intermediate = intermediateStops
       .map(stopToWP)
       .filter((w): w is WP => !!w);
 
     // Google Maps max 9 waypoints between origin & destination.
-    const limitedStops = pickWaypoints(stops, 9);
+    const limitedStops = pickWaypoints(intermediateStops, 9);
     const gmapsWPs = limitedStops.map(stopToWP).filter((w): w is WP => !!w);
 
-    const gmapsParts = [originWP.token, ...gmapsWPs.map((w) => w.token), destWP.token];
+    const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), destToken];
     const gmapsWebUrl = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
-    const gmapsDeepLink = `comgooglemaps://?saddr=${originWP.token}&daddr=${destWP.token}${
+    const gmapsDeepLink = `comgooglemaps://?saddr=${originToken}&daddr=${destToken}${
       gmapsWPs.length > 0 ? `&waypoints=${gmapsWPs.map((w) => w.token).join("|")}` : ""
     }&directionsmode=driving`;
 
     const appleBase = isIos() ? "maps://" : "https://maps.apple.com/";
     const appleParams = [
-      `saddr=${originWP.token}`,
+      `saddr=${originToken}`,
       ...gmapsWPs.map((w) => `daddr=${w.token}`),
-      `daddr=${destWP.token}`,
+      `daddr=${destToken}`,
     ].join("&");
     const amaps = `${appleBase}?${appleParams}`;
 
@@ -99,11 +107,12 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const waze =
       last && typeof last.lat === "number" && typeof last.lng === "number"
         ? `https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes`
-        : `https://waze.com/ul?q=${encodeURIComponent(destination)}&navigate=yes`;
+        : `https://waze.com/ul?q=${encodeURIComponent(destLabel)}&navigate=yes`;
 
-    const chain = [originWP.label, ...intermediate.map((w) => w.label), destWP.label].join(" → ");
+    const chain = [originLabel, ...intermediate.map((w) => w.label), destLabel].join(" → ");
     const copyText = `Veiglede-rute: ${chain}`;
     const shareText = distanceKm ? `${chain} (${Math.round(distanceKm)} km)` : chain;
+
 
     return {
       gmapsWebUrl,
