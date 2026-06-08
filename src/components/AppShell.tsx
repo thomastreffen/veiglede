@@ -227,10 +227,10 @@ function NavItem({ n }: { n: NavItemDef }) {
         activeOptions={{ exact: true }}
         activeProps={{ className: "text-primary" }}
         inactiveProps={{ className: "text-muted-foreground" }}
-        className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-wider")}
+        className={cn("flex flex-col items-center gap-0.5 py-2 text-[9px] uppercase tracking-wide w-full min-w-0")}
       >
         <Icon className="h-5 w-5" />
-        <span>{n.label}</span>
+        <span className="text-center leading-tight whitespace-normal break-words w-full">{n.label}</span>
       </Link>
     </li>
   );
