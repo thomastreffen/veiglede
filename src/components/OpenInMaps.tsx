@@ -32,14 +32,14 @@ function isMobile() {
 type WP = { token: string; label: string };
 
 function stopToWP(s: StopLike): WP | null {
+  const loc = s.location || s.name;
+  if (loc && loc.trim() && !loc.trim().toLowerCase().startsWith("ankomst")) {
+    return { token: encodeURIComponent(loc.trim()), label: loc.trim() };
+  }
   if (typeof s.lat === "number" && typeof s.lng === "number") {
     const lat = Math.round(s.lat * 1e6) / 1e6;
     const lng = Math.round(s.lng * 1e6) / 1e6;
     return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
-  }
-  const loc = s.location || s.name;
-  if (loc && loc.trim()) {
-    return { token: encodeURIComponent(loc.trim()), label: loc.trim() };
   }
   return null;
 }
