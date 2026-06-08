@@ -75,6 +75,20 @@ export function AppShell() {
     return () => { cancelled = true; };
   }, [user, pathname, navigate]);
 
+  // Standalone PWA: when launched from home screen and authed, send "/" to "/trips".
+  useEffect(() => {
+    if (!user) return;
+    if (pathname !== "/") return;
+    if (typeof window === "undefined") return;
+    const isStandalone =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      // iOS Safari
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (isStandalone) {
+      navigate({ to: "/trips", replace: true });
+    }
+  }, [user, pathname, navigate]);
+
   const isOnboarding = pathname === "/onboarding";
 
   if (isOnboarding) {
@@ -94,7 +108,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur pt-[env(safe-area-inset-top)]">
         <div className="mx-auto max-w-5xl flex items-center justify-between px-4 md:px-6 py-3.5">
           <Link to="/"><VeigledeMark /></Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">

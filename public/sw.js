@@ -1,5 +1,5 @@
 // Minimal cache-first service worker for Veiglede app shell.
-const CACHE = "veiglede-shell-v1";
+const CACHE = "veiglede-shell-v2";
 const ASSETS = ["/", "/index.html", "/icon-192.png", "/icon-512.png", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
