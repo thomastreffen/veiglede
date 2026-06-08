@@ -297,7 +297,7 @@ export const sv: Dict = {
       tripBudget: "Reseöversikt",
       aiCopilot: "AI-medpilot",
       profileMatched: (n: number) => `Anpassad efter din profil · ${n} intressen`,
-      openRoadbook: "Öppna roadbook",
+      openRoadbook: "Roadbook",
       shareTrip: "Dela resa",
       saveAndSharePromptTitle: "Spara och dela din resa",
       saveAndSharePromptBody: "Skapa ett gratis konto för att spara denna resa och dela den med andra — på alla dina enheter.",

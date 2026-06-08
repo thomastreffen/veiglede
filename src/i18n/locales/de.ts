@@ -298,7 +298,7 @@ export const de: Dict = {
       tripBudget: "Tourübersicht",
       aiCopilot: "KI-Co-Pilot",
       profileMatched: (n: number) => `Auf dein Profil zugeschnitten · ${n} Interessen`,
-      openRoadbook: "Roadbook öffnen",
+      openRoadbook: "Roadbook",
       shareTrip: "Tour teilen",
       saveAndSharePromptTitle: "Speichere und teile deine Tour",
       saveAndSharePromptBody: "Erstelle ein kostenloses Konto, um diese Tour zu speichern und mit anderen zu teilen — auf all deinen Geräten.",

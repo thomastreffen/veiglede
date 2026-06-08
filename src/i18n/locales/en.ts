@@ -298,7 +298,7 @@ export const en: Dict = {
       tripBudget: "Trip budget",
       aiCopilot: "AI co-pilot",
       profileMatched: (n: number) => `Tailored to your profile · ${n} interests`,
-      openRoadbook: "Open roadbook",
+      openRoadbook: "Roadbook",
       shareTrip: "Share trip",
       saveAndSharePromptTitle: "Save and share your trip",
       saveAndSharePromptBody: "Create a free account to save this trip and share it with others — across all your devices.",

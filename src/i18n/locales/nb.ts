@@ -298,7 +298,7 @@ export const nb = {
       tripBudget: "Turregnskap",
       aiCopilot: "AI ko-pilot",
       profileMatched: (n: number) => `Tilpasset profilen din · ${n} interesser`,
-      openRoadbook: "Åpne roadbook",
+      openRoadbook: "Roadbook",
       shareTrip: "Del tur",
       saveAndSharePromptTitle: "Lagre og del turen din",
       saveAndSharePromptBody: "Opprett en gratis konto for å lagre denne turen og dele den med andre — på alle dine enheter.",
