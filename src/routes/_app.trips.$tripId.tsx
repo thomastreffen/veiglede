@@ -711,9 +711,9 @@ function DayCard({
       <div className="flex items-start gap-4 p-4 md:p-5 border-b border-border/60">
         <div className="h-11 w-11 rounded-xl bg-primary text-primary-foreground grid place-items-center font-display text-xl shrink-0">{day.dayNumber}</div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
             <input value={displayTitle} onChange={(e) => tripsApi.updateDay(day.id, { title: e.target.value })}
-              className="flex-1 min-w-0 font-display text-xl md:text-2xl uppercase bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1" />
+              className="flex-1 min-w-0 font-display text-xl md:text-2xl uppercase bg-transparent outline-none focus:bg-surface-2 rounded px-1 -mx-1 whitespace-normal break-words w-full" />
             {hasLodging && (
               <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
                 <BedDouble className="h-3 w-3" /> Overnatting
