@@ -118,55 +118,123 @@ export function InstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3 md:hidden">
-      <div className="mx-auto max-w-md rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-3">
-          <img
-            src="/icon-192.png"
-            alt=""
-            width={44}
-            height={44}
-            className="h-11 w-11 rounded-xl"
-          />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">
-              Få raskere tilgang
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Legg Veiglede til på hjemskjermen.
-            </p>
-            {showIosHelp && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Trykk på <span className="font-medium">Del</span>-knappen → <span className="font-medium">«Legg til på hjemskjerm»</span>.
+    <>
+      <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3 md:hidden">
+        <div className="mx-auto max-w-md rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur">
+          <div className="flex items-start gap-3">
+            <img
+              src="/icon-192.png"
+              alt=""
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-xl"
+            />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                Få raskere tilgang
               </p>
-            )}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Legg Veiglede til på hjemskjermen.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismiss}
+              aria-label="Lukk"
+              className="rounded-full p-1 text-muted-foreground hover:bg-muted"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={dismiss}
-            aria-label="Lukk"
-            className="rounded-full p-1 text-muted-foreground hover:bg-muted"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={dismiss}
-            className="flex-1 rounded-full border border-border px-4 py-2 text-sm text-foreground"
-          >
-            Ikke nå
-          </button>
-          <button
-            type="button"
-            onClick={install}
-            className="flex-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Legg til
-          </button>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={dismiss}
+              className="flex-1 rounded-full border border-border px-4 py-2 text-sm text-foreground"
+            >
+              Ikke nå
+            </button>
+            <button
+              type="button"
+              onClick={install}
+              className="flex-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Legg til
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {showIosHelp && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 px-3 pb-3 md:hidden"
+          onClick={() => setShowIosHelp(false)}
+        >
+          <div
+            className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <p className="text-base font-semibold text-foreground">
+                Slik installerer du på iPhone
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowIosHelp(false)}
+                aria-label="Lukk"
+                className="rounded-full p-1 text-muted-foreground hover:bg-muted"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <ol className="mt-4 space-y-4">
+              <li className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Share className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    1. Trykk på Del-knappen nederst i Safari
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Du finner den i verktøylinjen nederst på skjermen.
+                  </p>
+                </div>
+              </li>
+
+              <li className="flex justify-center" aria-hidden="true">
+                <ArrowDown className="h-5 w-5 text-muted-foreground" />
+              </li>
+
+              <li className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    2. Velg «Legg til på hjemskjerm»
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Bla litt ned i menyen hvis du ikke ser valget med en gang.
+                  </p>
+                </div>
+              </li>
+            </ol>
+
+            <button
+              type="button"
+              onClick={() => setShowIosHelp(false)}
+              className="mt-5 w-full rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Skjønner
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
+
