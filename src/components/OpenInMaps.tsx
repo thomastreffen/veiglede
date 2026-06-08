@@ -33,7 +33,9 @@ type WP = { token: string; label: string };
 
 function stopToWP(s: StopLike): WP | null {
   if (typeof s.lat === "number" && typeof s.lng === "number") {
-    return { token: `${s.lat},${s.lng}`, label: s.name || s.location || `${s.lat},${s.lng}` };
+    const lat = Math.round(s.lat * 1e6) / 1e6;
+    const lng = Math.round(s.lng * 1e6) / 1e6;
+    return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
   }
   const loc = s.location || s.name;
   if (loc && loc.trim()) {
