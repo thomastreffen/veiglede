@@ -73,23 +73,36 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
   const { gmapsWebUrl, gmapsDeepLink, amaps, waze, shareUrl, shareText, copyText, totalCount, lastStop } = useMemo(() => {
     const isRoundTrip = origin === destination && stops.length > 0;
     const firstStopWP = isRoundTrip ? stopToWP(stops[0]) : null;
-    const lastStopWP = isRoundTrip ? stopToWP(stops[stops.length - 1]) : null;
-
     const originToken = firstStopWP?.token ?? encodeURIComponent(origin);
     const originLabel = firstStopWP?.label ?? origin;
 
+    // For round trips, use the last lodging stop as destination
+    // (final overnight before heading home), falling back to second-to-last stop.
+    const lastLodgingStop = isRoundTrip
+      ? [...stops].reverse().find((s) => s.type === "lodging")
+      : null;
+    const effectiveLastStop =
+      lastLodgingStop ?? (isRoundTrip ? stops[stops.length - 2] : stops[stops.length - 1]);
+
     const last = stops[stops.length - 1];
     const effectiveDestination =
-      origin === destination && stops.length > 0
-        ? last.location || last.name
-          ? encodeURIComponent(last.location || last.name || destination)
-          : stopToWP(last)?.token ?? encodeURIComponent(destination)
+      isRoundTrip && effectiveLastStop
+        ? effectiveLastStop.location || effectiveLastStop.name
+          ? encodeURIComponent(
+              effectiveLastStop.location || effectiveLastStop.name || destination,
+            )
+          : stopToWP(effectiveLastStop)?.token ?? encodeURIComponent(destination)
         : encodeURIComponent(destination);
 
-    const destLabel = lastStopWP?.label ?? destination;
+    const effectiveLastWP = effectiveLastStop ? stopToWP(effectiveLastStop) : null;
+    const destLabel = isRoundTrip ? effectiveLastWP?.label ?? destination : destination;
 
-    // Intermediate stops: when round-trip, drop first and last (used as origin/dest).
-    const intermediateStops = isRoundTrip ? stops.slice(1, -1) : stops;
+    // Intermediate stops: when round-trip, drop the first stop (origin) and the
+    // effective destination, and exclude any trailing home-arrival stop.
+    const effectiveLastIndex = effectiveLastStop ? stops.lastIndexOf(effectiveLastStop) : -1;
+    const intermediateStops = isRoundTrip
+      ? stops.slice(1, effectiveLastIndex >= 0 ? effectiveLastIndex : stops.length - 1)
+      : stops;
 
     const intermediate = intermediateStops
       .map(stopToWP)
