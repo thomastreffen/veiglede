@@ -212,7 +212,7 @@ export const de: Dict = {
       explore: "Entdecken",
       fordeler: "Vorteile",
       myTrips: "Meine Touren",
-      garage: "Meine Garage",
+      garage: "Garage",
       profile: "Profil",
       newTrip: "Neue Tour",
       login: "Anmelden",

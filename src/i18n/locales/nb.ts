@@ -211,7 +211,7 @@ export const nb = {
       explore: "Utforsk",
       fordeler: "Fordeler",
       myTrips: "Mine turer",
-      garage: "Min garasje",
+      garage: "Garasje",
       profile: "Profil",
       newTrip: "Ny tur",
       login: "Logg inn",

@@ -211,7 +211,7 @@ export const da: Dict = {
       explore: "Udforsk",
       fordeler: "Fordele",
       myTrips: "Mine ture",
-      garage: "Min garage",
+      garage: "Garage",
       profile: "Profil",
       newTrip: "Ny tur",
       login: "Log ind",

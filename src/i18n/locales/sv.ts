@@ -211,7 +211,7 @@ export const sv: Dict = {
       explore: "Utforska",
       fordeler: "Förmåner",
       myTrips: "Mina resor",
-      garage: "Mitt garage",
+      garage: "Garage",
       profile: "Profil",
       newTrip: "Ny resa",
       login: "Logga in",

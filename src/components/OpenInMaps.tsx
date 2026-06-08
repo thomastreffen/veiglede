@@ -202,7 +202,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
         <Navigation className="h-4 w-4" /> Naviger →
       </button>
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
+        <div className="absolute left-0 bottom-full mb-2 z-50 min-w-[14rem] w-max max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
           <a
             href={gmaps}
             target="_blank"
