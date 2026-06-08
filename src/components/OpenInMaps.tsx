@@ -162,6 +162,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
           >
             <div className="font-medium">🗺️ Google Maps</div>
             <div className="text-xs text-muted-foreground mt-0.5">{countLabel}</div>
+            {totalCount > 9 && (
+              <div className="text-xs text-amber-400 mt-0.5">Google Maps maks 9 stopp — resten hoppes over</div>
+            )}
           </a>
           <a
             href={amaps}
