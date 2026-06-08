@@ -33,7 +33,9 @@ type WP = { token: string; label: string };
 
 function stopToWP(s: StopLike): WP | null {
   if (typeof s.lat === "number" && typeof s.lng === "number") {
-    return { token: `${s.lat},${s.lng}`, label: s.name || s.location || `${s.lat},${s.lng}` };
+    const lat = Math.round(s.lat * 1e6) / 1e6;
+    const lng = Math.round(s.lng * 1e6) / 1e6;
+    return { token: `${lat},${lng}`, label: s.name || s.location || `${lat},${lng}` };
   }
   const loc = s.location || s.name;
   if (loc && loc.trim()) {
@@ -75,7 +77,15 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
 
     const originToken = firstStopWP?.token ?? encodeURIComponent(origin);
     const originLabel = firstStopWP?.label ?? origin;
-    const destToken = lastStopWP?.token ?? encodeURIComponent(destination);
+
+    const last = stops[stops.length - 1];
+    const effectiveDestination =
+      origin === destination && stops.length > 0
+        ? last.location || last.name
+          ? encodeURIComponent(last.location || last.name || destination)
+          : stopToWP(last)?.token ?? encodeURIComponent(destination)
+        : encodeURIComponent(destination);
+
     const destLabel = lastStopWP?.label ?? destination;
 
     // Intermediate stops: when round-trip, drop first and last (used as origin/dest).
@@ -89,9 +99,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const limitedStops = pickWaypoints(intermediateStops, 9);
     const gmapsWPs = limitedStops.map(stopToWP).filter((w): w is WP => !!w);
 
-    const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), destToken];
+    const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
     const gmapsWebUrl = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
-    const gmapsDeepLink = `comgooglemaps://?saddr=${originToken}&daddr=${destToken}${
+    const gmapsDeepLink = `comgooglemaps://?saddr=${originToken}&daddr=${effectiveDestination}${
       gmapsWPs.length > 0 ? `&waypoints=${gmapsWPs.map((w) => w.token).join("|")}` : ""
     }&directionsmode=driving`;
 
@@ -99,11 +109,11 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const appleParams = [
       `saddr=${originToken}`,
       ...gmapsWPs.map((w) => `daddr=${w.token}`),
-      `daddr=${destToken}`,
+      `daddr=${effectiveDestination}`,
     ].join("&");
     const amaps = `${appleBase}?${appleParams}`;
 
-    const last = stops[stops.length - 1];
+    void last;
     const waze =
       last && typeof last.lat === "number" && typeof last.lng === "number"
         ? `https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes`
