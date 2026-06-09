@@ -824,6 +824,8 @@ function DayCard({
       </div>
 
       <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="px-4 md:px-5 pt-3" />
+      <DayNavigate stops={dayStops} />
+
 
       <ul className="divide-y divide-border/60">
         {dayStops.map((stop, idx) => {
