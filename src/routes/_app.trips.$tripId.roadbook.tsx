@@ -16,6 +16,7 @@ import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { BookingInfo, BookingBadge } from "@/components/BookingInfo";
 import { DayWeather } from "@/components/DayWeather";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
+import { DayNavigate } from "@/components/DayNavigate";
 import { dayDate, dayCoords } from "@/lib/weather";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed, FileDown } from "lucide-react";
 import { downloadGpx } from "@/lib/gpx-export";
@@ -164,6 +165,8 @@ function Roadbook() {
                 return <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="mt-3" />;
               })()}
               <TripDayTimeRow trip={trip} days={tripDays} stops={tripStops} dayId={day.id} startTime={dayStops[0]?.estimatedTime} />
+              <div className="print:hidden -mx-5 md:-mx-6"><DayNavigate stops={dayStops} /></div>
+
 
               <ol className="mt-6 relative border-l-2 border-border ml-3 space-y-6">
                 {dayStops.map((stop) => {

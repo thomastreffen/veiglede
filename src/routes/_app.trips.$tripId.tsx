@@ -18,6 +18,8 @@ import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
 import { OpenInMaps } from "@/components/OpenInMaps";
+import { DayNavigate } from "@/components/DayNavigate";
+import { downloadGpx } from "@/lib/gpx-export";
 import { TripCompanions } from "@/components/TripCompanions";
 import { TripMembers } from "@/components/TripMembers";
 import { SaveTripPrompt } from "@/components/SaveTripPrompt";
@@ -405,12 +407,15 @@ function TripPlanner() {
           destination={trip.destination}
           tripTitle={trip.title}
           distanceKm={trip.distanceKm}
+          onDownloadGpx={() => downloadGpx(trip, tripStops)}
+          roadbookHref={`/trips/${tripId}/roadbook`}
           stops={tripDays.flatMap((d) =>
             tripStops
               .filter((s) => s.dayId === d.id)
               .sort((a, b) => a.order - b.order)
           )}
         />
+
       </section>
 
       {trip.isPublic && (
@@ -819,6 +824,8 @@ function DayCard({
       </div>
 
       <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="px-4 md:px-5 pt-3" />
+      <DayNavigate stops={dayStops} />
+
 
       <ul className="divide-y divide-border/60">
         {dayStops.map((stop, idx) => {
