@@ -212,7 +212,7 @@ function ProfileTripCard({ t, ownerName }: { t: PublicProfileTrip; ownerName: st
             <span className="inline-flex items-center gap-1"><Camera className="h-3 w-3" /> {t.stopsCount}</span>
           </div>
           <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground truncate">
-            <MapPin className="h-3 w-3 shrink-0" /> {t.origin} → {t.destination}
+            <MapPin className="h-3 w-3 shrink-0" /> {getPublicPlaceLabel(t.origin, "Startområde")} → {getPublicPlaceLabel(t.destination, "Målområde")}
           </p>
           <div className="mt-3" onClick={(e) => e.preventDefault()}>
             <TripReactionsRow tripId={t.id} />
@@ -220,7 +220,7 @@ function ProfileTripCard({ t, ownerName }: { t: PublicProfileTrip; ownerName: st
           <div className="mt-2 flex items-center justify-between gap-2" onClick={(e) => e.preventDefault()}>
             <SaveTripButton payload={{
               sourceTripId: t.id, title: t.title, subtitle: t.subtitle, region: t.region,
-              origin: t.origin, destination: t.destination, distanceKm: t.distanceKm,
+              origin: getPublicPlaceLabel(t.origin, "Startområde"), destination: getPublicPlaceLabel(t.destination, "Målområde"), distanceKm: t.distanceKm,
               drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
             }} />
             <span className="inline-flex items-center gap-1 text-[11px] text-primary">Se tur <ArrowRight className="h-3 w-3" /></span>
