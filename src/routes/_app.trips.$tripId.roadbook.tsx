@@ -165,6 +165,8 @@ function Roadbook() {
                 return <DayWeather lat={coords?.lat} lng={coords?.lng} date={dayDate(trip, day)} className="mt-3" />;
               })()}
               <TripDayTimeRow trip={trip} days={tripDays} stops={tripStops} dayId={day.id} startTime={dayStops[0]?.estimatedTime} />
+              <div className="print:hidden -mx-5 md:-mx-6"><DayNavigate stops={dayStops} /></div>
+
 
               <ol className="mt-6 relative border-l-2 border-border ml-3 space-y-6">
                 {dayStops.map((stop) => {
