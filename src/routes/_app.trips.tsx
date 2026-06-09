@@ -13,6 +13,7 @@ import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
