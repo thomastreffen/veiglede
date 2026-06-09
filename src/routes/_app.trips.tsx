@@ -525,11 +525,13 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
   );
 }
 
-function StatCell({ n, l, accent, className }: { n: string; l: string; accent?: boolean; className?: string }) {
+function StatCell({ n, l, accent, sub, className }: { n: string; l: string; accent?: boolean; sub?: string; className?: string }) {
   return (
-    <div className={className}>
-      <p className={`font-display text-2xl md:text-4xl ${accent ? "text-primary" : ""}`}>{n}</p>
+    <div className={cn("min-w-0", className)}>
+      <p className={cn("font-display text-xl md:text-4xl leading-tight truncate", accent && "text-primary")}>{n}</p>
       <p className="mt-1 text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider leading-tight">{l}</p>
+      {sub && <p className="mt-0.5 text-[10px] text-primary/90 leading-tight truncate">{sub}</p>}
     </div>
   );
 }
+
