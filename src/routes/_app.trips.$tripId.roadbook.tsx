@@ -16,6 +16,7 @@ import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { BookingInfo, BookingBadge } from "@/components/BookingInfo";
 import { DayWeather } from "@/components/DayWeather";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
+import { DayNavigate } from "@/components/DayNavigate";
 import { dayDate, dayCoords } from "@/lib/weather";
 import { ArrowLeft, Clock, Share2, Download, Info, Camera, Sparkles, Image as ImageIcon, MapPin, Star, Tag, Play, Flag, Bed, FileDown } from "lucide-react";
 import { downloadGpx } from "@/lib/gpx-export";
