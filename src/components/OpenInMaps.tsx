@@ -16,6 +16,8 @@ interface Props {
   stops?: StopLike[];
   tripTitle?: string;
   distanceKm?: number;
+  onDownloadGpx?: () => void;
+  roadbookHref?: string;
 }
 
 function isIos() {
