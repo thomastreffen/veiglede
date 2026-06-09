@@ -13,6 +13,7 @@ import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
@@ -35,33 +36,29 @@ function TripsDashboard() {
   return (
     <div className="py-5 md:py-8">
       {/* Stats strip */}
-      <section className="grid grid-cols-4 md:grid-cols-5 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
+      <section className="grid grid-cols-4 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
         {(() => {
           const planned = trips.reduce((a, t) => a + (t.distanceKm ?? 0), 0);
           const driven = trips.reduce(
             (a, t) => a + (typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0 ? t.actualDistanceKm : 0),
             0,
           );
+          const drivenRounded = Math.round(driven);
           return (
             <>
               <StatCell n={String(trips.length)} l={t.app.trips.plannedTrips} />
-              <div className="md:hidden">
-                <p className="font-display text-lg md:text-xl leading-tight">
-                  {planned.toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">{t.app.trips.planned}</span>
-                </p>
-                <p className="font-display text-lg md:text-xl leading-tight mt-0.5">
-                  {Math.round(driven).toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-primary ml-1">{t.app.trips.driven}</span>
-                </p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">{t.app.trips.km}</p>
-              </div>
-              <StatCell className="hidden md:block" n={planned.toLocaleString("nb-NO")} l={t.app.trips.kmPlanned} />
-              <StatCell className="hidden md:block" n={Math.round(driven).toLocaleString("nb-NO")} l={t.app.trips.kmDriven} accent />
+              <StatCell
+                n={`${planned.toLocaleString("nb-NO")} km`}
+                l={t.app.trips.planned}
+                sub={drivenRounded > 0 ? `${drivenRounded.toLocaleString("nb-NO")} km ${t.app.trips.driven}` : undefined}
+              />
               <StatCell n={String(vehicles.length)} l={t.app.trips.vehicles} />
               <StatCell n={String(photoStops)} l={t.app.trips.photoStops} />
             </>
           );
         })()}
       </section>
+
 
 
       {/* Search & filters */}
@@ -145,7 +142,7 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
         </div>
         <div className="p-4 md:p-5">
           <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}{t.vehicleName ? ` · ${t.vehicleName}` : ""}</p>
-          <h3 className="mt-1 font-display text-xl md:text-2xl uppercase leading-tight group-hover:text-primary transition-colors">{t.title}</h3>
+          <h3 className="mt-1 font-display text-lg md:text-2xl uppercase leading-tight line-clamp-3 break-words group-hover:text-primary transition-colors">{compactTripTitle(t.title)}</h3>
           <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
             <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
             <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
@@ -214,6 +211,18 @@ function Stat({ icon, v }: { icon: React.ReactNode; v: string }) {
 function formatDate(d: string) {
   try { return new Date(d).toLocaleDateString("nb-NO", { day: "numeric", month: "short" }); } catch { return d; }
 }
+
+/** Display-only compaction for trip card titles. Collapses long arrow chains
+ * like "A → B → C → D → A" to "A → C → A". Leaves short titles untouched. */
+function compactTripTitle(title: string): string {
+  const parts = title.split(/\s*→\s*/);
+  if (parts.length <= 3) return title;
+  const start = parts[0];
+  const end = parts[parts.length - 1];
+  const mid = parts[Math.floor(parts.length / 2)];
+  return `${start} → ${mid} → ${end}`;
+}
+
 
 function FollowedTripsSection() {
   const { user } = useAuth();
@@ -529,11 +538,13 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
   );
 }
 
-function StatCell({ n, l, accent, className }: { n: string; l: string; accent?: boolean; className?: string }) {
+function StatCell({ n, l, accent, sub, className }: { n: string; l: string; accent?: boolean; sub?: string; className?: string }) {
   return (
-    <div className={className}>
-      <p className={`font-display text-2xl md:text-4xl ${accent ? "text-primary" : ""}`}>{n}</p>
+    <div className={cn("min-w-0", className)}>
+      <p className={cn("font-display text-xl md:text-4xl leading-tight truncate", accent && "text-primary")}>{n}</p>
       <p className="mt-1 text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider leading-tight">{l}</p>
+      {sub && <p className="mt-0.5 text-[10px] text-primary/90 leading-tight truncate">{sub}</p>}
     </div>
   );
 }
+

@@ -164,7 +164,7 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="flex-1 mx-auto w-full max-w-5xl px-4 md:px-6 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-12 pt-2">
+      <main className="flex-1 mx-auto w-full max-w-5xl px-4 md:px-6 pb-[calc(10rem+env(safe-area-inset-bottom))] md:pb-12 pt-2">
         <Outlet />
       </main>
 
