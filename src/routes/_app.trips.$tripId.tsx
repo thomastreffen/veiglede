@@ -405,12 +405,15 @@ function TripPlanner() {
           destination={trip.destination}
           tripTitle={trip.title}
           distanceKm={trip.distanceKm}
+          onDownloadGpx={() => downloadGpx(trip, tripStops)}
+          roadbookHref={`/trips/${tripId}/roadbook`}
           stops={tripDays.flatMap((d) =>
             tripStops
               .filter((s) => s.dayId === d.id)
               .sort((a, b) => a.order - b.order)
           )}
         />
+
       </section>
 
       {trip.isPublic && (
