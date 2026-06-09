@@ -66,7 +66,7 @@ function pickWaypoints(stops: StopLike[], max: number): StopLike[] {
   return picked;
 }
 
-export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanceKm }: Props) {
+export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanceKm, onDownloadGpx, roadbookHref }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
