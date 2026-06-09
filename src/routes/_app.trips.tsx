@@ -142,7 +142,7 @@ function TripCard({ t }: { t: ReturnType<typeof useTripsStore>["trips"][number] 
         </div>
         <div className="p-4 md:p-5">
           <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}{t.vehicleName ? ` · ${t.vehicleName}` : ""}</p>
-          <h3 className="mt-1 font-display text-xl md:text-2xl uppercase leading-tight group-hover:text-primary transition-colors">{t.title}</h3>
+          <h3 className="mt-1 font-display text-lg md:text-2xl uppercase leading-tight line-clamp-3 break-words group-hover:text-primary transition-colors">{compactTripTitle(t.title)}</h3>
           <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
             <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
             <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
