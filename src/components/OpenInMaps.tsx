@@ -213,7 +213,9 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
             className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
           >
             <div className="font-medium">🗺️ Google Maps</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Viser ruten — start navigasjon i appen</div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              Best for én dagsetappe. Hele langturer kan åpnes som forhåndsvisning.
+            </div>
             {totalCount > 9 && (
               <div className="text-xs text-amber-400 mt-0.5">Google Maps maks 9 stopp — resten hoppes over</div>
             )}
@@ -226,8 +228,28 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
             className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
           >
             <div className="font-medium">🍎 Apple Maps</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Starter navigasjon direkte</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Fungerer godt for navigasjon på iPhone.</div>
           </a>
+          {onDownloadGpx && (
+            <button
+              type="button"
+              onClick={() => { onDownloadGpx(); setOpen(false); }}
+              className="block w-full text-left px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+            >
+              <div className="font-medium">📍 GPX</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Best for BMW Motorrad, Garmin, TomTom og andre navigasjonsapper.</div>
+            </button>
+          )}
+          {roadbookHref && (
+            <a
+              href={roadbookHref}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+            >
+              <div className="font-medium">📖 Roadbook</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Best for oversikt og deling.</div>
+            </a>
+          )}
           <a
             href={waze}
             target="_blank"
