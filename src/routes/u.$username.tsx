@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { FollowBlock } from "@/components/FollowBlock";
 import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { SaveTripButton } from "@/components/SaveTripButton";
+import { getPublicPlaceLabel } from "@/lib/public-place";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params, loaderData }: { params: { username: string }; loaderData?: PublicProfilePayload }) => {
