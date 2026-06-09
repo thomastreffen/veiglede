@@ -35,33 +35,29 @@ function TripsDashboard() {
   return (
     <div className="py-5 md:py-8">
       {/* Stats strip */}
-      <section className="grid grid-cols-4 md:grid-cols-5 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
+      <section className="grid grid-cols-4 gap-3 md:gap-6 rounded-2xl border border-border bg-surface/70 p-4 md:p-6">
         {(() => {
           const planned = trips.reduce((a, t) => a + (t.distanceKm ?? 0), 0);
           const driven = trips.reduce(
             (a, t) => a + (typeof t.actualDistanceKm === "number" && t.actualDistanceKm > 0 ? t.actualDistanceKm : 0),
             0,
           );
+          const drivenRounded = Math.round(driven);
           return (
             <>
               <StatCell n={String(trips.length)} l={t.app.trips.plannedTrips} />
-              <div className="md:hidden">
-                <p className="font-display text-lg md:text-xl leading-tight">
-                  {planned.toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-1">{t.app.trips.planned}</span>
-                </p>
-                <p className="font-display text-lg md:text-xl leading-tight mt-0.5">
-                  {Math.round(driven).toLocaleString("nb-NO")}<span className="text-[9px] uppercase tracking-wider text-primary ml-1">{t.app.trips.driven}</span>
-                </p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">{t.app.trips.km}</p>
-              </div>
-              <StatCell className="hidden md:block" n={planned.toLocaleString("nb-NO")} l={t.app.trips.kmPlanned} />
-              <StatCell className="hidden md:block" n={Math.round(driven).toLocaleString("nb-NO")} l={t.app.trips.kmDriven} accent />
+              <StatCell
+                n={`${planned.toLocaleString("nb-NO")} km`}
+                l={t.app.trips.planned}
+                sub={drivenRounded > 0 ? `${drivenRounded.toLocaleString("nb-NO")} km ${t.app.trips.driven}` : undefined}
+              />
               <StatCell n={String(vehicles.length)} l={t.app.trips.vehicles} />
               <StatCell n={String(photoStops)} l={t.app.trips.photoStops} />
             </>
           );
         })()}
       </section>
+
 
 
       {/* Search & filters */}
