@@ -212,6 +212,18 @@ function formatDate(d: string) {
   try { return new Date(d).toLocaleDateString("nb-NO", { day: "numeric", month: "short" }); } catch { return d; }
 }
 
+/** Display-only compaction for trip card titles. Collapses long arrow chains
+ * like "A → B → C → D → A" to "A → C → A". Leaves short titles untouched. */
+function compactTripTitle(title: string): string {
+  const parts = title.split(/\s*→\s*/);
+  if (parts.length <= 3) return title;
+  const start = parts[0];
+  const end = parts[parts.length - 1];
+  const mid = parts[Math.floor(parts.length / 2)];
+  return `${start} → ${mid} → ${end}`;
+}
+
+
 function FollowedTripsSection() {
   const { user } = useAuth();
   const tr = useT();
