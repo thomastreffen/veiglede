@@ -178,29 +178,42 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
         </DialogHeader>
 
         {/* Public toggle */}
-        <div className="flex items-start gap-3 rounded-xl border border-border bg-background/40 p-3.5">
-          <span className="h-9 w-9 rounded-lg bg-surface-2 grid place-items-center shrink-0">
-            {isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4" />}
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-3">
-              <p className="font-semibold text-sm">{isPublic ? "Offentlig tur" : "Privat tur"}</p>
-              <Switch
-                checked={isPublic}
-                onCheckedChange={(v) => {
-                  if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
-                  tripsApi.setTripPublic(trip.id, v);
-                  void flushTripsNow();
-                }}
-              />
+        <div className="rounded-xl border border-border bg-background/40 p-3.5 space-y-3">
+          <div className="flex items-start gap-3">
+            <span className="h-9 w-9 rounded-lg bg-surface-2 grid place-items-center shrink-0">
+              {isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-foreground" />}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-foreground break-words">
+                {isPublic
+                  ? "🌍 Offentlig — synlig for alle"
+                  : "🔒 Privat — kun synlig for deg og reisefølget"}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground break-words">
+                {isPublic
+                  ? "Alle med lenken kan se ruta og roadbooken. Eksakte adresser skjules i offentlig visning."
+                  : "Lenken er deaktivert — kun du og inviterte kan åpne turen."}
+              </p>
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {isPublic
-                ? "Alle med lenken kan se ruta og roadbooken."
-                : "Lenken er deaktivert — kun du kan åpne turen."}
-            </p>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              const v = !isPublic;
+              if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+              tripsApi.setTripPublic(trip.id, v);
+              void flushTripsNow();
+            }}
+            className={
+              isPublic
+                ? "w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary min-h-[44px]"
+                : "w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 min-h-[44px]"
+            }
+          >
+            {isPublic ? <><Lock className="h-3.5 w-3.5" /> Gjør privat</> : <><Globe className="h-3.5 w-3.5" /> Del offentlig</>}
+          </button>
         </div>
+
 
         {/* Share link */}
         <div className="space-y-2">
