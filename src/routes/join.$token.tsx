@@ -10,6 +10,7 @@ import {
   getInvitePreview, joinTripWithToken, declineInvite, setPendingInvite,
   type InvitePreview,
 } from "@/lib/trip-invites";
+import { getPublicPlaceLabel } from "@/lib/public-place";
 
 export const Route = createFileRoute("/join/$token")({
   head: () => ({ meta: [{ title: "Bli med på turen — Veiglede" }] }),
