@@ -1,6 +1,6 @@
 /**
  * Strip a full street address down to a city/region label safe to show
- * publicly (Explore feed, shared trip pages, og:title/og:description, etc.).
+ * publicly (Explore feed, shared trip pages, "Bli med"-cards, og:title/og:description, etc.).
  *
  * Private contexts (the trip owner's own planner, wizard, roadbook) should
  * keep using the raw `origin`/`destination` strings.
@@ -18,5 +18,22 @@ export function publicPlaceName(fullAddress: string | undefined | null): string 
     // Return up to the last 2 meaningful parts (city + region/postal area)
     return pick.slice(-2).join(", ");
   }
-  return fullAddress;
+  // Single-part input — strip a trailing house number if present.
+  const stripped = fullAddress.replace(/\s+\d+[A-Za-z]?$/, "").trim();
+  return stripped || fullAddress;
+}
+
+/**
+ * Privacy-safe display label for public/shared views.
+ * Falls back to a broad placeholder when no safe city can be derived.
+ */
+export function getPublicPlaceLabel(
+  input: string | undefined | null,
+  fallback: string = "Område",
+): string {
+  const safe = publicPlaceName(input);
+  if (!safe) return fallback;
+  // If the result still looks like a street address with a house number, fall back.
+  if (/\d+[A-Za-z]?\s*$/.test(safe) && !/,/.test(safe)) return fallback;
+  return safe;
 }
