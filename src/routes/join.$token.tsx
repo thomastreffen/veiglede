@@ -150,7 +150,7 @@ function Valid({
       <section className="mt-4 rounded-3xl border border-border bg-surface p-5">
         {(trip.origin || trip.destination) && (
           <p className="inline-flex items-center gap-1.5 text-sm">
-            <MapPin className="h-4 w-4 text-primary" /> {trip.origin} → {trip.destination}
+            <MapPin className="h-4 w-4 text-primary" /> {getPublicPlaceLabel(trip.origin, "Startområde")} → {getPublicPlaceLabel(trip.destination, "Målområde")}
           </p>
         )}
         <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
