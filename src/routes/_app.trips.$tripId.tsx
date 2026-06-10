@@ -165,6 +165,7 @@ function TripPlanner() {
         })),
     [enrichedSuggestions],
   );
+  const liveSession = useLiveSession(trip?.id ?? null);
 
   if (pathname !== `/trips/${tripId}`) {
     return <Outlet />;
@@ -188,7 +189,6 @@ function TripPlanner() {
   const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
   const partnerTips = getPartnerTips(trip, routePoints);
   const memories = getPhotoMemories(trip, tripStops);
-  const liveSession = useLiveSession(trip.id);
   const livePos = liveSession && isLiveActive(liveSession)
     ? { lat: liveSession.lat, lng: liveSession.lng, heading: liveSession.heading }
     : null;
