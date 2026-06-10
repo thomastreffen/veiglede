@@ -13,6 +13,24 @@ function LiveFollowPage() {
   const { token } = Route.useParams();
   const { session, loading } = useLiveSessionByToken(token);
   const live = isLiveActive(session);
+  const ended = session?.status === "completed" || (!!session && !live);
+  const paused = live && session?.status === "paused";
+
+  const badge = live
+    ? (paused ? "Pauset" : "Live")
+    : ended
+      ? "Avsluttet"
+      : "Venter";
+
+  const description = loading
+    ? "Henter posisjon…"
+    : !session
+      ? "Ingen aktiv live-deling for denne lenken. Siden oppdateres automatisk når føreren starter."
+      : ended
+        ? "Live deling er avsluttet. Du kan trygt lukke denne siden."
+        : paused
+          ? "Føreren har pauset live-deling. Siden oppdateres automatisk når den starter igjen."
+          : "Posisjonen oppdateres automatisk så lenge føreren deler.";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -22,8 +40,8 @@ function LiveFollowPage() {
             <ArrowLeft className="h-4 w-4" /> <VeigledeLogo size="sm" />
           </Link>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
-            <Radio className={`h-3 w-3 ${live ? "animate-pulse" : ""}`} />
-            {live ? (session?.status === "paused" ? "Pause" : "Live") : "Venter"}
+            <Radio className={`h-3 w-3 ${live && !paused ? "animate-pulse" : ""}`} />
+            {badge}
           </span>
         </div>
       </header>
@@ -31,15 +49,7 @@ function LiveFollowPage() {
         <h1 className="font-display text-2xl uppercase tracking-wide">
           Følger turen live
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {loading
-            ? "Henter posisjon…"
-            : live
-              ? "Posisjonen oppdateres automatisk så lenge føreren deler."
-              : session
-                ? "Føreren er ikke aktiv akkurat nå. Siden oppdateres automatisk når delingen starter igjen."
-                : "Ingen aktiv deling for denne lenken enda. Siden oppdateres automatisk når føreren starter."}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         <div className="mt-5">
           <LiveTripMap session={session} height="68vh" />
         </div>
