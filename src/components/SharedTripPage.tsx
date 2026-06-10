@@ -138,6 +138,51 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
           </div>
         </section>
 
+        {/* Warm invitation block */}
+        <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-5">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-full bg-primary/20 grid place-items-center text-base font-bold text-primary overflow-hidden shrink-0">
+              {data.owner?.avatarUrl
+                ? <AvatarImg value={data.owner.avatarUrl} className="h-full w-full object-cover" />
+                : (data.owner?.displayName ?? "?").charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-lg uppercase leading-tight truncate">
+                {data.owner?.displayName ?? "En reisende"} har delt denne turen
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {trip.distanceKm} km · {(data.stops ?? []).length} stopp · {v.label}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-foreground/85 leading-relaxed">
+            Se roadbooken nedenfor, eller kopier turen til dine egne turer og gjør den til din.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <CopyTripButton
+              shareToken={shareToken}
+              originalTripId={trip.id}
+              inspiredByDisplayName={data.owner?.displayName}
+              prefetched={{
+                trip: trip as unknown as Parameters<typeof CopyTripButton>[0]["prefetched"] extends infer T
+                  ? T extends { trip: infer U } ? U : never : never,
+                days,
+                stops,
+              }}
+              variant="primary"
+            />
+            {data.owner?.isPublicProfile && data.owner.username && (
+              <Link
+                to="/u/$username"
+                params={{ username: data.owner.username }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-background/60 backdrop-blur px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
+              >
+                <ExternalLink className="h-4 w-4" /> Se offentlig profil
+              </Link>
+            )}
+          </div>
+        </section>
+
         <p className="mt-3 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
           <span className="font-semibold text-foreground">Delt turplan.</span> Dette er en read-only visning av ruta og roadbooken. Live-posisjon vises ikke her.
         </p>
