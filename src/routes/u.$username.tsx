@@ -86,7 +86,7 @@ function PublicProfilePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <header className="flex flex-col sm:flex-row sm:items-center gap-5">
           <div className="h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-5xl overflow-hidden shrink-0">
             {profile.avatarUrl
