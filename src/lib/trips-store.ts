@@ -1666,12 +1666,12 @@ export const VEHICLES: { value: VehicleType; label: string; emoji: string; sub: 
 ];
 
 export const ROUTE_STYLES: { value: RouteStyle; label: string; emoji: string; sub: string }[] = [
-  { value: "fastest", label: "Raskeste vei", emoji: "⚡", sub: "Effektivt fra A til B" },
-  { value: "scenic", label: "Fineste vei", emoji: "🏔️", sub: "Landskap og panoramautsikt" },
-  { value: "curvy", label: "Svingete vei", emoji: "〰️", sub: "Kurver og ren kjøreglede" },
-  { value: "photo", label: "Fototur", emoji: "📸", sub: "Stopp, se og avbild" },
-  { value: "tourist", label: "Nasjonale turistveier", emoji: "🇳🇴", sub: "18 offisielle turistruter" },
-  { value: "cruise", label: "Rolig cruise", emoji: "☕", sub: "Avslappet landevei" },
+  { value: "fastest", label: "Raskeste vei", emoji: "⚡", sub: "Prioriterer raskeste kjørbare rute." },
+  { value: "scenic", label: "Fineste vei", emoji: "🏔️", sub: "Forsøker å unngå motorvei og foreslår penere stopp og områder." },
+  { value: "curvy", label: "Svingete vei", emoji: "〰️", sub: "Prioriterer kjente kjøregleder, fjellveier og mindre hovedveier der det gir mening." },
+  { value: "photo", label: "Fototur", emoji: "📸", sub: "Legger mer vekt på fotostopp, utsiktspunkt og korte stopp." },
+  { value: "tourist", label: "Nasjonale turistveier", emoji: "🇳🇴", sub: "Foreslår turistveier, attraksjoner og opplevelser langs ruta." },
+  { value: "cruise", label: "Rolig cruise", emoji: "☕", sub: "Roligere tempo, færre lange strekk og mer komfort." },
 ];
 export function vehicleMeta(v: VehicleType) { return VEHICLES.find((x) => x.value === v) ?? VEHICLES[0]; }
 export function styleMeta(s: RouteStyle) { return ROUTE_STYLES.find((x) => x.value === s) ?? ROUTE_STYLES[0]; }

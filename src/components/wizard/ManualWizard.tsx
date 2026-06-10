@@ -664,9 +664,14 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                   <span className="text-xl">{s.emoji}</span>
                   <span className="font-display uppercase text-sm">{s.label}</span>
                 </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">{s.sub}</p>
               </button>
             ))}
           </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            Ruten beregnes med kartdata. Veiglede bruker stilvalget til å påvirke stopp, dagsetapper og unngå motorvei der mulig.
+          </p>
+
 
           <label className="mt-6 flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 cursor-pointer">
             <input

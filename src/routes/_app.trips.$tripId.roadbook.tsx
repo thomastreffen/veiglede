@@ -106,6 +106,7 @@ function Roadbook() {
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs">{s.emoji} {s.label}</span>
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${trackMeta.cls}`}>{trackMeta.emoji} {trackMeta.label}</span>
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">Stil: {s.label} — {s.sub}</p>
 
         <div className="mt-5 flex justify-center gap-2 flex-wrap print:hidden">
           {tracking.status === "idle" && (

@@ -5,6 +5,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const StyleValue = z.enum(["fastest", "scenic", "curvy", "photo", "tourist", "cruise"]);
+
 const InputSchema = z.object({
   origin: z.string().min(1).max(120),
   destination: z.string().min(1).max(120),
@@ -14,11 +16,27 @@ const InputSchema = z.object({
   vehicleLabel: z.string().min(1).max(80),
   energyLabel: z.string().max(80).optional().default(""),
   styleLabel: z.string().min(1).max(80),
+  styleValue: StyleValue.optional(),
   maxHoursPerDay: z.number().int().min(2).max(14).optional().default(6),
   stopInterests: z.array(z.string()).max(20).optional().default([]),
   avoidHighway: z.boolean().optional().default(false),
   language: z.string().max(8).optional().default("nb"),
 });
+
+const STYLE_RULES: Record<z.infer<typeof StyleValue>, string> = {
+  fastest:
+    "STYLE=FASTEST: minimize detours, fewer stops (2-3 per day), prefer main roads/motorway, shortest reasonable driving time. Stops should be practical (fuel, food, brief rest).",
+  scenic:
+    "STYLE=SCENIC: prefer known scenic corridors, fjords, mountain passes and Nasjonale Turistveier. Add viewpoints. Avoid motorway where reasonable. 3-5 stops per day with strong landscape value.",
+  curvy:
+    "STYLE=CURVY: prefer motorcycle-friendly roads, mountain passes, coastal roads and roads known for driving enjoyment (e.g. Trollstigen, Aurlandsfjellet, Gamle Strynefjellsvegen, Atlanterhavsveien). Avoid long motorway stretches. Fewer but better stops emphasizing the road itself.",
+  photo:
+    "STYLE=PHOTO: prioritize viewpoints, photo stops, golden-hour places, waterfalls, fjords, mountain views. Shorter daily driving sections so there is time to stop. 4-6 stops per day, weighted toward type=viewpoint/photo.",
+  tourist:
+    "STYLE=TOURIST: prioritize attractions, local experiences, Nasjonale Turistveier and iconic stops. Mix attraction/experience/viewpoint stop types. Include well-known landmarks.",
+  cruise:
+    "STYLE=CRUISE: prioritize comfort, manageable driving days (well below the max), food/coffee/rest stops, easy logistics. Avoid demanding mountain passes back-to-back.",
+};
 
 export type AiStopType =
   | "viewpoint" | "photo" | "food" | "lodging" | "fuel"
@@ -70,16 +88,19 @@ function buildUserPrompt(d: z.infer<typeof InputSchema>) {
   const tripShape = d.roundTrip
     ? `Round trip: start in ${d.origin}, visit ${d.destination}, return to ${d.origin} by day ${d.days}.`
     : `One-way: ${d.origin} → ${d.destination} over ${d.days} day(s).`;
+  const styleRule = d.styleValue ? STYLE_RULES[d.styleValue] : `Style: ${d.styleLabel}.`;
   return [
     `Plan a ${d.days}-day road trip.`,
     tripShape,
     waypointLine,
     `Vehicle: ${d.vehicleLabel}${d.energyLabel ? ` (${d.energyLabel})` : ""}.`,
     `Style: ${d.styleLabel}.`,
+    styleRule,
     `Max driving per day: ${d.maxHoursPerDay} hours.`,
     d.avoidHighway ? "Avoid motorways where possible." : "",
     d.stopInterests.length ? `Preferred stop types: ${d.stopInterests.join(", ")}.` : "",
     "",
+    "In the top-level `summary` field, include ONE short sentence in the user's language explaining WHY this plan fits the chosen style (e.g. \"Valgt fordi svingete fjellveier passer MC-profilen.\" or \"Valgt fordi raskeste rute gir kortere kjøretid.\"). Keep it under 140 characters.",
     "Return a plan with EVERY day filled. Distribute the waypoints sensibly. For example, on a 9-day Drammen → Molde round trip include Atlanterhavsveien, Trollstigen, Geirangerfjord area and similar real attractions.",
   ].filter(Boolean).join("\n");
 }

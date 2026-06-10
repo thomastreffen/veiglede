@@ -373,6 +373,10 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
               </button>
             ))}
           </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            Ruten beregnes med kartdata. Veiglede bruker stilvalget til å påvirke stopp, dagsetapper og unngå motorvei der mulig.
+          </p>
+
 
           <div className="mt-6 rounded-2xl border border-border bg-surface p-4">
             <div className="flex items-center justify-between">
@@ -455,6 +459,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                   vehicleLabel: vehicleMeta(selectedVehicle.type).label,
                   energyLabel: selectedVehicle.energy,
                   styleLabel: styleMeta(style).label,
+                  styleValue: style,
                   maxHoursPerDay: maxHours,
                   stopInterests: selectedVehicle.stopInterests ?? [],
                   avoidHighway,
