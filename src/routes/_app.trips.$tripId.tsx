@@ -190,8 +190,9 @@ function TripPlanner() {
   const partnerTips = getPartnerTips(trip, routePoints);
   const memories = getPhotoMemories(trip, tripStops);
   const livePos = liveSession && isLiveActive(liveSession)
-    ? { lat: liveSession.lat, lng: liveSession.lng, heading: liveSession.heading }
+    ? { lat: liveSession.lat, lng: liveSession.lng, heading: liveSession.heading, vehicle: trip.vehicle }
     : null;
+
 
 
   // Pin click in the map should NOT scroll the page or change list selection.
