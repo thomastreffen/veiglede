@@ -137,64 +137,6 @@ function AccountCard() {
 }
 
 
-function ProfileHeader() {
-  const { user } = useAuth();
-  const prefs = useDriverPrefs();
-  // Prefer the signed-in identity (Google → user_metadata.full_name); fall back
-  // to the local driver display name only when no auth user is present.
-  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string };
-  const displayName = meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
-  const email = user?.email ?? "Lokal demo-profil · ingen pålogging";
-  const avatar = meta.avatar_url;
-  const initial = (displayName || "?").charAt(0).toUpperCase();
-  return (
-    <div className="flex items-center gap-4">
-      <div className="h-16 w-16 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden">
-        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
-      </div>
-      <div className="min-w-0">
-        <p className="font-semibold text-lg truncate">{displayName}</p>
-        <p className="text-xs text-muted-foreground truncate">{email}</p>
-        <ProfileFollowStats />
-      </div>
-    </div>
-  );
-}
-
-function ProfileFollowStats() {
-  const { user } = useAuth();
-  const [username, setUsername] = useState<string | null>(null);
-  const fetchStats = useServerFn(getFollowStatsFn);
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (!cancelled) setUsername((data?.username as string | null) ?? null); });
-    return () => { cancelled = true; };
-  }, [user]);
-
-  const { data: stats } = useQuery({
-    queryKey: ["follow-stats", user?.id],
-    queryFn: () => fetchStats({ data: { userId: user!.id } }),
-    enabled: !!user,
-    staleTime: 60_000,
-  });
-
-  if (!user || !stats || !username) return null;
-
-  return (
-    <p className="mt-1 text-xs text-muted-foreground">
-      <Link to="/u/$username" params={{ username }} hash="followers" className="hover:text-primary hover:underline">
-        {stats.followers} følgere
-      </Link>
-      {" · "}
-      <Link to="/u/$username" params={{ username }} hash="following" className="hover:text-primary hover:underline">
-        følger {stats.following}
-      </Link>
-    </p>
-  );
-}
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
