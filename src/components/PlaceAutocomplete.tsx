@@ -14,6 +14,8 @@ interface Props {
   className?: string;
   ariaLabel?: string;
   searchOptions?: SearchOptions;
+  /** Custom label for the "use typed text as-is" fallback button. */
+  useAnywayLabel?: string;
 }
 
 interface SearchState {
@@ -48,7 +50,7 @@ function typeBadge(t: ResolvedPlace["type"], lang: string): string {
 }
 
 export function PlaceAutocomplete({
-  value, onTextChange, selected, onSelect, placeholder, className, ariaLabel, searchOptions,
+  value, onTextChange, selected, onSelect, placeholder, className, ariaLabel, searchOptions, useAnywayLabel,
 }: Props) {
   const { t, locale } = useI18n();
   const tt = t.placeSearch;
@@ -234,9 +236,9 @@ export function PlaceAutocomplete({
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); useAnyway(); }}
-                className="text-xs font-semibold text-primary hover:underline"
+                className="text-xs font-semibold text-primary hover:underline text-left"
               >
-                {tt.useAnyway}
+                {useAnywayLabel ? `${useAnywayLabel}: ${value.trim()}` : tt.useAnyway}
               </button>
             </div>
           )}

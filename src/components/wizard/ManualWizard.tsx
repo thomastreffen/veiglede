@@ -488,6 +488,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
               selected={originPlace}
               onSelect={setOriginPlace}
               placeholder="Hjemmeadresse eller by"
+              useAnywayLabel="Bruk mitt avreisested"
             />
             <p className="text-[11px] text-muted-foreground">
               Startpunktet for turen — første etappe kjøres herfra til første overnatting.
@@ -540,6 +541,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                           selected={r.place}
                           onSelect={(p) => updateRow(r.key, { place: p })}
                           placeholder={w.manual.placeholder}
+                          useAnywayLabel={isLast ? "Bruk min destinasjon" : undefined}
                         />
                       </div>
                     </div>
