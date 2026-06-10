@@ -80,7 +80,7 @@ function LiveFollowPage() {
           </Link>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
             <Radio className={`h-3 w-3 ${live && !paused ? "animate-pulse" : ""}`} />
-            {badge}
+            Live-deling · {badge}
           </span>
         </div>
       </header>
@@ -89,6 +89,9 @@ function LiveFollowPage() {
           Følger turen live
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        <p className="mt-3 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground">Live-deling.</span> Dette er live-posisjon mens delingen er aktiv. Hele turplanen og kontoopplysninger deles ikke her.
+        </p>
         <div className="mt-5">
           <LiveTripMap session={session} vehicle={vehicle} height="420px" />
         </div>
