@@ -261,31 +261,80 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, tripId,
           <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground bg-surface-2/50 border-b border-border/60">
             Naviger til neste stopp
           </div>
-          {nextStop && (
-            <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border/60">
-              Neste: <span className="text-foreground/90 font-medium">{nextLabel}</span>
+          <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border/60">
+            {hasNext ? (
+              <>Neste stopp: <span className="text-foreground/90 font-medium">{nextLabel}</span></>
+            ) : (
+              <span className="text-amber-400">Ingen neste stopp</span>
+            )}
+          </div>
+
+          {hasNext ? (
+            <>
+              <div className="px-4 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                Start fra nåværende posisjon
+              </div>
+              <a
+                href={navGmaps}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+              >
+                <div className="font-medium">🧭 Google Maps</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Bruker din nåværende posisjon</div>
+              </a>
+              <a
+                href={navAmaps}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+              >
+                <div className="font-medium">🧭 Apple Kart</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Bruker din nåværende posisjon</div>
+              </a>
+              <a
+                href={navWaze}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+              >
+                <div className="font-medium">🧭 Waze</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Bruker din nåværende posisjon</div>
+              </a>
+
+              <div className="px-4 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 border-t border-border/60">
+                Start fra turens startadresse
+              </div>
+              <a
+                href={fromOriginGmaps}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+              >
+                <div className="font-medium">📍 Google Maps</div>
+                <div className="text-xs text-muted-foreground mt-0.5 truncate">Fra {origin}</div>
+              </a>
+              <a
+                href={fromOriginAmaps}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+              >
+                <div className="font-medium">📍 Apple Kart</div>
+                <div className="text-xs text-muted-foreground mt-0.5 truncate">Fra {origin}</div>
+              </a>
+            </>
+          ) : (
+            <div className="px-4 py-3 text-xs text-muted-foreground border-b border-border/60">
+              Legg til et reelt stopp for å starte navigasjon.
             </div>
           )}
-          <a
-            href={navGmaps}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
-          >
-            <div className="font-medium">🧭 Start i Google Maps</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Starter fra nåværende posisjon</div>
-          </a>
-          <a
-            href={navAmaps}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
-          >
-            <div className="font-medium">🧭 Start i Apple Kart</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Starter fra nåværende posisjon</div>
-          </a>
+
 
           {/* Secondary: route overview */}
           <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground bg-surface-2/50 border-b border-t border-border/60">
