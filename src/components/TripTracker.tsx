@@ -30,7 +30,7 @@ export function TripTracker({
     lastStopName: lastVisited,
   });
 
-  const ownLive = useLiveSession(liveOn ? tripId : null);
+  const ownLive = liveOn ? (liveSession ?? null) : null;
   const liveActive = isLiveActive(ownLive);
   const lastSeenStr = ownLive?.updated_at
     ? new Date(ownLive.updated_at).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })
