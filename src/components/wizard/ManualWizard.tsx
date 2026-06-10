@@ -232,6 +232,12 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
       // 1) Resolve places for every row in parallel.
       const resolvedPlaces = await Promise.all(validRows.map((r) => ensurePlace(r)));
 
+      // Soft warning when we could not pin coordinates for origin/destination.
+      const destResolved = resolvedPlaces[resolvedPlaces.length - 1];
+      if (!originResolved || !destResolved) {
+        toast.warning("Vi fant ikke nøyaktig posisjon. Prøv å velge et adresseforslag eller juster adressen.");
+      }
+
       // 2) Expand multi-night lodging rows into consecutive days.
       type Step = {
         row: Row;
