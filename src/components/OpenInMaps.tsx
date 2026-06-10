@@ -106,18 +106,32 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, tripId,
 
   // Determine the "next stop" for active navigation — skip departure/start markers.
   const nextStop = useMemo<StopLike | null>(() => {
+    const norm = (v?: string) => (v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    const originNorm = norm(origin);
+    const originFirstPart = norm(origin.split(/[,|]/)[0]);
     const isDeparture = (s: StopLike) => {
       const t = (s.type ?? "").toLowerCase();
+      if (t === "pause") return true;
       if (t === "departure" || t === "start" || t === "origin") return true;
-      const name = (s.name ?? "").trim().toLowerCase();
-      return /^(avgang|departure|start)\b/.test(name);
+      const name = norm(s.name);
+      const loc = norm(s.location);
+      if (/^(avgang|departure|start)\b/.test(name)) return true;
+      if (originNorm && (name === originNorm || loc === originNorm)) return true;
+      if (originFirstPart && (name.includes(originFirstPart) || loc.includes(originFirstPart))) {
+        // Only treat as departure if the candidate is also one of the first two stops
+        const idx = stops.indexOf(s);
+        if (idx >= 0 && idx <= 1) return true;
+      }
+      return false;
     };
-    const candidates = stops.filter((s) => s.type !== "pause" && !isDeparture(s));
+    const candidates = stops.filter((s) => !isDeparture(s));
     if (candidates.length === 0) return null;
     const visited = new Set(tracking?.visitedStopIds ?? []);
     const next = candidates.find((s) => !s.id || !visited.has(s.id));
-    return next ?? candidates[candidates.length - 1] ?? null;
-  }, [stops, tracking?.visitedStopIds]);
+    // Do NOT fall back to a previous/visited stop — return null so UI disables.
+    return next ?? null;
+  }, [stops, tracking?.visitedStopIds, origin]);
+
 
   const hasNext = !!nextStop;
   const nextLabel = nextStop?.name || nextStop?.location || "";
