@@ -53,8 +53,10 @@ function ExplorePage() {
           <Compass className="h-3 w-3" /> {ex.eyebrow}
         </p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{ex.title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{ex.subtitle}</p>
+        <p className="mt-2 text-sm text-muted-foreground">Finn turer, roadbooks og folk å følge.</p>
       </header>
+
+      <ExploreCta />
 
       {/* Tabs */}
       <div className="mt-6 inline-flex rounded-2xl border border-border bg-surface p-1">
@@ -66,6 +68,28 @@ function ExplorePage() {
         ? <UsersTab vehicleFromUrl={vehicleFromUrl} />
         : <TripsTab />}
     </div>
+  );
+}
+
+function ExploreCta() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <Link
+        to="/auth"
+        className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/15"
+      >
+        <LogIn className="h-3.5 w-3.5" /> Logg inn for å kopiere turer og følge folk
+      </Link>
+    );
+  }
+  return (
+    <Link
+      to="/trips"
+      className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+    >
+      <Sparkles className="h-3.5 w-3.5 text-primary" /> Del en tur og inspirer andre
+    </Link>
   );
 }
 
