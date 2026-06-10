@@ -196,12 +196,13 @@ function MobileBottomNav({
   const tripMatch = pathname.match(/^\/trips\/([^/]+)/);
   const insideTrip = !!tripMatch && tripMatch[1] !== "new";
   const currentTripId = insideTrip ? tripMatch![1] : null;
+  const mobileNav = nav.filter((n) => n.to !== "/fordeler" && n.to !== "/garage");
 
   return (
     <>
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border/60 bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
-        <ul className="grid grid-cols-6 items-end">
-          {nav.slice(0, 3).map((n) => <NavItem key={n.to} n={n} />)}
+        <ul className="grid grid-cols-5 items-end">
+          {mobileNav.slice(0, 2).map((n) => <NavItem key={n.to} n={n} />)}
           <li className="flex justify-center -mt-6">
             {insideTrip ? (
               <button
@@ -218,7 +219,7 @@ function MobileBottomNav({
               </Link>
             )}
           </li>
-          {nav.slice(3).map((n) => <NavItem key={n.to} n={n} />)}
+          {mobileNav.slice(2).map((n) => <NavItem key={n.to} n={n} />)}
         </ul>
       </nav>
       {currentTripId && (
@@ -244,7 +245,7 @@ function NavItem({ n }: { n: NavItemDef }) {
         className={cn("flex flex-col items-center gap-0.5 py-2 text-[9px] uppercase tracking-wide w-full min-w-0")}
       >
         <Icon className="h-5 w-5" />
-        <span className="text-center leading-tight w-full break-words text-[8px] uppercase tracking-normal">{n.label}</span>
+        <span className="text-center leading-tight w-full whitespace-nowrap text-[8px] uppercase tracking-normal">{n.label}</span>
       </Link>
     </li>
   );

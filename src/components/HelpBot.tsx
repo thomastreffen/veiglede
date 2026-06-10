@@ -59,7 +59,7 @@ export function HelpBot() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label={hb.openAria}
-          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 md:bottom-6 md:right-6 z-50 grid place-items-center h-12 w-12 md:h-14 md:w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40 hover:brightness-110 transition"
+          className="hidden md:grid fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 md:bottom-6 md:right-6 z-50 place-items-center h-12 w-12 md:h-14 md:w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40 hover:brightness-110 transition"
         >
           <HelpCircle className="h-7 w-7" strokeWidth={2.2} />
           {hasUnread && (
