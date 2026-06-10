@@ -222,6 +222,17 @@ export const nb = {
       quickActions: "Hurtigvalg",
       fordelerBadge: "NY",
     },
+    profile: {
+      myTrips: "Mine turer",
+      garage: "Garasje / kjøretøy",
+      garageSubtitle: "Kjøretøy, drivstoff, lading og preferanser",
+      fordeler: "Fordeler",
+      fordelerSubtitle: "Rabatter og partnertilbud",
+      settings: "Innstillinger",
+      help: "Hjelp",
+      helpSubtitle: "Få hjelp med turplanlegging og eksport",
+      logout: "Logg ut",
+    },
     trips: {
       plannedTrips: "planlagte turer",
       planned: "planlagt",

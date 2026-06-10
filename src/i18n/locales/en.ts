@@ -223,6 +223,17 @@ export const en: Dict = {
       quickActions: "Quick actions",
       fordelerBadge: "NEW",
     },
+    profile: {
+      myTrips: "My trips",
+      garage: "Garage / vehicles",
+      garageSubtitle: "Vehicles, fuel, charging and preferences",
+      fordeler: "Benefits",
+      fordelerSubtitle: "Discounts and partner offers",
+      settings: "Settings",
+      help: "Help",
+      helpSubtitle: "Get help with trip planning and export",
+      logout: "Log out",
+    },
     trips: {
       plannedTrips: "planned trips",
       planned: "planned",
