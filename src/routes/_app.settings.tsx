@@ -22,6 +22,7 @@ import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { VehicleCard } from "@/components/VehicleCard";
 import { BenefitsConsent } from "@/components/BenefitsConsent";
+import { AvatarImg } from "@/lib/avatar";
 
 function DangerZone() {
   const { user } = useAuth();
