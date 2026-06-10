@@ -8,6 +8,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { createLiveMarkerEl } from "@/lib/live-marker";
+
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import { stopDisplayMeta, tripsApi } from "@/lib/trips-store";
