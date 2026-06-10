@@ -103,43 +103,32 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
     const map = mapRef.current;
     if (!map || !session) return;
     const lngLat: [number, number] = [session.lng, session.lat];
-    const ended = phase === "ended";
-    const paused = phase === "paused";
+    const phaseForMarker = phase === "waiting" ? "active" : phase;
 
-    if (!markerRef.current) {
-      const el = document.createElement("div");
-      el.className = "vg-live-marker";
-      el.innerHTML = `
-        <div class="vg-live-marker__pulse"></div>
-        <div class="vg-live-marker__dot">
-          <div class="vg-live-marker__arrow"></div>
-        </div>
-      `;
+    // Rebuild the marker element when the visual phase or vehicle changes so
+    // the icon/colors stay in sync with status. Otherwise just move it.
+    const currentPhase = markerElRef.current?.dataset.phase;
+    const currentVehicle = markerElRef.current?.dataset.vehicle;
+    const needsRebuild =
+      !markerRef.current ||
+      currentPhase !== phaseForMarker ||
+      currentVehicle !== (vehicle ?? "");
+
+    if (needsRebuild) {
+      const el = createLiveMarkerEl(vehicle ?? null, { phase: phaseForMarker });
+      el.dataset.vehicle = vehicle ?? "";
       markerElRef.current = el;
+      if (markerRef.current) markerRef.current.remove();
       markerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat(lngLat)
         .addTo(map);
       map.flyTo({ center: lngLat, zoom: 13, duration: 800 });
     } else {
-      markerRef.current.setLngLat(lngLat);
+      markerRef.current!.setLngLat(lngLat);
       map.easeTo({ center: lngLat, duration: 600 });
     }
+  }, [session, phase, vehicle]);
 
-    const el = markerElRef.current;
-    if (el) {
-      el.classList.toggle("vg-live-marker--paused", paused);
-      el.classList.toggle("vg-live-marker--ended", ended);
-      const arrow = el.querySelector<HTMLElement>(".vg-live-marker__arrow");
-      if (arrow) {
-        if (typeof session.heading === "number" && !Number.isNaN(session.heading)) {
-          arrow.style.transform = `rotate(${session.heading}deg)`;
-          arrow.style.opacity = "1";
-        } else {
-          arrow.style.opacity = "0";
-        }
-      }
-    }
-  }, [session, phase]);
 
   const speedKmh =
     session && typeof session.speed === "number" && session.speed > 0.5
