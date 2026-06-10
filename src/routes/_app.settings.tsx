@@ -560,7 +560,7 @@ function PrivacyControls() {
       <ToggleRow
         icon={<Globe className="h-4 w-4" />}
         label="Offentlig profil"
-        help="Når på er profilen din synlig på veiglede.no/u/[brukernavn]."
+        help="Når profilen er offentlig kan andre se profil, offentlig garasje og delte/offentlige turer. Private turer og live-posisjon deles aldri her."
         on={flags.is_public}
         onChange={(on) => patch({ is_public: on })}
       />
