@@ -8,6 +8,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { createLiveMarkerEl } from "@/lib/live-marker";
+
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
 import { stopDisplayMeta, tripsApi } from "@/lib/trips-store";
@@ -85,7 +87,8 @@ interface Props {
   /** MapTiler browser key fetched at runtime via /api/public/map-config. */
   maptilerKey: string;
   /** Optional live position marker overlay. */
-  livePosition?: { lat: number; lng: number; heading?: number | null } | null;
+  livePosition?: { lat: number; lng: number; heading?: number | null; vehicle?: string | null } | null;
+
 }
 
 const DAY_COLORS = [
@@ -652,15 +655,16 @@ export function MapLibreTripMap({
       return;
     }
     if (!liveMarkerRef.current) {
-      const el = liveDotEl();
-      liveMarkerRef.current = new maplibregl.Marker({ element: el })
+      const el = createLiveMarkerEl(livePosition.vehicle ?? null, { phase: "active", title: "Din live-posisjon" });
+      liveMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([livePosition.lng, livePosition.lat])
         .addTo(map);
     } else {
       liveMarkerRef.current.setLngLat([livePosition.lng, livePosition.lat]);
     }
     return undefined;
-  }, [livePosition?.lat, livePosition?.lng, ready]);
+  }, [livePosition?.lat, livePosition?.lng, livePosition?.vehicle, ready]);
+
 
   // Match /map-test: a single container that the map mounts into. No
   // intermediate wrapper, no opacity tricks, no rounded clipping that could
@@ -707,21 +711,3 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
 
-function liveDotEl() {
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "position:relative;width:22px;height:22px;display:flex;align-items:center;justify-content:center;";
-  wrap.title = "Din live-posisjon";
-  const pulse = document.createElement("div");
-  pulse.style.cssText = "position:absolute;inset:-8px;border-radius:9999px;background:rgba(59,130,246,.35);animation:vgLivePulse 1.6s ease-out infinite;";
-  const dot = document.createElement("div");
-  dot.style.cssText = "width:16px;height:16px;border-radius:9999px;background:#3b82f6;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);";
-  wrap.appendChild(pulse);
-  wrap.appendChild(dot);
-  if (typeof document !== "undefined" && !document.getElementById("vg-live-pulse-kf")) {
-    const style = document.createElement("style");
-    style.id = "vg-live-pulse-kf";
-    style.textContent = "@keyframes vgLivePulse{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.6);opacity:0}}";
-    document.head.appendChild(style);
-  }
-  return wrap;
-}
