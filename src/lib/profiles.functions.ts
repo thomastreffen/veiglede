@@ -11,6 +11,8 @@ const UsernameSchema = z.object({
 export interface PublicProfileVehicle {
   id: string;
   name: string;
+  nickname?: string;
+  description?: string;
   type: string;
   energy: string;
   defaultStyle: string;
