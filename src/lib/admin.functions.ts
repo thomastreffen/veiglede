@@ -175,14 +175,15 @@ export const adminListUsersFn = createServerFn({ method: "GET" })
     }
 
     return {
-      users: (rows ?? []).map((r) => ({
+      users: await Promise.all((rows ?? []).map(async (r) => ({
         ...r,
+        avatar_url: await signAvatarServer((r.avatar_url as string | null) ?? null),
         email: emails.get(r.id) ?? null,
         tripCount: tripCounts.get(r.id) ?? 0,
         plan: plans.get(r.id)?.plan ?? "free",
         plan_period_end: plans.get(r.id)?.period_end ?? null,
         last_active: lastActive.get(r.id) ?? null,
-      })),
+      }))),
     };
   });
 
