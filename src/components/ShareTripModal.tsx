@@ -49,12 +49,13 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
   const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
 
   // Generate a share token on first open so the link is always available,
-  // and immediately push to Supabase so /shared/{token} resolves right away.
+  // and immediately push to Supabase so /tur/delt/{token} resolves right away.
   useEffect(() => {
-    if (open && !trip.shareToken) {
+    if (!open || trip.shareToken) return;
+    try {
       tripsApi.ensureShareToken(trip.id);
-      void flushTripsNow();
-    }
+      void flushTripsNow().catch(() => { /* sync handled by retry queue */ });
+    } catch { /* noop — token will retry next open */ }
   }, [open, trip.id, trip.shareToken]);
 
   const isPublic = trip.isPublic ?? false;
