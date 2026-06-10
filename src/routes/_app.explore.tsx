@@ -259,8 +259,8 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
   const s = styleMeta(t.style as RouteStyle);
   const cover = (t.cover as CoverKey) ?? "fjord";
   const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/shared/${t.shareToken}`
-    : `/shared/${t.shareToken}`;
+    ? `${window.location.origin}/tur/delt/${t.shareToken}`
+    : `/tur/delt/${t.shareToken}`;
   const pubOrigin = publicPlaceName(t.origin);
   const pubDest = publicPlaceName(t.destination);
   const onShare = async (e: React.MouseEvent) => {
@@ -276,7 +276,7 @@ function PublicTripCard({ t }: { t: PublicTripSummary }) {
   return (
     <li>
       <Link
-        to="/shared/$shareToken"
+        to="/tur/delt/$shareToken"
         params={{ shareToken: t.shareToken }}
         className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/60 transition-colors"
       >

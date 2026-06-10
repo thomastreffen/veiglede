@@ -762,7 +762,7 @@ function SocialProofStrip() {
               {recent.slice(0, 3).map((t) => (
                 <Link
                   key={t.id}
-                  to="/shared/$shareToken"
+                  to="/tur/delt/$shareToken"
                   params={{ shareToken: t.shareToken }}
                   className="group snap-start shrink-0 w-[80%] md:w-auto rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 backdrop-blur p-4 transition-colors"
                 >
