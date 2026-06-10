@@ -93,6 +93,10 @@ export interface LiveBroadcasterDebugState {
   lastUpsertPayload: LiveUpsertDebugPayload | null;
   lastStoredRow: LiveStoredRowSnapshot | null;
   lastUpsertError: string | null;
+  pageVisibility: "visible" | "hidden";
+  lastVisibilityChangeTime: string | null;
+  lastResumeSendTime: string | null;
+  wakeLockActive: boolean;
 }
 
 function toErrorMessage(error: unknown) {
