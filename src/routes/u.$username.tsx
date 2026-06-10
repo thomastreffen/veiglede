@@ -130,10 +130,16 @@ function PublicProfilePage() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-display text-base uppercase truncate">{v.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{tm.emoji} {tm.label} · {em.emoji} {em.label}</p>
+                        {v.nickname && <p className="text-xs italic text-primary/90 truncate">"{v.nickname}"</p>}
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">{tm.emoji} {tm.label} · {em.emoji} {em.label}</p>
                         <p className="mt-0.5 text-[11px] text-primary uppercase tracking-wider">{sm.emoji} {sm.label}</p>
                       </div>
                     </div>
+                    {v.description && (
+                      <p className="mt-3 text-xs leading-relaxed text-foreground/80 italic border-l-2 border-primary/40 pl-3">
+                        {v.description}
+                      </p>
+                    )}
                     {v.photos.length > 0 && (
                       <div className="mt-3 flex gap-1.5 overflow-x-auto -mx-1 px-1">
                         {v.photos.map((p) => (
