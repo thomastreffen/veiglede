@@ -90,7 +90,7 @@ function PublicProfilePage() {
         <header className="flex flex-col sm:flex-row sm:items-center gap-5">
           <div className="h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-5xl overflow-hidden shrink-0">
             {profile.avatarUrl
-              ? <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ? <AvatarImg value={profile.avatarUrl} className="h-full w-full object-cover" />
               : initialLetter}
           </div>
           <div className="min-w-0">
