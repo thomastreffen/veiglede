@@ -3,14 +3,16 @@ import { Globe, Lock, Radio, Share2, ShieldCheck, Eye, EyeOff, Play, Pause, Flag
 import { tripsApi, type Trip } from "@/lib/trips-store";
 import { flushTripsNow } from "@/lib/cloud-sync";
 import {
-  useLiveOptIn, useLiveSession, isLiveActive, endLiveSession,
+  useLiveOptIn, isLiveActive, endLiveSession, type LiveSession,
 } from "@/lib/live-tracking";
-import { useTripTracking, trackingApi, statusMeta, type TripStatus } from "@/lib/trip-tracking";
+import { trackingApi, statusMeta, type TripStatus, type TripTracking } from "@/lib/trip-tracking";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
 interface Props {
   trip?: Trip | null;
+  tracking?: TripTracking | null;
+  liveSession?: LiveSession | null;
   onOpenShare?: () => void;
 }
 
@@ -22,22 +24,17 @@ interface Props {
  *   2. Turplan-deling — privat / delt med lenke
  *   3. Live-posisjon — av / på + quick actions when live
  *
- * Defensive by design: every value coming off `trip`, the live session, or the
- * tracking store is treated as optional. If `trip` (or trip.id) is missing we
- * render nothing rather than crash the host page. All async handlers are
- * wrapped in try/catch and surface errors via toast.
+ * Defensive by design. Live session and tracking state come from the parent
+ * route to avoid creating duplicate Supabase Realtime subscriptions.
  */
-export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
-  // Hard guard: without a trip id we cannot wire any of the underlying
-  // per-trip hooks safely, so render nothing rather than crash.
+export function SharingPrivacyPanel({ trip, tracking, liveSession, onOpenShare }: Props) {
   const tripId = trip?.id ?? "";
   const tripIdReady = tripId.length > 0;
 
   // Hooks must run on every render — pass a safe empty id when not ready.
   const { user } = useAuth();
-  const tracking = useTripTracking(tripId);
   const [liveOn, setLiveOn] = useLiveOptIn(tripId);
-  const session = useLiveSession(tripIdReady ? tripId : null);
+  const session = liveSession ?? null;
 
   const [copied, setCopied] = useState(false);
 
