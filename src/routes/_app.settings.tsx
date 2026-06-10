@@ -352,8 +352,22 @@ function Settings() {
         </div>
       </Section>
 
-      {/* 5 — Sharing & privacy */}
-      <Section title="Deling og personvern" caption="Hvordan turene dine deles">
+      {/* 5b — Profile fields (identity edit) */}
+      <Section id="profil" title="Rediger profilen din" caption="Synlig på din offentlige profil">
+        <ProfileFieldsEditor />
+        <div className="mt-6 pt-5 border-t border-border/60">
+          <UsernameField />
+        </div>
+      </Section>
+
+      {/* 5c — Public profile privacy */}
+      <Section id="personvern" title="Offentlig profil" caption="Hva andre kan se om deg">
+        <PrivacyControls />
+      </Section>
+
+      {/* 5 — Trip sharing defaults */}
+      <Section id="turdeling" title="Turdeling" caption="Standard for nye turer">
+        <p className="text-xs text-muted-foreground mb-2">Dette gjelder standardinnstillinger for hver enkelt tur. Synligheten av selve profilen din styres under «Offentlig profil».</p>
         <ToggleRow
           icon={<Lock className="h-4 w-4" />}
           label="Standard: Privat"
@@ -384,16 +398,6 @@ function Settings() {
           tag="Per tur"
           onChange={() => {}}
         />
-      </Section>
-
-      {/* 5b — Profile fields */}
-      <Section id="profil" title="Profil" caption="Hvordan andre ser deg">
-        <ProfileFieldsEditor />
-      </Section>
-
-      {/* 5c — Public profile privacy */}
-      <Section id="personvern" title="Personvern" caption="Din offentlige profil">
-        <PrivacyControls />
       </Section>
 
       {/* 6 — Appearance */}
