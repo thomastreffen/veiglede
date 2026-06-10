@@ -309,6 +309,11 @@ function TripPlanner() {
             )}
           </div>
           {trip.subtitle && <p className="mt-2 text-sm md:text-base text-foreground/80">{trip.subtitle}</p>}
+          {trip.inspiredByDisplayName && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-wider text-primary">
+              ✦ Inspirert av {trip.inspiredByDisplayName}
+            </p>
+          )}
           <p className="mt-3 inline-flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 text-primary" /> {trip.origin} → {trip.destination}</p>
           <p className="mt-2 text-[12px] text-muted-foreground">Stil: {s.label} — {s.sub}</p>
         </div>
