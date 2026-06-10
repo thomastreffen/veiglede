@@ -521,6 +521,98 @@ function UsernameField() {
 }
 
 
+function ProfileFieldsEditor() {
+  const { user } = useAuth();
+  const [loaded, setLoaded] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [initial, setInitial] = useState({ displayName: "", bio: "", avatarUrl: "" });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("profiles").select("display_name, bio, avatar_url").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const dn = (data.display_name as string | null) ?? "";
+        const b = (data.bio as string | null) ?? "";
+        const a = (data.avatar_url as string | null) ?? "";
+        setDisplayName(dn); setBio(b); setAvatarUrl(a);
+        setInitial({ displayName: dn, bio: b, avatarUrl: a });
+        setLoaded(true);
+      });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (!user) return <p className="text-sm text-muted-foreground">Logg inn for å redigere profil.</p>;
+  if (!loaded) return <p className="text-sm text-muted-foreground">Laster…</p>;
+
+  const dirty = displayName !== initial.displayName || bio !== initial.bio || avatarUrl !== initial.avatarUrl;
+  const tooLongBio = bio.length > 160;
+
+  const save = async () => {
+    if (!dirty || tooLongBio) return;
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({
+      display_name: displayName.trim() || null,
+      bio: bio.trim() || null,
+      avatar_url: avatarUrl.trim() || null,
+    }).eq("id", user.id);
+    setSaving(false);
+    if (error) { toast.error("Kunne ikke lagre profil"); return; }
+    setInitial({ displayName, bio, avatarUrl });
+    toast.success("Profil lagret");
+  };
+
+  return (
+    <div className="space-y-4">
+      <label className="block">
+        <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Visningsnavn</span>
+        <input
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value.slice(0, 60))}
+          placeholder="Ditt navn"
+          className="w-full bg-surface-1 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+        />
+      </label>
+      <label className="block">
+        <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
+          <span>Bio</span>
+          <span className={tooLongBio ? "text-destructive" : ""}>{bio.length}/160</span>
+        </span>
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={3}
+          placeholder="Kort om deg — bilstil, favorittruter, hva du jakter på."
+          className="w-full bg-surface-1 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary resize-y"
+        />
+      </label>
+      <label className="block">
+        <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Profilbilde (URL)</span>
+        <input
+          value={avatarUrl}
+          onChange={(e) => setAvatarUrl(e.target.value)}
+          placeholder="https://…"
+          className="w-full bg-surface-1 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+        />
+        <p className="mt-1 text-xs text-muted-foreground">Lim inn en lenke til et bilde. Tomt felt = bruk initial.</p>
+      </label>
+      <div className="flex justify-end">
+        <button
+          onClick={save}
+          disabled={!dirty || saving || tooLongBio}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
+        >
+          {saving ? "Lagrer…" : "Lagre profil"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type PrivacyFlags = { is_public: boolean; show_garage: boolean; show_trips: boolean; show_stats: boolean };
 
 function PrivacyControls() {
