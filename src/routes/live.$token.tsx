@@ -67,7 +67,9 @@ function LiveFollowPage() {
         ? "Live deling er avsluttet. Du kan trygt lukke denne siden."
         : paused
           ? "Føreren har pauset live-deling. Siden oppdateres automatisk når den starter igjen."
-          : "Posisjonen oppdateres automatisk så lenge føreren deler.";
+          : !live
+            ? "Venter på ny posisjon. Føreren må ha Veiglede åpen for live-oppdatering."
+            : "Posisjonen oppdateres automatisk så lenge føreren deler.";
 
   return (
     <div className="min-h-screen bg-background text-foreground">

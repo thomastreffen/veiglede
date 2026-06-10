@@ -125,6 +125,8 @@ export function TripTracker({
         liveActive={liveActive}
         liveSession={ownLive}
         lastSeenStr={lastSeenStr}
+        pageVisibility={liveDebug.pageVisibility}
+        lastVisibilityChangeTime={liveDebug.lastVisibilityChangeTime}
       />
 
       {user && liveOn && <LiveDebugPanel debug={liveDebug} onSendTestPositionNow={sendTestPositionNow} />}
@@ -250,6 +252,10 @@ function LiveDebugPanel({
     { label: "last stored row lat/lng", value: formatLatLngPair(debug.lastStoredRow?.lat ?? null, debug.lastStoredRow?.lng ?? null) },
     { label: "last stored row updated_at", value: formatTime(debug.lastStoredRow?.updated_at ?? null) },
     { label: "last upsert error", value: debug.lastUpsertError ?? "—" },
+    { label: "page visibility", value: debug.pageVisibility },
+    { label: "last visibility change", value: formatTime(debug.lastVisibilityChangeTime) },
+    { label: "last resume send", value: formatTime(debug.lastResumeSendTime) },
+    { label: "wake lock active", value: boolLabel(debug.wakeLockActive) },
   ]), [debug]);
 
   async function handleManualSend() {
@@ -373,6 +379,7 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 
 function LiveShareCard({
   user, liveOn, setLiveOn, permDenied, tripStatus, liveActive, liveSession, lastSeenStr,
+  pageVisibility, lastVisibilityChangeTime,
 }: {
   user: { id: string } | null;
   liveOn: boolean;
@@ -382,9 +389,24 @@ function LiveShareCard({
   liveActive: boolean;
   liveSession: LiveSession | null;
   lastSeenStr: string | null;
+  pageVisibility?: "visible" | "hidden";
+  lastVisibilityChangeTime?: string | null;
 }) {
   const token = liveSession?.live_share_token ?? null;
   const liveUrl = token ? `https://veiglede.no/live/${token}` : null;
+
+  const [wasHiddenRecently, setWasHiddenRecently] = useState(false);
+  const prevVisibilityRef = useRef<"visible" | "hidden" | undefined>(pageVisibility);
+  useEffect(() => {
+    if (prevVisibilityRef.current === "hidden" && pageVisibility === "visible") {
+      setWasHiddenRecently(true);
+      const t = window.setTimeout(() => setWasHiddenRecently(false), 20_000);
+      prevVisibilityRef.current = pageVisibility;
+      return () => window.clearTimeout(t);
+    }
+    prevVisibilityRef.current = pageVisibility;
+  }, [pageVisibility, lastVisibilityChangeTime]);
+
 
   const helper = !user
     ? "Logg inn for å dele posisjon live."
@@ -476,8 +498,25 @@ function LiveShareCard({
             Del posisjon live
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">{helper}</p>
+          {liveOn && user && !permDenied && tripStatus !== "idle" && tripStatus !== "completed" && (
+            <p className="mt-1 text-[11px] text-muted-foreground/80">
+              Tips: Live-posisjon fungerer best når Veiglede er åpen på mobilen.
+            </p>
+          )}
         </div>
       </label>
+
+      {liveOn && pageVisibility === "hidden" && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          Hold Veiglede åpen for mest stabil live-posisjon.
+        </div>
+      )}
+
+      {liveOn && pageVisibility === "visible" && wasHiddenRecently && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/90">
+          Live-deling kan ha vært pauset mens siden var i bakgrunnen.
+        </div>
+      )}
 
       {showWaiting && (
         <div className="flex items-center gap-2 rounded-lg border border-border bg-background/40 px-3 py-2 text-xs">
