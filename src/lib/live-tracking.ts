@@ -229,7 +229,9 @@ export async function upsertLiveSession(input: {
   };
   const { data, error } = await (supabase as any)
     .from("trip_live_sessions")
-    .upsert(row, { onConflict: "trip_id,user_id" });
+    .upsert(row, { onConflict: "trip_id,user_id" })
+    .select("lat,lng,heading,speed,status,updated_at,live_share_token")
+    .single();
   if (error) throw error;
   return {
     payload,
