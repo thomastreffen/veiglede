@@ -12,8 +12,10 @@ import { TripComments } from "@/components/TripComments";
 import { LiveSharedBlock } from "@/components/LiveSharedBlock";
 import { SaveTripButton } from "@/components/SaveTripButton";
 import {
-  MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass,
+  MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass, ExternalLink,
 } from "lucide-react";
+import { CopyTripButton } from "@/components/CopyTripButton";
+import { AvatarImg } from "@/lib/avatar";
 import { useState } from "react";
 
 export async function sharedTripLoader({ shareToken }: { shareToken: string }) {
