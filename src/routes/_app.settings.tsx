@@ -137,64 +137,6 @@ function AccountCard() {
 }
 
 
-function ProfileHeader() {
-  const { user } = useAuth();
-  const prefs = useDriverPrefs();
-  // Prefer the signed-in identity (Google → user_metadata.full_name); fall back
-  // to the local driver display name only when no auth user is present.
-  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string };
-  const displayName = meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
-  const email = user?.email ?? "Lokal demo-profil · ingen pålogging";
-  const avatar = meta.avatar_url;
-  const initial = (displayName || "?").charAt(0).toUpperCase();
-  return (
-    <div className="flex items-center gap-4">
-      <div className="h-16 w-16 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden">
-        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
-      </div>
-      <div className="min-w-0">
-        <p className="font-semibold text-lg truncate">{displayName}</p>
-        <p className="text-xs text-muted-foreground truncate">{email}</p>
-        <ProfileFollowStats />
-      </div>
-    </div>
-  );
-}
-
-function ProfileFollowStats() {
-  const { user } = useAuth();
-  const [username, setUsername] = useState<string | null>(null);
-  const fetchStats = useServerFn(getFollowStatsFn);
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (!cancelled) setUsername((data?.username as string | null) ?? null); });
-    return () => { cancelled = true; };
-  }, [user]);
-
-  const { data: stats } = useQuery({
-    queryKey: ["follow-stats", user?.id],
-    queryFn: () => fetchStats({ data: { userId: user!.id } }),
-    enabled: !!user,
-    staleTime: 60_000,
-  });
-
-  if (!user || !stats || !username) return null;
-
-  return (
-    <p className="mt-1 text-xs text-muted-foreground">
-      <Link to="/u/$username" params={{ username }} hash="followers" className="hover:text-primary hover:underline">
-        {stats.followers} følgere
-      </Link>
-      {" · "}
-      <Link to="/u/$username" params={{ username }} hash="following" className="hover:text-primary hover:underline">
-        følger {stats.following}
-      </Link>
-    </p>
-  );
-}
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Profil — Veiglede" }] }),
@@ -237,9 +179,7 @@ function Settings() {
 
       {/* 1 — Driver profile */}
       <Section id="sjafor" title="Sjåfør" caption="Grunninnstillinger">
-        <ProfileHeader />
-
-        <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-3 text-sm">
           <MiniSelect
             label="Enheter"
             value={prefs.units}
@@ -258,10 +198,6 @@ function Settings() {
             Standardkjøretøy: <span className="text-foreground font-medium">{vehicleMeta(defaultVehicle.type).emoji} {defaultVehicle.name}</span>
           </p>
         )}
-
-        <div className="mt-5 pt-5 border-t border-border/60">
-          <UsernameField />
-        </div>
       </Section>
 
       {/* 2 — My vehicles */}
@@ -358,8 +294,22 @@ function Settings() {
         </div>
       </Section>
 
-      {/* 5 — Sharing & privacy */}
-      <Section title="Deling og personvern" caption="Hvordan turene dine deles">
+      {/* 5b — Profile fields (identity edit) */}
+      <Section id="profil" title="Rediger profilen din" caption="Synlig på din offentlige profil">
+        <ProfileFieldsEditor />
+        <div className="mt-6 pt-5 border-t border-border/60">
+          <UsernameField />
+        </div>
+      </Section>
+
+      {/* 5c — Public profile privacy */}
+      <Section id="personvern" title="Offentlig profil" caption="Hva andre kan se om deg">
+        <PrivacyControls />
+      </Section>
+
+      {/* 5 — Trip sharing defaults */}
+      <Section id="turdeling" title="Turdeling" caption="Standard for nye turer">
+        <p className="text-xs text-muted-foreground mb-2">Dette gjelder standardinnstillinger for hver enkelt tur. Synligheten av selve profilen din styres under «Offentlig profil».</p>
         <ToggleRow
           icon={<Lock className="h-4 w-4" />}
           label="Standard: Privat"
@@ -383,23 +333,13 @@ function Settings() {
         />
         <ToggleRow
           icon={<Radio className="h-4 w-4" />}
-          label="Live deling"
-          help="Følg turen i sanntid. Kommer senere."
-          on={prefs.sharing.liveSharing}
+          label="Live-posisjon"
+          help="Styres på hver enkelt tur fra Turkontroll."
+          on={false}
           disabled
-          tag="Kommer senere"
+          tag="Per tur"
           onChange={() => {}}
         />
-      </Section>
-
-      {/* 5b — Profile fields */}
-      <Section id="profil" title="Profil" caption="Hvordan andre ser deg">
-        <ProfileFieldsEditor />
-      </Section>
-
-      {/* 5c — Public profile privacy */}
-      <Section id="personvern" title="Personvern" caption="Din offentlige profil">
-        <PrivacyControls />
       </Section>
 
       {/* 6 — Appearance */}
@@ -459,6 +399,7 @@ function UsernameField() {
   const [pending, setPending] = useState("");
   const [pendingOk, setPendingOk] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -490,33 +431,66 @@ function UsernameField() {
     toast.success("Brukernavn lagret");
   };
 
+  const showPicker = !current || editing;
+
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Offentlig profil</p>
-      <UsernamePicker
-        initialValue={current ?? ""}
-        ownUserId={user.id}
-        onChange={onChange}
-      />
-      <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-        {current ? (
-          <a
-            href={`/u/${current}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-          >
-            👤 Se min offentlige profil <ExternalLink className="h-3 w-3" />
-          </a>
-        ) : <span />}
-        <button
-          onClick={save}
-          disabled={!dirty || saving}
-          className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
-        >
-          {saving ? "Lagrer…" : "Lagre brukernavn"}
-        </button>
-      </div>
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Brukernavn</p>
+      {current && !editing ? (
+        <div className="rounded-xl border border-border bg-surface-1 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Din offentlige lenke</p>
+          <p className="mt-1 font-mono text-sm break-all">
+            veiglede.no/u/<span className="text-primary font-semibold">{current}</span>
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <a
+              href={`/u/${current}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+            >
+              Se offentlig profil <ExternalLink className="h-3 w-3" />
+            </a>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Endre brukernavn
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {showPicker && (
+        <>
+          <UsernamePicker
+            initialValue={current ?? ""}
+            ownUserId={user.id}
+            onChange={onChange}
+          />
+          <div className="mt-3 flex items-center justify-end gap-2 flex-wrap">
+            {current && (
+              <button
+                type="button"
+                onClick={() => { setEditing(false); setPending(""); setPendingOk(false); }}
+                className="rounded-xl border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+              >
+                Avbryt
+              </button>
+            )}
+            {dirty && (
+              <button
+                onClick={async () => { await save(); setEditing(false); }}
+                disabled={!dirty || saving}
+                className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
+              >
+                {saving ? "Lagrer…" : "Lagre brukernavn"}
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -615,42 +589,6 @@ function ProfileFieldsEditor() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Profilbilde</span>
-        <div className="flex items-center gap-4">
-          <div className="h-20 w-20 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden shrink-0">
-            {avatarUrl ? <AvatarImg value={avatarUrl} className="h-full w-full object-cover" /> : initialLetter}
-          </div>
-          <div className="flex flex-col gap-2 min-w-0">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={onPickFile}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
-            >
-              {uploading ? "Laster opp…" : "Last opp profilbilde"}
-            </button>
-            {avatarUrl && (
-              <button
-                type="button"
-                onClick={removeAvatar}
-                disabled={uploading}
-                className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm hover:bg-surface-2 disabled:opacity-50"
-              >
-                Fjern bilde
-              </button>
-            )}
-            <p className="text-xs text-muted-foreground">JPG, PNG eller WebP. Maks 5 MB.</p>
-          </div>
-        </div>
-      </div>
       <label className="block">
         <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Visningsnavn</span>
         <input
@@ -868,8 +806,9 @@ const NAV_ITEMS: { id: string; label: string }[] = [
   { id: "garasje", label: "Min garasje" },
   { id: "korepreferanser", label: "Kjørepreferanser" },
   { id: "langs-ruta", label: "Hva vil du se langs ruta?" },
-  { id: "profil", label: "Profil" },
-  { id: "personvern", label: "Personvern" },
+  { id: "profil", label: "Rediger profil" },
+  { id: "personvern", label: "Offentlig profil" },
+  { id: "turdeling", label: "Turdeling" },
   { id: "utseende", label: "Utseende" },
   { id: "konto", label: "Konto og data" },
 ];
@@ -877,16 +816,25 @@ const NAV_ITEMS: { id: string; label: string }[] = [
 function SidebarProfile() {
   const { user } = useAuth();
   const prefs = useDriverPrefs();
-  const [username, setUsername] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{ username: string | null; display_name: string | null; avatar_url: string | null } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const fetchStats = useServerFn(getFollowStatsFn);
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     if (!user) return;
-    let cancelled = false;
-    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (!cancelled) setUsername((data?.username as string | null) ?? null); });
-    return () => { cancelled = true; };
+    supabase.from("profiles").select("username, display_name, avatar_url").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setProfile({
+          username: (data.username as string | null) ?? null,
+          display_name: (data.display_name as string | null) ?? null,
+          avatar_url: (data.avatar_url as string | null) ?? null,
+        });
+      });
   }, [user]);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
 
   const { data: stats } = useQuery({
     queryKey: ["follow-stats", user?.id],
@@ -896,22 +844,74 @@ function SidebarProfile() {
   });
 
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string };
-  const displayName = meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
-  const avatar = meta.avatar_url;
+  const displayName = profile?.display_name || meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
+  const username = profile?.username ?? null;
+  const avatarValue = profile?.avatar_url || meta.avatar_url || "";
   const initial = (displayName || "?").charAt(0).toUpperCase();
+
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setUploading(true);
+    const { uploadProfileAvatar, cleanupOldAvatars } = await import("@/lib/profile-avatar");
+    const res = await uploadProfileAvatar(file, user.id);
+    if (!res.ok) { setUploading(false); toast.error(res.error); return; }
+    const { error } = await supabase.from("profiles").update({ avatar_url: res.path }).eq("id", user.id);
+    if (error) { setUploading(false); toast.error("Kunne ikke lagre profilbilde"); return; }
+    cleanupOldAvatars(user.id, res.path).catch(() => undefined);
+    setProfile((p) => p ? { ...p, avatar_url: res.path } : p);
+    setUploading(false);
+    toast.success("Profilbilde oppdatert");
+  };
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 text-center">
-      <div className="mx-auto h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-4xl overflow-hidden">
-        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
-      </div>
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading || !user}
+        className="group relative mx-auto block h-24 w-24 rounded-2xl bg-primary text-primary-foreground overflow-hidden disabled:cursor-default"
+        aria-label="Last opp profilbilde"
+      >
+        <span className="absolute inset-0 grid place-items-center font-display text-4xl">
+          {avatarValue ? <AvatarImg value={avatarValue} className="h-full w-full object-cover" /> : initial}
+        </span>
+        {user && (
+          <span className="absolute inset-0 grid place-items-center bg-black/50 text-[10px] uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+            {uploading ? "Laster…" : "Endre"}
+          </span>
+        )}
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={onPickFile}
+      />
+      {user && (
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="mt-2 text-[11px] text-primary hover:underline disabled:opacity-50"
+        >
+          {uploading ? "Laster opp…" : (avatarValue ? "Endre profilbilde" : "Last opp profilbilde")}
+        </button>
+      )}
       <p className="mt-3 font-semibold text-base truncate">{displayName}</p>
       {username && <p className="text-xs text-muted-foreground">@{username}</p>}
-      {stats && (
+      {user?.email && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{user.email}</p>}
+      {stats && username && (
         <p className="mt-2 text-xs text-muted-foreground">
-          <span className="text-foreground font-medium">{stats.followers}</span> følgere
-          {" · følger "}
-          <span className="text-foreground font-medium">{stats.following}</span>
+          <Link to="/u/$username" params={{ username }} hash="followers" className="hover:text-primary hover:underline">
+            <span className="text-foreground font-medium">{stats.followers}</span> følgere
+          </Link>
+          {" · "}
+          <Link to="/u/$username" params={{ username }} hash="following" className="hover:text-primary hover:underline">
+            følger <span className="text-foreground font-medium">{stats.following}</span>
+          </Link>
         </p>
       )}
       {username && (
@@ -921,7 +921,7 @@ function SidebarProfile() {
           rel="noopener noreferrer"
           className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
         >
-          Se min offentlige profil →
+          Se offentlig profil →
         </a>
       )}
     </div>
