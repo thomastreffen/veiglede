@@ -84,9 +84,9 @@ export function CopyTripButton({
           return;
         }
         bundle = {
-          trip: res.trip as Partial<Trip> & { title: string },
-          days: (res.days ?? []) as Array<Partial<TripDay>>,
-          stops: (res.stops ?? []) as Array<Partial<Stop> & { dayId: string }>,
+          trip: res.trip as unknown as Partial<Trip> & { title: string },
+          days: (res.days ?? []) as unknown as Array<Partial<TripDay>>,
+          stops: (res.stops ?? []) as unknown as Array<Partial<Stop> & { dayId: string }>,
         };
       }
 
