@@ -79,7 +79,15 @@ export function LiveTripMap({ tripId, session: sessionProp, height, className }:
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
+    // iOS Safari sometimes mounts the canvas before the container's height
+    // is final — resize twice to be safe.
+    const raf = requestAnimationFrame(() => { try { map.resize(); } catch {} });
+    const t1 = setTimeout(() => { try { map.resize(); } catch {} }, 100);
+    const t2 = setTimeout(() => { try { map.resize(); } catch {} }, 400);
     return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t1);
+      clearTimeout(t2);
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
