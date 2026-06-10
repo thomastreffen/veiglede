@@ -6,6 +6,7 @@ import {
   listTripComments, addTripComment, deleteTripComment,
   MAX_COMMENT_LEN, type TripComment,
 } from "@/lib/trip-comments";
+import { AvatarImg } from "@/lib/avatar";
 
 interface Props {
   tripId: string;
