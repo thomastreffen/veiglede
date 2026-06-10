@@ -115,7 +115,7 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
               }}
             />
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
-              <Eye className="h-3 w-3" /> Delt visning
+              <Eye className="h-3 w-3" /> Delt turplan
             </span>
           </div>
         </div>
@@ -135,6 +135,10 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
             </div>
           </div>
         </section>
+
+        <p className="mt-3 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground">Delt turplan.</span> Dette er en read-only visning av ruta og roadbooken. Live-posisjon vises ikke her.
+        </p>
 
         <LiveSharedBlock tripId={trip.id} />
 

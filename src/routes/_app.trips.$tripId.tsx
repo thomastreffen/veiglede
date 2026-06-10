@@ -17,6 +17,7 @@ import { BookingInfo } from "@/components/BookingInfo";
 import { projectTrip, suggestionRouteInfo, lookupPlace } from "@/lib/geo";
 import { DemoDebugPanel } from "@/components/DemoDebugPanel";
 import { ShareTripModal } from "@/components/ShareTripModal";
+import { SharingPrivacyPanel } from "@/components/SharingPrivacyPanel";
 import { OpenInMaps } from "@/components/OpenInMaps";
 import { DayNavigate } from "@/components/DayNavigate";
 import { downloadGpx } from "@/lib/gpx-export";
@@ -252,42 +253,15 @@ function TripPlanner() {
         </div>
       )}
 
-      {/* Privacy banner */}
+      {/* Deling og personvern */}
       {user && (
-        <div className="mb-4">
-          {trip.status === "draft" ? (
-            <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
-              <span>📝 Ulagret — lagre turen for å dele den</span>
-            </div>
-          ) : trip.isPublic ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-400/50 bg-orange-400/10 px-4 py-3 text-sm text-orange-100">
-              <span className="flex-1 min-w-0 font-semibold">🌍 Delt offentlig — synlig for alle på Utforsk</span>
-              <button
-                type="button"
-                onClick={() => { tripsApi.setTripPublic(trip.id, false); void flushTripsNow(); toast.success(td.privateToast); }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-orange-300/60 bg-background/40 px-3.5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-background/70"
-              >
-                <Lock className="h-3.5 w-3.5" /> Gjør privat
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-sm">
-              <span className="flex-1 min-w-0 text-muted-foreground font-medium">🔒 Privat — kun synlig for deg og reisefølget</span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!trip.shareToken) tripsApi.ensureShareToken(trip.id);
-                  tripsApi.setTripPublic(trip.id, true);
-                  void flushTripsNow();
-                  toast.success(td.publicToast);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
-              >
-                <Globe className="h-3.5 w-3.5" /> Del offentlig
-              </button>
-            </div>
-          )}
-        </div>
+        trip.status === "draft" ? (
+          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
+            <span>📝 Ulagret — lagre turen for å dele den</span>
+          </div>
+        ) : (
+          <SharingPrivacyPanel trip={trip} onOpenShare={() => setShareOpen(true)} />
+        )
       )}
 
       <div className="flex items-center justify-between gap-3">
