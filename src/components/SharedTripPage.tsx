@@ -12,8 +12,10 @@ import { TripComments } from "@/components/TripComments";
 import { LiveSharedBlock } from "@/components/LiveSharedBlock";
 import { SaveTripButton } from "@/components/SaveTripButton";
 import {
-  MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass,
+  MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass, ExternalLink,
 } from "lucide-react";
+import { CopyTripButton } from "@/components/CopyTripButton";
+import { AvatarImg } from "@/lib/avatar";
 import { useState } from "react";
 
 export async function sharedTripLoader({ shareToken }: { shareToken: string }) {
@@ -133,6 +135,45 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{v.emoji} {v.label}</span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 backdrop-blur border border-border px-3 py-1 text-xs">{s.emoji} {s.label}</span>
             </div>
+          </div>
+        </section>
+
+        {/* Warm invitation block */}
+        <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-5">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-full bg-primary/20 grid place-items-center text-base font-bold text-primary overflow-hidden shrink-0">
+              {data.owner?.avatarUrl
+                ? <AvatarImg value={data.owner.avatarUrl} className="h-full w-full object-cover" />
+                : (data.owner?.displayName ?? "?").charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-lg uppercase leading-tight truncate">
+                {data.owner?.displayName ?? "En reisende"} har delt denne turen
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {trip.distanceKm} km · {(data.stops ?? []).length} stopp · {v.label}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-foreground/85 leading-relaxed">
+            Se roadbooken nedenfor, eller kopier turen til dine egne turer og gjør den til din.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <CopyTripButton
+              shareToken={shareToken}
+              originalTripId={trip.id}
+              inspiredByDisplayName={data.owner?.displayName}
+              variant="primary"
+            />
+            {data.owner?.isPublicProfile && data.owner.username && (
+              <Link
+                to="/u/$username"
+                params={{ username: data.owner.username }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-background/60 backdrop-blur px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
+              >
+                <ExternalLink className="h-4 w-4" /> Se offentlig profil
+              </Link>
+            )}
           </div>
         </section>
 

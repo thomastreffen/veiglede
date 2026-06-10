@@ -2,14 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicProfileByUsername, type PublicProfileTrip, type PublicProfilePayload, type PublicProfileVehicle } from "@/lib/profiles.functions";
-import { COVERS, vehicleMeta, styleMeta, type CoverKey, type VehicleType, type RouteStyle } from "@/lib/trips-store";
+import { vehicleMeta, styleMeta, type VehicleType, type RouteStyle } from "@/lib/trips-store";
 import { energyMeta, type EnergyType } from "@/lib/vehicles-store";
-import { Route as RouteIcon, Clock, Camera, MapPin, ArrowRight, Share2 } from "lucide-react";
-import { toast } from "sonner";
 import { FollowBlock } from "@/components/FollowBlock";
-import { TripReactionsRow } from "@/components/TripReactionsRow";
-import { SaveTripButton } from "@/components/SaveTripButton";
-import { getPublicPlaceLabel } from "@/lib/public-place";
+import { PublicTripCard } from "@/components/PublicTripCard";
+import { AvatarImg } from "@/lib/avatar";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params, loaderData }: { params: { username: string }; loaderData?: PublicProfilePayload }) => {
@@ -93,7 +90,7 @@ function PublicProfilePage() {
         <header className="flex flex-col sm:flex-row sm:items-center gap-5">
           <div className="h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-5xl overflow-hidden shrink-0">
             {profile.avatarUrl
-              ? <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ? <AvatarImg value={profile.avatarUrl} className="h-full w-full object-cover" />
               : initialLetter}
           </div>
           <div className="min-w-0">
@@ -161,7 +158,31 @@ function PublicProfilePage() {
               <p className="mt-3 text-sm text-muted-foreground">Ingen offentlige turer enda.</p>
             ) : (
               <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {trips.map((t: PublicProfileTrip) => <ProfileTripCard key={t.shareToken} t={t} ownerName={profile.displayName} />)}
+                {trips.map((t: PublicProfileTrip) => (
+                  <li key={t.shareToken}>
+                    <PublicTripCard
+                      trip={{
+                        id: t.id,
+                        title: t.title,
+                        subtitle: t.subtitle,
+                        region: t.region,
+                        origin: t.origin,
+                        destination: t.destination,
+                        distanceKm: t.distanceKm,
+                        drivingTime: t.drivingTime,
+                        stopsCount: t.stopsCount,
+                        cover: t.cover,
+                        style: t.style,
+                        vehicle: t.vehicle,
+                        shareToken: t.shareToken,
+                      }}
+                      ownerName={profile.displayName}
+                      ownerUsername={profile.username}
+                      ownerAvatarUrl={profile.avatarUrl}
+                      status="offentlig"
+                    />
+                  </li>
+                ))}
               </ul>
             )}
           </section>
@@ -179,60 +200,3 @@ function PublicProfilePage() {
   );
 }
 
-function ProfileTripCard({ t, ownerName }: { t: PublicProfileTrip; ownerName: string }) {
-  const v = vehicleMeta(t.vehicle as VehicleType);
-  const s = styleMeta(t.style as RouteStyle);
-  const cover = (t.cover as CoverKey) ?? "fjord";
-  const url = typeof window !== "undefined" ? `${window.location.origin}/tur/delt/${t.shareToken}` : `/tur/delt/${t.shareToken}`;
-  const onShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const data = { title: t.title, text: `Tur av ${ownerName} på Veiglede`, url };
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try { await navigator.share(data); return; } catch { /* fall through */ }
-    }
-    await navigator.clipboard.writeText(url);
-    toast.success("Lenke kopiert!");
-  };
-  return (
-    <li>
-      <Link to="/tur/delt/$shareToken" params={{ shareToken: t.shareToken }} className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/60 transition-colors">
-        <div className={`relative h-24 bg-gradient-to-br ${COVERS[cover]}`}>
-          <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
-          <span className="absolute top-2 right-2 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] border border-border">
-            {v.emoji} {s.emoji}
-          </span>
-          <button
-            onClick={onShare}
-            className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] border border-border hover:text-primary"
-          >
-            <Share2 className="h-3 w-3" /> Del
-          </button>
-        </div>
-        <div className="p-4">
-          {t.region && <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}</p>}
-          <h3 className="mt-1 font-display text-lg uppercase leading-tight group-hover:text-primary">{t.title}</h3>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><RouteIcon className="h-3 w-3" /> {t.distanceKm} km</span>
-            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {t.drivingTime}</span>
-            <span className="inline-flex items-center gap-1"><Camera className="h-3 w-3" /> {t.stopsCount}</span>
-          </div>
-          <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground truncate">
-            <MapPin className="h-3 w-3 shrink-0" /> {getPublicPlaceLabel(t.origin, "Startområde")} → {getPublicPlaceLabel(t.destination, "Målområde")}
-          </p>
-          <div className="mt-3" onClick={(e) => e.preventDefault()}>
-            <TripReactionsRow tripId={t.id} />
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-2" onClick={(e) => e.preventDefault()}>
-            <SaveTripButton payload={{
-              sourceTripId: t.id, title: t.title, subtitle: t.subtitle, region: t.region,
-              origin: getPublicPlaceLabel(t.origin, "Startområde"), destination: getPublicPlaceLabel(t.destination, "Målområde"), distanceKm: t.distanceKm,
-              drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
-            }} />
-            <span className="inline-flex items-center gap-1 text-[11px] text-primary">Se tur <ArrowRight className="h-3 w-3" /></span>
-          </div>
-        </div>
-      </Link>
-    </li>
-  );
-}

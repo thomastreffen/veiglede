@@ -222,6 +222,10 @@ export interface Trip {
   isRoundTrip?: boolean;
   /** How the trip was created — used by UI to suppress generic warnings. */
   source?: "manual" | "ai" | "template";
+  /** Attribution: the original public trip this trip was copied from. */
+  originalTripId?: string;
+  /** Attribution: display name of the original owner ("Inspirert av X"). */
+  inspiredByDisplayName?: string;
 }
 
 
@@ -535,6 +539,126 @@ export const tripsApi = {
       stops: state.stops.filter((s) => !dayIds.includes(s.dayId)),
     };
     persist();
+  },
+  /** Find an existing copy of a public trip by its original id. */
+  findCopyByOriginalId(originalTripId: string): Trip | null {
+    ensureInit();
+    return state.trips.find((t) => t.originalTripId === originalTripId) ?? null;
+  },
+  /**
+   * Copy a public/shared trip into the current user's local trips.
+   * - Generates fresh ids for trip / days / stops
+   * - Strips sharing tokens, live data, photos, partner refs, owner-only notes
+   * - Sets isPublic=false and status="saved" (private editable copy)
+   * - Stores attribution (originalTripId + inspiredByDisplayName)
+   */
+  copyPublicTrip(input: {
+    sourceTrip: Partial<Trip> & { title: string };
+    sourceDays: Array<Partial<TripDay>>;
+    sourceStops: Array<Partial<Stop> & { dayId: string }>;
+    originalTripId: string;
+    inspiredByDisplayName?: string;
+    appendCopyToTitle?: boolean;
+  }): Trip {
+    ensureInit();
+    const st = input.sourceTrip;
+    const baseTitle = String(st.title ?? "Tur");
+    const title = input.appendCopyToTitle ? `${baseTitle} (kopi)` : baseTitle;
+    const tripId = uid();
+    const newTrip: Trip = {
+      id: tripId,
+      status: "saved",
+      isPublic: false,
+      title,
+      subtitle: st.subtitle,
+      region: st.region,
+      origin: String(st.origin ?? ""),
+      destination: String(st.destination ?? ""),
+      startDate: undefined, // dates are personal; user picks their own
+      endDate: undefined,
+      vehicle: (st.vehicle ?? "car") as VehicleType,
+      vehicleId: undefined,
+      vehicleName: undefined,
+      energy: st.energy,
+      style: (st.style ?? "scenic") as RouteStyle,
+      distanceKm: Number(st.distanceKm ?? 0),
+      drivingTime: String(st.drivingTime ?? ""),
+      stopsCount: 0,
+      cover: (st.cover ?? "fjord") as CoverKey,
+      aiSummary: st.aiSummary,
+      createdAt: Date.now(),
+      // Preserve route metadata if present (no live position data).
+      originLoc: st.originLoc,
+      destinationLoc: st.destinationLoc,
+      routeGeometry: st.routeGeometry,
+      routeDistanceKm: st.routeDistanceKm,
+      routeDurationMin: st.routeDurationMin,
+      routeProvider: st.routeProvider,
+      isRoundTrip: st.isRoundTrip,
+      source: "template",
+      originalTripId: input.originalTripId,
+      inspiredByDisplayName: input.inspiredByDisplayName,
+    };
+
+    // Sort source days by dayNumber and remap ids.
+    const sortedDays = [...input.sourceDays].sort((a, b) => Number(a.dayNumber ?? 0) - Number(b.dayNumber ?? 0));
+    const dayIdMap = new Map<string, string>();
+    const newDays: TripDay[] = sortedDays.map((d, i) => {
+      const oldId = String(d.id ?? "");
+      const newId = uid();
+      if (oldId) dayIdMap.set(oldId, newId);
+      return {
+        id: newId,
+        tripId,
+        dayNumber: Number(d.dayNumber ?? i + 1),
+        title: String(d.title ?? `Dag ${i + 1}`),
+        date: undefined, // personal — don't copy the original schedule
+        summary: d.summary,
+        departureTime: d.departureTime,
+        dayDistanceKm: d.dayDistanceKm,
+        dayDrivingTimeMin: d.dayDrivingTimeMin,
+      };
+    });
+
+    // Group stops by new day, preserving order.
+    const newStops: Stop[] = [];
+    for (const newDay of newDays) {
+      const originalDayId = [...dayIdMap.entries()].find(([, v]) => v === newDay.id)?.[0];
+      const dayStops = input.sourceStops
+        .filter((s) => String(s.dayId) === originalDayId)
+        .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
+      dayStops.forEach((s, idx) => {
+        newStops.push({
+          id: uid(),
+          dayId: newDay.id,
+          name: String(s.name ?? "Stopp"),
+          type: (s.type ?? "attraction") as StopType,
+          order: idx,
+          notes: undefined, // owner-only — never copy
+          estimatedTime: s.estimatedTime,
+          location: s.location,
+          description: s.description,
+          reason: s.reason,
+          durationMin: s.durationMin,
+          distanceFromPrevKm: s.distanceFromPrevKm,
+          photoOp: s.photoOp,
+          lat: s.lat,
+          lng: s.lng,
+          placeTypes: s.placeTypes,
+          energy: s.energy,
+          // strip: photos, partner refs, booking, live state, auto-detected ferries
+        });
+      });
+    }
+
+    const finalTrip = { ...newTrip, stopsCount: newStops.length };
+    state = {
+      trips: [finalTrip, ...state.trips],
+      days: [...state.days, ...newDays],
+      stops: [...state.stops, ...newStops],
+    };
+    persist();
+    return finalTrip;
   },
   addDay(tripId: string) {
     ensureInit();

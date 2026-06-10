@@ -16,6 +16,13 @@ export interface PublicTripPayload {
   trip?: Json;
   days?: Json[];
   stops?: Json[];
+  /** Owner info for attribution + linking to public profile. */
+  owner?: {
+    displayName: string;
+    username?: string;
+    avatarUrl?: string;
+    isPublicProfile: boolean;
+  };
 }
 
 /**
@@ -34,7 +41,7 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("trips")
-      .select("data")
+      .select("user_id, data")
       .filter("data->trips", "cs", JSON.stringify([{ shareToken: token }]));
 
     console.log("Share token lookup:", token, "rows:", rows?.length ?? 0, "error:", error?.message);
@@ -55,9 +62,31 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
           typeof t === "object" && t !== null && !Array.isArray(t) && (t as Record<string, Json | undefined>)["shareToken"] === token,
       );
       if (!match) continue;
+
+      // Look up owner profile for attribution and (if public) profile linking.
+      const ownerId = row.user_id as string | undefined;
+      let owner: PublicTripPayload["owner"] | undefined;
+      if (ownerId) {
+        const { data: ownerProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("display_name, username, avatar_url, is_public")
+          .eq("id", ownerId)
+          .maybeSingle();
+        if (ownerProfile) {
+          const avatarUrl = (await signAvatarServer((ownerProfile.avatar_url as string | null) ?? undefined)) ?? undefined;
+          const isPublicProfile = ownerProfile.is_public === true && !!ownerProfile.username;
+          owner = {
+            displayName: (ownerProfile.display_name as string | null) ?? (ownerProfile.username as string | null) ?? "En reisende",
+            username: isPublicProfile ? (ownerProfile.username as string) : undefined,
+            avatarUrl,
+            isPublicProfile,
+          };
+        }
+      }
+
       if (match["isPublic"] !== true) {
         console.log("Share token lookup:", token, "result: private");
-        return { found: true, isPrivate: true };
+        return { found: true, isPrivate: true, owner };
       }
       const tripId = match["id"] as string | undefined;
       const days = (blob.days ?? []).filter(
@@ -78,7 +107,7 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
         originLoc: undefined,
         destinationLoc: undefined,
       };
-      return { found: true, trip: safeTrip, days, stops };
+      return { found: true, trip: safeTrip, days, stops, owner };
     }
 
     return { found: false };
