@@ -155,6 +155,7 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
     }
     publicTrips.sort((a, b) => b.createdAt - a.createdAt);
 
+    const avatarUrl = (await signAvatarServer((profile.avatar_url as string | null) ?? undefined)) ?? undefined;
     return {
       found: true,
       profile: {
@@ -162,7 +163,7 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
         username,
         displayName: (profile.display_name as string | null) ?? username,
         bio: (profile.bio as string | null) ?? undefined,
-        avatarUrl: (profile.avatar_url as string | null) ?? undefined,
+        avatarUrl,
       },
       toggles: { showGarage, showTrips, showStats },
       stats: showStats ? { tripsCount, totalKm: Math.round(totalKm), drivenKm: Math.round(drivenKm) } : undefined,
