@@ -246,6 +246,14 @@ export function MapLibreTripMap({
 
     map.on("idle", emitDiagnostics);
 
+    // Disable follow-live the moment the user pans/zooms manually.
+    const onUserMove = (e: { originalEvent?: unknown }) => {
+      if (e.originalEvent) setFollowLive(false);
+    };
+    map.on("dragstart", onUserMove);
+    map.on("zoomstart", onUserMove);
+    map.on("rotatestart", onUserMove);
+
     return () => {
       cancelled = true;
       try { map.remove(); } catch { /* noop */ }
