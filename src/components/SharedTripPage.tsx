@@ -163,11 +163,6 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
               shareToken={shareToken}
               originalTripId={trip.id}
               inspiredByDisplayName={data.owner?.displayName}
-              prefetched={{
-                trip: { ...(trip as unknown as Record<string, unknown>), title: trip.title } as Parameters<typeof CopyTripButton>[0]["prefetched"] extends { trip: infer U } | undefined ? U : never,
-                days: days as unknown as NonNullable<Parameters<typeof CopyTripButton>[0]["prefetched"]>["days"],
-                stops: stops as unknown as NonNullable<Parameters<typeof CopyTripButton>[0]["prefetched"]>["stops"],
-              }}
               variant="primary"
             />
             {data.owner?.isPublicProfile && data.owner.username && (
