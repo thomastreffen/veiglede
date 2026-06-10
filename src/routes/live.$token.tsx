@@ -9,6 +9,18 @@ export const Route = createFileRoute("/live/$token")({
   component: LiveFollowPage,
 });
 
+// Strip street/house specifics: prefer the last meaningful comma segment
+// (typically city/area), so we never leak a full street address publicly.
+function shortenPlace(raw: string): string {
+  if (!raw.includes(",")) return raw;
+  const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (p && !/^\d{3,}$/.test(p)) return p;
+  }
+  return parts[parts.length - 1] ?? raw;
+}
+
 function LiveFollowPage() {
   const { token } = Route.useParams();
   const { session, loading } = useLiveSessionByToken(token);
