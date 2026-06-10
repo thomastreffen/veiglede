@@ -352,7 +352,7 @@ function FeedTripCard({ t }: { t: FeedTrip }) {
   const s = styleMeta(t.style as RouteStyle);
   const cover = (t.cover as CoverKey) ?? "fjord";
   return (
-    <Link to="/shared/$shareToken" params={{ shareToken: t.shareToken }} className="group relative block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
+    <Link to="/tur/delt/$shareToken" params={{ shareToken: t.shareToken }} className="group relative block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/50 transition-colors">
       <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
         <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
         <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">

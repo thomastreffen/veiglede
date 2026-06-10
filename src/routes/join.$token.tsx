@@ -60,7 +60,7 @@ function JoinPage() {
       if (tripId) {
         setTimeout(() => navigate({ to: "/trips/$tripId", params: { tripId } }), 700);
       } else if (trip?.shareToken) {
-        setTimeout(() => navigate({ to: "/shared/$shareToken", params: { shareToken: trip.shareToken! } }), 700);
+        setTimeout(() => navigate({ to: "/tur/delt/$shareToken", params: { shareToken: trip.shareToken! } }), 700);
       }
     } catch {
       /* swallow */
