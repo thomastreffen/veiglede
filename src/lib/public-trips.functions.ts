@@ -130,8 +130,10 @@ export interface PublicTripSummary {
   startDate?: string;
   shareToken: string;
   ownerName?: string;
+  ownerUsername?: string;
   ownerAvatarUrl?: string;
   createdAt: number;
+  copyCount: number;
 }
 
 /**
@@ -177,33 +179,52 @@ export const fetchPublicTripsFn = createServerFn({ method: "GET" })
           startDate: typeof t.startDate === "string" ? t.startDate : undefined,
           shareToken,
           createdAt: Number(t.createdAt ?? 0),
+          copyCount: 0,
         });
       }
     }
 
     if (collected.length === 0) return [];
 
-    // Look up display names for the involved users (one query).
+    // Look up display names + usernames for the involved users (one query).
     const userIds = Array.from(new Set(collected.map((c) => c._userId)));
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("id, display_name, avatar_url")
+      .select("id, display_name, username, avatar_url, is_public")
       .in("id", userIds);
-    const nameById = new Map<string, { name?: string; avatar?: string }>();
+    const nameById = new Map<string, { name?: string; username?: string; avatar?: string }>();
     for (const p of profiles ?? []) {
       const avatar = (await signAvatarServer((p.avatar_url as string | null) ?? undefined)) ?? undefined;
+      const isPublic = p.is_public === true && !!p.username;
       nameById.set(p.id as string, {
         name: (p.display_name as string | null) ?? undefined,
+        username: isPublic ? (p.username as string) : undefined,
         avatar,
       });
     }
 
+    // Count copies per source trip (saved_trips rows pointing at these ids).
+    const tripIds = collected.map((c) => c.id).filter(Boolean);
+    const copyCounts = new Map<string, number>();
+    if (tripIds.length > 0) {
+      const { data: copyRows } = await supabaseAdmin
+        .from("saved_trips")
+        .select("source_trip_id")
+        .in("source_trip_id", tripIds);
+      for (const row of copyRows ?? []) {
+        const id = row.source_trip_id as string;
+        copyCounts.set(id, (copyCounts.get(id) ?? 0) + 1);
+      }
+    }
+
     return collected
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 20)
       .map(({ _userId, ...summary }) => ({
         ...summary,
         ownerName: nameById.get(_userId)?.name,
+        ownerUsername: nameById.get(_userId)?.username,
         ownerAvatarUrl: nameById.get(_userId)?.avatar,
-      }));
+        copyCount: copyCounts.get(summary.id) ?? 0,
+      }))
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 40);
   });

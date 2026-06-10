@@ -3,22 +3,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { toast } from "sonner";
 import { fetchPublicTrips, type PublicTripSummary } from "@/lib/public-trips";
-import { publicPlaceName } from "@/lib/public-place";
 import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
 import { PublicUserCard } from "@/components/PublicUserCard";
+import { PublicTripCard } from "@/components/PublicTripCard";
 import {
-  COVERS, VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta,
-  type CoverKey, type VehicleType, type RouteStyle,
+  VEHICLES, ROUTE_STYLES,
+  type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Compass, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Sparkles, Share2, Users,
-} from "lucide-react";
-import { TripReactionsRow } from "@/components/TripReactionsRow";
-import { SaveTripButton } from "@/components/SaveTripButton";
+import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn } from "lucide-react";
 import { useT } from "@/i18n/provider";
+import { useAuth } from "@/lib/auth";
 
 const ExploreSearch = z.object({
   tab: z.enum(["turer", "brukere"]).optional(),
@@ -57,8 +53,10 @@ function ExplorePage() {
           <Compass className="h-3 w-3" /> {ex.eyebrow}
         </p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl uppercase leading-[0.95]">{ex.title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{ex.subtitle}</p>
+        <p className="mt-2 text-sm text-muted-foreground">Finn turer, roadbooks og folk å følge.</p>
       </header>
+
+      <ExploreCta />
 
       {/* Tabs */}
       <div className="mt-6 inline-flex rounded-2xl border border-border bg-surface p-1">
@@ -70,6 +68,28 @@ function ExplorePage() {
         ? <UsersTab vehicleFromUrl={vehicleFromUrl} />
         : <TripsTab />}
     </div>
+  );
+}
+
+function ExploreCta() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <Link
+        to="/auth"
+        className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/15"
+      >
+        <LogIn className="h-3.5 w-3.5" /> Logg inn for å kopiere turer og følge folk
+      </Link>
+    );
+  }
+  return (
+    <Link
+      to="/trips"
+      className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+    >
+      <Sparkles className="h-3.5 w-3.5 text-primary" /> Del en tur og inspirer andre
+    </Link>
   );
 }
 
@@ -100,6 +120,7 @@ function TripsTab() {
   const [region, setRegion] = useState<string>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
+  const [sort, setSort] = useState<"newest" | "popular">("newest");
 
   const regions = useMemo(() => {
     const set = new Set<string>();
@@ -107,17 +128,48 @@ function TripsTab() {
     return Array.from(set).sort();
   }, [trips]);
 
-  const filtered = useMemo(() => trips.filter((tr) => {
-    if (region !== "all" && tr.region !== region) return false;
-    if (vehicle !== "all" && tr.vehicle !== vehicle) return false;
-    if (style !== "all" && tr.style !== style) return false;
-    return true;
-  }), [trips, region, vehicle, style]);
+  const filtered = useMemo(() => {
+    const list = trips.filter((tr) => {
+      if (region !== "all" && tr.region !== region) return false;
+      if (vehicle !== "all" && tr.vehicle !== vehicle) return false;
+      if (style !== "all" && tr.style !== style) return false;
+      return true;
+    });
+    if (sort === "popular") {
+      return [...list].sort((a, b) => (b.copyCount - a.copyCount) || (b.createdAt - a.createdAt));
+    }
+    return list;
+  }, [trips, region, vehicle, style, sort]);
+
+  // "Populære turer" highlight strip: top 3 by copyCount (only when there are copies).
+  const popular = useMemo(() => {
+    return [...trips]
+      .filter((tr) => tr.copyCount > 0)
+      .sort((a, b) => b.copyCount - a.copyCount)
+      .slice(0, 3);
+  }, [trips]);
+
+  const renderCard = (tr: PublicTripSummary) => (
+    <li key={tr.shareToken}>
+      <PublicTripCard
+        trip={{
+          id: tr.id, title: tr.title, subtitle: tr.subtitle, region: tr.region,
+          origin: tr.origin, destination: tr.destination,
+          distanceKm: tr.distanceKm, drivingTime: tr.drivingTime, stopsCount: tr.stopsCount,
+          cover: tr.cover, style: tr.style, vehicle: tr.vehicle, shareToken: tr.shareToken,
+        }}
+        ownerName={tr.ownerName}
+        ownerUsername={tr.ownerUsername}
+        ownerAvatarUrl={tr.ownerAvatarUrl}
+        status="offentlig"
+      />
+    </li>
+  );
 
   return (
     <>
-      {/* Filters */}
-      <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {/* Filters + sort */}
+      <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={region} onValueChange={setRegion}>
           <SelectTrigger><SelectValue placeholder={ex.region} /></SelectTrigger>
           <SelectContent>
@@ -139,24 +191,46 @@ function TripsTab() {
             {ROUTE_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.emoji} {s.label}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={sort} onValueChange={(v) => setSort(v as "newest" | "popular")}>
+          <SelectTrigger><SelectValue placeholder="Sortering" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Nyeste</SelectItem>
+            <SelectItem value="popular">Mest lagret</SelectItem>
+          </SelectContent>
+        </Select>
       </section>
 
+      {/* Populære turer */}
+      {popular.length > 0 && sort === "newest" && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl uppercase">Populære turer</h2>
+          <p className="text-xs text-muted-foreground">Turene som andre lagrer akkurat nå.</p>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {popular.map(renderCard)}
+          </ul>
+        </section>
+      )}
+
+      {/* Main list */}
       <section className="mt-8">
+        <h2 className="font-display text-xl uppercase">
+          {sort === "popular" ? "Mest lagret" : "Nye offentlige turer"}
+        </h2>
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-72 rounded-2xl border border-border bg-surface/50 animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           trips.length === 0 ? (
-            <EmptyState title={ex.emptyTripsTitle} body={ex.emptyTripsBody} />
+            <EmptyState title="Det finnes ingen offentlige turer enda." body={ex.emptyTripsBody} />
           ) : (
             <EmptyState title={ex.noMatchTitle} body={ex.noMatchBody} />
           )
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((tr) => <PublicTripCard key={tr.shareToken} t={tr} />)}
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map(renderCard)}
           </ul>
         )}
       </section>
@@ -250,89 +324,7 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-/* ============ TRIP CARD ============ */
-
-function PublicTripCard({ t }: { t: PublicTripSummary }) {
-  const tt = useT();
-  const ex = tt.app.explore;
-  const v = vehicleMeta(t.vehicle as VehicleType);
-  const s = styleMeta(t.style as RouteStyle);
-  const cover = (t.cover as CoverKey) ?? "fjord";
-  const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/tur/delt/${t.shareToken}`
-    : `/tur/delt/${t.shareToken}`;
-  const pubOrigin = publicPlaceName(t.origin);
-  const pubDest = publicPlaceName(t.destination);
-  const onShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const data = { title: t.title, text: t.subtitle ?? `${pubOrigin} → ${pubDest}`, url: shareUrl };
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try { await navigator.share(data); return; } catch { /* cancelled */ }
-    }
-    try { await navigator.clipboard.writeText(shareUrl); toast.success(ex.linkCopied); }
-    catch { toast.error(ex.shareFailed); }
-  };
-  return (
-    <li>
-      <Link
-        to="/tur/delt/$shareToken"
-        params={{ shareToken: t.shareToken }}
-        className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/60 transition-colors"
-      >
-        <div className={`relative h-28 bg-gradient-to-br ${COVERS[cover]}`}>
-          <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
-          <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-[10px] uppercase tracking-wider border border-border">
-            <Sparkles className="h-3 w-3 text-primary" /> {ex.publicBadge}
-          </span>
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider border border-border">
-            {v.emoji} {s.emoji}
-          </span>
-          <button
-            onClick={onShare}
-            aria-label={ex.shareTrip}
-            className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur border border-border text-foreground hover:bg-primary hover:text-primary-foreground"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <div className="p-4 md:p-5">
-          {t.region && <p className="text-[10px] uppercase tracking-wider text-primary">{t.region}</p>}
-          <h3 className="mt-1 font-display text-xl uppercase leading-tight group-hover:text-primary transition-colors">{t.title}</h3>
-          {t.subtitle && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{t.subtitle}</p>}
-          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-            <Stat icon={<RouteIcon className="h-3.5 w-3.5" />} v={`${t.distanceKm} km`} />
-            <Stat icon={<Clock className="h-3.5 w-3.5" />} v={t.drivingTime} />
-            <Stat icon={<Camera className="h-3.5 w-3.5" />} v={`${t.stopsCount} ${ex.stops}`} />
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground border-t border-border/60 pt-3">
-            <span className="inline-flex items-center gap-1 truncate min-w-0"><MapPin className="h-3 w-3 shrink-0" /> {pubOrigin} → {pubDest}</span>
-          </div>
-          <div className="mt-3" onClick={(e) => e.preventDefault()}>
-            <TripReactionsRow tripId={t.id} />
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]" onClick={(e) => e.preventDefault()}>
-            <SaveTripButton payload={{
-              sourceTripId: t.id, title: t.title, subtitle: t.subtitle, region: t.region,
-              origin: pubOrigin, destination: pubDest, distanceKm: t.distanceKm,
-              drivingTime: t.drivingTime, cover: t.cover, style: t.style, vehicle: t.vehicle,
-            }} />
-            <span className="text-muted-foreground truncate">{t.ownerName ? `${ex.by} ${t.ownerName}` : ex.byTraveler}</span>
-            <span className="inline-flex items-center gap-1 text-primary group-hover:translate-x-0.5 transition-transform">{ex.seeTrip} <ArrowRight className="h-3 w-3" /></span>
-          </div>
-        </div>
-      </Link>
-    </li>
-  );
-}
-
-function Stat({ icon, v }: { icon: React.ReactNode; v: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-muted-foreground">
-      {icon}<span className="truncate">{v}</span>
-    </span>
-  );
-}
+/* ============ EMPTY STATE ============ */
 
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
