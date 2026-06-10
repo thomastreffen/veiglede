@@ -134,11 +134,11 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   const [rows, setRows] = useState<Row[]>(() => {
     const today = new Date(); today.setDate(today.getDate() + 7);
     const start = today.toISOString().slice(0, 10);
+    // Default to a simple origin → destination trip: one destination row.
     const r0: Row = { key: uid(), text: "", place: null, date: start, dayNumber: 1 };
-    const r1: Row = { key: uid(), text: "", place: null, date: addDays(start, 1), dayNumber: 2 };
-    const r2: Row = { key: uid(), text: "", place: null, date: addDays(start, 2), dayNumber: 3 };
-    return [r0, r1, r2];
+    return [r0];
   });
+  const [errors, setErrors] = useState<{ origin?: string; destination?: string }>({});
   const [vehicleId, setVehicleId] = useState<string | undefined>(defaultVehicle?.id);
   const [style, setStyle] = useState<RouteStyle>(defaultVehicle?.defaultStyle ?? "scenic");
   const [avoidHighway, setAvoidHighway] = useState<boolean>(!!prefs.drivingFlags?.["no-highway"]);
