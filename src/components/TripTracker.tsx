@@ -139,6 +139,17 @@ export function TripTracker({
             </p>
           </div>
         </label>
+        {liveOn && user && permState !== "denied" && (
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-background/40 px-2.5 py-1.5 text-[11px]">
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`h-1.5 w-1.5 rounded-full ${liveActive ? "bg-primary animate-pulse" : "bg-muted-foreground"}`} />
+              {liveActive ? "Live-posisjon aktiv" : "Venter på GPS-posisjon…"}
+            </span>
+            {lastSeenStr && liveActive && (
+              <span className="text-muted-foreground">Sist oppdatert {lastSeenStr}</span>
+            )}
+          </div>
+        )}
       </div>
 
 
