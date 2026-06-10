@@ -602,7 +602,7 @@ export const de: Dict = {
       },
       helpBot: {
         greeting: "Hallo! Ich kann dir mit Veiglede helfen. Was möchtest du wissen?",
-        quickReplies: ["Wie plane ich eine Tour?", "Kann ich nach GPS exportieren?", "Was ist der Unterschied zwischen Pro und Frei?"],
+        quickReplies: ["Wie erstelle ich eine Tour?", "Wie exportiere ich GPX?", "Warum startet Google Maps nicht die ganze Tour?", "Wie nutze ich das Roadbook?", "Wie teile ich die Tour sicher?", "Wie füge ich eine Übernachtung hinzu?"],
         errorReply: "Entschuldigung — etwas ist schiefgelaufen. Versuche es erneut.",
         openAria: "Hilfe-Bot öffnen",
         title: "Veiglede-Hilfe",
