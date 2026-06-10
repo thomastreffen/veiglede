@@ -137,6 +137,8 @@ export function MapLibreTripMap({
   const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
   const [recalculating, setRecalculating] = useState(false);
   const lastErrorRef = useRef<string | null>(null);
+  const autoCenteredLiveRef = useRef(false);
+  const [followLive, setFollowLive] = useState(false);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
 
@@ -212,6 +214,7 @@ export function MapLibreTripMap({
         style: styleUrl,
         center: [10.7522, 59.9139], // default: Oslo
         zoom: 5,
+        maxZoom: 20,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -241,6 +244,14 @@ export function MapLibreTripMap({
     });
 
     map.on("idle", emitDiagnostics);
+
+    // Disable follow-live the moment the user pans/zooms manually.
+    const onUserMove = (e: { originalEvent?: unknown }) => {
+      if (e.originalEvent) setFollowLive(false);
+    };
+    map.on("dragstart", onUserMove);
+    map.on("zoomstart", onUserMove);
+    map.on("rotatestart", onUserMove);
 
     return () => {
       cancelled = true;
@@ -490,15 +501,19 @@ export function MapLibreTripMap({
           if (lat > maxLat) maxLat = lat;
         }
       }
-      map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-        padding: compact ? 32 : 56, duration: 400, maxZoom: 11,
-      });
+      // Skip route fitBounds when live tracking — user wants to inspect
+      // their current position, not be yanked back to the whole route.
+      if (!livePosition) {
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+          padding: compact ? 32 : 56, duration: 400, maxZoom: 11,
+        });
+      }
       emitDiagnostics();
     } catch (err) {
       lastErrorRef.current = `route-layer: ${(err as Error)?.message ?? "unknown"}`;
       emitDiagnostics();
     }
-  }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics]);
+  }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics, livePosition]);
 
 
   useEffect(() => { addRouteAndFit(); }, [addRouteAndFit]);
@@ -528,13 +543,15 @@ export function MapLibreTripMap({
         if (lat < minLat) minLat = lat;
         if (lat > maxLat) maxLat = lat;
       }
-      map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
+      if (!livePosition) {
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
+      }
       // eslint-disable-next-line no-console
       console.info("[veiglede] map route updated →", { pts: routeGeom.length });
     } catch (err) {
       lastErrorRef.current = `route-update: ${(err as Error)?.message ?? "unknown"}`;
     }
-  }, [routeGeom, ready]);
+  }, [routeGeom, ready, livePosition]);
 
   // After style swap, sources/layers are dropped — re-add.
   useEffect(() => {
@@ -701,6 +718,17 @@ export function MapLibreTripMap({
       const el = liveMarkerRef.current!.getElement() as HTMLElement;
       updateLiveMarkerEl(el, { phase, heading, speedKmh });
     }
+
+    // Auto-center map on the FIRST live fix so the owner instantly sees
+    // building-level detail. Subsequent updates only recenter when follow
+    // mode is on.
+    if (!autoCenteredLiveRef.current) {
+      autoCenteredLiveRef.current = true;
+      setFollowLive(true);
+      try { map.flyTo({ center: lngLat, zoom: 17, duration: 600 }); } catch { /* noop */ }
+    } else if (followLive) {
+      try { map.easeTo({ center: lngLat, duration: 400 }); } catch { /* noop */ }
+    }
     return undefined;
   }, [
     livePosition?.lat,
@@ -710,8 +738,30 @@ export function MapLibreTripMap({
     livePosition?.vehicle,
     livePosition?.status,
     livePosition?.updatedAt,
+    followLive,
     ready,
   ]);
+
+  // When live tracking ends, allow re-auto-centering on next start.
+  useEffect(() => {
+    if (!livePosition) {
+      autoCenteredLiveRef.current = false;
+      setFollowLive(false);
+    }
+  }, [livePosition]);
+
+  const handleFollowLive = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !livePosition) return;
+    setFollowLive(true);
+    try {
+      map.flyTo({
+        center: [livePosition.lng, livePosition.lat],
+        zoom: Math.max(map.getZoom(), 17),
+        duration: 500,
+      });
+    } catch { /* noop */ }
+  }, [livePosition]);
 
 
 
@@ -726,6 +776,21 @@ export function MapLibreTripMap({
           <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary mr-2 align-middle" />
           Beregner rute på nytt…
         </div>
+      )}
+      {livePosition && (
+        <button
+          type="button"
+          onClick={handleFollowLive}
+          className={cn(
+            "absolute right-3 bottom-3 z-30 rounded-full px-3 py-2 text-[12px] font-semibold shadow-md backdrop-blur transition",
+            followLive
+              ? "bg-primary text-primary-foreground border border-primary"
+              : "bg-background/90 text-foreground border border-border hover:bg-background",
+          )}
+          aria-pressed={followLive}
+        >
+          {followLive ? "● Følger min posisjon" : "Følg min posisjon"}
+        </button>
       )}
     </div>
   );
