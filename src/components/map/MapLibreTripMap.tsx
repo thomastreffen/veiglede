@@ -137,6 +137,9 @@ export function MapLibreTripMap({
   const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
   const [recalculating, setRecalculating] = useState(false);
   const lastErrorRef = useRef<string | null>(null);
+  const autoCenteredLiveRef = useRef(false);
+  const [followLive, setFollowLive] = useState(false);
+  const programmaticMoveRef = useRef(false);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
 
