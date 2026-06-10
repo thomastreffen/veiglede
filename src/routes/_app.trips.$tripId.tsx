@@ -352,6 +352,7 @@ function TripPlanner() {
           suggestionPins={suggestionPins}
           hoveredSuggestionId={null}
           height="h-72 md:h-[520px]"
+          livePosition={livePos}
         />
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
           {td.mapDisclaimer}
