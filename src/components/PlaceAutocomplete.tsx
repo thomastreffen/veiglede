@@ -236,9 +236,9 @@ export function PlaceAutocomplete({
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); useAnyway(); }}
-                className="text-xs font-semibold text-primary hover:underline"
+                className="text-xs font-semibold text-primary hover:underline text-left"
               >
-                {tt.useAnyway}
+                {useAnywayLabel ? `${useAnywayLabel}: ${value.trim()}` : tt.useAnyway}
               </button>
             </div>
           )}
