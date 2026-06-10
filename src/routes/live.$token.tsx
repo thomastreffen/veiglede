@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Radio } from "lucide-react";
+import { useEffect, useState } from "react";
 import { LiveTripMap } from "@/components/LiveTripMap";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { useLiveSessionByToken, isLiveActive } from "@/lib/live-tracking";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/live/$token")({
   head: () => ({ meta: [{ title: "Følg live — Veiglede" }] }),
   component: LiveFollowPage,
 });
+
 
 // Strip street/house specifics: prefer the last meaningful comma segment
 // (typically city/area), so we never leak a full street address publicly.
