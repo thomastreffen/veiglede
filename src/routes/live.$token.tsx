@@ -31,6 +31,28 @@ function LiveFollowPage() {
   const ended = session?.status === "completed" || (!!session && !live);
   const paused = live && session?.status === "paused";
 
+  // Fetch the trip's vehicle type once so we can show the matching marker.
+  // Safe-by-design RPC: only returns { vehicle_type: 'car' | 'motorcycle' | 'rv' | null }.
+  const [vehicle, setVehicle] = useState<string | null>(null);
+  useEffect(() => {
+    if (!token) { setVehicle(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await (supabase as any)
+          .rpc("get_live_trip_meta_by_token", { p_token: token });
+        if (cancelled) return;
+        const row = Array.isArray(data) ? data[0] : data;
+        const v = row && typeof row === "object" ? (row as { vehicle_type?: string | null }).vehicle_type : null;
+        setVehicle(typeof v === "string" && v.length > 0 ? v : null);
+      } catch {
+        if (!cancelled) setVehicle(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
+
+
   const badge = live
     ? (paused ? "Pauset" : "Live")
     : ended
