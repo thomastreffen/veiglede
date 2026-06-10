@@ -115,7 +115,7 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
               }}
             />
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
-              <Eye className="h-3 w-3" /> Delt visning
+              <Eye className="h-3 w-3" /> Delt turplan
             </span>
           </div>
         </div>
