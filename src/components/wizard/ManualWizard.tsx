@@ -183,9 +183,24 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     return next;
   });
 
-  const validRows = rows.filter((r) => r.text.trim().length > 0);
+  // The last row is always the destination; earlier rows are optional via-stops.
+  const destinationRow = rows[rows.length - 1];
+  const viaRows = rows.slice(0, -1);
   const hasOrigin = originText.trim().length > 0 || !!originPlace;
-  const canContinue = validRows.length >= 1 && hasOrigin;
+  const hasDestination = (destinationRow?.text.trim().length ?? 0) > 0 || !!destinationRow?.place;
+  const canContinue = hasOrigin && hasDestination;
+
+  const insertViaStop = () => setRows((rs) => {
+    if (rs.length === 0) return rs;
+    const last = rs[rs.length - 1];
+    const newVia = makeRowAfter(rs[rs.length - 2] ?? undefined);
+    // Insert before the destination so the destination stays last.
+    const next = [...rs.slice(0, -1), newVia, last];
+    return cascadeDates(next);
+  });
+
+  // validRows is kept for downstream goGenerate code that expects an array of stops.
+  const validRows = rows.filter((r) => r.text.trim().length > 0);
 
   const ensurePlace = async (r: Row): Promise<ResolvedPlace | null> => {
     if (r.place) return r.place;
