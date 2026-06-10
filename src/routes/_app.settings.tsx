@@ -589,42 +589,6 @@ function ProfileFieldsEditor() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Profilbilde</span>
-        <div className="flex items-center gap-4">
-          <div className="h-20 w-20 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden shrink-0">
-            {avatarUrl ? <AvatarImg value={avatarUrl} className="h-full w-full object-cover" /> : initialLetter}
-          </div>
-          <div className="flex flex-col gap-2 min-w-0">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={onPickFile}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
-            >
-              {uploading ? "Laster opp…" : "Last opp profilbilde"}
-            </button>
-            {avatarUrl && (
-              <button
-                type="button"
-                onClick={removeAvatar}
-                disabled={uploading}
-                className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm hover:bg-surface-2 disabled:opacity-50"
-              >
-                Fjern bilde
-              </button>
-            )}
-            <p className="text-xs text-muted-foreground">JPG, PNG eller WebP. Maks 5 MB.</p>
-          </div>
-        </div>
-      </div>
       <label className="block">
         <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Visningsnavn</span>
         <input
