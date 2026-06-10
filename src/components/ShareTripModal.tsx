@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -48,12 +49,13 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
   const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
 
   // Generate a share token on first open so the link is always available,
-  // and immediately push to Supabase so /shared/{token} resolves right away.
+  // and immediately push to Supabase so /tur/delt/{token} resolves right away.
   useEffect(() => {
-    if (open && !trip.shareToken) {
+    if (!open || trip.shareToken) return;
+    try {
       tripsApi.ensureShareToken(trip.id);
-      void flushTripsNow();
-    }
+      void flushTripsNow().catch(() => { /* sync handled by retry queue */ });
+    } catch { /* noop — token will retry next open */ }
   }, [open, trip.id, trip.shareToken]);
 
   const isPublic = trip.isPublic ?? false;
@@ -213,12 +215,23 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           </div>
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               const v = !isPublic;
               if (!v && !window.confirm("Når du slår av deling, vil lenken ikke lenger fungere. Vil du fortsette?")) return;
-              if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
-              tripsApi.setTripPublic(trip.id, v);
-              void flushTripsNow();
+              try {
+                if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+                tripsApi.setTripPublic(trip.id, v);
+                try { await flushTripsNow(); } catch { /* will retry via sync queue */ }
+                if (v) {
+                  toast.success("Turen er delt", {
+                    description: "Alle med lenken kan se turplanen.",
+                  });
+                } else {
+                  toast.success("Turplanen er nå privat");
+                }
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Kunne ikke oppdatere deling");
+              }
             }}
             className={
               isPublic
