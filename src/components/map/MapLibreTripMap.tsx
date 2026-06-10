@@ -215,6 +215,7 @@ export function MapLibreTripMap({
         style: styleUrl,
         center: [10.7522, 59.9139], // default: Oslo
         zoom: 5,
+        maxZoom: 20,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
