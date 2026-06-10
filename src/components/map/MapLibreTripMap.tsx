@@ -719,6 +719,17 @@ export function MapLibreTripMap({
       const el = liveMarkerRef.current!.getElement() as HTMLElement;
       updateLiveMarkerEl(el, { phase, heading, speedKmh });
     }
+
+    // Auto-center map on the FIRST live fix so the owner instantly sees
+    // building-level detail. Subsequent updates only recenter when follow
+    // mode is on.
+    if (!autoCenteredLiveRef.current) {
+      autoCenteredLiveRef.current = true;
+      setFollowLive(true);
+      try { map.flyTo({ center: lngLat, zoom: 17, duration: 600 }); } catch { /* noop */ }
+    } else if (followLive) {
+      try { map.easeTo({ center: lngLat, duration: 400 }); } catch { /* noop */ }
+    }
     return undefined;
   }, [
     livePosition?.lat,
