@@ -84,6 +84,8 @@ interface Props {
   onDiagnostics?: (d: MapLibreDiagnostics) => void;
   /** MapTiler browser key fetched at runtime via /api/public/map-config. */
   maptilerKey: string;
+  /** Optional live position marker overlay. */
+  livePosition?: { lat: number; lng: number; heading?: number | null } | null;
 }
 
 const DAY_COLORS = [
@@ -110,6 +112,7 @@ export function MapLibreTripMap({
   onStage,
   onDiagnostics,
   maptilerKey,
+  livePosition,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);

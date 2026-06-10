@@ -38,6 +38,8 @@ interface Props {
   suggestionPins?: { id: string; name: string; loc: LatLng; emoji: string }[];
   hoveredSuggestionId?: string | null;
   compact?: boolean;
+  /** Optional live position marker (e.g. owner's own GPS while tracking). */
+  livePosition?: { lat: number; lng: number; heading?: number | null } | null;
 }
 
 // Mercator-ish projection helpers (simple linear — Norway is small enough).
