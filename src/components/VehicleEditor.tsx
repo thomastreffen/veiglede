@@ -20,6 +20,8 @@ interface Props {
 export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
   const isEdit = !!vehicle;
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [description, setDescription] = useState("");
   const [type, setType] = useState<VehicleType>("motorcycle");
   const [energy, setEnergy] = useState<EnergyType>("petrol");
   const [photo, setPhoto] = useState<string | undefined>(undefined);
@@ -33,6 +35,8 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
     if (!open) return;
     if (vehicle) {
       setName(vehicle.name);
+      setNickname(vehicle.nickname ?? "");
+      setDescription(vehicle.description ?? "");
       setType(vehicle.type);
       setEnergy(vehicle.energy);
       setPhoto(vehicle.photo);
@@ -42,6 +46,8 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
     } else {
       const d = defaultsFor("motorcycle", "petrol");
       setName("");
+      setNickname("");
+      setDescription("");
       setType("motorcycle");
       setEnergy("petrol");
       setPhoto(undefined);
