@@ -852,16 +852,25 @@ const NAV_ITEMS: { id: string; label: string }[] = [
 function SidebarProfile() {
   const { user } = useAuth();
   const prefs = useDriverPrefs();
-  const [username, setUsername] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{ username: string | null; display_name: string | null; avatar_url: string | null } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const fetchStats = useServerFn(getFollowStatsFn);
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     if (!user) return;
-    let cancelled = false;
-    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (!cancelled) setUsername((data?.username as string | null) ?? null); });
-    return () => { cancelled = true; };
+    supabase.from("profiles").select("username, display_name, avatar_url").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setProfile({
+          username: (data.username as string | null) ?? null,
+          display_name: (data.display_name as string | null) ?? null,
+          avatar_url: (data.avatar_url as string | null) ?? null,
+        });
+      });
   }, [user]);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
 
   const { data: stats } = useQuery({
     queryKey: ["follow-stats", user?.id],
@@ -871,22 +880,74 @@ function SidebarProfile() {
   });
 
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string };
-  const displayName = meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
-  const avatar = meta.avatar_url;
+  const displayName = profile?.display_name || meta.full_name || meta.name || user?.email?.split("@")[0] || prefs.displayName;
+  const username = profile?.username ?? null;
+  const avatarValue = profile?.avatar_url || meta.avatar_url || "";
   const initial = (displayName || "?").charAt(0).toUpperCase();
+
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setUploading(true);
+    const { uploadProfileAvatar, cleanupOldAvatars } = await import("@/lib/profile-avatar");
+    const res = await uploadProfileAvatar(file, user.id);
+    if (!res.ok) { setUploading(false); toast.error(res.error); return; }
+    const { error } = await supabase.from("profiles").update({ avatar_url: res.path }).eq("id", user.id);
+    if (error) { setUploading(false); toast.error("Kunne ikke lagre profilbilde"); return; }
+    cleanupOldAvatars(user.id, res.path).catch(() => undefined);
+    setProfile((p) => p ? { ...p, avatar_url: res.path } : p);
+    setUploading(false);
+    toast.success("Profilbilde oppdatert");
+  };
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 text-center">
-      <div className="mx-auto h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-4xl overflow-hidden">
-        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
-      </div>
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading || !user}
+        className="group relative mx-auto block h-24 w-24 rounded-2xl bg-primary text-primary-foreground overflow-hidden disabled:cursor-default"
+        aria-label="Last opp profilbilde"
+      >
+        <span className="absolute inset-0 grid place-items-center font-display text-4xl">
+          {avatarValue ? <AvatarImg value={avatarValue} className="h-full w-full object-cover" /> : initial}
+        </span>
+        {user && (
+          <span className="absolute inset-0 grid place-items-center bg-black/50 text-[10px] uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+            {uploading ? "Laster…" : "Endre"}
+          </span>
+        )}
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={onPickFile}
+      />
+      {user && (
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="mt-2 text-[11px] text-primary hover:underline disabled:opacity-50"
+        >
+          {uploading ? "Laster opp…" : (avatarValue ? "Endre profilbilde" : "Last opp profilbilde")}
+        </button>
+      )}
       <p className="mt-3 font-semibold text-base truncate">{displayName}</p>
       {username && <p className="text-xs text-muted-foreground">@{username}</p>}
-      {stats && (
+      {user?.email && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{user.email}</p>}
+      {stats && username && (
         <p className="mt-2 text-xs text-muted-foreground">
-          <span className="text-foreground font-medium">{stats.followers}</span> følgere
-          {" · følger "}
-          <span className="text-foreground font-medium">{stats.following}</span>
+          <Link to="/u/$username" params={{ username }} hash="followers" className="hover:text-primary hover:underline">
+            <span className="text-foreground font-medium">{stats.followers}</span> følgere
+          </Link>
+          {" · "}
+          <Link to="/u/$username" params={{ username }} hash="following" className="hover:text-primary hover:underline">
+            følger <span className="text-foreground font-medium">{stats.following}</span>
+          </Link>
         </p>
       )}
       {username && (
@@ -896,7 +957,7 @@ function SidebarProfile() {
           rel="noopener noreferrer"
           className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
         >
-          Se min offentlige profil →
+          Se offentlig profil →
         </a>
       )}
     </div>
