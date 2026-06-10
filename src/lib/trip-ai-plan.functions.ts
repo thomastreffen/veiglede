@@ -5,6 +5,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const StyleValue = z.enum(["fastest", "scenic", "curvy", "photo", "tourist", "cruise"]);
+
 const InputSchema = z.object({
   origin: z.string().min(1).max(120),
   destination: z.string().min(1).max(120),
@@ -14,11 +16,27 @@ const InputSchema = z.object({
   vehicleLabel: z.string().min(1).max(80),
   energyLabel: z.string().max(80).optional().default(""),
   styleLabel: z.string().min(1).max(80),
+  styleValue: StyleValue.optional(),
   maxHoursPerDay: z.number().int().min(2).max(14).optional().default(6),
   stopInterests: z.array(z.string()).max(20).optional().default([]),
   avoidHighway: z.boolean().optional().default(false),
   language: z.string().max(8).optional().default("nb"),
 });
+
+const STYLE_RULES: Record<z.infer<typeof StyleValue>, string> = {
+  fastest:
+    "STYLE=FASTEST: minimize detours, fewer stops (2-3 per day), prefer main roads/motorway, shortest reasonable driving time. Stops should be practical (fuel, food, brief rest).",
+  scenic:
+    "STYLE=SCENIC: prefer known scenic corridors, fjords, mountain passes and Nasjonale Turistveier. Add viewpoints. Avoid motorway where reasonable. 3-5 stops per day with strong landscape value.",
+  curvy:
+    "STYLE=CURVY: prefer motorcycle-friendly roads, mountain passes, coastal roads and roads known for driving enjoyment (e.g. Trollstigen, Aurlandsfjellet, Gamle Strynefjellsvegen, Atlanterhavsveien). Avoid long motorway stretches. Fewer but better stops emphasizing the road itself.",
+  photo:
+    "STYLE=PHOTO: prioritize viewpoints, photo stops, golden-hour places, waterfalls, fjords, mountain views. Shorter daily driving sections so there is time to stop. 4-6 stops per day, weighted toward type=viewpoint/photo.",
+  tourist:
+    "STYLE=TOURIST: prioritize attractions, local experiences, Nasjonale Turistveier and iconic stops. Mix attraction/experience/viewpoint stop types. Include well-known landmarks.",
+  cruise:
+    "STYLE=CRUISE: prioritize comfort, manageable driving days (well below the max), food/coffee/rest stops, easy logistics. Avoid demanding mountain passes back-to-back.",
+};
 
 export type AiStopType =
   | "viewpoint" | "photo" | "food" | "lodging" | "fuel"
