@@ -145,6 +145,10 @@ function createLiveBroadcasterDebugState(input: {
     lastUpsertPayload: null,
     lastStoredRow: null,
     lastUpsertError: null,
+    pageVisibility: typeof document !== "undefined" && document.visibilityState === "hidden" ? "hidden" : "visible",
+    lastVisibilityChangeTime: null,
+    lastResumeSendTime: null,
+    wakeLockActive: false,
   };
 }
 
