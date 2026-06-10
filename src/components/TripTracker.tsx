@@ -379,6 +379,7 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 
 function LiveShareCard({
   user, liveOn, setLiveOn, permDenied, tripStatus, liveActive, liveSession, lastSeenStr,
+  pageVisibility, lastVisibilityChangeTime,
 }: {
   user: { id: string } | null;
   liveOn: boolean;
@@ -388,6 +389,8 @@ function LiveShareCard({
   liveActive: boolean;
   liveSession: LiveSession | null;
   lastSeenStr: string | null;
+  pageVisibility?: "visible" | "hidden";
+  lastVisibilityChangeTime?: string | null;
 }) {
   const token = liveSession?.live_share_token ?? null;
   const liveUrl = token ? `https://veiglede.no/live/${token}` : null;
