@@ -26,6 +26,7 @@ import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
+import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
 import { TripMemories } from "@/components/TripMemories";
 import { TripPhotosGallery } from "@/components/TripPhotosGallery";
 import { DetourPromptDialog } from "@/components/DetourPromptDialog";
@@ -164,6 +165,7 @@ function TripPlanner() {
         })),
     [enrichedSuggestions],
   );
+  const liveSession = useLiveSession(trip?.id ?? null);
 
   if (pathname !== `/trips/${tripId}`) {
     return <Outlet />;
@@ -187,6 +189,9 @@ function TripPlanner() {
   const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
   const partnerTips = getPartnerTips(trip, routePoints);
   const memories = getPhotoMemories(trip, tripStops);
+  const livePos = liveSession && isLiveActive(liveSession)
+    ? { lat: liveSession.lat, lng: liveSession.lng, heading: liveSession.heading }
+    : null;
 
 
   // Pin click in the map should NOT scroll the page or change list selection.
@@ -347,6 +352,7 @@ function TripPlanner() {
           suggestionPins={suggestionPins}
           hoveredSuggestionId={null}
           height="h-72 md:h-[520px]"
+          livePosition={livePos}
         />
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
           {td.mapDisclaimer}

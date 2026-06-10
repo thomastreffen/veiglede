@@ -5,7 +5,7 @@ import type { Stop } from "@/lib/trips-store";
 import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import {
-  useLiveBroadcaster, useLiveOptIn, endLiveSession,
+  useLiveBroadcaster, useLiveOptIn, endLiveSession, useLiveSession, isLiveActive,
 } from "@/lib/live-tracking";
 
 export function TripTracker({
@@ -29,6 +29,12 @@ export function TripTracker({
     status: t.status as "idle" | "active" | "paused" | "completed",
     lastStopName: lastVisited,
   });
+
+  const ownLive = useLiveSession(liveOn ? tripId : null);
+  const liveActive = isLiveActive(ownLive);
+  const lastSeenStr = ownLive?.updated_at
+    ? new Date(ownLive.updated_at).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })
+    : null;
 
   // Clean up live session when trip is completed/reset or toggle is turned off.
   useEffect(() => {
@@ -133,6 +139,17 @@ export function TripTracker({
             </p>
           </div>
         </label>
+        {liveOn && user && permState !== "denied" && (
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-background/40 px-2.5 py-1.5 text-[11px]">
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`h-1.5 w-1.5 rounded-full ${liveActive ? "bg-primary animate-pulse" : "bg-muted-foreground"}`} />
+              {liveActive ? "Live-posisjon aktiv" : "Venter på GPS-posisjon…"}
+            </span>
+            {lastSeenStr && liveActive && (
+              <span className="text-muted-foreground">Sist oppdatert {lastSeenStr}</span>
+            )}
+          </div>
+        )}
       </div>
 
 
