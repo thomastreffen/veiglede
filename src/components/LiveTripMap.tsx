@@ -39,7 +39,7 @@ function formatRelative(iso: string | undefined | null): string {
   return `${h} t siden`;
 }
 
-export function LiveTripMap({ tripId, session: sessionProp, height, className }: Props) {
+export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, className }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
