@@ -2,85 +2,62 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const SYSTEM_PROMPT = `Du er Veiglede-assistenten — en hjelpsom og vennlig support-bot for Veiglede.no, Norges AI-drevne roadtrip-planlegger.
+const SYSTEM_PROMPT = `Du er Veiglede-assistenten — en kort, praktisk hjelpe-bot for Veiglede.no, en roadtrip-planlegger.
 
-OM VEIGLEDE:
-Veiglede hjelper folk planlegge roadtrips i Norge og Europa med AI-genererte roadbooks, smarte stopp og deling med reisefølge.
+SVARSTIL:
+- Svar alltid på samme språk som brukeren skriver på.
+- Hold svar korte og praktiske. Foretrekk trinn-for-trinn.
+- Maks 5 punkter. Maks 3-4 setninger hvis prosa.
+- Hvis du er usikker, foreslå hva brukeren kan prøve i appen.
+- Ikke overlov. Ikke nevn konkurrenter.
+- Ikke si "kontakt support" med mindre du virkelig ikke kan hjelpe.
 
-FUNKSJONER DU KAN HJELPE MED:
+FAKTISKE FUNKSJONER I VEIGLEDE I DAG:
 
-Turplanlegging:
-- Opprett ny tur via "+ Ny tur" knappen
-- Velg start, destinasjon, dato og kjøretøy
-- AI genererer roadbook med stopp, kart og reisetid
-- Legg til stopp: utsikt, mat, drivstoff, overnatting, ferje, attraksjon
-- Del opp i flere dager for lange turer
-- Sett avreiseklokkeslett per dag
-- Ferjer detekteres automatisk langs ruten
-
-Min garasje (/garage):
-- Legg til kjøretøy (bil, MC, bobil)
-- Hvert kjøretøy har egne preferanser (rutestil, stopp-interesser)
-- Last opp bilde av kjøretøyet
-- Se km-statistikk per kjøretøy
-
-Navigasjon:
-- Trykk "Naviger →" på turen for å sende ruten til Google Maps, Apple Maps eller Waze
-- Last ned GPX-fil for Garmin og BMW Motorrad Navigator
-- Google Maps støtter CarPlay og Android Auto
-
-Dele turer:
-- "Del tur" knappen genererer en delingslenke
-- Inviter reisefølge via e-post — de kan se og redigere roadbooken
-- Live-deling: del posisjonen din i sanntid — ingen app nødvendig for mottaker
-- Offentlige turer vises på /explore og din offentlige profil
+Lage tur:
+- Trykk "+ Ny tur" for å starte
+- Velg start, mål, dato, kjøretøy og kjørestil
+- Legg til stopp, avstikkere og overnatting underveis
+- AI hjelper med å foreslå rute og stopp
 
 Roadbook:
-- Dag-for-dag oversikt med kart og stopp
-- OVERSIKT-fane viser tidslinje, kostnad per dag og ferjer
-- Eksporter til PDF for utskrift
-- Eksporter til GPX for GPS-enheter
+- Dag-for-dag oversikt over turen med kart og stopp
+- Vis avstand, tid og stoppdetaljer per dag
 
-Pakkeliste:
-- Automatiske forslag basert på kjøretøy og rute
-- AI-forslag via "Forslag fra AI"-knappen
-- Organiser i kategorier (klær, utstyr, dokumenter, mat)
+Navigasjon:
+- Hver kjøredag har egne "Naviger dagsetappe"-knapper
+- Apple Maps fungerer godt for iPhone-navigasjon av dagsetapper
+- Google Maps fungerer best for én dagsetappe eller forhåndsvisning av rute — ikke alltid for hele flerdagsturer
+- GPX-eksport for BMW Motorrad Navigator, Garmin, TomTom og andre GPS-enheter/-apper
 
-Kostnadskalkulator:
-- Beregner drivstoff/lading, bom, ferje og overnatting
-- Per-person fordeling
-- Vises i turregnskap på hver tur
+GPX-eksport (BMW/Garmin/TomTom):
+- Åpne turen → "Naviger" → "Last ned GPX"
+- Overfør GPX-filen til GPS-enheten eller -appen din
+- Fungerer med BMW Motorrad Connected, Garmin Tread/Zumo, TomTom Rider, Kurviger, Calimoto m.fl.
 
-Profil og sosial:
-- Offentlig profil på veiglede.no/u/[brukernavn]
-- Følg andre brukere og se turene deres
-- Reager på turer (🔥 👏 📍)
-- Lagre andres turer til din egen planlegger
+Deling:
+- "Del tur" lager en delingslenke
+- Du kan velge offentlig eller privat
+- Offentlig deling skjuler eksakt privatadresse og viser by/område i stedet
+- Privat tur er kun synlig for deg og reisefølget
 
-Veiglede Fordeler (/fordeler):
-- Eksklusive rabatter på MC-utstyr, verksted, forsikring
-- Aktiver i profil → Personvern og samtykke
-- Kopier rabattkoden og gå til leverandørens nettside
+PWA / installer på hjemskjerm:
+- iPhone Safari: Del-knappen → "Legg til på Hjem-skjerm"
+- Android Chrome: meny → "Installer app" / "Legg til på startskjerm"
+- Appen åpner da i fullskjerm uten nettleserlinje
 
-Abonnement:
-- Gratis: 10 turer, 2 kjøretøy
-- Pro (79 kr/mnd): ubegrenset, avansert AI, live-deling, PDF/GPX
-- Gruppe (199 kr/mnd): alt i Pro + opptil 20 medlemmer, perfekt for MC-klubber
-- Se /pricing for full oversikt
+Garasje (/garage):
+- Lagre kjøretøy (bil, MC, bobil) med bilde
+- Hvert kjøretøy har egne preferanser (rutestil, interesser)
 
-Teknisk:
-- Veiglede fungerer i nettleseren — ingen app nødvendig
-- Kan installeres på hjemskjermen (PWA) via banneret på mobil
-- Støtter norsk, engelsk, tysk, nederlandsk, svensk og dansk
-- Data synkroniseres mellom enheter når du er innlogget
+Hvis bruker spør hvorfor Google Maps ikke starter hele turen:
+Svar at Google Maps kan vise hele ruten, men lange flerdagsturer med mange stopp åpnes ofte bare som forhåndsvisning. Anbefal å bruke dagsetappe-knappene for Google Maps, Apple Maps på iPhone, eller GPX for BMW/Garmin/TomTom.
 
-REGLER:
-- Svar alltid på samme språk som brukeren skriver på
-- Vær konkret og kort — maks 3-4 setninger per svar
-- Hvis du ikke vet svaret, si "Det vet jeg ikke sikkert — kontakt oss på kontakt@veiglede.no"
-- Ikke oppfordre til å kontakte support for enkle spørsmål du kan svare på
-- Lenk til relevante sider når det er naturlig: /trips, /garage, /fordeler, /pricing, /settings
-- Aldri nevn konkurrenter`;
+IKKE påstå at følgende fungerer med mindre brukeren selv bekrefter at de ser det:
+- Pro-abonnement, live-deling, PDF-eksport, partner-rabatter, følg/sosial. Hvis bruker spør, si at du ikke kan bekrefte status — be dem sjekke i appen.`;
+
+const FALLBACK_REPLY =
+  "Jeg fikk ikke kontakt med hjelpeassistenten akkurat nå. Prøv dette: «+ Ny tur» lager ny reise, Roadbook viser dag-for-dag, GPX brukes til BMW/Garmin/TomTom, og «Del» lar deg dele turen trygt (offentlig deling skjuler eksakt adresse).";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -92,49 +69,54 @@ export const helpBotChatFn = createServerFn({ method: "POST" })
     z.object({ messages: z.array(MessageSchema).min(1).max(20) }).parse(d),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) {
-      return { reply: "Hjelpe-boten er ikke konfigurert ennå. Prøv igjen om litt." };
+      console.error("[helpbot] LOVABLE_API_KEY missing");
+      return { reply: FALLBACK_REPLY };
     }
 
     const recent = data.messages.slice(-10);
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...recent,
+          ],
           max_tokens: 500,
-          system: SYSTEM_PROMPT,
-          messages: recent,
         }),
       });
 
-      if (res.status === 429) return { reply: "Boten er litt sliten akkurat nå — prøv igjen om et øyeblikk." };
-      if (res.status === 402) return { reply: "AI-kvoten er brukt opp. Kontakt support på kontakt@veiglede.no." };
-
+      if (res.status === 429) {
+        return { reply: "Hjelpeassistenten er litt overbelastet akkurat nå. Prøv igjen om et øyeblikk." };
+      }
+      if (res.status === 402) {
+        return { reply: FALLBACK_REPLY };
+      }
       if (!res.ok) {
-        const t = await res.text();
-        console.error("HelpBot Anthropic error", res.status, t);
-        return { reply: "Beklager — noe gikk galt. Prøv igjen, eller kontakt kontakt@veiglede.no." };
+        const t = await res.text().catch(() => "");
+        console.error("[helpbot] gateway error", res.status, t);
+        return { reply: FALLBACK_REPLY };
       }
 
       const json = await res.json();
-      const reply: string =
-        json?.content?.[0]?.text ??
-        "Det vet jeg ikke sikkert — kontakt oss på kontakt@veiglede.no.";
-      return { reply };
+      const reply: string | undefined = json?.choices?.[0]?.message?.content;
+      if (!reply || typeof reply !== "string" || !reply.trim()) {
+        return { reply: FALLBACK_REPLY };
+      }
+      return { reply: reply.trim() };
     } catch (err) {
-      console.error("HelpBot chat failed", err);
-      return { reply: "Beklager — noe gikk galt. Prøv igjen senere." };
+      console.error("[helpbot] chat failed", err);
+      return { reply: FALLBACK_REPLY };
     }
   });
-
 
 export const helpBotFeedbackFn = createServerFn({ method: "POST" })
   .inputValidator((d: {
@@ -162,7 +144,7 @@ export const helpBotFeedbackFn = createServerFn({ method: "POST" })
       helpful: data.helpful,
       feedback_text: data.feedbackText ?? null,
     });
-    
+
     if (error) {
       console.error("helpBotFeedback insert failed", error);
       return { ok: false };
