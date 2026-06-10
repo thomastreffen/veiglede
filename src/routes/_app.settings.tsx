@@ -391,7 +391,12 @@ function Settings() {
         />
       </Section>
 
-      {/* 5b — Public profile privacy */}
+      {/* 5b — Profile fields */}
+      <Section id="profil" title="Profil" caption="Hvordan andre ser deg">
+        <ProfileFieldsEditor />
+      </Section>
+
+      {/* 5c — Public profile privacy */}
       <Section id="personvern" title="Personvern" caption="Din offentlige profil">
         <PrivacyControls />
       </Section>
