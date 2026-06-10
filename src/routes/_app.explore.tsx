@@ -204,7 +204,7 @@ function TripsTab() {
       {popular.length > 0 && sort === "newest" && (
         <section className="mt-8">
           <h2 className="font-display text-xl uppercase">Populære turer</h2>
-          <p className="text-xs text-muted-foreground">Turene som andre kopierer akkurat nå.</p>
+          <p className="text-xs text-muted-foreground">Turene som andre lagrer akkurat nå.</p>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {popular.map(renderCard)}
           </ul>
