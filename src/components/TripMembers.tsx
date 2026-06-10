@@ -39,7 +39,7 @@ export function TripMembers({ tripId, onOpenShare }: Props) {
             className="h-5 w-5 rounded-full ring-2 ring-background bg-primary/20 grid place-items-center text-[9px] font-bold text-primary overflow-hidden"
           >
             {m.avatar_url
-              ? <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
+              ? <AvatarImg value={m.avatar_url} className="h-full w-full object-cover" />
               : (m.name?.[0] ?? "?").toUpperCase()}
           </span>
         ))}
