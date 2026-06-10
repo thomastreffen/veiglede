@@ -19,6 +19,10 @@ export type FuelKind = "petrol" | "diesel" | "electric" | "hybrid" | "other";
 export interface Vehicle {
   id: string;
   name: string;
+  /** Personal nickname, e.g. "Grusgnageren". Optional. */
+  nickname?: string;
+  /** Short personal description / travel style note. Optional. */
+  description?: string;
   type: VehicleType;
   energy: EnergyType;
   photo?: string; // data URL
