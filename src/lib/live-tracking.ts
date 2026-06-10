@@ -32,7 +32,8 @@ export interface LivePosition {
 
 export type LivePermissionState = "unknown" | "granted" | "denied" | "prompt";
 
-type LiveDebugSendSource = "immediate" | "heartbeat" | "manual";
+type LiveDebugSendSource = "immediate" | "heartbeat" | "manual" | "poll";
+type LiveGeolocationSource = "watch" | "poll";
 
 export interface LiveUpsertDebugPayload {
   trip_id: string;
@@ -65,7 +66,11 @@ export interface LiveBroadcasterDebugState {
   tripStatus: LiveStatus | "idle";
   permissionState: LivePermissionState;
   watchStarted: boolean;
+  watchId: number | null;
   watchIdExists: boolean;
+  gpsFixCount: number;
+  heartbeatIntervalActive: boolean;
+  pollingActive: boolean;
   lastGpsFixTime: string | null;
   lastGpsFixLat: number | null;
   lastGpsFixLng: number | null;
@@ -76,9 +81,13 @@ export interface LiveBroadcasterDebugState {
   distanceSinceLastSentKm: number | null;
   movedEnough: boolean;
   canSendImmediate: boolean;
-  lastImmediateUpsertAttemptTime: string | null;
-  lastImmediateUpsertSuccessTime: string | null;
+  lastAutomaticUpsertAttemptTime: string | null;
+  lastAutomaticUpsertSuccessTime: string | null;
+  lastAutomaticUpsertError: string | null;
+  lastSendSource: LiveDebugSendSource | null;
+  lastHeartbeatUpsertAttemptTime: string | null;
   lastHeartbeatUpsertSuccessTime: string | null;
+  lastHeartbeatUpsertError: string | null;
   lastManualUpsertAttemptTime: string | null;
   lastManualUpsertSuccessTime: string | null;
   lastUpsertPayload: LiveUpsertDebugPayload | null;
@@ -105,7 +114,11 @@ function createLiveBroadcasterDebugState(input: {
     tripStatus: input.status,
     permissionState: input.permissionState,
     watchStarted: false,
+    watchId: null,
     watchIdExists: false,
+    gpsFixCount: 0,
+    heartbeatIntervalActive: false,
+    pollingActive: false,
     lastGpsFixTime: null,
     lastGpsFixLat: null,
     lastGpsFixLng: null,
@@ -116,9 +129,13 @@ function createLiveBroadcasterDebugState(input: {
     distanceSinceLastSentKm: null,
     movedEnough: false,
     canSendImmediate: false,
-    lastImmediateUpsertAttemptTime: null,
-    lastImmediateUpsertSuccessTime: null,
+    lastAutomaticUpsertAttemptTime: null,
+    lastAutomaticUpsertSuccessTime: null,
+    lastAutomaticUpsertError: null,
+    lastSendSource: null,
+    lastHeartbeatUpsertAttemptTime: null,
     lastHeartbeatUpsertSuccessTime: null,
+    lastHeartbeatUpsertError: null,
     lastManualUpsertAttemptTime: null,
     lastManualUpsertSuccessTime: null,
     lastUpsertPayload: null,
@@ -273,14 +290,18 @@ export function useLiveBroadcaster(opts: {
 }) {
   const { tripId, userId, enabled, status, lastStopName } = opts;
   const interval = opts.intervalMs ?? 30_000;
-  const immediateDebugThresholdKm = 0.003;
+  const autoSendThrottleMs = 5_000;
+  const debugMovementThresholdKm = 0.003;
+  const pollIntervalMs = 10_000;
   const lastPosRef = useRef<LivePosition | null>(null);
   const lastSentRef = useRef<LivePosition | null>(null);
-  const lastImmediateSentAtRef = useRef(0);
+  const lastAutoSentAtRef = useRef(0);
+  const gpsFixCountRef = useRef(0);
   const permStateRef = useRef<LivePermissionState>("unknown");
   const [permState, setPermStateRaw] = useState<LivePermissionState>("unknown");
 
   const broadcastable = enabled && !!tripId && !!userId && (status === "active" || status === "paused");
+  const pollingActive = enabled && !!tripId && !!userId && status === "active";
   const [debug, setDebug] = useState<LiveBroadcasterDebugState>(() => createLiveBroadcasterDebugState({
     enabled,
     status,
@@ -307,34 +328,52 @@ export function useLiveBroadcaster(opts: {
       tripStatus: status,
       permissionState: permStateRef.current,
       watchStarted: broadcastable ? prev.watchStarted : false,
+      watchId: broadcastable ? prev.watchId : null,
       watchIdExists: broadcastable ? prev.watchIdExists : false,
-      canSendImmediate: broadcastable ? Date.now() - lastImmediateSentAtRef.current >= 5_000 : false,
+      heartbeatIntervalActive: broadcastable ? prev.heartbeatIntervalActive : false,
+      pollingActive: pollingActive ? prev.pollingActive : false,
+      canSendImmediate: broadcastable ? Date.now() - lastAutoSentAtRef.current >= autoSendThrottleMs : false,
     }));
-  }, [broadcastable, enabled, status]);
+  }, [autoSendThrottleMs, broadcastable, enabled, pollingActive, status]);
 
-  const sendPosition = async (source: LiveDebugSendSource, posOverride?: LivePosition | null) => {
-    const pos = posOverride ?? lastPosRef.current;
+  const sendCurrentPosition = async (source: LiveDebugSendSource) => {
     const liveStatus = status === "active" || status === "paused" || status === "completed"
       ? status
       : null;
+    const attemptTime = new Date().toISOString();
+
+    updateDebug({
+      lastUpsertError: null,
+      ...(source === "manual"
+        ? { lastManualUpsertAttemptTime: attemptTime }
+        : source === "heartbeat"
+          ? { lastHeartbeatUpsertAttemptTime: attemptTime, lastHeartbeatUpsertError: null }
+          : {
+              lastAutomaticUpsertAttemptTime: attemptTime,
+              lastAutomaticUpsertError: null,
+              lastSendSource: source,
+            }),
+    });
 
     if (!tripId || !userId || !liveStatus) {
       const message = "Live broadcaster is not in a sendable state.";
-      updateDebug({ lastUpsertError: message });
+      updateDebug({
+        lastUpsertError: message,
+        ...(source === "heartbeat" ? { lastHeartbeatUpsertError: message } : {}),
+        ...(source === "immediate" || source === "poll" ? { lastAutomaticUpsertError: message, lastSendSource: source } : {}),
+      });
       return { ok: false as const, error: message };
     }
+    const pos = lastPosRef.current;
     if (!pos || !Number.isFinite(pos.lat) || !Number.isFinite(pos.lng)) {
       const message = "No valid GPS fix available to send.";
-      updateDebug({ lastUpsertError: message });
+      updateDebug({
+        lastUpsertError: message,
+        ...(source === "heartbeat" ? { lastHeartbeatUpsertError: message } : {}),
+        ...(source === "immediate" || source === "poll" ? { lastAutomaticUpsertError: message, lastSendSource: source } : {}),
+      });
       return { ok: false as const, error: message };
     }
-
-    const attemptTime = new Date().toISOString();
-    updateDebug({
-      lastUpsertError: null,
-      ...(source === "immediate" ? { lastImmediateUpsertAttemptTime: attemptTime } : {}),
-      ...(source === "manual" ? { lastManualUpsertAttemptTime: attemptTime } : {}),
-    });
 
     let preparedPayload: LiveUpsertDebugPayload | null = null;
 
@@ -351,17 +390,23 @@ export function useLiveBroadcaster(opts: {
         },
       });
 
-      lastSentRef.current = pos;
-      if (source === "immediate") lastImmediateSentAtRef.current = Date.now();
+      lastSentRef.current = { ...pos };
+      if (source === "immediate" || source === "poll") lastAutoSentAtRef.current = Date.now();
 
       const successTime = new Date().toISOString();
       updateDebug({
         lastUpsertPayload: preparedPayload ?? result.payload,
         lastStoredRow: result.storedRow,
         lastUpsertError: null,
-        canSendImmediate: source === "immediate" ? false : Date.now() - lastImmediateSentAtRef.current >= 5_000,
-        ...(source === "immediate" ? { lastImmediateUpsertSuccessTime: successTime } : {}),
-        ...(source === "heartbeat" ? { lastHeartbeatUpsertSuccessTime: successTime } : {}),
+        canSendImmediate: Date.now() - lastAutoSentAtRef.current >= autoSendThrottleMs,
+        ...(source === "immediate" || source === "poll"
+          ? {
+              lastAutomaticUpsertSuccessTime: successTime,
+              lastAutomaticUpsertError: null,
+              lastSendSource: source,
+            }
+          : {}),
+        ...(source === "heartbeat" ? { lastHeartbeatUpsertSuccessTime: successTime, lastHeartbeatUpsertError: null } : {}),
         ...(source === "manual" ? { lastManualUpsertSuccessTime: successTime } : {}),
       });
 
@@ -371,41 +416,133 @@ export function useLiveBroadcaster(opts: {
       updateDebug({
         lastUpsertPayload: preparedPayload,
         lastUpsertError: message,
+        ...(source === "heartbeat" ? { lastHeartbeatUpsertError: message } : {}),
+        ...(source === "immediate" || source === "poll" ? { lastAutomaticUpsertError: message, lastSendSource: source } : {}),
       });
       return { ok: false as const, error: message };
     }
   };
 
+  const processGpsFix = async (source: LiveGeolocationSource, p: GeolocationPosition) => {
+    setPermState("granted");
+
+    const prevGps = lastPosRef.current;
+    const lastSent = lastSentRef.current;
+    const next: LivePosition = {
+      lat: p.coords.latitude,
+      lng: p.coords.longitude,
+      accuracy: Number.isFinite(p.coords.accuracy) ? p.coords.accuracy : null,
+      heading: Number.isFinite(p.coords.heading) ? p.coords.heading : null,
+      speed: Number.isFinite(p.coords.speed) ? p.coords.speed : null,
+      updatedAt: new Date().toISOString(),
+    };
+    if (!Number.isFinite(next.lat) || !Number.isFinite(next.lng)) return;
+
+    let distanceSincePrevGpsKm: number | null = null;
+    let distanceSinceLastSentKm: number | null = null;
+
+    if (prevGps) {
+      try {
+        distanceSincePrevGpsKm = distanceKm(
+          { lat: prevGps.lat, lng: prevGps.lng },
+          { lat: next.lat, lng: next.lng },
+        );
+        if (status === "active" && distanceSincePrevGpsKm >= 0.005 && distanceSincePrevGpsKm <= 2) {
+          trackingApi.addDistance(tripId, distanceSincePrevGpsKm);
+        }
+      } catch (e) {
+        console.warn("[live] distance accumulation failed", e);
+      }
+    }
+
+    if (lastSent) {
+      distanceSinceLastSentKm = distanceKm(
+        { lat: lastSent.lat, lng: lastSent.lng },
+        { lat: next.lat, lng: next.lng },
+      );
+    }
+
+    lastPosRef.current = next;
+    gpsFixCountRef.current += 1;
+
+    const canSendImmediate = Date.now() - lastAutoSentAtRef.current >= autoSendThrottleMs;
+    const movedEnough = distanceSinceLastSentKm === null || distanceSinceLastSentKm >= debugMovementThresholdKm;
+
+    updateDebug({
+      lastGpsFixTime: next.updatedAt ?? null,
+      lastGpsFixLat: next.lat,
+      lastGpsFixLng: next.lng,
+      lastGpsAccuracy: next.accuracy ?? null,
+      previousGpsLat: prevGps?.lat ?? null,
+      previousGpsLng: prevGps?.lng ?? null,
+      distanceSincePreviousGpsKm: distanceSincePrevGpsKm,
+      distanceSinceLastSentKm,
+      gpsFixCount: gpsFixCountRef.current,
+      movedEnough,
+      canSendImmediate,
+    });
+
+    console.log("[live] gps fix received", {
+      source,
+      lat: next.lat,
+      lng: next.lng,
+      accuracy: next.accuracy ?? null,
+      heading: next.heading ?? null,
+      speed: next.speed ?? null,
+      updatedAt: next.updatedAt,
+      gpsFixCount: gpsFixCountRef.current,
+      distanceSincePrevGpsKm,
+      distanceSinceLastSentKm,
+      canSendImmediate,
+    });
+
+    if (!canSendImmediate) return;
+
+    const sendSource: LiveDebugSendSource = source === "poll" ? "poll" : "immediate";
+    const result = await sendCurrentPosition(sendSource);
+    if (result.ok) {
+      console.log(`[live] ${sendSource} upsert success`, result.storedRow ?? result.payload);
+    } else {
+      console.warn(`[live] ${sendSource} upsert failed`, result.error);
+    }
+  };
+
   useEffect(() => {
     if (!broadcastable) {
-      updateDebug({ watchStarted: false, watchIdExists: false, canSendImmediate: false });
+      updateDebug({
+        watchStarted: false,
+        watchId: null,
+        watchIdExists: false,
+        heartbeatIntervalActive: false,
+        pollingActive: false,
+        canSendImmediate: false,
+      });
       return;
     }
 
     // Guard browser-only APIs (SSR + non-geolocation contexts).
     if (typeof window === "undefined" || typeof navigator === "undefined" || !("geolocation" in navigator) || !navigator.geolocation) {
       setPermState("denied");
-      updateDebug({ watchStarted: false, watchIdExists: false, canSendImmediate: false });
+      updateDebug({
+        watchStarted: false,
+        watchId: null,
+        watchIdExists: false,
+        heartbeatIntervalActive: false,
+        pollingActive: false,
+        canSendImmediate: false,
+      });
       return;
     }
 
     let stopped = false;
     let watchId: number | null = null;
+    let pollId: number | null = null;
 
-    const send = async () => {
+    const sendHeartbeat = async () => {
       if (stopped) return;
-      const pos = lastPosRef.current;
-      if (!pos) return;
-      if (!Number.isFinite(pos.lat) || !Number.isFinite(pos.lng)) return;
-      const result = await sendPosition("heartbeat", pos);
+      const result = await sendCurrentPosition("heartbeat");
       if (result.ok) {
-        console.log("[live] heartbeat upsert success", {
-          lat: pos.lat,
-          lng: pos.lng,
-          accuracy: pos.accuracy ?? null,
-          heading: pos.heading ?? null,
-          speed: pos.speed ?? null,
-        });
+        console.log("[live] heartbeat upsert success", result.storedRow ?? result.payload);
       } else {
         console.warn("[live] heartbeat upsert failed", result.error);
       }
@@ -418,94 +555,7 @@ export function useLiveBroadcaster(opts: {
           if (stopped) return;
           void (async () => {
             try {
-              setPermState("granted");
-              const prevGps = lastPosRef.current;
-              const lastSent = lastSentRef.current;
-              const next: LivePosition = {
-                lat: p.coords.latitude,
-                lng: p.coords.longitude,
-                accuracy: Number.isFinite(p.coords.accuracy) ? p.coords.accuracy : null,
-                heading: Number.isFinite(p.coords.heading) ? p.coords.heading : null,
-                speed: Number.isFinite(p.coords.speed) ? p.coords.speed : null,
-                updatedAt: new Date().toISOString(),
-              };
-              if (!Number.isFinite(next.lat) || !Number.isFinite(next.lng)) return;
-
-              console.log("[live] gps fix received", {
-                lat: next.lat,
-                lng: next.lng,
-                accuracy: next.accuracy ?? null,
-                heading: next.heading ?? null,
-                speed: next.speed ?? null,
-                updatedAt: next.updatedAt,
-              });
-              console.log("[live] gps refs", { prevGps, lastSent });
-
-              let distanceSincePrevGpsKm: number | null = null;
-              let distanceSinceLastSentKm: number | null = null;
-
-              if (prevGps) {
-                try {
-                  distanceSincePrevGpsKm = distanceKm(
-                    { lat: prevGps.lat, lng: prevGps.lng },
-                    { lat: next.lat, lng: next.lng },
-                  );
-                  if (status === "active") {
-                    // Ignore noise (<5m) and unrealistic jumps (>2km between samples).
-                    if (distanceSincePrevGpsKm >= 0.005 && distanceSincePrevGpsKm <= 2) {
-                      trackingApi.addDistance(tripId, distanceSincePrevGpsKm);
-                    }
-                  }
-                } catch (e) {
-                  console.warn("[live] distance accumulation failed", e);
-                }
-              }
-
-              if (lastSent) {
-                distanceSinceLastSentKm = distanceKm(
-                  { lat: lastSent.lat, lng: lastSent.lng },
-                  { lat: next.lat, lng: next.lng },
-                );
-              }
-
-              lastPosRef.current = next;
-
-              const now = Date.now();
-              const canSendImmediate = now - lastImmediateSentAtRef.current >= 5_000;
-              const movedEnough = distanceSinceLastSentKm === null || distanceSinceLastSentKm >= immediateDebugThresholdKm;
-              updateDebug({
-                lastGpsFixTime: next.updatedAt ?? null,
-                lastGpsFixLat: next.lat,
-                lastGpsFixLng: next.lng,
-                lastGpsAccuracy: next.accuracy ?? null,
-                previousGpsLat: prevGps?.lat ?? null,
-                previousGpsLng: prevGps?.lng ?? null,
-                distanceSincePreviousGpsKm: distanceSincePrevGpsKm,
-                distanceSinceLastSentKm,
-                movedEnough,
-                canSendImmediate,
-              });
-              console.log("[live] movement check", {
-                distanceSincePrevGpsKm,
-                distanceSinceLastSentKm,
-                movedEnough,
-                canSendImmediate,
-              });
-
-              if (canSendImmediate) {
-                const result = await sendPosition("immediate", next);
-                if (result.ok) {
-                  console.log("[live] immediate upsert success", {
-                    lat: next.lat,
-                    lng: next.lng,
-                    accuracy: next.accuracy ?? null,
-                    heading: next.heading ?? null,
-                    speed: next.speed ?? null,
-                  });
-                } else {
-                  console.warn("[live] immediate upsert failed", result.error);
-                }
-              }
+              await processGpsFix("watch", p);
             } catch (e) {
               console.warn("[live] watchPosition success handler failed", e);
             }
@@ -525,33 +575,77 @@ export function useLiveBroadcaster(opts: {
       );
       updateDebug({
         watchStarted: true,
+        watchId,
         watchIdExists: watchId !== null,
-        canSendImmediate: Date.now() - lastImmediateSentAtRef.current >= 5_000,
+        heartbeatIntervalActive: true,
+        pollingActive,
+        canSendImmediate: Date.now() - lastAutoSentAtRef.current >= autoSendThrottleMs,
       });
     } catch (e) {
       console.warn("[live] watchPosition failed", e);
       setPermState("denied");
       updateDebug({
         watchStarted: false,
+        watchId: null,
         watchIdExists: false,
+        heartbeatIntervalActive: false,
+        pollingActive: false,
         lastUpsertError: toErrorMessage(e),
       });
     }
 
-    const initial = setTimeout(() => { void send(); }, 2_000);
-    const timer = setInterval(() => { void send(); }, interval);
+    if (pollingActive) {
+      pollId = window.setInterval(() => {
+        navigator.geolocation.getCurrentPosition(
+          (p) => {
+            if (stopped) return;
+            void processGpsFix("poll", p);
+          },
+          (err) => {
+            if (stopped) return;
+            if (err && err.code === err.PERMISSION_DENIED) setPermState("denied");
+            const message = err?.message ?? "Poll geolocation error";
+            updateDebug({ lastUpsertError: message });
+            console.warn("[live] getCurrentPosition poll failed", message);
+          },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
+        );
+      }, pollIntervalMs);
+    }
+
+    const initial = setTimeout(() => { void sendHeartbeat(); }, 2_000);
+    const timer = setInterval(() => { void sendHeartbeat(); }, interval);
 
     return () => {
       stopped = true;
       clearTimeout(initial);
       clearInterval(timer);
-      updateDebug({ watchStarted: false, watchIdExists: false, canSendImmediate: false });
+      if (pollId !== null) window.clearInterval(pollId);
+      updateDebug({
+        watchStarted: false,
+        watchId: null,
+        watchIdExists: false,
+        heartbeatIntervalActive: false,
+        pollingActive: false,
+        canSendImmediate: false,
+      });
       if (watchId !== null && navigator.geolocation?.clearWatch) {
         try { navigator.geolocation.clearWatch(watchId); }
         catch (e) { console.warn("[live] clearWatch failed", e); }
       }
     };
-  }, [broadcastable, tripId, userId, status, lastStopName, interval]);
+  }, [
+    autoSendThrottleMs,
+    broadcastable,
+    debugMovementThresholdKm,
+    interval,
+    lastStopName,
+    pollIntervalMs,
+    pollingActive,
+    status,
+    tripId,
+    userId,
+  ]);
 
   useEffect(() => {
     if (!enabled || !userId) return;
@@ -564,7 +658,7 @@ export function useLiveBroadcaster(opts: {
     permState,
     debug,
     sendTestPositionNow: async () => {
-      const result = await sendPosition("manual");
+      const result = await sendCurrentPosition("manual");
       return result.ok;
     },
   };
