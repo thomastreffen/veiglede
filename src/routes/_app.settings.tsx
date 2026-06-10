@@ -237,9 +237,7 @@ function Settings() {
 
       {/* 1 — Driver profile */}
       <Section id="sjafor" title="Sjåfør" caption="Grunninnstillinger">
-        <ProfileHeader />
-
-        <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-3 text-sm">
           <MiniSelect
             label="Enheter"
             value={prefs.units}
@@ -258,10 +256,6 @@ function Settings() {
             Standardkjøretøy: <span className="text-foreground font-medium">{vehicleMeta(defaultVehicle.type).emoji} {defaultVehicle.name}</span>
           </p>
         )}
-
-        <div className="mt-5 pt-5 border-t border-border/60">
-          <UsernameField />
-        </div>
       </Section>
 
       {/* 2 — My vehicles */}
