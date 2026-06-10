@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigation } from "lucide-react";
 import { toast } from "sonner";
+import { useTripTracking } from "@/lib/trip-tracking";
 
 interface StopLike {
+  id?: string;
   name?: string;
   location?: string;
   lat?: number;
@@ -15,6 +17,7 @@ interface Props {
   destination: string;
   stops?: StopLike[];
   tripTitle?: string;
+  tripId?: string;
   distanceKm?: number;
   onDownloadGpx?: () => void;
   roadbookHref?: string;
@@ -30,12 +33,9 @@ function isMobile() {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 }
 
-/** A waypoint usable in a maps URL. */
 type WP = { token: string; label: string };
 
 function stopToWP(s: StopLike, preferText = false): WP | null {
-  // For intermediate waypoints, prefer coordinates — they route reliably
-  // For destination, prefer readable text name
   if (!preferText && typeof s.lat === "number" && typeof s.lng === "number") {
     const lat = Math.round(s.lat * 1e6) / 1e6;
     const lng = Math.round(s.lng * 1e6) / 1e6;
@@ -53,7 +53,6 @@ function stopToWP(s: StopLike, preferText = false): WP | null {
   return null;
 }
 
-/** Pick at most `max` waypoints. Prioritise lodging + ferry, then keep order. */
 function pickWaypoints(stops: StopLike[], max: number): StopLike[] {
   if (stops.length <= max) return stops;
   const indexed = stops.map((s, i) => ({ s, i }));
@@ -66,9 +65,35 @@ function pickWaypoints(stops: StopLike[], max: number): StopLike[] {
   return picked;
 }
 
-export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanceKm, onDownloadGpx, roadbookHref }: Props) {
+/** Destination-only Google Maps URL — opens the native Start flow on mobile. */
+function gmapsNavigateUrl(s: StopLike, destinationFallback?: string): string {
+  let dest = "";
+  if (typeof s.lat === "number" && typeof s.lng === "number") {
+    dest = `${Math.round(s.lat * 1e6) / 1e6},${Math.round(s.lng * 1e6) / 1e6}`;
+  } else {
+    const txt = (s.location || s.name || destinationFallback || "").trim();
+    dest = encodeURIComponent(txt);
+  }
+  return `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${dest}`;
+}
+
+/** Destination-only Apple Maps URL — current location as origin. */
+function amapsNavigateUrl(s: StopLike, destinationFallback?: string): string {
+  let dest = "";
+  if (typeof s.lat === "number" && typeof s.lng === "number") {
+    dest = `${Math.round(s.lat * 1e6) / 1e6},${Math.round(s.lng * 1e6) / 1e6}`;
+  } else {
+    const txt = (s.location || s.name || destinationFallback || "").trim();
+    dest = encodeURIComponent(txt);
+  }
+  const base = isIos() ? "maps://" : "https://maps.apple.com/";
+  return `${base}?daddr=${dest}&dirflg=d`;
+}
+
+export function OpenInMaps({ origin, destination, stops = [], tripTitle, tripId, distanceKm, onDownloadGpx, roadbookHref }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const tracking = useTripTracking(tripId ?? "__none__");
 
   useEffect(() => {
     if (!open) return;
@@ -79,14 +104,25 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  const { gmaps, amaps, waze, shareUrl, shareText, copyText, totalCount, lastStop } = useMemo(() => {
+  // Determine the "next stop" for active navigation.
+  const nextStop = useMemo<StopLike | null>(() => {
+    const candidates = stops.filter((s) => s.type !== "pause");
+    if (candidates.length === 0) return null;
+    const visited = new Set(tracking?.visitedStopIds ?? []);
+    const next = candidates.find((s) => !s.id || !visited.has(s.id));
+    return next ?? candidates[candidates.length - 1] ?? null;
+  }, [stops, tracking?.visitedStopIds]);
+
+  const nextLabel = nextStop?.name || nextStop?.location || destination;
+  const navGmaps = nextStop ? gmapsNavigateUrl(nextStop, destination) : `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(destination)}`;
+  const navAmaps = nextStop ? amapsNavigateUrl(nextStop, destination) : `${isIos() ? "maps://" : "https://maps.apple.com/"}?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+
+  const { gmaps, amaps, waze, shareUrl, shareText, copyText, totalCount } = useMemo(() => {
     const isRoundTrip = origin === destination && stops.length > 0;
     const firstStopWP = isRoundTrip ? stopToWP(stops[0]) : null;
     const originToken = firstStopWP?.token ?? encodeURIComponent(origin);
     const originLabel = firstStopWP?.label ?? origin;
 
-    // For round trips, use the last lodging stop as destination
-    // (final overnight before heading home), falling back to second-to-last stop.
     const lastLodgingStop = isRoundTrip
       ? [...stops].reverse().find((s) => s.type === "lodging")
       : null;
@@ -100,24 +136,17 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       : encodeURIComponent(destination);
     const destLabel = isRoundTrip ? effectiveLastWP?.label ?? destination : destination;
 
-    // Intermediate stops: when round-trip, drop the first stop (origin) and the
-    // effective destination, and exclude any trailing home-arrival stop.
     const effectiveLastIndex = effectiveLastStop ? stops.lastIndexOf(effectiveLastStop) : -1;
     const intermediateStops = (isRoundTrip
       ? stops.slice(1, effectiveLastIndex >= 0 ? effectiveLastIndex : stops.length - 1)
       : stops).filter((s) => s.type !== "pause");
 
-    // For navigation, only use lodging stops as waypoints — hotels are
-    // recognized by Google Maps; raw coordinates show as "Markert" and block Start.
     const navigationStops = intermediateStops.filter((s) => s.type === "lodging");
     const intermediate = navigationStops
       .map((s) => stopToWP(s, true))
       .filter((w): w is WP => !!w);
 
-    // Google Maps max 9 waypoints between origin & destination.
     const limitedStops = pickWaypoints(navigationStops, 9);
-    // Intermediate waypoints: always coordinates for Google Maps reliability.
-    // Complex hotel names with |, commas, etc. trigger place search instead of routing.
     const gmapsWPs = limitedStops
       .map((s) => {
         if (typeof s.lat === "number" && typeof s.lng === "number") {
@@ -129,7 +158,6 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
         return loc ? { token: encodeURIComponent(loc), label: loc } : null;
       })
       .filter((w): w is WP => !!w);
-
 
     const gmapsParts = [originToken, ...gmapsWPs.map((w) => w.token), effectiveDestination];
     const gmaps = `https://www.google.com/maps/dir/${gmapsParts.join("/")}`;
@@ -152,7 +180,6 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
     const copyText = `Veiglede-rute: ${chain}`;
     const shareText = distanceKm ? `${chain} (${Math.round(distanceKm)} km)` : chain;
 
-
     return {
       gmaps,
       amaps,
@@ -161,10 +188,8 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
       shareText,
       copyText,
       totalCount: intermediate.length,
-      lastStop: last,
     };
   }, [origin, destination, stops, distanceKm]);
-
 
   const handleCopy = async () => {
     try {
@@ -190,9 +215,7 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
   };
 
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function" && isMobile();
-  const countLabel = totalCount > 0 ? `Åpner med ${totalCount} hotellstopp` : "Åpner rute";
-
-  void lastStop;
+  const tooManyWaypoints = totalCount > 9;
 
   return (
     <div className="relative" ref={ref}>
@@ -204,7 +227,46 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
         <Navigation className="h-4 w-4" /> Naviger →
       </button>
       {open && (
-        <div className="absolute left-0 bottom-full mb-2 z-50 min-w-[14rem] w-max max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
+        <div className="absolute left-0 bottom-full mb-2 z-50 min-w-[16rem] w-max max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
+          {/* Primary: Naviger til neste stopp */}
+          <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground bg-surface-2/50 border-b border-border/60">
+            Naviger til neste stopp
+          </div>
+          {nextStop && (
+            <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border/60">
+              Neste: <span className="text-foreground/90 font-medium">{nextLabel}</span>
+            </div>
+          )}
+          <a
+            href={navGmaps}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+          >
+            <div className="font-medium">🧭 Start i Google Maps</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Starter fra nåværende posisjon</div>
+          </a>
+          <a
+            href={navAmaps}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+          >
+            <div className="font-medium">🧭 Start i Apple Kart</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Starter fra nåværende posisjon</div>
+          </a>
+
+          {/* Secondary: route overview */}
+          <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground bg-surface-2/50 border-b border-t border-border/60">
+            Ruteoversikt (forhåndsvisning)
+          </div>
+          {tooManyWaypoints && (
+            <div className="px-4 py-2 text-[11px] text-amber-400 border-b border-border/60">
+              Kartapper kan begrense antall stopp. For navigasjon anbefales neste stopp.
+            </div>
+          )}
           <a
             href={gmaps}
             target="_blank"
@@ -212,13 +274,8 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
             onClick={() => setOpen(false)}
             className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
           >
-            <div className="font-medium">🗺️ Google Maps</div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              Best for én dagsetappe. Hele langturer kan åpnes som forhåndsvisning.
-            </div>
-            {totalCount > 9 && (
-              <div className="text-xs text-amber-400 mt-0.5">Google Maps maks 9 stopp — resten hoppes over</div>
-            )}
+            <div className="font-medium">🗺️ Åpne ruteoversikt i Google Maps</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Forhåndsvisning av hele ruten</div>
           </a>
           <a
             href={amaps}
@@ -227,17 +284,29 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
             onClick={() => setOpen(false)}
             className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
           >
-            <div className="font-medium">🍎 Apple Maps</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Fungerer godt for navigasjon på iPhone.</div>
+            <div className="font-medium">🗺️ Åpne ruteoversikt i Apple Kart</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Forhåndsvisning av hele ruten</div>
           </a>
+          <a
+            href={waze}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
+          >
+            <div className="font-medium">🧭 Waze</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Åpner til destinasjon</div>
+          </a>
+
+          {/* Utilities */}
           {onDownloadGpx && (
             <button
               type="button"
               onClick={() => { onDownloadGpx(); setOpen(false); }}
               className="block w-full text-left px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
             >
-              <div className="font-medium">📍 GPX</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Best for BMW Motorrad, Garmin, TomTom og andre navigasjonsapper.</div>
+              <div className="font-medium">📍 Eksporter GPX</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Best for BMW Motorrad, Garmin, TomTom og andre.</div>
             </button>
           )}
           {roadbookHref && (
@@ -250,16 +319,6 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, distanc
               <div className="text-xs text-muted-foreground mt-0.5">Best for oversikt og deling.</div>
             </a>
           )}
-          <a
-            href={waze}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-3 text-sm hover:bg-surface-2 hover:text-primary border-b border-border/60"
-          >
-            <div className="font-medium">🧭 Waze</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Åpner til destinasjon</div>
-          </a>
           <button
             type="button"
             onClick={handleCopy}

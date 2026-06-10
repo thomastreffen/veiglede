@@ -406,6 +406,7 @@ function TripPlanner() {
           origin={trip.origin}
           destination={trip.destination}
           tripTitle={trip.title}
+          tripId={tripId}
           distanceKm={trip.distanceKm}
           onDownloadGpx={() => downloadGpx(trip, tripStops)}
           roadbookHref={`/trips/${tripId}/roadbook`}
