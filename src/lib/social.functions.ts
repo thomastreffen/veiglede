@@ -56,6 +56,50 @@ export const getFollowStatsFn = createServerFn({ method: "GET" })
     return { followers: followers ?? 0, following: following ?? 0, isFollowing };
   });
 
+export interface FollowListEntry {
+  id: string;
+  username: string;
+  displayName: string;
+  bio?: string;
+  avatarUrl?: string;
+}
+
+/**
+ * List followers OR following for a given user, filtered to PUBLIC profiles only.
+ * Private profiles are excluded from public-facing lists for privacy.
+ */
+export const listFollowsFn = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({
+    userId: UuidSchema,
+    direction: z.enum(["followers", "following"]),
+  }).parse(input))
+  .handler(async ({ data }): Promise<FollowListEntry[]> => {
+    const col = data.direction === "followers" ? "following_id" : "follower_id";
+    const pickCol = data.direction === "followers" ? "follower_id" : "following_id";
+    const { data: rows } = await supabaseAdmin
+      .from("user_follows").select(`${pickCol}`).eq(col, data.userId);
+    const ids = (rows ?? []).map((r) => (r as Record<string, string>)[pickCol]).filter(Boolean);
+    if (ids.length === 0) return [];
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id, username, display_name, bio, avatar_url, is_public")
+      .in("id", ids)
+      .eq("is_public", true)
+      .not("username", "is", null);
+    const out: FollowListEntry[] = [];
+    for (const p of profiles ?? []) {
+      const avatar = (await signAvatarServer((p.avatar_url as string | null) ?? undefined)) ?? undefined;
+      out.push({
+        id: p.id as string,
+        username: p.username as string,
+        displayName: (p.display_name as string | null) ?? (p.username as string),
+        bio: (p.bio as string | null) ?? undefined,
+        avatarUrl: avatar,
+      });
+    }
+    return out.sort((a, b) => a.displayName.localeCompare(b.displayName, "nb"));
+  });
+
 /* ============ REACTIONS ============ */
 
 const TripIdSchema = z.string().min(1).max(128);
