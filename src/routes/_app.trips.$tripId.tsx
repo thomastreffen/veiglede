@@ -321,6 +321,14 @@ function TripPlanner() {
         <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
       </section>
 
+      {/* Turkontroll — status + sharing essentials, surfaced near the top */}
+      {user && trip.status !== "draft" && (
+        <div className="mt-4">
+          <SharingPrivacyPanel trip={trip} onOpenShare={() => setShareOpen(true)} />
+        </div>
+      )}
+
+
       {/* Map */}
       <section className="mt-4">
         <TripMap
