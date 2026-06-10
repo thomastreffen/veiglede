@@ -401,6 +401,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
 
 
 function LiveSharingSection({ tripId }: { tripId: string }) {
+  const { user } = useAuth();
   const [liveOn, setLiveOn] = useLiveOptIn(tripId);
   const session = useLiveSession(tripId);
   const live = isLiveActive(session);
@@ -415,31 +416,51 @@ function LiveSharingSection({ tripId }: { tripId: string }) {
     setTimeout(() => setCopied(false), 1600);
   };
 
+  const handleToggle = async (next: boolean) => {
+    if (!next) {
+      if (!window.confirm("Når du stopper live-deling, kan ingen følge posisjonen din videre. Vil du fortsette?")) return;
+      setLiveOn(false);
+      try { if (user?.id) await endLiveSession({ tripId, userId: user.id }); } catch { /* noop */ }
+      return;
+    }
+    setLiveOn(true);
+  };
+
   return (
     <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-      <label className="flex items-start gap-3 cursor-pointer">
+      <div className="flex items-start gap-3">
         <input
+          id={`live-toggle-${tripId}`}
           type="checkbox"
           checked={liveOn}
-          onChange={(e) => setLiveOn(e.target.checked)}
+          onChange={(e) => void handleToggle(e.target.checked)}
           className="mt-0.5 h-4 w-4 accent-primary"
         />
         <div className="flex-1">
-          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-primary font-bold">
-            <Radio className={`h-3.5 w-3.5 ${liveOn ? "animate-pulse" : ""}`} /> Del turen live
-          </p>
+          <label htmlFor={`live-toggle-${tripId}`} className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-primary font-bold cursor-pointer">
+            <Radio className={`h-3.5 w-3.5 ${liveOn ? "animate-pulse" : ""}`} /> Del live-posisjon
+          </label>
           <p className="mt-1.5 text-xs text-foreground/80 leading-relaxed">
-            La reisefølget følge posisjonen din i sanntid mens du er på veien.
-            Slås av som standard — du må selv aktivere deling. Du kan skru det av når som helst.
+            Live-deling viser hvor du er akkurat nå — den deler ikke automatisk hele turplanen.
+            Slås av som standard. Du kan stoppe når som helst.
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><MapPin className="h-3 w-3 text-primary" /> Live posisjon</span>
-            <span className="inline-flex items-center gap-1.5"><Camera className="h-3 w-3 text-primary" /> Bilder fra ruta</span>
-            <span className="inline-flex items-center gap-1.5"><BookOpen className="h-3 w-3 text-primary" /> Siste stopp</span>
-            <span className="inline-flex items-center gap-1.5"><Users className="h-3 w-3 text-primary" /> Følgere</span>
-          </div>
         </div>
-      </label>
+      </div>
+
+      {/* Hva deles / hva deles ikke — live */}
+      <div className="rounded-lg border border-border bg-background/40 p-3 space-y-2 text-xs leading-relaxed">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Dette deler du</p>
+        <ul className="list-disc pl-4 space-y-0.5 text-foreground/90">
+          <li>Din live-posisjon mens delingen er aktiv</li>
+          <li>Sist oppdatert</li>
+          <li>Kjøretøyikon og fart hvis tilgjengelig</li>
+        </ul>
+        <p className="pt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">Dette deles ikke</p>
+        <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+          <li>Mulighet til å redigere turen</li>
+          <li>E-post eller private kontoopplysninger</li>
+        </ul>
+      </div>
 
       {liveOn && live && liveUrl && (
         <div className="space-y-2 rounded-lg border border-primary/30 bg-background/60 p-3">
@@ -465,6 +486,16 @@ function LiveSharingSection({ tripId }: { tripId: string }) {
         <p className="text-[11px] text-muted-foreground">
           Live-lenken vises her så snart du har startet turen og delt din første posisjon.
         </p>
+      )}
+
+      {liveOn && (
+        <button
+          type="button"
+          onClick={() => void handleToggle(false)}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-foreground hover:border-destructive hover:text-destructive min-h-[44px]"
+        >
+          <Lock className="h-3.5 w-3.5" /> Stopp live-deling
+        </button>
       )}
     </div>
   );
