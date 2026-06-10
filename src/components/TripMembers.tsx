@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import { listTripMembers, type TripMember } from "@/lib/trip-invites";
+import { AvatarImg } from "@/lib/avatar";
 
 interface Props {
   tripId: string;
