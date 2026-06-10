@@ -798,6 +798,53 @@ function SectionNav() {
   );
 }
 
+function QuickLinksCard() {
+  const t = useT();
+  const { user } = useAuth();
+  const p = t.app.profile;
+  const items = [
+    { to: "/trips" as const, label: p.myTrips, icon: <Map className="h-4 w-4" /> },
+    { to: "/garage" as const, label: p.garage, subtitle: p.garageSubtitle, icon: <CarIcon className="h-4 w-4" /> },
+    { to: "/fordeler" as const, label: p.fordeler, subtitle: p.fordelerSubtitle, icon: <Gift className="h-4 w-4" /> },
+    { to: "/settings" as const, label: p.settings, icon: <SettingsIcon className="h-4 w-4" /> },
+    { to: "/hjelp" as const, label: p.help, subtitle: p.helpSubtitle, icon: <HelpCircle className="h-4 w-4" /> },
+  ];
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-3 space-y-0.5">
+      {items.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-2 transition-colors"
+        >
+          <span className="h-8 w-8 rounded-lg bg-surface-2 grid place-items-center text-primary shrink-0">
+            {item.icon}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">{item.label}</p>
+            {item.subtitle && <p className="text-xs text-muted-foreground">{item.subtitle}</p>}
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </Link>
+      ))}
+      {user && (
+        <button
+          onClick={() => signOut()}
+          className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-2 transition-colors text-left"
+        >
+          <span className="h-8 w-8 rounded-lg bg-surface-2 grid place-items-center text-primary shrink-0">
+            <LogOut className="h-4 w-4" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">{p.logout}</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function StatsStrip() {
   const { user } = useAuth();
   const { trips: allTrips } = useTripsStore();
