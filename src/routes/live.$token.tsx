@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Radio } from "lucide-react";
+import { useEffect, useState } from "react";
 import { LiveTripMap } from "@/components/LiveTripMap";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { useLiveSessionByToken, isLiveActive } from "@/lib/live-tracking";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/live/$token")({
   head: () => ({ meta: [{ title: "Følg live — Veiglede" }] }),
   component: LiveFollowPage,
 });
+
 
 // Strip street/house specifics: prefer the last meaningful comma segment
 // (typically city/area), so we never leak a full street address publicly.
@@ -27,6 +30,28 @@ function LiveFollowPage() {
   const live = isLiveActive(session);
   const ended = session?.status === "completed" || (!!session && !live);
   const paused = live && session?.status === "paused";
+
+  // Fetch the trip's vehicle type once so we can show the matching marker.
+  // Safe-by-design RPC: only returns { vehicle_type: 'car' | 'motorcycle' | 'rv' | null }.
+  const [vehicle, setVehicle] = useState<string | null>(null);
+  useEffect(() => {
+    if (!token) { setVehicle(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await (supabase as any)
+          .rpc("get_live_trip_meta_by_token", { p_token: token });
+        if (cancelled) return;
+        const row = Array.isArray(data) ? data[0] : data;
+        const v = row && typeof row === "object" ? (row as { vehicle_type?: string | null }).vehicle_type : null;
+        setVehicle(typeof v === "string" && v.length > 0 ? v : null);
+      } catch {
+        if (!cancelled) setVehicle(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
+
 
   const badge = live
     ? (paused ? "Pauset" : "Live")
@@ -63,7 +88,7 @@ function LiveFollowPage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         <div className="mt-5">
-          <LiveTripMap session={session} height="420px" />
+          <LiveTripMap session={session} vehicle={vehicle} height="420px" />
         </div>
         {session?.last_stop_name && (
           <p className="mt-4 text-xs text-muted-foreground">
