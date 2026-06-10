@@ -70,66 +70,24 @@ export function TripTracker({
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-[0.28em] text-primary">Tur-sporing</p>
           <h2 className="mt-1 font-display text-2xl uppercase">Live tur</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Aktivt kjøretøy: <span className="text-foreground font-medium">{vehicleLabel}</span></p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Aktivt kjøretøy: <span className="text-foreground font-medium">{vehicleLabel}</span>
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Status og start/pause-knapper finnes øverst på siden under <span className="font-semibold text-foreground">Turkontroll</span>.
+          </p>
         </div>
-        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${meta.cls}`}>
+        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${meta.cls}`}>
           <span>{meta.emoji}</span> {meta.label}
         </span>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-wrap gap-2">
-        {t.status === "idle" && (
-          <Action onClick={() => trackingApi.start(tripId)} primary>
-            <Play className="h-4 w-4" /> Start tur
-          </Action>
-        )}
-        {t.status === "active" && (
-          <>
-            <Action onClick={() => trackingApi.pause(tripId)}>
-              <Pause className="h-4 w-4" /> Pause
-            </Action>
-            <Action onClick={() => trackingApi.complete(tripId)} primary>
-              <Flag className="h-4 w-4" /> Fullfør
-            </Action>
-          </>
-        )}
-        {t.status === "paused" && (
-          <>
-            <Action onClick={() => trackingApi.resume(tripId)} primary>
-              <Play className="h-4 w-4" /> Fortsett
-            </Action>
-            <Action onClick={() => trackingApi.complete(tripId)}>
-              <Flag className="h-4 w-4" /> Fullfør
-            </Action>
-          </>
-        )}
-        {t.status === "completed" && (
-          <Action onClick={() => trackingApi.reset(tripId)}>
-            <RotateCcw className="h-4 w-4" /> Nullstill
-          </Action>
-        )}
-      </div>
-
-      {/* Live position sharing toggle */}
-      <LiveShareCard
-        user={user}
-        liveOn={liveOn}
-        setLiveOn={setLiveOn}
-        permDenied={permState === "denied"}
-        tripStatus={t.status}
-        liveActive={liveActive}
-        liveSession={ownLive}
-        lastSeenStr={lastSeenStr}
-        pageVisibility={liveDebug.pageVisibility}
-        lastVisibilityChangeTime={liveDebug.lastVisibilityChangeTime}
-      />
-
       {user && liveOn && <LiveDebugPanel debug={liveDebug} onSendTestPositionNow={sendTestPositionNow} />}
+
 
 
 
