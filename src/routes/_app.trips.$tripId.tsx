@@ -253,16 +253,12 @@ function TripPlanner() {
         </div>
       )}
 
-      {/* Deling og personvern */}
-      {user && (
-        trip.status === "draft" ? (
-          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
-            <span>📝 Ulagret — lagre turen for å dele den</span>
-          </div>
-        ) : (
-          <SharingPrivacyPanel trip={trip} onOpenShare={() => setShareOpen(true)} />
-        )
+      {user && trip.status === "draft" && (
+        <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
+          <span>📝 Ulagret — lagre turen for å dele den</span>
+        </div>
       )}
+
 
       <div className="flex items-center justify-between gap-3">
         <Link to="/trips" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -324,6 +320,14 @@ function TripPlanner() {
         <BigStat icon={<Clock className="h-4 w-4" />} label={td.drivingTime} value={trip.drivingTime} />
         <BigStat icon={<Camera className="h-4 w-4" />} label={td.stops} value={String(totalStops)} />
       </section>
+
+      {/* Turkontroll — status + sharing essentials, surfaced near the top */}
+      {user && trip.status !== "draft" && (
+        <div className="mt-4">
+          <SharingPrivacyPanel trip={trip} onOpenShare={() => setShareOpen(true)} />
+        </div>
+      )}
+
 
       {/* Map */}
       <section className="mt-4">
