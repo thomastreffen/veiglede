@@ -324,7 +324,12 @@ function TripPlanner() {
       {/* Turkontroll — status + sharing essentials, surfaced near the top */}
       {user && trip.status !== "draft" && (
         <div className="mt-4">
-          <SharingPrivacyPanel trip={trip} onOpenShare={() => setShareOpen(true)} />
+          <SharingPrivacyPanel
+            trip={trip}
+            tracking={tracking}
+            liveSession={liveSession}
+            onOpenShare={() => setShareOpen(true)}
+          />
         </div>
       )}
 
