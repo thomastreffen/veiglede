@@ -60,10 +60,16 @@ export const Route = createFileRoute("/api/public/google-places")({
         // Prefer the user-supplied custom connection (suffix _1) over the
         // Lovable-managed key — the managed key is locked to *.lovable.app
         // and will fail browser referrer checks on custom domains.
+        // Server-side proxy: gateway forwards with empty referrer, so we MUST
+        // use an unrestricted server key (the Lovable-managed connection).
+        // Referrer-restricted browser keys (often present in user-added
+        // custom connections suffixed _1/_2) get rejected with 403
+        // "Requests from referer <empty> are blocked." Prefer the managed
+        // key first; fall back to numbered keys only if the base is unset.
         const mapsKey = (
-          process.env.GOOGLE_MAPS_API_KEY_2 ??
-          process.env.GOOGLE_MAPS_API_KEY_1 ??
           process.env.GOOGLE_MAPS_API_KEY ??
+          process.env.GOOGLE_MAPS_API_KEY_1 ??
+          process.env.GOOGLE_MAPS_API_KEY_2 ??
           ""
         ).trim();
         if (!lovableKey || !mapsKey) {
