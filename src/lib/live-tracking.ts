@@ -548,7 +548,7 @@ export function useLiveBroadcaster(opts: {
           if (stopped) return;
           void (async () => {
             try {
-              await processGpsFix("watch", p);
+              await ingestGpsFix("watch", p);
             } catch (e) {
               console.warn("[live] watchPosition success handler failed", e);
             }
@@ -592,7 +592,7 @@ export function useLiveBroadcaster(opts: {
         navigator.geolocation.getCurrentPosition(
           (p) => {
             if (stopped) return;
-            void processGpsFix("poll", p);
+            void ingestGpsFix("poll", p);
           },
           (err) => {
             if (stopped) return;
