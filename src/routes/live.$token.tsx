@@ -9,6 +9,18 @@ export const Route = createFileRoute("/live/$token")({
   component: LiveFollowPage,
 });
 
+// Strip street/house specifics: prefer the last meaningful comma segment
+// (typically city/area), so we never leak a full street address publicly.
+function shortenPlace(raw: string): string {
+  if (!raw.includes(",")) return raw;
+  const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (p && !/^\d{3,}$/.test(p)) return p;
+  }
+  return parts[parts.length - 1] ?? raw;
+}
+
 function LiveFollowPage() {
   const { token } = Route.useParams();
   const { session, loading } = useLiveSessionByToken(token);
@@ -55,7 +67,7 @@ function LiveFollowPage() {
         </div>
         {session?.last_stop_name && (
           <p className="mt-4 text-xs text-muted-foreground">
-            Sist passerte stopp: <span className="text-foreground font-medium">{session.last_stop_name}</span>
+            Sist passerte stopp: <span className="text-foreground font-medium">{shortenPlace(session.last_stop_name)}</span>
           </p>
         )}
         <p className="mt-6 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
