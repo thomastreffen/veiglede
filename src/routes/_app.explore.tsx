@@ -120,6 +120,7 @@ function TripsTab() {
   const [region, setRegion] = useState<string>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
+  const [sort, setSort] = useState<"newest" | "popular">("newest");
 
   const regions = useMemo(() => {
     const set = new Set<string>();
@@ -127,17 +128,48 @@ function TripsTab() {
     return Array.from(set).sort();
   }, [trips]);
 
-  const filtered = useMemo(() => trips.filter((tr) => {
-    if (region !== "all" && tr.region !== region) return false;
-    if (vehicle !== "all" && tr.vehicle !== vehicle) return false;
-    if (style !== "all" && tr.style !== style) return false;
-    return true;
-  }), [trips, region, vehicle, style]);
+  const filtered = useMemo(() => {
+    const list = trips.filter((tr) => {
+      if (region !== "all" && tr.region !== region) return false;
+      if (vehicle !== "all" && tr.vehicle !== vehicle) return false;
+      if (style !== "all" && tr.style !== style) return false;
+      return true;
+    });
+    if (sort === "popular") {
+      return [...list].sort((a, b) => (b.copyCount - a.copyCount) || (b.createdAt - a.createdAt));
+    }
+    return list;
+  }, [trips, region, vehicle, style, sort]);
+
+  // "Populære turer" highlight strip: top 3 by copyCount (only when there are copies).
+  const popular = useMemo(() => {
+    return [...trips]
+      .filter((tr) => tr.copyCount > 0)
+      .sort((a, b) => b.copyCount - a.copyCount)
+      .slice(0, 3);
+  }, [trips]);
+
+  const renderCard = (tr: PublicTripSummary) => (
+    <li key={tr.shareToken}>
+      <PublicTripCard
+        trip={{
+          id: tr.id, title: tr.title, subtitle: tr.subtitle, region: tr.region,
+          origin: tr.origin, destination: tr.destination,
+          distanceKm: tr.distanceKm, drivingTime: tr.drivingTime, stopsCount: tr.stopsCount,
+          cover: tr.cover, style: tr.style, vehicle: tr.vehicle, shareToken: tr.shareToken,
+        }}
+        ownerName={tr.ownerName}
+        ownerUsername={tr.ownerUsername}
+        ownerAvatarUrl={tr.ownerAvatarUrl}
+        status="offentlig"
+      />
+    </li>
+  );
 
   return (
     <>
-      {/* Filters */}
-      <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {/* Filters + sort */}
+      <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={region} onValueChange={setRegion}>
           <SelectTrigger><SelectValue placeholder={ex.region} /></SelectTrigger>
           <SelectContent>
@@ -159,24 +191,46 @@ function TripsTab() {
             {ROUTE_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.emoji} {s.label}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={sort} onValueChange={(v) => setSort(v as "newest" | "popular")}>
+          <SelectTrigger><SelectValue placeholder="Sortering" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Nyeste</SelectItem>
+            <SelectItem value="popular">Mest kopiert</SelectItem>
+          </SelectContent>
+        </Select>
       </section>
 
+      {/* Populære turer */}
+      {popular.length > 0 && sort === "newest" && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl uppercase">Populære turer</h2>
+          <p className="text-xs text-muted-foreground">Turene som andre kopierer akkurat nå.</p>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {popular.map(renderCard)}
+          </ul>
+        </section>
+      )}
+
+      {/* Main list */}
       <section className="mt-8">
+        <h2 className="font-display text-xl uppercase">
+          {sort === "popular" ? "Mest kopiert" : "Nye offentlige turer"}
+        </h2>
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-72 rounded-2xl border border-border bg-surface/50 animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           trips.length === 0 ? (
-            <EmptyState title={ex.emptyTripsTitle} body={ex.emptyTripsBody} />
+            <EmptyState title="Det finnes ingen offentlige turer enda." body={ex.emptyTripsBody} />
           ) : (
             <EmptyState title={ex.noMatchTitle} body={ex.noMatchBody} />
           )
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((tr) => <PublicTripCard key={tr.shareToken} t={tr} />)}
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map(renderCard)}
           </ul>
         )}
       </section>
