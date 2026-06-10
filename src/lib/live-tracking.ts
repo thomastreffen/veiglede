@@ -24,8 +24,10 @@ export interface LiveSession {
 export interface LivePosition {
   lat: number;
   lng: number;
+  accuracy?: number | null;
   heading?: number | null;
   speed?: number | null;
+  updatedAt?: string;
 }
 
 // ---------- per-trip opt-in (localStorage) ----------
@@ -113,7 +115,7 @@ export async function upsertLiveSession(input: {
   const { error } = await (supabase as any)
     .from("trip_live_sessions")
     .upsert(row, { onConflict: "trip_id,user_id" });
-  if (error) console.warn("[live] upsert failed", error);
+  if (error) throw error;
 }
 
 export async function updateLiveStatus(input: {
@@ -191,8 +193,15 @@ export function useLiveBroadcaster(opts: {
           lastStopName: lastStopName ?? null,
         });
         lastSentRef.current = pos;
+        console.log("[live] heartbeat upsert success", {
+          lat: pos.lat,
+          lng: pos.lng,
+          accuracy: pos.accuracy ?? null,
+          heading: pos.heading ?? null,
+          speed: pos.speed ?? null,
+        });
       } catch (e) {
-        console.warn("[live] upsert send failed", e);
+        console.warn("[live] heartbeat upsert failed", e);
       }
     };
 
@@ -201,63 +210,97 @@ export function useLiveBroadcaster(opts: {
       watchId = navigator.geolocation.watchPosition(
         (p) => {
           if (stopped) return;
-          try {
-            setPermState("granted");
-            const lat = p?.coords?.latitude;
-            const lng = p?.coords?.longitude;
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-            const next: LivePosition = {
-              lat: lat as number,
-              lng: lng as number,
-              heading: p.coords.heading ?? null,
-              speed: p.coords.speed ?? null,
-            };
-            const prev = lastPosRef.current;
-            if (prev && status === "active") {
-              try {
-                const delta = distanceKm(
-                  { lat: prev.lat, lng: prev.lng },
-                  { lat: next.lat, lng: next.lng },
-                );
-                // Ignore noise (<5m) and unrealistic jumps (>2km between samples).
-                if (delta >= 0.005 && delta <= 2) {
-                  trackingApi.addDistance(tripId, delta);
-                }
-              } catch (e) {
-                console.warn("[live] distance accumulation failed", e);
-              }
-            }
-            lastPosRef.current = next;
-
-            // Immediate upsert when owner has moved enough since last send.
+          void (async () => {
             try {
+              setPermState("granted");
+              const prevGps = lastPosRef.current;
               const lastSent = lastSentRef.current;
-              const movedEnough = !lastSent || distanceKm(
-                { lat: lastSent.lat, lng: lastSent.lng },
-                { lat: next.lat, lng: next.lng },
-              ) >= 0.025; // 25 meters
+              const next: LivePosition = {
+                lat: p.coords.latitude,
+                lng: p.coords.longitude,
+                accuracy: Number.isFinite(p.coords.accuracy) ? p.coords.accuracy : null,
+                heading: Number.isFinite(p.coords.heading) ? p.coords.heading : null,
+                speed: Number.isFinite(p.coords.speed) ? p.coords.speed : null,
+                updatedAt: new Date().toISOString(),
+              };
+              if (!Number.isFinite(next.lat) || !Number.isFinite(next.lng)) return;
+
+              console.log("[live] gps fix received", {
+                lat: next.lat,
+                lng: next.lng,
+                accuracy: next.accuracy ?? null,
+                heading: next.heading ?? null,
+                speed: next.speed ?? null,
+                updatedAt: next.updatedAt,
+              });
+              console.log("[live] gps refs", { prevGps, lastSent });
+
+              let movedSincePrevGps = !prevGps;
+              let movedSinceLastSent = !lastSent;
+
+              if (prevGps) {
+                try {
+                  const delta = distanceKm(
+                    { lat: prevGps.lat, lng: prevGps.lng },
+                    { lat: next.lat, lng: next.lng },
+                  );
+                  movedSincePrevGps = delta >= 0.025;
+                  if (status === "active") {
+                    // Ignore noise (<5m) and unrealistic jumps (>2km between samples).
+                    if (delta >= 0.005 && delta <= 2) {
+                      trackingApi.addDistance(tripId, delta);
+                    }
+                  }
+                } catch (e) {
+                  console.warn("[live] distance accumulation failed", e);
+                }
+              }
+
+              if (lastSent) {
+                movedSinceLastSent = distanceKm(
+                  { lat: lastSent.lat, lng: lastSent.lng },
+                  { lat: next.lat, lng: next.lng },
+                ) >= 0.025;
+              }
+
+              lastPosRef.current = next;
+
               const now = Date.now();
               const canSendImmediate = now - lastImmediateSentAtRef.current >= 5_000;
-              if (movedEnough && canSendImmediate) {
-                lastSentRef.current = next;
-                lastImmediateSentAtRef.current = now;
-                void upsertLiveSession({
-                  tripId,
-                  userId: userId!,
-                  pos: next,
-                  status: status as LiveStatus,
-                  lastStopName: lastStopName ?? null,
-                }).catch((e) => {
+              console.log("[live] movement check", {
+                movedSincePrevGps,
+                movedSinceLastSent,
+                canSendImmediate,
+              });
+
+              if ((movedSincePrevGps || movedSinceLastSent) && canSendImmediate) {
+                try {
+                  await upsertLiveSession({
+                    tripId,
+                    userId: userId!,
+                    pos: next,
+                    status: status as LiveStatus,
+                    lastStopName: lastStopName ?? null,
+                  });
+
+                  lastSentRef.current = next;
+                  lastImmediateSentAtRef.current = now;
+
+                  console.log("[live] immediate upsert success", {
+                    lat: next.lat,
+                    lng: next.lng,
+                    accuracy: next.accuracy ?? null,
+                    heading: next.heading ?? null,
+                    speed: next.speed ?? null,
+                  });
+                } catch (e) {
                   console.warn("[live] immediate upsert failed", e);
-                });
+                }
               }
             } catch (e) {
-              console.warn("[live] immediate upsert check failed", e);
+              console.warn("[live] watchPosition success handler failed", e);
             }
-          } catch (e) {
-            console.warn("[live] watchPosition success handler failed", e);
-          }
-
+          })();
         },
         (err) => {
           if (stopped) return;
@@ -268,7 +311,7 @@ export function useLiveBroadcaster(opts: {
             console.warn("[live] watchPosition error handler failed", e);
           }
         },
-        { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
       );
     } catch (e) {
       console.warn("[live] watchPosition failed", e);
