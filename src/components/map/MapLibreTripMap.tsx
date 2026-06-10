@@ -513,7 +513,12 @@ export function MapLibreTripMap({
   }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics]);
 
 
-  useEffect(() => { addRouteAndFit(); }, [addRouteAndFit]);
+  useEffect(() => {
+    // Skip initial route-fit if we already have a live position to follow —
+    // the user wants to inspect their current location, not the full route.
+    if (livePosition) { addRouteAndFit; return; }
+    addRouteAndFit();
+  }, [addRouteAndFit, livePosition]);
 
   // Explicit re-render on new route result. When ORS returns updated
   // geometry after a waypoint change, push it onto the existing source
