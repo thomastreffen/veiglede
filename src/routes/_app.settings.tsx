@@ -399,6 +399,7 @@ function UsernameField() {
   const [pending, setPending] = useState("");
   const [pendingOk, setPendingOk] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
