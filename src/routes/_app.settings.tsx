@@ -523,12 +523,15 @@ function UsernameField() {
 
 function ProfileFieldsEditor() {
   const { user } = useAuth();
+  const debug = useDebugMode();
   const [loaded, setLoaded] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [initial, setInitial] = useState({ displayName: "", bio: "", avatarUrl: "" });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -551,6 +554,7 @@ function ProfileFieldsEditor() {
 
   const dirty = displayName !== initial.displayName || bio !== initial.bio || avatarUrl !== initial.avatarUrl;
   const tooLongBio = bio.length > 160;
+  const initialLetter = (displayName || user.email || "?").charAt(0).toUpperCase();
 
   const save = async () => {
     if (!dirty || tooLongBio) return;
@@ -566,8 +570,86 @@ function ProfileFieldsEditor() {
     toast.success("Profil lagret");
   };
 
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    const { uploadProfileAvatar, cleanupOldAvatars } = await import("@/lib/profile-avatar");
+    const res = await uploadProfileAvatar(file, user.id);
+    if (!res.ok) {
+      setUploading(false);
+      toast.error(res.error);
+      return;
+    }
+    const { error } = await supabase.from("profiles").update({ avatar_url: res.url }).eq("id", user.id);
+    if (error) {
+      setUploading(false);
+      toast.error("Kunne ikke lagre profilbilde");
+      return;
+    }
+    setAvatarUrl(res.url);
+    setInitial((p) => ({ ...p, avatarUrl: res.url }));
+    cleanupOldAvatars(user.id, res.path).catch(() => undefined);
+    setUploading(false);
+    toast.success("Profilbilde oppdatert");
+  };
+
+  const removeAvatar = async () => {
+    if (!avatarUrl) return;
+    setUploading(true);
+    const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+    if (error) {
+      setUploading(false);
+      toast.error("Kunne ikke fjerne bilde");
+      return;
+    }
+    const { cleanupOldAvatars } = await import("@/lib/profile-avatar");
+    cleanupOldAvatars(user.id).catch(() => undefined);
+    setAvatarUrl("");
+    setInitial((p) => ({ ...p, avatarUrl: "" }));
+    setUploading(false);
+    toast.success("Profilbilde fjernet");
+  };
+
   return (
     <div className="space-y-4">
+      <div>
+        <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Profilbilde</span>
+        <div className="flex items-center gap-4">
+          <div className="h-20 w-20 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden shrink-0">
+            {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : initialLetter}
+          </div>
+          <div className="flex flex-col gap-2 min-w-0">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={onPickFile}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
+            >
+              {uploading ? "Laster opp…" : "Last opp profilbilde"}
+            </button>
+            {avatarUrl && (
+              <button
+                type="button"
+                onClick={removeAvatar}
+                disabled={uploading}
+                className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm hover:bg-surface-2 disabled:opacity-50"
+              >
+                Fjern bilde
+              </button>
+            )}
+            <p className="text-xs text-muted-foreground">JPG, PNG eller WebP. Maks 5 MB.</p>
+          </div>
+        </div>
+      </div>
       <label className="block">
         <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Visningsnavn</span>
         <input
@@ -590,16 +672,17 @@ function ProfileFieldsEditor() {
           className="w-full bg-surface-1 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary resize-y"
         />
       </label>
-      <label className="block">
-        <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Profilbilde (URL)</span>
-        <input
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="https://…"
-          className="w-full bg-surface-1 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
-        />
-        <p className="mt-1 text-xs text-muted-foreground">Lim inn en lenke til et bilde. Tomt felt = bruk initial.</p>
-      </label>
+      {debug && (
+        <label className="block">
+          <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Profilbilde (URL · debug)</span>
+          <input
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            placeholder="https://…"
+            className="w-full bg-surface-1 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
+        </label>
+      )}
       <div className="flex justify-end">
         <button
           onClick={save}
