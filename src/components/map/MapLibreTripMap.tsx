@@ -502,23 +502,22 @@ export function MapLibreTripMap({
           if (lat > maxLat) maxLat = lat;
         }
       }
-      map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-        padding: compact ? 32 : 56, duration: 400, maxZoom: 11,
-      });
+      // Skip route fitBounds when live tracking — user wants to inspect
+      // their current position, not be yanked back to the whole route.
+      if (!livePosition) {
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+          padding: compact ? 32 : 56, duration: 400, maxZoom: 11,
+        });
+      }
       emitDiagnostics();
     } catch (err) {
       lastErrorRef.current = `route-layer: ${(err as Error)?.message ?? "unknown"}`;
       emitDiagnostics();
     }
-  }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics]);
+  }, [routeGeom, projected, ready, compact, onStage, emitDiagnostics, livePosition]);
 
 
-  useEffect(() => {
-    // Skip initial route-fit if we already have a live position to follow —
-    // the user wants to inspect their current location, not the full route.
-    if (livePosition) { addRouteAndFit; return; }
-    addRouteAndFit();
-  }, [addRouteAndFit, livePosition]);
+  useEffect(() => { addRouteAndFit(); }, [addRouteAndFit]);
 
   // Explicit re-render on new route result. When ORS returns updated
   // geometry after a waypoint change, push it onto the existing source
