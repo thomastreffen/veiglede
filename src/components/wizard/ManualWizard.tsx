@@ -541,6 +541,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                           selected={r.place}
                           onSelect={(p) => updateRow(r.key, { place: p })}
                           placeholder={w.manual.placeholder}
+                          useAnywayLabel={isLast ? "Bruk min destinasjon" : undefined}
                         />
                       </div>
                     </div>
