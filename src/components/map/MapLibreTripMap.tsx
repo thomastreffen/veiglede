@@ -653,15 +653,16 @@ export function MapLibreTripMap({
       return;
     }
     if (!liveMarkerRef.current) {
-      const el = liveDotEl();
-      liveMarkerRef.current = new maplibregl.Marker({ element: el })
+      const el = createLiveMarkerEl(livePosition.vehicle ?? null, { phase: "active", title: "Din live-posisjon" });
+      liveMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([livePosition.lng, livePosition.lat])
         .addTo(map);
     } else {
       liveMarkerRef.current.setLngLat([livePosition.lng, livePosition.lat]);
     }
     return undefined;
-  }, [livePosition?.lat, livePosition?.lng, ready]);
+  }, [livePosition?.lat, livePosition?.lng, livePosition?.vehicle, ready]);
+
 
   // Match /map-test: a single container that the map mounts into. No
   // intermediate wrapper, no opacity tricks, no rounded clipping that could
