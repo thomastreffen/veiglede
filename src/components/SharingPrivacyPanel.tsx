@@ -5,13 +5,13 @@ import { flushTripsNow } from "@/lib/cloud-sync";
 import {
   useLiveOptIn, useLiveSession, isLiveActive, endLiveSession,
 } from "@/lib/live-tracking";
-import { useTripTracking, trackingApi, statusMeta } from "@/lib/trip-tracking";
+import { useTripTracking, trackingApi, statusMeta, type TripStatus } from "@/lib/trip-tracking";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
 interface Props {
-  trip: Trip;
-  onOpenShare: () => void;
+  trip?: Trip | null;
+  onOpenShare?: () => void;
 }
 
 /**
@@ -22,56 +22,111 @@ interface Props {
  *   2. Turplan-deling — privat / delt med lenke
  *   3. Live-posisjon — av / på + quick actions when live
  *
- * Display-only — does not change live or trip sharing backend. It reads the
- * same state the rest of the app uses (trip.isPublic + live session/opt-in +
- * trip-tracking status) and calls the existing setTripPublic, trackingApi,
- * and endLiveSession actions.
+ * Defensive by design: every value coming off `trip`, the live session, or the
+ * tracking store is treated as optional. If `trip` (or trip.id) is missing we
+ * render nothing rather than crash the host page. All async handlers are
+ * wrapped in try/catch and surface errors via toast.
  */
 export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
+  // Hard guard: without a trip id we cannot wire any of the underlying
+  // per-trip hooks safely, so render nothing rather than crash.
+  const tripId = trip?.id ?? "";
+  const tripIdReady = tripId.length > 0;
+
+  // Hooks must run on every render — pass a safe empty id when not ready.
   const { user } = useAuth();
-  const tracking = useTripTracking(trip.id);
-  const statusM = statusMeta(tracking.status);
+  const tracking = useTripTracking(tripId);
+  const [liveOn, setLiveOn] = useLiveOptIn(tripId);
+  const session = useLiveSession(tripIdReady ? tripId : null);
+
+  const [copied, setCopied] = useState(false);
+
+  if (!tripIdReady || !trip) return null;
+
+  const status: TripStatus = (tracking?.status ?? "idle") as TripStatus;
+  const statusM = statusMeta(status);
 
   const isPublic = trip.isPublic ?? false;
-  const [liveOn, setLiveOn] = useLiveOptIn(trip.id);
-  const session = useLiveSession(trip.id);
-  const liveActive = isLiveActive(session);
+  const shareToken = trip.shareToken ?? null;
+  const liveActive = isLiveActive(session ?? null);
+  const liveTokenAvailable = Boolean(session?.live_share_token);
   const anyShareActive = isPublic || liveActive || liveOn;
 
   const base = typeof window !== "undefined" ? window.location.origin : "https://veiglede.no";
   const liveUrl = session?.live_share_token ? `${base}/live/${session.live_share_token}` : "";
   const lastSeenStr = session?.updated_at
-    ? new Date(session.updated_at).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })
+    ? safeFormatTime(session.updated_at)
     : null;
 
-  const [copied, setCopied] = useState(false);
+  const canOpenShare = typeof onOpenShare === "function";
+  const openShareSafe = () => { try { onOpenShare?.(); } catch { /* noop */ } };
 
   const handleDisableTripShare = () => {
-    if (!window.confirm("Når du slår av deling, vil lenken ikke lenger fungere. Vil du fortsette?")) return;
-    tripsApi.setTripPublic(trip.id, false);
-    void flushTripsNow();
-    toast.success("Turplanen er nå privat");
+    if (!isPublic) return;
+    if (typeof window !== "undefined"
+      && !window.confirm("Når du slår av deling, vil lenken ikke lenger fungere. Vil du fortsette?")) return;
+    try {
+      tripsApi.setTripPublic(trip.id, false);
+      void flushTripsNow();
+      toast.success("Turplanen er nå privat");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Kunne ikke slå av deling");
+    }
+  };
+
+  const handleEnableTripShare = () => {
+    try {
+      if (!shareToken) tripsApi.ensureShareToken(trip.id);
+      tripsApi.setTripPublic(trip.id, true);
+      void flushTripsNow();
+      openShareSafe();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Kunne ikke dele turen");
+    }
   };
 
   const handleStopLive = async () => {
-    if (!window.confirm("Når du stopper live-deling, kan ingen følge posisjonen din videre. Vil du fortsette?")) return;
-    setLiveOn(false);
+    if (typeof window !== "undefined"
+      && !window.confirm("Når du stopper live-deling, kan ingen følge posisjonen din videre. Vil du fortsette?")) return;
     try {
-      if (user?.id) await endLiveSession({ tripId: trip.id, userId: user.id });
-    } catch { /* noop */ }
-    toast.success("Live-deling er stoppet");
+      setLiveOn(false);
+      if (user?.id) {
+        try { await endLiveSession({ tripId: trip.id, userId: user.id }); }
+        catch { /* live session already ended is fine */ }
+      }
+      toast.success("Live-deling er stoppet");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Kunne ikke stoppe live-deling");
+    }
   };
 
   const handleStartLive = () => {
-    setLiveOn(true);
-    toast.success("Live-deling er på");
+    try {
+      setLiveOn(true);
+      toast.success("Live-deling er på");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Kunne ikke starte live-deling");
+    }
   };
 
   const handleCopyLive = async () => {
     if (!liveUrl) return;
-    try { await navigator.clipboard.writeText(liveUrl); } catch { /* noop */ }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(liveUrl);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      toast.error("Kunne ikke kopiere lenken");
+    }
+  };
+
+  const safeTrack = (fn: ((id: string) => unknown) | undefined) => () => {
+    if (typeof fn !== "function") return;
+    try { fn(trip.id); } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Handling feilet");
+    }
   };
 
   return (
@@ -111,23 +166,35 @@ export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
           </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {tracking.status === "idle" && (
-            <StatusBtn onClick={() => trackingApi.start(trip.id)} primary><Play className="h-3.5 w-3.5" /> Start tur</StatusBtn>
+          {status === "idle" && (
+            <StatusBtn onClick={safeTrack(trackingApi.start)} primary disabled={typeof trackingApi.start !== "function"}>
+              <Play className="h-3.5 w-3.5" /> Start tur
+            </StatusBtn>
           )}
-          {tracking.status === "active" && (
+          {status === "active" && (
             <>
-              <StatusBtn onClick={() => trackingApi.pause(trip.id)}><Pause className="h-3.5 w-3.5" /> Pause</StatusBtn>
-              <StatusBtn onClick={() => trackingApi.complete(trip.id)} primary><Flag className="h-3.5 w-3.5" /> Fullfør</StatusBtn>
+              <StatusBtn onClick={safeTrack(trackingApi.pause)} disabled={typeof trackingApi.pause !== "function"}>
+                <Pause className="h-3.5 w-3.5" /> Pause
+              </StatusBtn>
+              <StatusBtn onClick={safeTrack(trackingApi.complete)} primary disabled={typeof trackingApi.complete !== "function"}>
+                <Flag className="h-3.5 w-3.5" /> Fullfør
+              </StatusBtn>
             </>
           )}
-          {tracking.status === "paused" && (
+          {status === "paused" && (
             <>
-              <StatusBtn onClick={() => trackingApi.resume(trip.id)} primary><Play className="h-3.5 w-3.5" /> Fortsett</StatusBtn>
-              <StatusBtn onClick={() => trackingApi.complete(trip.id)}><Flag className="h-3.5 w-3.5" /> Fullfør</StatusBtn>
+              <StatusBtn onClick={safeTrack(trackingApi.resume)} primary disabled={typeof trackingApi.resume !== "function"}>
+                <Play className="h-3.5 w-3.5" /> Fortsett
+              </StatusBtn>
+              <StatusBtn onClick={safeTrack(trackingApi.complete)} disabled={typeof trackingApi.complete !== "function"}>
+                <Flag className="h-3.5 w-3.5" /> Fullfør
+              </StatusBtn>
             </>
           )}
-          {tracking.status === "completed" && (
-            <StatusBtn onClick={() => trackingApi.reset(trip.id)}><RotateCcw className="h-3.5 w-3.5" /> Nullstill</StatusBtn>
+          {status === "completed" && (
+            <StatusBtn onClick={safeTrack(trackingApi.reset)} disabled={typeof trackingApi.reset !== "function"}>
+              <RotateCcw className="h-3.5 w-3.5" /> Nullstill
+            </StatusBtn>
           )}
         </div>
       </div>
@@ -139,7 +206,7 @@ export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
             {isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-foreground" />}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Turplan-deling</p>
               <span
                 className={
@@ -159,21 +226,31 @@ export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onOpenShare}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            {isPublic ? "Administrer deling" : "Del turplan"}
-          </button>
-          {isPublic && (
+          {isPublic ? (
+            <>
+              <button
+                type="button"
+                onClick={openShareSafe}
+                disabled={!canOpenShare}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Share2 className="h-3.5 w-3.5" /> Administrer deling
+              </button>
+              <button
+                type="button"
+                onClick={handleDisableTripShare}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-destructive hover:text-destructive"
+              >
+                <Lock className="h-3.5 w-3.5" /> Slå av deling
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              onClick={handleDisableTripShare}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-destructive hover:text-destructive"
+              onClick={handleEnableTripShare}
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
             >
-              <Lock className="h-3.5 w-3.5" /> Slå av deling
+              <Share2 className="h-3.5 w-3.5" /> Del turplan
             </button>
           )}
         </div>
@@ -186,7 +263,7 @@ export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
             <Radio className={`h-4 w-4 ${liveActive ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Live-posisjon</p>
               <span
                 className={
@@ -214,62 +291,63 @@ export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
           </div>
         </div>
 
-        {/* Active live: quick actions */}
-        {liveActive && liveUrl && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleCopyLive}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
-            >
-              {copied ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier live-lenke</>}
-            </button>
-            <button
-              type="button"
-              onClick={onOpenShare}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary"
-            >
-              <UserPlus className="h-3.5 w-3.5" /> Inviter reisefølge
-            </button>
-            <button
-              type="button"
-              onClick={handleStopLive}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-destructive hover:text-destructive"
-            >
-              <Lock className="h-3.5 w-3.5" /> Stopp live-deling
-            </button>
-          </div>
-        )}
-
-        {/* Not active */}
-        {!liveActive && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {!liveOn ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {liveActive && liveTokenAvailable ? (
+            <>
               <button
                 type="button"
-                onClick={handleStartLive}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+                onClick={handleCopyLive}
+                disabled={!liveUrl}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Radio className="h-3.5 w-3.5" /> Del live-posisjon
+                {copied ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier live-lenke</>}
               </button>
-            ) : (
+              <button
+                type="button"
+                onClick={openShareSafe}
+                disabled={!canOpenShare}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <UserPlus className="h-3.5 w-3.5" /> Inviter reisefølge
+              </button>
               <button
                 type="button"
                 onClick={handleStopLive}
                 className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-destructive hover:text-destructive"
               >
-                <Lock className="h-3.5 w-3.5" /> Slå av live-deling
+                <Lock className="h-3.5 w-3.5" /> Stopp live-deling
               </button>
-            )}
-            <button
-              type="button"
-              onClick={onOpenShare}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary"
-            >
-              <Share2 className="h-3.5 w-3.5" /> Administrer live-deling
-            </button>
-          </div>
-        )}
+            </>
+          ) : (
+            <>
+              {!liveOn ? (
+                <button
+                  type="button"
+                  onClick={handleStartLive}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
+                >
+                  <Radio className="h-3.5 w-3.5" /> Del live-posisjon
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleStopLive}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-destructive hover:text-destructive"
+                >
+                  <Lock className="h-3.5 w-3.5" /> Slå av live-deling
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={openShareSafe}
+                disabled={!canOpenShare}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Share2 className="h-3.5 w-3.5" /> Administrer live-deling
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -279,17 +357,27 @@ export function SharingPrivacyPanel({ trip, onOpenShare }: Props) {
   );
 }
 
+function safeFormatTime(iso: string): string | null {
+  try {
+    return new Date(iso).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return null;
+  }
+}
+
 function StatusBtn({
-  onClick, primary, children,
-}: { onClick: () => void; primary?: boolean; children: React.ReactNode }) {
+  onClick, primary, disabled, children,
+}: { onClick: () => void; primary?: boolean; disabled?: boolean; children: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={
-        primary
-          ? "inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110"
-          : "inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary"
+        (primary
+          ? "inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 "
+          : "inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary ")
+        + "disabled:opacity-60 disabled:cursor-not-allowed"
       }
     >
       {children}
