@@ -455,6 +455,7 @@ export function AiWizard({ onBack }: { onBack: () => void }) {
                   vehicleLabel: vehicleMeta(selectedVehicle.type).label,
                   energyLabel: selectedVehicle.energy,
                   styleLabel: styleMeta(style).label,
+                  styleValue: style,
                   maxHoursPerDay: maxHours,
                   stopInterests: selectedVehicle.stopInterests ?? [],
                   avoidHighway,
