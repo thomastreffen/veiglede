@@ -25,10 +25,10 @@ type NavItemDef = {
   badge?: string;
 };
 
-function buildNav(t: Dict): NavItemDef[] {
+function buildNav(t: Dict, loggedIn: boolean): NavItemDef[] {
   const n = t.app.nav;
   return [
-    { to: "/", label: n.home, icon: Home },
+    { to: loggedIn ? "/home" : "/", label: n.home, icon: Home },
     { to: "/explore", label: n.explore, icon: Compass },
     { to: "/fordeler", label: n.fordeler, icon: Gift, badge: n.fordelerBadge },
     { to: "/trips", label: n.myTrips, icon: Map },
@@ -49,7 +49,7 @@ export function AppShell() {
   const { notify } = useBrowserNotifications();
   const amIAdmin = useServerFn(amIAdminFn);
   const t = useT();
-  const nav = useMemo(() => buildNav(t), [t]);
+  const nav = useMemo(() => buildNav(t, !!user), [t, user]);
   const { data: adminInfo } = useQuery({
     queryKey: ["am-i-admin", user?.id ?? "anon"],
     queryFn: () => amIAdmin(),
