@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { trackingApi, useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { tripsApi } from "@/lib/trips-store";
 import type { Stop } from "@/lib/trips-store";
-import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio, Copy, Share2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio, Copy, Share2, ChevronDown, Bug, Send } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import {
-  useLiveBroadcaster, useLiveOptIn, endLiveSession, isLiveActive, type LiveSession,
+  useLiveBroadcaster, useLiveOptIn, endLiveSession, isLiveActive, type LiveSession, type LiveBroadcasterDebugState,
 } from "@/lib/live-tracking";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export function TripTracker({
   tripId, tripStops, vehicleLabel, liveSession,
@@ -23,7 +24,7 @@ export function TripTracker({
     ? tripStops.find((s) => s.id === t.visitedStopIds[t.visitedStopIds.length - 1])?.name ?? null
     : null;
 
-  const { permState } = useLiveBroadcaster({
+  const { permState, debug: liveDebug, sendTestPositionNow } = useLiveBroadcaster({
     tripId,
     userId: user?.id ?? null,
     enabled: liveOn,
@@ -126,6 +127,8 @@ export function TripTracker({
         lastSeenStr={lastSeenStr}
       />
 
+      {user && liveOn && <LiveDebugPanel debug={liveDebug} onSendTestPositionNow={sendTestPositionNow} />}
+
 
 
 
@@ -201,6 +204,144 @@ export function TripTracker({
       )}
     </section>
   );
+}
+
+function LiveDebugPanel({
+  debug,
+  onSendTestPositionNow,
+}: {
+  debug: LiveBroadcasterDebugState;
+  onSendTestPositionNow: () => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const items = useMemo(() => ([
+    { label: "broadcastable", value: boolLabel(debug.broadcastable) },
+    { label: "liveOn", value: boolLabel(debug.liveOn) },
+    { label: "trip status", value: debug.tripStatus },
+    { label: "permission state", value: debug.permissionState },
+    { label: "watchPosition started", value: boolLabel(debug.watchStarted) },
+    { label: "watchId exists", value: boolLabel(debug.watchIdExists) },
+    { label: "last GPS fix time", value: formatTime(debug.lastGpsFixTime) },
+    { label: "last GPS fix lat", value: formatCoord(debug.lastGpsFixLat) },
+    { label: "last GPS fix lng", value: formatCoord(debug.lastGpsFixLng) },
+    { label: "last GPS accuracy", value: formatMeters(debug.lastGpsAccuracy) },
+    { label: "previous GPS lat/lng", value: formatLatLngPair(debug.previousGpsLat, debug.previousGpsLng) },
+    { label: "distance since previous GPS fix", value: formatKm(debug.distanceSincePreviousGpsKm) },
+    { label: "distance since last sent position", value: formatKm(debug.distanceSinceLastSentKm) },
+    { label: "movedEnough", value: boolLabel(debug.movedEnough) },
+    { label: "canSendImmediate", value: boolLabel(debug.canSendImmediate) },
+    { label: "last immediate upsert attempt", value: formatTime(debug.lastImmediateUpsertAttemptTime) },
+    { label: "last immediate upsert success", value: formatTime(debug.lastImmediateUpsertSuccessTime) },
+    { label: "last heartbeat upsert success", value: formatTime(debug.lastHeartbeatUpsertSuccessTime) },
+    { label: "last manual upsert attempt", value: formatTime(debug.lastManualUpsertAttemptTime) },
+    { label: "last manual upsert success", value: formatTime(debug.lastManualUpsertSuccessTime) },
+    { label: "last upsert payload lat", value: formatCoord(debug.lastUpsertPayload?.lat ?? null) },
+    { label: "last upsert payload lng", value: formatCoord(debug.lastUpsertPayload?.lng ?? null) },
+    { label: "last stored row lat/lng", value: formatLatLngPair(debug.lastStoredRow?.lat ?? null, debug.lastStoredRow?.lng ?? null) },
+    { label: "last upsert error", value: debug.lastUpsertError ?? "—" },
+  ]), [debug]);
+
+  async function handleManualSend() {
+    try {
+      setSending(true);
+      const ok = await onSendTestPositionNow();
+      if (ok) toast.success("Testposisjon sendt.");
+      else toast.error("Kunne ikke sende testposisjon.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="rounded-xl border border-primary/30 bg-primary/5">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+              <Bug className="h-3.5 w-3.5" /> Live debug
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Skjul/vis teknisk status</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleManualSend}
+              disabled={sending}
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border bg-background/80 px-3 py-2 text-xs font-semibold hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Send className="h-3.5 w-3.5" /> {sending ? "Sender…" : "Send testposisjon nå"}
+            </button>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border bg-background/80 px-3 py-2 text-xs font-semibold hover:border-primary"
+              >
+                {open ? "Skjul teknisk status" : "Vis teknisk status"}
+                <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : "rotate-0"}`} />
+              </button>
+            </CollapsibleTrigger>
+          </div>
+        </div>
+        <CollapsibleContent>
+          <div className="border-t border-border/70 px-4 py-4 space-y-4">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {items.map((item) => (
+                <div key={item.label} className="rounded-lg border border-border bg-background/70 px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
+                  <p className="mt-1 break-words text-xs font-medium text-foreground">{item.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+              <DebugJsonBlock label="Last upsert payload" value={debug.lastUpsertPayload} />
+              <DebugJsonBlock label="Last stored row" value={debug.lastStoredRow} />
+            </div>
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+function DebugJsonBlock({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="rounded-lg border border-border bg-background/70 p-3">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+      <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words text-[11px] leading-5 text-foreground">
+        {value ? JSON.stringify(value, null, 2) : "—"}
+      </pre>
+    </div>
+  );
+}
+
+function boolLabel(value: boolean) {
+  return value ? "true" : "false";
+}
+
+function formatTime(value: string | null) {
+  if (!value) return "—";
+  try { return new Date(value).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
+  catch { return value; }
+}
+
+function formatCoord(value: number | null) {
+  return typeof value === "number" ? value.toFixed(6) : "—";
+}
+
+function formatMeters(value: number | null) {
+  return typeof value === "number" ? `${Math.round(value)} m` : "—";
+}
+
+function formatKm(value: number | null) {
+  return typeof value === "number" ? `${(value * 1000).toFixed(1)} m` : "—";
+}
+
+function formatLatLngPair(lat: number | null, lng: number | null) {
+  if (typeof lat !== "number" || typeof lng !== "number") return "—";
+  return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
 function Action({ onClick, primary, children }: { onClick: () => void; primary?: boolean; children: React.ReactNode }) {
