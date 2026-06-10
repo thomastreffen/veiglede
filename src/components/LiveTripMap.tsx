@@ -3,14 +3,18 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useLiveSession, isLiveActive, type LiveSession } from "@/lib/live-tracking";
+import { createLiveMarkerEl } from "@/lib/live-marker";
 
 interface Props {
   tripId?: string;
   /** Pre-fetched session (e.g. from useLiveSessionByToken in a public route). */
   session?: LiveSession | null;
+  /** Vehicle type for the live marker icon. Falls back to default dot. */
+  vehicle?: string | null;
   height?: string;
   className?: string;
 }
+
 
 type Phase = "waiting" | "active" | "paused" | "ended";
 
