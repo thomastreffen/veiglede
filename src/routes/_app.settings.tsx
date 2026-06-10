@@ -618,7 +618,7 @@ function ProfileFieldsEditor() {
         <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Profilbilde</span>
         <div className="flex items-center gap-4">
           <div className="h-20 w-20 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden shrink-0">
-            {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : initialLetter}
+            {avatarUrl ? <AvatarImg value={avatarUrl} className="h-full w-full object-cover" /> : initialLetter}
           </div>
           <div className="flex flex-col gap-2 min-w-0">
             <input
