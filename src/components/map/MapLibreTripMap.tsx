@@ -711,21 +711,3 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
 
-function liveDotEl() {
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "position:relative;width:22px;height:22px;display:flex;align-items:center;justify-content:center;";
-  wrap.title = "Din live-posisjon";
-  const pulse = document.createElement("div");
-  pulse.style.cssText = "position:absolute;inset:-8px;border-radius:9999px;background:rgba(59,130,246,.35);animation:vgLivePulse 1.6s ease-out infinite;";
-  const dot = document.createElement("div");
-  dot.style.cssText = "width:16px;height:16px;border-radius:9999px;background:#3b82f6;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);";
-  wrap.appendChild(pulse);
-  wrap.appendChild(dot);
-  if (typeof document !== "undefined" && !document.getElementById("vg-live-pulse-kf")) {
-    const style = document.createElement("style");
-    style.id = "vg-live-pulse-kf";
-    style.textContent = "@keyframes vgLivePulse{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.6);opacity:0}}";
-    document.head.appendChild(style);
-  }
-  return wrap;
-}
