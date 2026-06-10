@@ -35,7 +35,7 @@ function formatRelative(iso: string | undefined | null): string {
   return `${h} t siden`;
 }
 
-export function LiveTripMap({ tripId, session: sessionProp, height = "60vh", className }: Props) {
+export function LiveTripMap({ tripId, session: sessionProp, height, className }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
@@ -79,7 +79,15 @@ export function LiveTripMap({ tripId, session: sessionProp, height = "60vh", cla
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
+    // iOS Safari sometimes mounts the canvas before the container's height
+    // is final — resize twice to be safe.
+    const raf = requestAnimationFrame(() => { try { map.resize(); } catch {} });
+    const t1 = setTimeout(() => { try { map.resize(); } catch {} }, 100);
+    const t2 = setTimeout(() => { try { map.resize(); } catch {} }, 400);
     return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t1);
+      clearTimeout(t2);
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
@@ -186,8 +194,11 @@ export function LiveTripMap({ tripId, session: sessionProp, height = "60vh", cla
           100% { transform: scale(2.2); opacity: 0; }
         }
       `}</style>
-      <div className="relative rounded-2xl overflow-hidden border border-border bg-surface" style={{ height }}>
-        <div ref={containerRef} className="absolute inset-0" />
+      <div
+        className="relative rounded-2xl overflow-hidden border border-border bg-surface w-full min-h-[420px] h-[420px]"
+        style={{ height: height || "420px", minHeight: height || "420px" }}
+      >
+        <div ref={containerRef} className="absolute inset-0 h-full w-full" style={{ height: "100%", width: "100%" }} />
         {keyError && (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">{keyError}</div>
         )}
