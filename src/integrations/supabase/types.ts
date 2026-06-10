@@ -1172,6 +1172,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_live_trip_meta_by_token: { Args: { p_token: string }; Returns: Json }
       get_shared_trip: { Args: { p_token: string }; Returns: Json }
       increment_benefit_click: {
         Args: { p_benefit_id: string }
