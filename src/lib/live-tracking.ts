@@ -228,9 +228,36 @@ export function useLiveBroadcaster(opts: {
               }
             }
             lastPosRef.current = next;
+
+            // Immediate upsert when owner has moved enough since last send.
+            try {
+              const lastSent = lastSentRef.current;
+              const movedEnough = !lastSent || distanceKm(
+                { lat: lastSent.lat, lng: lastSent.lng },
+                { lat: next.lat, lng: next.lng },
+              ) >= 0.025; // 25 meters
+              const now = Date.now();
+              const canSendImmediate = now - lastImmediateSentAtRef.current >= 5_000;
+              if (movedEnough && canSendImmediate) {
+                lastSentRef.current = next;
+                lastImmediateSentAtRef.current = now;
+                void upsertLiveSession({
+                  tripId,
+                  userId: userId!,
+                  pos: next,
+                  status: status as LiveStatus,
+                  lastStopName: lastStopName ?? null,
+                }).catch((e) => {
+                  console.warn("[live] immediate upsert failed", e);
+                });
+              }
+            } catch (e) {
+              console.warn("[live] immediate upsert check failed", e);
+            }
           } catch (e) {
             console.warn("[live] watchPosition success handler failed", e);
           }
+
         },
         (err) => {
           if (stopped) return;
