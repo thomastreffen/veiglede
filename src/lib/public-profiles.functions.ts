@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { signAvatarServer } from "@/lib/avatar.server";
 
 export interface PublicProfileSummary {
   id: string;
@@ -61,20 +62,21 @@ export const fetchPublicProfilesFn = createServerFn({ method: "GET" })
       vehicleTypesById.set(row.id as string, Array.from(types));
     }
 
-    const summaries: PublicProfileSummary[] = profiles.map((p) => {
+    const summaries: PublicProfileSummary[] = await Promise.all(profiles.map(async (p) => {
       const id = p.id as string;
       const stats = tripStatsById.get(id) ?? { count: 0, km: 0 };
+      const avatarUrl = (await signAvatarServer((p.avatar_url as string | null) ?? undefined)) ?? undefined;
       return {
         id,
         username: p.username as string,
         displayName: (p.display_name as string | null) ?? (p.username as string),
         bio: (p.bio as string | null) ?? undefined,
-        avatarUrl: (p.avatar_url as string | null) ?? undefined,
+        avatarUrl,
         tripsCount: stats.count,
         totalKm: Math.round(stats.km),
         vehicleTypes: vehicleTypesById.get(id) ?? [],
       };
-    });
+    }));
 
     summaries.sort((a, b) => {
       if (b.tripsCount !== a.tripsCount) return b.tripsCount - a.tripsCount;

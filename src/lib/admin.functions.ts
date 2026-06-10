@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { signAvatarServer } from "@/lib/avatar.server";
 
 /* ---------- helpers ---------- */
 
@@ -174,14 +175,15 @@ export const adminListUsersFn = createServerFn({ method: "GET" })
     }
 
     return {
-      users: (rows ?? []).map((r) => ({
+      users: await Promise.all((rows ?? []).map(async (r) => ({
         ...r,
+        avatar_url: await signAvatarServer((r.avatar_url as string | null) ?? null),
         email: emails.get(r.id) ?? null,
         tripCount: tripCounts.get(r.id) ?? 0,
         plan: plans.get(r.id)?.plan ?? "free",
         plan_period_end: plans.get(r.id)?.period_end ?? null,
         last_active: lastActive.get(r.id) ?? null,
-      })),
+      }))),
     };
   });
 
@@ -278,7 +280,7 @@ export const adminGetUserDetailsFn = createServerFn({ method: "GET" })
             id: profile.id as string,
             display_name: (profile.display_name as string | null) ?? null,
             username: (profile.username as string | null) ?? null,
-            avatar_url: (profile.avatar_url as string | null) ?? null,
+            avatar_url: await signAvatarServer((profile.avatar_url as string | null) ?? null),
             bio: (profile.bio as string | null) ?? null,
             role: (profile.role as string | null) ?? "user",
             is_active: profile.is_active !== false,

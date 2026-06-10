@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { signAvatarServer } from "@/lib/avatar.server";
 
 const ReactionEnum = z.enum(["fire", "clap", "pin"]);
 export type ReactionKey = z.infer<typeof ReactionEnum>;
@@ -196,9 +197,10 @@ export const feedFromFollowsFn = createServerFn({ method: "GET" })
       .from("profiles").select("id, display_name, avatar_url").in("id", ids);
     const byId = new Map<string, { name?: string; avatar?: string }>();
     for (const p of profiles ?? []) {
+      const avatar = (await signAvatarServer((p.avatar_url as string | null) ?? undefined)) ?? undefined;
       byId.set(p.id as string, {
         name: (p.display_name as string | null) ?? undefined,
-        avatar: (p.avatar_url as string | null) ?? undefined,
+        avatar,
       });
     }
     return collected

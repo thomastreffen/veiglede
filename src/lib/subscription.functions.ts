@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { signAvatarServer } from "@/lib/avatar.server";
 
 type Plan = "free" | "pro" | "gruppe";
 
@@ -191,7 +192,7 @@ export const listMyGruppeFn = createServerFn({ method: "GET" })
         joinedAt: new Date(0).toISOString(),
         username: (op?.username as string | null) ?? null,
         displayName: (op?.display_name as string | null) ?? null,
-        avatarUrl: (op?.avatar_url as string | null) ?? null,
+        avatarUrl: await signAvatarServer((op?.avatar_url as string | null) ?? null),
       });
     }
     for (const r of rows ?? []) {
@@ -202,7 +203,7 @@ export const listMyGruppeFn = createServerFn({ method: "GET" })
         joinedAt: r.joined_at as string,
         username: (p?.username as string | null) ?? null,
         displayName: (p?.display_name as string | null) ?? null,
-        avatarUrl: (p?.avatar_url as string | null) ?? null,
+        avatarUrl: await signAvatarServer((p?.avatar_url as string | null) ?? null),
       });
     }
 

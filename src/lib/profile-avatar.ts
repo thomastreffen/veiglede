@@ -2,14 +2,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { compressImageToBlob } from "@/lib/vehicle-photos";
 
 const BUCKET = "profile-avatars";
-const SIGN_EXPIRY = 60 * 60 * 24 * 365 * 10; // ~10 years
 const ACCEPT = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export type UploadAvatarResult =
-  | { ok: true; url: string; path: string }
+  | { ok: true; path: string }
   | { ok: false; error: string };
 
+/**
+ * Upload an avatar to the private profile-avatars bucket and return its
+ * storage path. We intentionally do NOT return or persist a signed URL —
+ * the storage path is what should be stored in `profiles.avatar_url` so
+ * that fresh signed URLs can be generated on demand at render time.
+ */
 export async function uploadProfileAvatar(file: File, userId: string): Promise<UploadAvatarResult> {
   if (!ACCEPT.includes(file.type)) return { ok: false, error: "Bildet må være JPG, PNG eller WebP." };
   if (file.size > MAX_BYTES) return { ok: false, error: "Maks filstørrelse er 5 MB." };
@@ -23,12 +28,7 @@ export async function uploadProfileAvatar(file: File, userId: string): Promise<U
     .upload(path, blob, { contentType: "image/jpeg", upsert: false });
   if (upErr) return { ok: false, error: upErr.message };
 
-  const { data: signed, error: signErr } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, SIGN_EXPIRY);
-  if (signErr || !signed?.signedUrl) return { ok: false, error: signErr?.message ?? "Klarte ikke lage URL." };
-
-  return { ok: true, url: signed.signedUrl, path };
+  return { ok: true, path };
 }
 
 /** Best-effort cleanup of previously uploaded avatar files for this user. */

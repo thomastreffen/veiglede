@@ -22,6 +22,7 @@ import { useVehicles, vehiclesApi, type Vehicle } from "@/lib/vehicles-store";
 import { VehicleEditor } from "@/components/VehicleEditor";
 import { VehicleCard } from "@/components/VehicleCard";
 import { BenefitsConsent } from "@/components/BenefitsConsent";
+import { AvatarImg } from "@/lib/avatar";
 
 function DangerZone() {
   const { user } = useAuth();
@@ -582,14 +583,14 @@ function ProfileFieldsEditor() {
       toast.error(res.error);
       return;
     }
-    const { error } = await supabase.from("profiles").update({ avatar_url: res.url }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ avatar_url: res.path }).eq("id", user.id);
     if (error) {
       setUploading(false);
       toast.error("Kunne ikke lagre profilbilde");
       return;
     }
-    setAvatarUrl(res.url);
-    setInitial((p) => ({ ...p, avatarUrl: res.url }));
+    setAvatarUrl(res.path);
+    setInitial((p) => ({ ...p, avatarUrl: res.path }));
     cleanupOldAvatars(user.id, res.path).catch(() => undefined);
     setUploading(false);
     toast.success("Profilbilde oppdatert");
@@ -618,7 +619,7 @@ function ProfileFieldsEditor() {
         <span className="block text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Profilbilde</span>
         <div className="flex items-center gap-4">
           <div className="h-20 w-20 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-3xl overflow-hidden shrink-0">
-            {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : initialLetter}
+            {avatarUrl ? <AvatarImg value={avatarUrl} className="h-full w-full object-cover" /> : initialLetter}
           </div>
           <div className="flex flex-col gap-2 min-w-0">
             <input
