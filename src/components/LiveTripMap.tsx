@@ -155,20 +155,24 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
   const statusLabel =
     phase === "active" ? "Live" :
     phase === "paused" ? "Pauset" :
+    phase === "stale" ? "Stille" :
     phase === "ended" ? "Avsluttet" :
     "Venter";
 
   const statusDotClass =
     phase === "active" ? "bg-primary animate-pulse" :
     phase === "paused" ? "bg-yellow-500" :
+    phase === "stale" ? "bg-muted-foreground" :
     phase === "ended" ? "bg-muted-foreground" :
     "bg-muted-foreground animate-pulse";
 
   const bottomMessage =
     !session ? "Venter på første posisjon…" :
     phase === "paused" ? "Live deling er pauset" :
+    phase === "stale" ? "Posisjonen er ikke nylig oppdatert" :
     phase === "ended" ? "Live deling er avsluttet" :
     null;
+
 
   return (
     <div className={className}>
