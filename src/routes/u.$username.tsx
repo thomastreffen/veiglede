@@ -105,7 +105,7 @@ function PublicProfilePage() {
               </div>
             )}
             <div className="mt-3">
-              <FollowBlock userId={profile.id} username={profile.username} />
+              <FollowBlock userId={profile.id} username={profile.username} displayName={profile.displayName} />
             </div>
           </div>
         </header>
