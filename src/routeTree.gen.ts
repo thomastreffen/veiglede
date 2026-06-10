@@ -51,6 +51,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRoadbookRouteImport } from './routes/_app.roadbook'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppMapsCheckRouteImport } from './routes/_app.maps-check'
+import { Route as AppHomeRouteImport } from './routes/_app.home'
 import { Route as AppGarageRouteImport } from './routes/_app.garage'
 import { Route as AppFordelerRouteImport } from './routes/_app.fordeler'
 import { Route as AppExploreRouteImport } from './routes/_app.explore'
@@ -285,6 +286,11 @@ const AppMapsCheckRoute = AppMapsCheckRouteImport.update({
   path: '/maps-check',
   getParentRoute: () => AppRoute,
 } as any)
+const AppHomeRoute = AppHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGarageRoute = AppGarageRouteImport.update({
   id: '/garage',
   path: '/garage',
@@ -432,6 +438,7 @@ export interface FileRoutesByFullPath {
   '/explore': typeof AppExploreRoute
   '/fordeler': typeof AppFordelerRoute
   '/garage': typeof AppGarageRoute
+  '/home': typeof AppHomeRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -497,6 +504,7 @@ export interface FileRoutesByTo {
   '/explore': typeof AppExploreRoute
   '/fordeler': typeof AppFordelerRoute
   '/garage': typeof AppGarageRoute
+  '/home': typeof AppHomeRoute
   '/maps-check': typeof AppMapsCheckRoute
   '/onboarding': typeof AppOnboardingRoute
   '/roadbook': typeof AppRoadbookRoute
@@ -565,6 +573,7 @@ export interface FileRoutesById {
   '/_app/explore': typeof AppExploreRoute
   '/_app/fordeler': typeof AppFordelerRoute
   '/_app/garage': typeof AppGarageRoute
+  '/_app/home': typeof AppHomeRoute
   '/_app/maps-check': typeof AppMapsCheckRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/roadbook': typeof AppRoadbookRoute
@@ -634,6 +643,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/fordeler'
     | '/garage'
+    | '/home'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
@@ -699,6 +709,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/fordeler'
     | '/garage'
+    | '/home'
     | '/maps-check'
     | '/onboarding'
     | '/roadbook'
@@ -766,6 +777,7 @@ export interface FileRouteTypes {
     | '/_app/explore'
     | '/_app/fordeler'
     | '/_app/garage'
+    | '/_app/home'
     | '/_app/maps-check'
     | '/_app/onboarding'
     | '/_app/roadbook'
@@ -1152,6 +1164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMapsCheckRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/home': {
+      id: '/_app/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AppHomeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/garage': {
       id: '/_app/garage'
       path: '/garage'
@@ -1355,6 +1374,7 @@ interface AppRouteChildren {
   AppExploreRoute: typeof AppExploreRoute
   AppFordelerRoute: typeof AppFordelerRoute
   AppGarageRoute: typeof AppGarageRoute
+  AppHomeRoute: typeof AppHomeRoute
   AppMapsCheckRoute: typeof AppMapsCheckRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppRoadbookRoute: typeof AppRoadbookRoute
@@ -1366,6 +1386,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppExploreRoute: AppExploreRoute,
   AppFordelerRoute: AppFordelerRoute,
   AppGarageRoute: AppGarageRoute,
+  AppHomeRoute: AppHomeRoute,
   AppMapsCheckRoute: AppMapsCheckRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppRoadbookRoute: AppRoadbookRoute,
