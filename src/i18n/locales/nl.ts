@@ -601,7 +601,7 @@ export const nl: Dict = {
       },
       helpBot: {
         greeting: "Hoi! Ik kan je helpen met Veiglede. Waar ben je benieuwd naar?",
-        quickReplies: ["Hoe plan ik een trip?", "Kan ik exporteren naar GPS?", "Wat is het verschil tussen Pro en Gratis?"],
+        quickReplies: ["Hoe maak ik een trip?", "Hoe exporteer ik GPX?", "Waarom start Google Maps niet de hele trip?", "Hoe gebruik ik het Roadbook?", "Hoe deel ik mijn trip veilig?", "Hoe voeg ik een overnachting toe?"],
         errorReply: "Sorry — er ging iets mis. Probeer opnieuw.",
         openAria: "Help-bot openen",
         title: "Veiglede-hulp",

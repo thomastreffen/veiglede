@@ -601,7 +601,7 @@ export const da: Dict = {
       },
       helpBot: {
         greeting: "Hej! Jeg kan hjælpe dig med Veiglede. Hvad vil du gerne vide?",
-        quickReplies: ["Hvordan planlægger jeg en tur?", "Kan jeg eksportere til GPS?", "Hvad er forskellen på Pro og Gratis?"],
+        quickReplies: ["Hvordan laver jeg en tur?", "Hvordan eksporterer jeg GPX?", "Hvorfor starter Google Maps ikke hele turen?", "Hvordan bruger jeg Roadbook?", "Hvordan deler jeg turen sikkert?", "Hvordan tilføjer jeg overnatning?"],
         errorReply: "Beklager — noget gik galt. Prøv igen.",
         openAria: "Åbn hjælpebot",
         title: "Veiglede-hjælp",
