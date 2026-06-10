@@ -342,6 +342,14 @@ export function useLiveBroadcaster(opts: {
       : null;
     const attemptTime = new Date().toISOString();
 
+    // Throttle automatic sources (watch/poll/heartbeat). Manual always sends.
+    if (source !== "manual") {
+      const sinceLast = Date.now() - lastAutoSentAtRef.current;
+      if (sinceLast < autoSendThrottleMs) {
+        return { ok: false as const, error: `throttled (${sinceLast}ms < ${autoSendThrottleMs}ms)` };
+      }
+    }
+
     updateDebug({
       lastUpsertError: null,
       ...(source === "manual"
@@ -391,7 +399,7 @@ export function useLiveBroadcaster(opts: {
       });
 
       lastSentRef.current = { ...pos };
-      if (source === "immediate" || source === "poll") lastAutoSentAtRef.current = Date.now();
+      if (source !== "manual") lastAutoSentAtRef.current = Date.now();
 
       const successTime = new Date().toISOString();
       updateDebug({
@@ -410,6 +418,7 @@ export function useLiveBroadcaster(opts: {
         ...(source === "manual" ? { lastManualUpsertSuccessTime: successTime } : {}),
       });
 
+      console.log(`[live] ${source} upsert success`, result.storedRow ?? result.payload);
       return { ok: true as const, payload: result.payload, storedRow: result.storedRow };
     } catch (error) {
       const message = toErrorMessage(error);
@@ -419,15 +428,15 @@ export function useLiveBroadcaster(opts: {
         ...(source === "heartbeat" ? { lastHeartbeatUpsertError: message } : {}),
         ...(source === "immediate" || source === "poll" ? { lastAutomaticUpsertError: message, lastSendSource: source } : {}),
       });
+      console.warn(`[live] ${source} upsert failed`, message);
       return { ok: false as const, error: message };
     }
   };
 
-  const processGpsFix = async (source: LiveGeolocationSource, p: GeolocationPosition) => {
+  // Cache latest GPS fix into lastPosRef and trigger an automatic send.
+  // No movement gate — sendCurrentPosition throttles automatic sources internally.
+  const ingestGpsFix = (source: LiveGeolocationSource, p: GeolocationPosition) => {
     setPermState("granted");
-
-    const prevGps = lastPosRef.current;
-    const lastSent = lastSentRef.current;
     const next: LivePosition = {
       lat: p.coords.latitude,
       lng: p.coords.longitude,
@@ -438,9 +447,9 @@ export function useLiveBroadcaster(opts: {
     };
     if (!Number.isFinite(next.lat) || !Number.isFinite(next.lng)) return;
 
+    const prevGps = lastPosRef.current;
     let distanceSincePrevGpsKm: number | null = null;
     let distanceSinceLastSentKm: number | null = null;
-
     if (prevGps) {
       try {
         distanceSincePrevGpsKm = distanceKm(
@@ -454,7 +463,7 @@ export function useLiveBroadcaster(opts: {
         console.warn("[live] distance accumulation failed", e);
       }
     }
-
+    const lastSent = lastSentRef.current;
     if (lastSent) {
       distanceSinceLastSentKm = distanceKm(
         { lat: lastSent.lat, lng: lastSent.lng },
@@ -464,9 +473,6 @@ export function useLiveBroadcaster(opts: {
 
     lastPosRef.current = next;
     gpsFixCountRef.current += 1;
-
-    const canSendImmediate = Date.now() - lastAutoSentAtRef.current >= autoSendThrottleMs;
-    const movedEnough = distanceSinceLastSentKm === null || distanceSinceLastSentKm >= debugMovementThresholdKm;
 
     updateDebug({
       lastGpsFixTime: next.updatedAt ?? null,
@@ -478,8 +484,8 @@ export function useLiveBroadcaster(opts: {
       distanceSincePreviousGpsKm: distanceSincePrevGpsKm,
       distanceSinceLastSentKm,
       gpsFixCount: gpsFixCountRef.current,
-      movedEnough,
-      canSendImmediate,
+      movedEnough: true,
+      canSendImmediate: Date.now() - lastAutoSentAtRef.current >= autoSendThrottleMs,
     });
 
     console.log("[live] gps fix received", {
@@ -487,24 +493,11 @@ export function useLiveBroadcaster(opts: {
       lat: next.lat,
       lng: next.lng,
       accuracy: next.accuracy ?? null,
-      heading: next.heading ?? null,
-      speed: next.speed ?? null,
-      updatedAt: next.updatedAt,
       gpsFixCount: gpsFixCountRef.current,
-      distanceSincePrevGpsKm,
-      distanceSinceLastSentKm,
-      canSendImmediate,
     });
 
-    if (!canSendImmediate) return;
-
     const sendSource: LiveDebugSendSource = source === "poll" ? "poll" : "immediate";
-    const result = await sendCurrentPosition(sendSource);
-    if (result.ok) {
-      console.log(`[live] ${sendSource} upsert success`, result.storedRow ?? result.payload);
-    } else {
-      console.warn(`[live] ${sendSource} upsert failed`, result.error);
-    }
+    void sendCurrentPosition(sendSource);
   };
 
   useEffect(() => {
