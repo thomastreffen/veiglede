@@ -189,9 +189,18 @@ function TripPlanner() {
   const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
   const partnerTips = getPartnerTips(trip, routePoints);
   const memories = getPhotoMemories(trip, tripStops);
-  const livePos = liveSession && isLiveActive(liveSession)
-    ? { lat: liveSession.lat, lng: liveSession.lng, heading: liveSession.heading, vehicle: trip.vehicle }
+  const livePos = liveSession && liveSession.status !== "completed"
+    ? {
+        lat: liveSession.lat,
+        lng: liveSession.lng,
+        heading: liveSession.heading,
+        speed: liveSession.speed,
+        vehicle: trip.vehicle,
+        updatedAt: liveSession.updated_at,
+        status: liveSession.status,
+      }
     : null;
+
 
 
 
