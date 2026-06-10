@@ -85,7 +85,8 @@ interface Props {
   /** MapTiler browser key fetched at runtime via /api/public/map-config. */
   maptilerKey: string;
   /** Optional live position marker overlay. */
-  livePosition?: { lat: number; lng: number; heading?: number | null } | null;
+  livePosition?: { lat: number; lng: number; heading?: number | null; vehicle?: string | null } | null;
+
 }
 
 const DAY_COLORS = [
