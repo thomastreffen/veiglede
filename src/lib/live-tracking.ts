@@ -32,7 +32,8 @@ export interface LivePosition {
 
 export type LivePermissionState = "unknown" | "granted" | "denied" | "prompt";
 
-type LiveDebugSendSource = "immediate" | "heartbeat" | "manual";
+type LiveDebugSendSource = "immediate" | "heartbeat" | "manual" | "poll";
+type LiveGeolocationSource = "watch" | "poll";
 
 export interface LiveUpsertDebugPayload {
   trip_id: string;
@@ -65,7 +66,11 @@ export interface LiveBroadcasterDebugState {
   tripStatus: LiveStatus | "idle";
   permissionState: LivePermissionState;
   watchStarted: boolean;
+  watchId: number | null;
   watchIdExists: boolean;
+  gpsFixCount: number;
+  heartbeatIntervalActive: boolean;
+  pollingActive: boolean;
   lastGpsFixTime: string | null;
   lastGpsFixLat: number | null;
   lastGpsFixLng: number | null;
@@ -76,9 +81,13 @@ export interface LiveBroadcasterDebugState {
   distanceSinceLastSentKm: number | null;
   movedEnough: boolean;
   canSendImmediate: boolean;
-  lastImmediateUpsertAttemptTime: string | null;
-  lastImmediateUpsertSuccessTime: string | null;
+  lastAutomaticUpsertAttemptTime: string | null;
+  lastAutomaticUpsertSuccessTime: string | null;
+  lastAutomaticUpsertError: string | null;
+  lastSendSource: LiveDebugSendSource | null;
+  lastHeartbeatUpsertAttemptTime: string | null;
   lastHeartbeatUpsertSuccessTime: string | null;
+  lastHeartbeatUpsertError: string | null;
   lastManualUpsertAttemptTime: string | null;
   lastManualUpsertSuccessTime: string | null;
   lastUpsertPayload: LiveUpsertDebugPayload | null;
@@ -105,7 +114,11 @@ function createLiveBroadcasterDebugState(input: {
     tripStatus: input.status,
     permissionState: input.permissionState,
     watchStarted: false,
+    watchId: null,
     watchIdExists: false,
+    gpsFixCount: 0,
+    heartbeatIntervalActive: false,
+    pollingActive: false,
     lastGpsFixTime: null,
     lastGpsFixLat: null,
     lastGpsFixLng: null,
@@ -116,9 +129,13 @@ function createLiveBroadcasterDebugState(input: {
     distanceSinceLastSentKm: null,
     movedEnough: false,
     canSendImmediate: false,
-    lastImmediateUpsertAttemptTime: null,
-    lastImmediateUpsertSuccessTime: null,
+    lastAutomaticUpsertAttemptTime: null,
+    lastAutomaticUpsertSuccessTime: null,
+    lastAutomaticUpsertError: null,
+    lastSendSource: null,
+    lastHeartbeatUpsertAttemptTime: null,
     lastHeartbeatUpsertSuccessTime: null,
+    lastHeartbeatUpsertError: null,
     lastManualUpsertAttemptTime: null,
     lastManualUpsertSuccessTime: null,
     lastUpsertPayload: null,
