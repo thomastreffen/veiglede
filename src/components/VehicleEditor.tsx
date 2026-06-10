@@ -20,6 +20,8 @@ interface Props {
 export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
   const isEdit = !!vehicle;
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [description, setDescription] = useState("");
   const [type, setType] = useState<VehicleType>("motorcycle");
   const [energy, setEnergy] = useState<EnergyType>("petrol");
   const [photo, setPhoto] = useState<string | undefined>(undefined);
@@ -33,6 +35,8 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
     if (!open) return;
     if (vehicle) {
       setName(vehicle.name);
+      setNickname(vehicle.nickname ?? "");
+      setDescription(vehicle.description ?? "");
       setType(vehicle.type);
       setEnergy(vehicle.energy);
       setPhoto(vehicle.photo);
@@ -42,6 +46,8 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
     } else {
       const d = defaultsFor("motorcycle", "petrol");
       setName("");
+      setNickname("");
+      setDescription("");
       setType("motorcycle");
       setEnergy("petrol");
       setPhoto(undefined);
@@ -79,8 +85,12 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
 
   const save = () => {
     const trimmed = name.trim() || `${vehicleMeta(type).label} (uten navn)`;
+    const trimmedNick = nickname.trim().slice(0, 40);
+    const trimmedDesc = description.trim().slice(0, 240);
     const payload = {
       name: trimmed,
+      nickname: trimmedNick || undefined,
+      description: trimmedDesc || undefined,
       type, energy, photo,
       defaultStyle: style,
       drivingFlags: flags,
@@ -166,6 +176,31 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
               className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
             />
           </Field>
+
+          {/* Nickname */}
+          <Field label="Kallenavn (valgfritt)">
+            <input
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value.slice(0, 40))}
+              placeholder='F.eks. "Grusgnageren"'
+              maxLength={40}
+              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+          </Field>
+
+          {/* Description */}
+          <Field label="Kort beskrivelse (valgfritt)">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value.slice(0, 240))}
+              placeholder="Liker fjelloverganger, småveier og grus."
+              maxLength={240}
+              rows={2}
+              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary resize-none"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground text-right">{description.length}/240</p>
+          </Field>
+
 
           {/* Type + Energy */}
           <div className="grid grid-cols-2 gap-3">

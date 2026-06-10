@@ -11,6 +11,8 @@ const UsernameSchema = z.object({
 export interface PublicProfileVehicle {
   id: string;
   name: string;
+  nickname?: string;
+  description?: string;
   type: string;
   energy: string;
   defaultStyle: string;
@@ -108,6 +110,8 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
     const vehicles: PublicProfileVehicle[] = (showGarage ? allVehicles : []).map((v) => ({
       id: String(v.id ?? ""),
       name: String(v.name ?? "Kjøretøy"),
+      nickname: typeof v.nickname === "string" && v.nickname.trim() ? String(v.nickname) : undefined,
+      description: typeof v.description === "string" && v.description.trim() ? String(v.description) : undefined,
       type: String(v.type ?? "car"),
       energy: String(v.energy ?? "petrol"),
       defaultStyle: String(v.defaultStyle ?? "scenic"),
