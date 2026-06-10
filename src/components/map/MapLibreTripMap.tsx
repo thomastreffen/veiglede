@@ -117,6 +117,7 @@ export function MapLibreTripMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const liveMarkerRef = useRef<Marker | null>(null);
   const [ready, setReady] = useState(false);
   const [routeGeom, setRouteGeom] = useState<LatLng[] | null>(trip.routeGeometry ?? null);
   const [recalculating, setRecalculating] = useState(false);
@@ -641,6 +642,26 @@ export function MapLibreTripMap({
     });
   }, [projected, suggestionPins, hoveredSuggestionId, selectedStopId, onSelectStop, ready]);
 
+  // Live position marker (owner's GPS / shared follower view). Managed separately
+  // so it doesn't get wiped/recreated by stop changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    if (!livePosition || typeof livePosition.lat !== "number" || typeof livePosition.lng !== "number") {
+      if (liveMarkerRef.current) { liveMarkerRef.current.remove(); liveMarkerRef.current = null; }
+      return;
+    }
+    if (!liveMarkerRef.current) {
+      const el = liveDotEl();
+      liveMarkerRef.current = new maplibregl.Marker({ element: el })
+        .setLngLat([livePosition.lng, livePosition.lat])
+        .addTo(map);
+    } else {
+      liveMarkerRef.current.setLngLat([livePosition.lng, livePosition.lat]);
+    }
+    return undefined;
+  }, [livePosition?.lat, livePosition?.lng, ready]);
+
   // Match /map-test: a single container that the map mounts into. No
   // intermediate wrapper, no opacity tricks, no rounded clipping that could
   // interact with the WebGL canvas during init.
@@ -684,4 +705,23 @@ function suggestionEl(emoji: string, active: boolean) {
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+function liveDotEl() {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:relative;width:22px;height:22px;display:flex;align-items:center;justify-content:center;";
+  wrap.title = "Din live-posisjon";
+  const pulse = document.createElement("div");
+  pulse.style.cssText = "position:absolute;inset:-8px;border-radius:9999px;background:rgba(59,130,246,.35);animation:vgLivePulse 1.6s ease-out infinite;";
+  const dot = document.createElement("div");
+  dot.style.cssText = "width:16px;height:16px;border-radius:9999px;background:#3b82f6;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);";
+  wrap.appendChild(pulse);
+  wrap.appendChild(dot);
+  if (typeof document !== "undefined" && !document.getElementById("vg-live-pulse-kf")) {
+    const style = document.createElement("style");
+    style.id = "vg-live-pulse-kf";
+    style.textContent = "@keyframes vgLivePulse{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.6);opacity:0}}";
+    document.head.appendChild(style);
+  }
+  return wrap;
 }
