@@ -250,6 +250,10 @@ function LiveDebugPanel({
     { label: "last stored row lat/lng", value: formatLatLngPair(debug.lastStoredRow?.lat ?? null, debug.lastStoredRow?.lng ?? null) },
     { label: "last stored row updated_at", value: formatTime(debug.lastStoredRow?.updated_at ?? null) },
     { label: "last upsert error", value: debug.lastUpsertError ?? "—" },
+    { label: "page visibility", value: debug.pageVisibility },
+    { label: "last visibility change", value: formatTime(debug.lastVisibilityChangeTime) },
+    { label: "last resume send", value: formatTime(debug.lastResumeSendTime) },
+    { label: "wake lock active", value: boolLabel(debug.wakeLockActive) },
   ]), [debug]);
 
   async function handleManualSend() {
