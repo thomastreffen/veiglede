@@ -222,6 +222,17 @@ export const nl: Dict = {
       quickActions: "Snelacties",
       fordelerBadge: "NIEUW",
     },
+    profile: {
+      myTrips: "Mijn reizen",
+      garage: "Garage / voertuigen",
+      garageSubtitle: "Voertuigen, brandstof, opladen en voorkeuren",
+      fordeler: "Voordelen",
+      fordelerSubtitle: "Kortingen en partneraanbiedingen",
+      settings: "Instellingen",
+      help: "Help",
+      helpSubtitle: "Hulp bij reisplanning en export",
+      logout: "Uitloggen",
+    },
     trips: {
       plannedTrips: "geplande reizen",
       planned: "gepland",

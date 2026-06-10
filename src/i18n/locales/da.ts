@@ -222,6 +222,17 @@ export const da: Dict = {
       quickActions: "Hurtigvalg",
       fordelerBadge: "NY",
     },
+    profile: {
+      myTrips: "Mine ture",
+      garage: "Garage / køretøjer",
+      garageSubtitle: "Køretøjer, brændstof, opladning og præferencer",
+      fordeler: "Fordele",
+      fordelerSubtitle: "Rabatter og partnertilbud",
+      settings: "Indstillinger",
+      help: "Hjælp",
+      helpSubtitle: "Hjælp til turplanlægning og eksport",
+      logout: "Log ud",
+    },
     trips: {
       plannedTrips: "planlagte ture",
       planned: "planlagt",

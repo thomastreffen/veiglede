@@ -222,6 +222,17 @@ export const sv: Dict = {
       quickActions: "Snabbval",
       fordelerBadge: "NY",
     },
+    profile: {
+      myTrips: "Mina resor",
+      garage: "Garage / fordon",
+      garageSubtitle: "Fordon, bränsle, laddning och preferenser",
+      fordeler: "Förmåner",
+      fordelerSubtitle: "Rabatter och partnererbjudanden",
+      settings: "Inställningar",
+      help: "Hjälp",
+      helpSubtitle: "Hjälp med reseplanering och export",
+      logout: "Logga ut",
+    },
     trips: {
       plannedTrips: "planerade resor",
       planned: "planerat",

@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UsernamePicker } from "@/components/UsernamePicker";
 import { getFollowStatsFn } from "@/lib/social.functions";
 import { toast } from "sonner";
-import { LogOut, LogIn, Trash2, AlertTriangle, ExternalLink, Moon, Sun, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Globe, Eye, BarChart3, Car as CarIcon, Map, Gift, Settings, HelpCircle, ChevronRight } from "lucide-react";
+import { LogOut, LogIn, Trash2, AlertTriangle, ExternalLink, Moon, Sun, Lock, Link as LinkIcon, Image as ImageIcon, Radio, Plus, Globe, Eye, BarChart3, Car as CarIcon, Map, Gift, Settings as SettingsIcon, HelpCircle, ChevronRight } from "lucide-react";
 import { useT } from "@/i18n/provider";
 import { useTheme, setTheme, type Theme } from "@/lib/theme";
 import { ROUTE_STYLES, stopMeta, vehicleMeta, styleMeta } from "@/lib/trips-store";
