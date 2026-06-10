@@ -317,14 +317,6 @@ function formatLatLngPair(lat: number | null, lng: number | null) {
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
-function Action({ onClick, primary, children }: { onClick: () => void; primary?: boolean; children: React.ReactNode }) {
-  return (
-    <button onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${primary ? "bg-primary text-primary-foreground hover:brightness-110" : "border border-border bg-surface-2 hover:border-primary"}`}>
-      {children}
-    </button>
-  );
-}
 
 function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
