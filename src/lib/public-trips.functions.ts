@@ -162,9 +162,10 @@ export const fetchPublicTripsFn = createServerFn({ method: "GET" })
       .in("id", userIds);
     const nameById = new Map<string, { name?: string; avatar?: string }>();
     for (const p of profiles ?? []) {
+      const avatar = (await signAvatarServer((p.avatar_url as string | null) ?? undefined)) ?? undefined;
       nameById.set(p.id as string, {
         name: (p.display_name as string | null) ?? undefined,
-        avatar: (p.avatar_url as string | null) ?? undefined,
+        avatar,
       });
     }
 
