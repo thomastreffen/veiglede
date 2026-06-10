@@ -87,7 +87,19 @@ interface Props {
   /** MapTiler browser key fetched at runtime via /api/public/map-config. */
   maptilerKey: string;
   /** Optional live position marker overlay. */
-  livePosition?: { lat: number; lng: number; heading?: number | null; vehicle?: string | null } | null;
+  livePosition?: {
+    lat: number;
+    lng: number;
+    heading?: number | null;
+    /** Speed in m/s, as returned by Geolocation API. */
+    speed?: number | null;
+    vehicle?: string | null;
+    /** ISO timestamp of the last GPS update; used to render a stale state. */
+    updatedAt?: string | null;
+    /** Optional explicit status override. */
+    status?: "active" | "paused" | "completed" | null;
+  } | null;
+
 
 }
 
