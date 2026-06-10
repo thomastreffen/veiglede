@@ -214,7 +214,7 @@ function TripsTab() {
       {/* Main list */}
       <section className="mt-8">
         <h2 className="font-display text-xl uppercase">
-          {sort === "popular" ? "Mest kopiert" : "Nye offentlige turer"}
+          {sort === "popular" ? "Mest lagret" : "Nye offentlige turer"}
         </h2>
         {isLoading ? (
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
