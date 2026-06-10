@@ -85,8 +85,12 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
 
   const save = () => {
     const trimmed = name.trim() || `${vehicleMeta(type).label} (uten navn)`;
+    const trimmedNick = nickname.trim().slice(0, 40);
+    const trimmedDesc = description.trim().slice(0, 240);
     const payload = {
       name: trimmed,
+      nickname: trimmedNick || undefined,
+      description: trimmedDesc || undefined,
       type, energy, photo,
       defaultStyle: style,
       drivingFlags: flags,
