@@ -739,8 +739,30 @@ export function MapLibreTripMap({
     livePosition?.vehicle,
     livePosition?.status,
     livePosition?.updatedAt,
+    followLive,
     ready,
   ]);
+
+  // When live tracking ends, allow re-auto-centering on next start.
+  useEffect(() => {
+    if (!livePosition) {
+      autoCenteredLiveRef.current = false;
+      setFollowLive(false);
+    }
+  }, [livePosition]);
+
+  const handleFollowLive = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !livePosition) return;
+    setFollowLive(true);
+    try {
+      map.flyTo({
+        center: [livePosition.lng, livePosition.lat],
+        zoom: Math.max(map.getZoom(), 17),
+        duration: 500,
+      });
+    } catch { /* noop */ }
+  }, [livePosition]);
 
 
 
