@@ -655,6 +655,75 @@ export function useLiveBroadcaster(opts: {
     }
   }, [enabled, status, tripId, userId]);
 
+  // Page visibility awareness: detect background/foreground, force a resume
+  // send when returning, and (when supported) hold a screen wake lock.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!broadcastable) {
+      updateDebug({ wakeLockActive: false });
+      return;
+    }
+
+    let wakeLock: { release: () => Promise<void>; addEventListener?: (e: string, cb: () => void) => void } | null = null;
+    let released = false;
+
+    const requestWakeLock = async () => {
+      try {
+        const nav = navigator as unknown as { wakeLock?: { request: (t: string) => Promise<typeof wakeLock> } };
+        if (!nav.wakeLock?.request) return;
+        const lock = await nav.wakeLock.request("screen");
+        if (released || !lock) { try { await lock?.release(); } catch { /* noop */ } return; }
+        wakeLock = lock as typeof wakeLock;
+        updateDebug({ wakeLockActive: true });
+        wakeLock?.addEventListener?.("release", () => updateDebug({ wakeLockActive: false }));
+      } catch (e) {
+        console.warn("[live] wakeLock request failed", e);
+      }
+    };
+
+    const releaseWakeLock = async () => {
+      const lock = wakeLock;
+      wakeLock = null;
+      if (!lock) return;
+      try { await lock.release(); } catch { /* noop */ }
+      updateDebug({ wakeLockActive: false });
+    };
+
+    const handleVisibility = () => {
+      const now = new Date().toISOString();
+      const vis = document.visibilityState === "hidden" ? "hidden" : "visible";
+      updateDebug({ pageVisibility: vis, lastVisibilityChangeTime: now });
+      if (vis === "visible") {
+        void requestWakeLock();
+        if (typeof navigator !== "undefined" && navigator.geolocation?.getCurrentPosition) {
+          navigator.geolocation.getCurrentPosition(
+            (p) => {
+              ingestGpsFix("poll", p);
+              updateDebug({ lastResumeSendTime: new Date().toISOString() });
+            },
+            (err) => {
+              console.warn("[live] resume getCurrentPosition failed", err?.message);
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
+          );
+        }
+      } else {
+        void releaseWakeLock();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    // Initial state
+    updateDebug({ pageVisibility: document.visibilityState === "hidden" ? "hidden" : "visible" });
+    if (document.visibilityState !== "hidden") void requestWakeLock();
+
+    return () => {
+      released = true;
+      document.removeEventListener("visibilitychange", handleVisibility);
+      void releaseWakeLock();
+    };
+  }, [broadcastable]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return {
     permState,
     debug,
