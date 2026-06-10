@@ -59,7 +59,7 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
   const isPublic = trip.isPublic ?? false;
   const shareToken = trip.shareToken ?? "";
   const tripLink = useMemo(
-    () => (shareToken ? `${base}/shared/${shareToken}` : ""),
+    () => (shareToken ? `${base}/tur/delt/${shareToken}` : ""),
     [base, shareToken],
   );
   const roadbookLink = tripLink ? `${tripLink}?view=roadbook` : "";

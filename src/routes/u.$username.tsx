@@ -177,7 +177,7 @@ function ProfileTripCard({ t, ownerName }: { t: PublicProfileTrip; ownerName: st
   const v = vehicleMeta(t.vehicle as VehicleType);
   const s = styleMeta(t.style as RouteStyle);
   const cover = (t.cover as CoverKey) ?? "fjord";
-  const url = typeof window !== "undefined" ? `${window.location.origin}/shared/${t.shareToken}` : `/shared/${t.shareToken}`;
+  const url = typeof window !== "undefined" ? `${window.location.origin}/tur/delt/${t.shareToken}` : `/tur/delt/${t.shareToken}`;
   const onShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -190,7 +190,7 @@ function ProfileTripCard({ t, ownerName }: { t: PublicProfileTrip; ownerName: st
   };
   return (
     <li>
-      <Link to="/shared/$shareToken" params={{ shareToken: t.shareToken }} className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/60 transition-colors">
+      <Link to="/tur/delt/$shareToken" params={{ shareToken: t.shareToken }} className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/60 transition-colors">
         <div className={`relative h-24 bg-gradient-to-br ${COVERS[cover]}`}>
           <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
           <span className="absolute top-2 right-2 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] border border-border">

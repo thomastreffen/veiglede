@@ -55,6 +55,7 @@ import { Route as AppGarageRouteImport } from './routes/_app.garage'
 import { Route as AppFordelerRouteImport } from './routes/_app.fordeler'
 import { Route as AppExploreRouteImport } from './routes/_app.explore'
 import { Route as PartnerDashboardIndexRouteImport } from './routes/partner.dashboard.index'
+import { Route as TurDeltShareTokenRouteImport } from './routes/tur.delt.$shareToken'
 import { Route as PartnerDashboardInvoicesRouteImport } from './routes/partner.dashboard.invoices'
 import { Route as PartnerDashboardBenefitsRouteImport } from './routes/partner.dashboard.benefits'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
@@ -304,6 +305,11 @@ const PartnerDashboardIndexRoute = PartnerDashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PartnerDashboardRoute,
 } as any)
+const TurDeltShareTokenRoute = TurDeltShareTokenRouteImport.update({
+  id: '/tur/delt/$shareToken',
+  path: '/tur/delt/$shareToken',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PartnerDashboardInvoicesRoute =
   PartnerDashboardInvoicesRouteImport.update({
     id: '/invoices',
@@ -465,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
+  '/tur/delt/$shareToken': typeof TurDeltShareTokenRoute
   '/partner/dashboard/': typeof PartnerDashboardIndexRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
@@ -528,6 +535,7 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
+  '/tur/delt/$shareToken': typeof TurDeltShareTokenRoute
   '/partner/dashboard': typeof PartnerDashboardIndexRoute
   '/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
@@ -596,6 +604,7 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
+  '/tur/delt/$shareToken': typeof TurDeltShareTokenRoute
   '/partner/dashboard/': typeof PartnerDashboardIndexRoute
   '/_app/trips/$tripId/roadbook': typeof AppTripsTripIdRoadbookRoute
   '/api/public/cron/generate-partner-invoices': typeof ApiPublicCronGeneratePartnerInvoicesRoute
@@ -664,6 +673,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
+    | '/tur/delt/$shareToken'
     | '/partner/dashboard/'
     | '/trips/$tripId/roadbook'
     | '/api/public/cron/generate-partner-invoices'
@@ -727,6 +737,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
+    | '/tur/delt/$shareToken'
     | '/partner/dashboard'
     | '/trips/$tripId/roadbook'
     | '/api/public/cron/generate-partner-invoices'
@@ -794,6 +805,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
+    | '/tur/delt/$shareToken'
     | '/partner/dashboard/'
     | '/_app/trips/$tripId/roadbook'
     | '/api/public/cron/generate-partner-invoices'
@@ -835,6 +847,7 @@ export interface RootRouteChildren {
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  TurDeltShareTokenRoute: typeof TurDeltShareTokenRoute
   ApiPublicCronGeneratePartnerInvoicesRoute: typeof ApiPublicCronGeneratePartnerInvoicesRoute
   ApiPublicHooksPartnersMonthlyResetRoute: typeof ApiPublicHooksPartnersMonthlyResetRoute
   ApiPublicHooksTripRemindersRoute: typeof ApiPublicHooksTripRemindersRoute
@@ -1167,6 +1180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerDashboardIndexRouteImport
       parentRoute: typeof PartnerDashboardRoute
     }
+    '/tur/delt/$shareToken': {
+      id: '/tur/delt/$shareToken'
+      path: '/tur/delt/$shareToken'
+      fullPath: '/tur/delt/$shareToken'
+      preLoaderRoute: typeof TurDeltShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/partner/dashboard/invoices': {
       id: '/partner/dashboard/invoices'
       path: '/invoices'
@@ -1449,6 +1469,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  TurDeltShareTokenRoute: TurDeltShareTokenRoute,
   ApiPublicCronGeneratePartnerInvoicesRoute:
     ApiPublicCronGeneratePartnerInvoicesRoute,
   ApiPublicHooksPartnersMonthlyResetRoute:
