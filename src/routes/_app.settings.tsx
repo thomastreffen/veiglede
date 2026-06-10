@@ -383,11 +383,11 @@ function Settings() {
         />
         <ToggleRow
           icon={<Radio className="h-4 w-4" />}
-          label="Live deling"
-          help="Følg turen i sanntid. Kommer senere."
-          on={prefs.sharing.liveSharing}
+          label="Live-posisjon"
+          help="Styres på hver enkelt tur fra Turkontroll."
+          on={false}
           disabled
-          tag="Kommer senere"
+          tag="Per tur"
           onChange={() => {}}
         />
       </Section>
