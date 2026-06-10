@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useLiveSession, isLiveActive, type LiveSession } from "@/lib/live-tracking";
-import { createLiveMarkerEl } from "@/lib/live-marker";
+import { createLiveMarkerEl, updateLiveMarkerEl } from "@/lib/live-marker";
 
 interface Props {
   tripId?: string;
@@ -16,16 +16,17 @@ interface Props {
 }
 
 
-type Phase = "waiting" | "active" | "paused" | "ended";
+type Phase = "waiting" | "active" | "paused" | "ended" | "stale";
 
 function getPhase(session: LiveSession | null | undefined): Phase {
   if (!session) return "waiting";
   if (session.status === "completed") return "ended";
   const age = Date.now() - new Date(session.updated_at).getTime();
-  if (age >= 5 * 60 * 1000) return "ended";
+  if (age >= 5 * 60 * 1000) return "stale";
   if (session.status === "paused") return "paused";
   return "active";
 }
+
 
 function formatRelative(iso: string | undefined | null): string {
   if (!iso) return "—";
@@ -103,20 +104,28 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
     const map = mapRef.current;
     if (!map || !session) return;
     const lngLat: [number, number] = [session.lng, session.lat];
-    const phaseForMarker = phase === "waiting" ? "active" : phase;
+    const phaseForMarker: "active" | "paused" | "ended" | "stale" =
+      phase === "waiting" ? "active" : phase;
+    const speedKmh =
+      typeof session.speed === "number" && Number.isFinite(session.speed) && session.speed > 0
+        ? session.speed * 3.6
+        : null;
+    const heading =
+      typeof session.heading === "number" && Number.isFinite(session.heading)
+        ? session.heading
+        : null;
 
-    // Rebuild the marker element when the visual phase or vehicle changes so
-    // the icon/colors stay in sync with status. Otherwise just move it.
-    const currentPhase = markerElRef.current?.dataset.phase;
+    // Recreate the element only if the vehicle changed; otherwise update
+    // heading/speed/phase in place so the marker doesn't flicker.
     const currentVehicle = markerElRef.current?.dataset.vehicle;
-    const needsRebuild =
-      !markerRef.current ||
-      currentPhase !== phaseForMarker ||
-      currentVehicle !== (vehicle ?? "");
+    const needsRebuild = !markerRef.current || currentVehicle !== (vehicle ?? "");
 
     if (needsRebuild) {
-      const el = createLiveMarkerEl(vehicle ?? null, { phase: phaseForMarker });
-      el.dataset.vehicle = vehicle ?? "";
+      const el = createLiveMarkerEl(vehicle ?? null, {
+        phase: phaseForMarker,
+        heading,
+        speedKmh,
+      });
       markerElRef.current = el;
       if (markerRef.current) markerRef.current.remove();
       markerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
@@ -125,9 +134,17 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
       map.flyTo({ center: lngLat, zoom: 13, duration: 800 });
     } else {
       markerRef.current!.setLngLat(lngLat);
+      if (markerElRef.current) {
+        updateLiveMarkerEl(markerElRef.current, {
+          phase: phaseForMarker,
+          heading,
+          speedKmh,
+        });
+      }
       map.easeTo({ center: lngLat, duration: 600 });
     }
   }, [session, phase, vehicle]);
+
 
 
   const speedKmh =
@@ -138,20 +155,24 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
   const statusLabel =
     phase === "active" ? "Live" :
     phase === "paused" ? "Pauset" :
+    phase === "stale" ? "Stille" :
     phase === "ended" ? "Avsluttet" :
     "Venter";
 
   const statusDotClass =
     phase === "active" ? "bg-primary animate-pulse" :
     phase === "paused" ? "bg-yellow-500" :
+    phase === "stale" ? "bg-muted-foreground" :
     phase === "ended" ? "bg-muted-foreground" :
     "bg-muted-foreground animate-pulse";
 
   const bottomMessage =
     !session ? "Venter på første posisjon…" :
     phase === "paused" ? "Live deling er pauset" :
+    phase === "stale" ? "Posisjonen er ikke nylig oppdatert" :
     phase === "ended" ? "Live deling er avsluttet" :
     null;
+
 
   return (
     <div className={className}>

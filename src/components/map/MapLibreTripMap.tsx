@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { createLiveMarkerEl } from "@/lib/live-marker";
+import { createLiveMarkerEl, updateLiveMarkerEl } from "@/lib/live-marker";
 
 
 import type { Trip, TripDay, Stop } from "@/lib/trips-store";
@@ -87,7 +87,19 @@ interface Props {
   /** MapTiler browser key fetched at runtime via /api/public/map-config. */
   maptilerKey: string;
   /** Optional live position marker overlay. */
-  livePosition?: { lat: number; lng: number; heading?: number | null; vehicle?: string | null } | null;
+  livePosition?: {
+    lat: number;
+    lng: number;
+    heading?: number | null;
+    /** Speed in m/s, as returned by Geolocation API. */
+    speed?: number | null;
+    vehicle?: string | null;
+    /** ISO timestamp of the last GPS update; used to render a stale state. */
+    updatedAt?: string | null;
+    /** Optional explicit status override. */
+    status?: "active" | "paused" | "completed" | null;
+  } | null;
+
 
 }
 
@@ -654,16 +666,53 @@ export function MapLibreTripMap({
       if (liveMarkerRef.current) { liveMarkerRef.current.remove(); liveMarkerRef.current = null; }
       return;
     }
-    if (!liveMarkerRef.current) {
-      const el = createLiveMarkerEl(livePosition.vehicle ?? null, { phase: "active", title: "Din live-posisjon" });
+
+    // Derive marker phase from status + age.
+    let phase: "active" | "paused" | "ended" | "stale" = "active";
+    if (livePosition.status === "completed") phase = "ended";
+    else if (livePosition.updatedAt) {
+      const age = Date.now() - new Date(livePosition.updatedAt).getTime();
+      if (age >= 5 * 60 * 1000) phase = "stale";
+      else if (livePosition.status === "paused") phase = "paused";
+    } else if (livePosition.status === "paused") phase = "paused";
+
+    const heading =
+      typeof livePosition.heading === "number" && Number.isFinite(livePosition.heading)
+        ? livePosition.heading
+        : null;
+    const speedKmh =
+      typeof livePosition.speed === "number" && Number.isFinite(livePosition.speed) && livePosition.speed > 0
+        ? livePosition.speed * 3.6
+        : null;
+    const vehicle = livePosition.vehicle ?? null;
+
+    const lngLat: [number, number] = [livePosition.lng, livePosition.lat];
+    const currentVehicle = (liveMarkerRef.current?.getElement() as HTMLElement | undefined)?.dataset.vehicle;
+    const needsRebuild = !liveMarkerRef.current || currentVehicle !== (vehicle ?? "");
+
+    if (needsRebuild) {
+      const el = createLiveMarkerEl(vehicle, { phase, heading, speedKmh, title: "Din live-posisjon" });
+      if (liveMarkerRef.current) liveMarkerRef.current.remove();
       liveMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
-        .setLngLat([livePosition.lng, livePosition.lat])
+        .setLngLat(lngLat)
         .addTo(map);
     } else {
-      liveMarkerRef.current.setLngLat([livePosition.lng, livePosition.lat]);
+      liveMarkerRef.current!.setLngLat(lngLat);
+      const el = liveMarkerRef.current!.getElement() as HTMLElement;
+      updateLiveMarkerEl(el, { phase, heading, speedKmh });
     }
     return undefined;
-  }, [livePosition?.lat, livePosition?.lng, livePosition?.vehicle, ready]);
+  }, [
+    livePosition?.lat,
+    livePosition?.lng,
+    livePosition?.heading,
+    livePosition?.speed,
+    livePosition?.vehicle,
+    livePosition?.status,
+    livePosition?.updatedAt,
+    ready,
+  ]);
+
 
 
   // Match /map-test: a single container that the map mounts into. No

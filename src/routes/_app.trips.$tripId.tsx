@@ -26,7 +26,7 @@ import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
-import { useLiveSession, isLiveActive } from "@/lib/live-tracking";
+import { useLiveSession } from "@/lib/live-tracking";
 import { TripMemories } from "@/components/TripMemories";
 import { TripPhotosGallery } from "@/components/TripPhotosGallery";
 import { DetourPromptDialog } from "@/components/DetourPromptDialog";
@@ -189,9 +189,18 @@ function TripPlanner() {
   const selectedStop = selectedStopId ? tripStops.find((stop) => stop.id === selectedStopId) ?? null : null;
   const partnerTips = getPartnerTips(trip, routePoints);
   const memories = getPhotoMemories(trip, tripStops);
-  const livePos = liveSession && isLiveActive(liveSession)
-    ? { lat: liveSession.lat, lng: liveSession.lng, heading: liveSession.heading, vehicle: trip.vehicle }
+  const livePos = liveSession && liveSession.status !== "completed"
+    ? {
+        lat: liveSession.lat,
+        lng: liveSession.lng,
+        heading: liveSession.heading,
+        speed: liveSession.speed,
+        vehicle: trip.vehicle,
+        updatedAt: liveSession.updated_at,
+        status: liveSession.status,
+      }
     : null;
+
 
 
 
