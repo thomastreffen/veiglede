@@ -14,6 +14,8 @@ interface Props {
   className?: string;
   ariaLabel?: string;
   searchOptions?: SearchOptions;
+  /** Custom label for the "use typed text as-is" fallback button. */
+  useAnywayLabel?: string;
 }
 
 interface SearchState {
