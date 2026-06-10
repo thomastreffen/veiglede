@@ -6,7 +6,7 @@ import {
 
 import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
-  Radio, MapPin, Camera, Users, Eye, Trash2, Send,
+  Radio, MapPin, Camera, Users, Eye, Trash2, Send, Share2,
 } from "lucide-react";
 import { tripsApi, type Trip } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
@@ -223,13 +223,33 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
               <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="flex-1 min-w-0 text-xs font-mono break-all">{tripLink || "Genererer lenke…"}</span>
             </div>
-            <button
-              onClick={() => tripLink && copy("trip", tripLink)}
-              disabled={!tripLink}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2.5 sm:py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-50 min-h-[44px] sm:min-h-0"
-            >
-              {copied === "trip" ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier lenke</>}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => tripLink && copy("trip", tripLink)}
+                disabled={!tripLink}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2.5 sm:py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-50 min-h-[44px] sm:min-h-0"
+              >
+                {copied === "trip" ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Copy className="h-3.5 w-3.5" /> Kopier lenke</>}
+              </button>
+              <button
+                onClick={async () => {
+                  if (!tripLink) return;
+                  const data = {
+                    title: trip.title || "Se turen min på Veiglede",
+                    text: "Jeg har delt en turplan med deg på Veiglede.",
+                    url: tripLink,
+                  };
+                  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+                    try { await navigator.share(data); return; } catch { /* cancelled — fall through to copy */ }
+                  }
+                  await copy("trip", tripLink);
+                }}
+                disabled={!tripLink}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-2.5 sm:py-1.5 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary disabled:opacity-50 min-h-[44px] sm:min-h-0"
+              >
+                <Share2 className="h-3.5 w-3.5" /> Del tur
+              </button>
+            </div>
           </div>
           {roadbookLink && (
             <a
