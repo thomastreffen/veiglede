@@ -43,7 +43,7 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
-  const markerElRef = useRef<HTMLDivElement | null>(null);
+  const markerElRef = useRef<HTMLElement | null>(null);
   const [mapKey, setMapKey] = useState<string | null>(null);
   const [keyError, setKeyError] = useState<string | null>(null);
   // Always call the hook; pass null when caller supplies the session directly.
