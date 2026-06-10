@@ -55,7 +55,7 @@ function LiveFollowPage() {
         </div>
         {session?.last_stop_name && (
           <p className="mt-4 text-xs text-muted-foreground">
-            Sist passerte stopp: <span className="text-foreground font-medium">{session.last_stop_name}</span>
+            Sist passerte stopp: <span className="text-foreground font-medium">{shortenPlace(session.last_stop_name)}</span>
           </p>
         )}
         <p className="mt-6 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
