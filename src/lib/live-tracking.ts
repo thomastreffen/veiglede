@@ -151,6 +151,8 @@ export function useLiveBroadcaster(opts: {
   const { tripId, userId, enabled, status, lastStopName } = opts;
   const interval = opts.intervalMs ?? 30_000;
   const lastPosRef = useRef<LivePosition | null>(null);
+  const lastSentRef = useRef<LivePosition | null>(null);
+  const lastImmediateSentAtRef = useRef(0);
   const permStateRef = useRef<"unknown" | "granted" | "denied" | "prompt">("unknown");
   const [permState, setPermStateRaw] = useState<"unknown" | "granted" | "denied" | "prompt">("unknown");
 
@@ -179,6 +181,7 @@ export function useLiveBroadcaster(opts: {
       if (stopped) return;
       const pos = lastPosRef.current;
       if (!pos) return;
+      if (!Number.isFinite(pos.lat) || !Number.isFinite(pos.lng)) return;
       try {
         await upsertLiveSession({
           tripId,
@@ -187,10 +190,12 @@ export function useLiveBroadcaster(opts: {
           status: status as LiveStatus,
           lastStopName: lastStopName ?? null,
         });
+        lastSentRef.current = pos;
       } catch (e) {
         console.warn("[live] upsert send failed", e);
       }
     };
+
 
     try {
       watchId = navigator.geolocation.watchPosition(
@@ -223,9 +228,36 @@ export function useLiveBroadcaster(opts: {
               }
             }
             lastPosRef.current = next;
+
+            // Immediate upsert when owner has moved enough since last send.
+            try {
+              const lastSent = lastSentRef.current;
+              const movedEnough = !lastSent || distanceKm(
+                { lat: lastSent.lat, lng: lastSent.lng },
+                { lat: next.lat, lng: next.lng },
+              ) >= 0.025; // 25 meters
+              const now = Date.now();
+              const canSendImmediate = now - lastImmediateSentAtRef.current >= 5_000;
+              if (movedEnough && canSendImmediate) {
+                lastSentRef.current = next;
+                lastImmediateSentAtRef.current = now;
+                void upsertLiveSession({
+                  tripId,
+                  userId: userId!,
+                  pos: next,
+                  status: status as LiveStatus,
+                  lastStopName: lastStopName ?? null,
+                }).catch((e) => {
+                  console.warn("[live] immediate upsert failed", e);
+                });
+              }
+            } catch (e) {
+              console.warn("[live] immediate upsert check failed", e);
+            }
           } catch (e) {
             console.warn("[live] watchPosition success handler failed", e);
           }
+
         },
         (err) => {
           if (stopped) return;
