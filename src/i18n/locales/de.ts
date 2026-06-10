@@ -223,6 +223,17 @@ export const de: Dict = {
       quickActions: "Schnellaktionen",
       fordelerBadge: "NEU",
     },
+    profile: {
+      myTrips: "Meine Touren",
+      garage: "Garage / Fahrzeuge",
+      garageSubtitle: "Fahrzeuge, Kraftstoff, Laden und Präferenzen",
+      fordeler: "Vorteile",
+      fordelerSubtitle: "Rabatte und Partnerangebote",
+      settings: "Einstellungen",
+      help: "Hilfe",
+      helpSubtitle: "Hilfe bei Tourenplanung und Export",
+      logout: "Abmelden",
+    },
     trips: {
       plannedTrips: "geplante Touren",
       planned: "geplant",
