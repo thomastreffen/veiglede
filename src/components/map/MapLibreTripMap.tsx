@@ -778,6 +778,21 @@ export function MapLibreTripMap({
           Beregner rute på nytt…
         </div>
       )}
+      {livePosition && (
+        <button
+          type="button"
+          onClick={handleFollowLive}
+          className={cn(
+            "absolute right-3 bottom-3 z-30 rounded-full px-3 py-2 text-[12px] font-semibold shadow-md backdrop-blur transition",
+            followLive
+              ? "bg-primary text-primary-foreground border border-primary"
+              : "bg-background/90 text-foreground border border-border hover:bg-background",
+          )}
+          aria-pressed={followLive}
+        >
+          {followLive ? "● Følger min posisjon" : "Følg min posisjon"}
+        </button>
+      )}
     </div>
   );
 }
