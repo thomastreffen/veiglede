@@ -395,6 +395,19 @@ function LiveShareCard({
   const token = liveSession?.live_share_token ?? null;
   const liveUrl = token ? `https://veiglede.no/live/${token}` : null;
 
+  const [wasHiddenRecently, setWasHiddenRecently] = useState(false);
+  const prevVisibilityRef = useRef<"visible" | "hidden" | undefined>(pageVisibility);
+  useEffect(() => {
+    if (prevVisibilityRef.current === "hidden" && pageVisibility === "visible") {
+      setWasHiddenRecently(true);
+      const t = window.setTimeout(() => setWasHiddenRecently(false), 20_000);
+      prevVisibilityRef.current = pageVisibility;
+      return () => window.clearTimeout(t);
+    }
+    prevVisibilityRef.current = pageVisibility;
+  }, [pageVisibility, lastVisibilityChangeTime]);
+
+
   const helper = !user
     ? "Logg inn for å dele posisjon live."
     : !liveOn
