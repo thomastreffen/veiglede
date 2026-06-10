@@ -222,6 +222,10 @@ export interface Trip {
   isRoundTrip?: boolean;
   /** How the trip was created — used by UI to suppress generic warnings. */
   source?: "manual" | "ai" | "template";
+  /** Attribution: the original public trip this trip was copied from. */
+  originalTripId?: string;
+  /** Attribution: display name of the original owner ("Inspirert av X"). */
+  inspiredByDisplayName?: string;
 }
 
 
