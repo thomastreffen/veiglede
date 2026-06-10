@@ -170,12 +170,29 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
         
         <DialogHeader>
           <DialogTitle className="font-display text-2xl uppercase tracking-wide">
-            Del turen
+            Del turplanen
           </DialogTitle>
           <DialogDescription className="text-sm">
-            Del ruta og roadbooken med venner, familie eller reisefølge.
+            Lag en lenke andre kan åpne for å se ruta og roadbooken. Live-posisjon deles ikke herfra.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Hva deles / hva deles ikke — trip plan */}
+        <div className="rounded-xl border border-border bg-background/40 p-3.5 space-y-2 text-xs leading-relaxed">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Dette deler du</p>
+          <ul className="list-disc pl-4 space-y-0.5 text-foreground/90">
+            <li>Turens navn</li>
+            <li>Rute og stopp</li>
+            <li>Dag-for-dag reiseplan</li>
+            <li>Bilder og notater som er med i turen</li>
+          </ul>
+          <p className="pt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">Dette deles ikke</p>
+          <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+            <li>Live-posisjonen din</li>
+            <li>Redigeringsmulighet</li>
+            <li>E-post eller private kontoopplysninger</li>
+          </ul>
+        </div>
 
         {/* Public toggle */}
         <div className="rounded-xl border border-border bg-background/40 p-3.5 space-y-3">
