@@ -194,8 +194,11 @@ export function LiveTripMap({ tripId, session: sessionProp, height, className }:
           100% { transform: scale(2.2); opacity: 0; }
         }
       `}</style>
-      <div className="relative rounded-2xl overflow-hidden border border-border bg-surface" style={{ height }}>
-        <div ref={containerRef} className="absolute inset-0" />
+      <div
+        className="relative rounded-2xl overflow-hidden border border-border bg-surface w-full min-h-[420px] h-[420px]"
+        style={{ height: height || "420px", minHeight: height || "420px" }}
+      >
+        <div ref={containerRef} className="absolute inset-0 h-full w-full" style={{ height: "100%", width: "100%" }} />
         {keyError && (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">{keyError}</div>
         )}
