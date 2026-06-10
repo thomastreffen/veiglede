@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useLiveSession, isLiveActive, type LiveSession } from "@/lib/live-tracking";
-import { createLiveMarkerEl } from "@/lib/live-marker";
+import { createLiveMarkerEl, updateLiveMarkerEl } from "@/lib/live-marker";
 
 interface Props {
   tripId?: string;
@@ -16,16 +16,17 @@ interface Props {
 }
 
 
-type Phase = "waiting" | "active" | "paused" | "ended";
+type Phase = "waiting" | "active" | "paused" | "ended" | "stale";
 
 function getPhase(session: LiveSession | null | undefined): Phase {
   if (!session) return "waiting";
   if (session.status === "completed") return "ended";
   const age = Date.now() - new Date(session.updated_at).getTime();
-  if (age >= 5 * 60 * 1000) return "ended";
+  if (age >= 5 * 60 * 1000) return "stale";
   if (session.status === "paused") return "paused";
   return "active";
 }
+
 
 function formatRelative(iso: string | undefined | null): string {
   if (!iso) return "—";
