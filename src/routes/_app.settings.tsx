@@ -430,33 +430,66 @@ function UsernameField() {
     toast.success("Brukernavn lagret");
   };
 
+  const showPicker = !current || editing;
+
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Offentlig profil</p>
-      <UsernamePicker
-        initialValue={current ?? ""}
-        ownUserId={user.id}
-        onChange={onChange}
-      />
-      <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-        {current ? (
-          <a
-            href={`/u/${current}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-          >
-            👤 Se min offentlige profil <ExternalLink className="h-3 w-3" />
-          </a>
-        ) : <span />}
-        <button
-          onClick={save}
-          disabled={!dirty || saving}
-          className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
-        >
-          {saving ? "Lagrer…" : "Lagre brukernavn"}
-        </button>
-      </div>
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Brukernavn</p>
+      {current && !editing ? (
+        <div className="rounded-xl border border-border bg-surface-1 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Din offentlige lenke</p>
+          <p className="mt-1 font-mono text-sm break-all">
+            veiglede.no/u/<span className="text-primary font-semibold">{current}</span>
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <a
+              href={`/u/${current}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+            >
+              Se offentlig profil <ExternalLink className="h-3 w-3" />
+            </a>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Endre brukernavn
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {showPicker && (
+        <>
+          <UsernamePicker
+            initialValue={current ?? ""}
+            ownUserId={user.id}
+            onChange={onChange}
+          />
+          <div className="mt-3 flex items-center justify-end gap-2 flex-wrap">
+            {current && (
+              <button
+                type="button"
+                onClick={() => { setEditing(false); setPending(""); setPendingOk(false); }}
+                className="rounded-xl border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+              >
+                Avbryt
+              </button>
+            )}
+            {dirty && (
+              <button
+                onClick={async () => { await save(); setEditing(false); }}
+                disabled={!dirty || saving}
+                className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
+              >
+                {saving ? "Lagrer…" : "Lagre brukernavn"}
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
