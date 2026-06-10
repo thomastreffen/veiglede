@@ -73,6 +73,7 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
 
     if (pErr || !profile) return { found: false };
     if (profile.is_public !== true) {
+      const avatarUrl = (await signAvatarServer((profile.avatar_url as string | null) ?? undefined)) ?? undefined;
       return {
         found: true,
         isPrivate: true,
@@ -80,7 +81,7 @@ export const getPublicProfileByUsername = createServerFn({ method: "GET" })
           id: profile.id as string,
           username,
           displayName: (profile.display_name as string | null) ?? username,
-          avatarUrl: (profile.avatar_url as string | null) ?? undefined,
+          avatarUrl,
         },
       };
     }
