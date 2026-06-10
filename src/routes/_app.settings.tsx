@@ -692,6 +692,7 @@ const NAV_ITEMS: { id: string; label: string }[] = [
   { id: "garasje", label: "Min garasje" },
   { id: "korepreferanser", label: "Kjørepreferanser" },
   { id: "langs-ruta", label: "Hva vil du se langs ruta?" },
+  { id: "profil", label: "Profil" },
   { id: "personvern", label: "Personvern" },
   { id: "utseende", label: "Utseende" },
   { id: "konto", label: "Konto og data" },
