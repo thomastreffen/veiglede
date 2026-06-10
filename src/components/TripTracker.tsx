@@ -5,12 +5,12 @@ import type { Stop } from "@/lib/trips-store";
 import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import {
-  useLiveBroadcaster, useLiveOptIn, endLiveSession, useLiveSession, isLiveActive,
+  useLiveBroadcaster, useLiveOptIn, endLiveSession, isLiveActive, type LiveSession,
 } from "@/lib/live-tracking";
 
 export function TripTracker({
-  tripId, tripStops, vehicleLabel,
-}: { tripId: string; tripStops: Stop[]; vehicleLabel: string }) {
+  tripId, tripStops, vehicleLabel, liveSession,
+}: { tripId: string; tripStops: Stop[]; vehicleLabel: string; liveSession?: LiveSession | null }) {
   const t = useTripTracking(tripId);
   const meta = statusMeta(t.status);
   const { user } = useAuth();
@@ -30,7 +30,7 @@ export function TripTracker({
     lastStopName: lastVisited,
   });
 
-  const ownLive = useLiveSession(liveOn ? tripId : null);
+  const ownLive = liveOn ? (liveSession ?? null) : null;
   const liveActive = isLiveActive(ownLive);
   const lastSeenStr = ownLive?.updated_at
     ? new Date(ownLive.updated_at).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })
