@@ -602,7 +602,7 @@ export const nb = {
       },
       helpBot: {
         greeting: "Hei! Jeg kan hjelpe deg med Veiglede. Hva lurer du på?",
-        quickReplies: ["Hvordan planlegger jeg en tur?", "Kan jeg eksportere til GPS?", "Hva er forskjellen på Pro og Gratis?"],
+        quickReplies: ["Hvordan lager jeg en tur?", "Hvordan eksporterer jeg GPX?", "Hvorfor starter ikke Google Maps hele turen?", "Hvordan bruker jeg Roadbook?", "Hvordan deler jeg turen trygt?", "Hvordan legger jeg til overnatting?"],
         errorReply: "Beklager — noe gikk galt. Prøv igjen.",
         openAria: "Åpne hjelpe-bot",
         title: "Veiglede-hjelp",
