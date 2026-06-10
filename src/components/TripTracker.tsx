@@ -485,8 +485,25 @@ function LiveShareCard({
             Del posisjon live
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">{helper}</p>
+          {liveOn && user && !permDenied && tripStatus !== "idle" && tripStatus !== "completed" && (
+            <p className="mt-1 text-[11px] text-muted-foreground/80">
+              Tips: Live-posisjon fungerer best når Veiglede er åpen på mobilen.
+            </p>
+          )}
         </div>
       </label>
+
+      {liveOn && pageVisibility === "hidden" && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          Hold Veiglede åpen for mest stabil live-posisjon.
+        </div>
+      )}
+
+      {liveOn && pageVisibility === "visible" && wasHiddenRecently && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/90">
+          Live-deling kan ha vært pauset mens siden var i bakgrunnen.
+        </div>
+      )}
 
       {showWaiting && (
         <div className="flex items-center gap-2 rounded-lg border border-border bg-background/40 px-3 py-2 text-xs">
