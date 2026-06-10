@@ -71,12 +71,18 @@ export function SharingPrivacyPanel({ trip, tracking, liveSession, onOpenShare }
     }
   };
 
-  const handleEnableTripShare = () => {
+  const handleEnableTripShare = async () => {
     try {
       if (!shareToken) tripsApi.ensureShareToken(trip.id);
       tripsApi.setTripPublic(trip.id, true);
-      void flushTripsNow();
-      openShareSafe();
+      try { await flushTripsNow(); } catch { /* will retry via sync queue */ }
+      toast.success("Turen er delt", {
+        description: "Alle med lenken kan se turplanen.",
+      });
+      // Open the share modal so the user can grab the link.
+      // Wrapped in setTimeout to avoid any synchronous render race with the
+      // public-trip widgets that now mount after isPublic flips to true.
+      setTimeout(() => openShareSafe(), 0);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Kunne ikke dele turen");
     }

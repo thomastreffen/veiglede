@@ -30,9 +30,17 @@ export function TripReactionsRow({ tripId, initial, size = "sm" }: Props) {
 
   const { data, refetch } = useQuery({
     queryKey: ["trip-reactions", tripId, user?.id ?? "anon"],
-    queryFn: () => fetcher({ data: { tripIds: [tripId], viewerId: user?.id } }),
+    queryFn: async () => {
+      try {
+        return await fetcher({ data: { tripIds: [tripId], viewerId: user?.id } });
+      } catch {
+        return { [tripId]: { fire: 0, clap: 0, pin: 0, mine: [] } } as Record<string, TripReactionCounts>;
+      }
+    },
     initialData: initial ? { [tripId]: initial } : undefined,
     staleTime: 30_000,
+    retry: false,
+    throwOnError: false,
   });
   const counts = data?.[tripId] ?? { fire: 0, clap: 0, pin: 0, mine: [] };
 
