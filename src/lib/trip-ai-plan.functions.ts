@@ -88,16 +88,19 @@ function buildUserPrompt(d: z.infer<typeof InputSchema>) {
   const tripShape = d.roundTrip
     ? `Round trip: start in ${d.origin}, visit ${d.destination}, return to ${d.origin} by day ${d.days}.`
     : `One-way: ${d.origin} → ${d.destination} over ${d.days} day(s).`;
+  const styleRule = d.styleValue ? STYLE_RULES[d.styleValue] : `Style: ${d.styleLabel}.`;
   return [
     `Plan a ${d.days}-day road trip.`,
     tripShape,
     waypointLine,
     `Vehicle: ${d.vehicleLabel}${d.energyLabel ? ` (${d.energyLabel})` : ""}.`,
     `Style: ${d.styleLabel}.`,
+    styleRule,
     `Max driving per day: ${d.maxHoursPerDay} hours.`,
     d.avoidHighway ? "Avoid motorways where possible." : "",
     d.stopInterests.length ? `Preferred stop types: ${d.stopInterests.join(", ")}.` : "",
     "",
+    "In the top-level `summary` field, include ONE short sentence in the user's language explaining WHY this plan fits the chosen style (e.g. \"Valgt fordi svingete fjellveier passer MC-profilen.\" or \"Valgt fordi raskeste rute gir kortere kjøretid.\"). Keep it under 140 characters.",
     "Return a plan with EVERY day filled. Distribute the waypoints sensibly. For example, on a 9-day Drammen → Molde round trip include Atlanterhavsveien, Trollstigen, Geirangerfjord area and similar real attractions.",
   ].filter(Boolean).join("\n");
 }
