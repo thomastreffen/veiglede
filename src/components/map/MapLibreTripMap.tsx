@@ -544,13 +544,15 @@ export function MapLibreTripMap({
         if (lat < minLat) minLat = lat;
         if (lat > maxLat) maxLat = lat;
       }
-      map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
+      if (!livePosition) {
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
+      }
       // eslint-disable-next-line no-console
       console.info("[veiglede] map route updated →", { pts: routeGeom.length });
     } catch (err) {
       lastErrorRef.current = `route-update: ${(err as Error)?.message ?? "unknown"}`;
     }
-  }, [routeGeom, ready]);
+  }, [routeGeom, ready, livePosition]);
 
   // After style swap, sources/layers are dropped — re-add.
   useEffect(() => {
