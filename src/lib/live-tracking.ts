@@ -30,6 +30,103 @@ export interface LivePosition {
   updatedAt?: string;
 }
 
+export type LivePermissionState = "unknown" | "granted" | "denied" | "prompt";
+
+type LiveDebugSendSource = "immediate" | "heartbeat" | "manual";
+
+export interface LiveUpsertDebugPayload {
+  trip_id: string;
+  user_id: string;
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  heading: number | null;
+  speed: number | null;
+  last_stop_name: string | null;
+  status: LiveStatus;
+  updated_at: string;
+  last_seen_at: string;
+  live_share_token: string;
+}
+
+export interface LiveStoredRowSnapshot {
+  lat: number;
+  lng: number;
+  heading: number | null;
+  speed: number | null;
+  status: LiveStatus;
+  updated_at: string;
+  live_share_token: string;
+}
+
+export interface LiveBroadcasterDebugState {
+  broadcastable: boolean;
+  liveOn: boolean;
+  tripStatus: LiveStatus | "idle";
+  permissionState: LivePermissionState;
+  watchStarted: boolean;
+  watchIdExists: boolean;
+  lastGpsFixTime: string | null;
+  lastGpsFixLat: number | null;
+  lastGpsFixLng: number | null;
+  lastGpsAccuracy: number | null;
+  previousGpsLat: number | null;
+  previousGpsLng: number | null;
+  distanceSincePreviousGpsKm: number | null;
+  distanceSinceLastSentKm: number | null;
+  movedEnough: boolean;
+  canSendImmediate: boolean;
+  lastImmediateUpsertAttemptTime: string | null;
+  lastImmediateUpsertSuccessTime: string | null;
+  lastHeartbeatUpsertSuccessTime: string | null;
+  lastManualUpsertAttemptTime: string | null;
+  lastManualUpsertSuccessTime: string | null;
+  lastUpsertPayload: LiveUpsertDebugPayload | null;
+  lastStoredRow: LiveStoredRowSnapshot | null;
+  lastUpsertError: string | null;
+}
+
+function toErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try { return JSON.stringify(error); }
+  catch { return "Unknown error"; }
+}
+
+function createLiveBroadcasterDebugState(input: {
+  enabled: boolean;
+  status: LiveStatus | "idle";
+  broadcastable: boolean;
+  permissionState: LivePermissionState;
+}): LiveBroadcasterDebugState {
+  return {
+    broadcastable: input.broadcastable,
+    liveOn: input.enabled,
+    tripStatus: input.status,
+    permissionState: input.permissionState,
+    watchStarted: false,
+    watchIdExists: false,
+    lastGpsFixTime: null,
+    lastGpsFixLat: null,
+    lastGpsFixLng: null,
+    lastGpsAccuracy: null,
+    previousGpsLat: null,
+    previousGpsLng: null,
+    distanceSincePreviousGpsKm: null,
+    distanceSinceLastSentKm: null,
+    movedEnough: false,
+    canSendImmediate: false,
+    lastImmediateUpsertAttemptTime: null,
+    lastImmediateUpsertSuccessTime: null,
+    lastHeartbeatUpsertSuccessTime: null,
+    lastManualUpsertAttemptTime: null,
+    lastManualUpsertSuccessTime: null,
+    lastUpsertPayload: null,
+    lastStoredRow: null,
+    lastUpsertError: null,
+  };
+}
+
 // ---------- per-trip opt-in (localStorage) ----------
 function readOptInMap(): Record<string, boolean> {
   if (typeof window === "undefined") return {};
@@ -98,24 +195,46 @@ export async function upsertLiveSession(input: {
   pos: LivePosition;
   status: LiveStatus;
   lastStopName?: string | null;
+  onPreparedPayload?: (payload: LiveUpsertDebugPayload) => void;
 }) {
   const token = await ensureShareToken(input.tripId, input.userId);
-  const row = {
+  const timestamp = new Date().toISOString();
+  const payload: LiveUpsertDebugPayload = {
     trip_id: input.tripId,
     user_id: input.userId,
     lat: input.pos.lat,
     lng: input.pos.lng,
+    accuracy: input.pos.accuracy ?? null,
     heading: input.pos.heading ?? null,
     speed: input.pos.speed ?? null,
     last_stop_name: input.lastStopName ?? null,
     status: input.status,
-    updated_at: new Date().toISOString(),
+    updated_at: timestamp,
+    last_seen_at: timestamp,
     live_share_token: token,
   };
-  const { error } = await (supabase as any)
+  input.onPreparedPayload?.(payload);
+  console.log("[live] upsert payload", payload);
+  const row = {
+    trip_id: payload.trip_id,
+    user_id: payload.user_id,
+    lat: payload.lat,
+    lng: payload.lng,
+    heading: payload.heading,
+    speed: payload.speed,
+    last_stop_name: payload.last_stop_name,
+    status: payload.status,
+    updated_at: payload.updated_at,
+    live_share_token: payload.live_share_token,
+  };
+  const { data, error } = await (supabase as any)
     .from("trip_live_sessions")
     .upsert(row, { onConflict: "trip_id,user_id" });
   if (error) throw error;
+  return {
+    payload,
+    storedRow: ((Array.isArray(data) ? data[0] : data) as LiveStoredRowSnapshot | null) ?? null,
+  };
 }
 
 export async function updateLiveStatus(input: {
@@ -152,27 +271,118 @@ export function useLiveBroadcaster(opts: {
 }) {
   const { tripId, userId, enabled, status, lastStopName } = opts;
   const interval = opts.intervalMs ?? 30_000;
+  const immediateDebugThresholdKm = 0.003;
   const lastPosRef = useRef<LivePosition | null>(null);
   const lastSentRef = useRef<LivePosition | null>(null);
   const lastImmediateSentAtRef = useRef(0);
-  const permStateRef = useRef<"unknown" | "granted" | "denied" | "prompt">("unknown");
-  const [permState, setPermStateRaw] = useState<"unknown" | "granted" | "denied" | "prompt">("unknown");
+  const permStateRef = useRef<LivePermissionState>("unknown");
+  const [permState, setPermStateRaw] = useState<LivePermissionState>("unknown");
 
-  // Only trigger a re-render when the permission state actually changes.
-  const setPermState = (next: "unknown" | "granted" | "denied" | "prompt") => {
+  const broadcastable = enabled && !!tripId && !!userId && (status === "active" || status === "paused");
+  const [debug, setDebug] = useState<LiveBroadcasterDebugState>(() => createLiveBroadcasterDebugState({
+    enabled,
+    status,
+    broadcastable,
+    permissionState: "unknown",
+  }));
+
+  const updateDebug = (patch: Partial<LiveBroadcasterDebugState>) => {
+    setDebug((prev) => ({ ...prev, ...patch }));
+  };
+
+  const setPermState = (next: LivePermissionState) => {
     if (permStateRef.current === next) return;
     permStateRef.current = next;
+    updateDebug({ permissionState: next });
     try { setPermStateRaw(next); } catch (e) { console.warn("[live] setPermState failed", e); }
   };
 
-  const broadcastable = enabled && !!userId && (status === "active" || status === "paused");
+  useEffect(() => {
+    updateDebug({
+      broadcastable,
+      liveOn: enabled,
+      tripStatus: status,
+      permissionState: permStateRef.current,
+      watchStarted: broadcastable ? debug.watchStarted : false,
+      watchIdExists: broadcastable ? debug.watchIdExists : false,
+      canSendImmediate: broadcastable ? Date.now() - lastImmediateSentAtRef.current >= 5_000 : false,
+    });
+  }, [broadcastable, enabled, status]);
+
+  const sendPosition = async (source: LiveDebugSendSource, posOverride?: LivePosition | null) => {
+    const pos = posOverride ?? lastPosRef.current;
+    const liveStatus = status === "active" || status === "paused" || status === "completed"
+      ? status
+      : null;
+
+    if (!tripId || !userId || !liveStatus) {
+      const message = "Live broadcaster is not in a sendable state.";
+      updateDebug({ lastUpsertError: message });
+      return { ok: false as const, error: message };
+    }
+    if (!pos || !Number.isFinite(pos.lat) || !Number.isFinite(pos.lng)) {
+      const message = "No valid GPS fix available to send.";
+      updateDebug({ lastUpsertError: message });
+      return { ok: false as const, error: message };
+    }
+
+    const attemptTime = new Date().toISOString();
+    updateDebug({
+      lastUpsertError: null,
+      ...(source === "immediate" ? { lastImmediateUpsertAttemptTime: attemptTime } : {}),
+      ...(source === "manual" ? { lastManualUpsertAttemptTime: attemptTime } : {}),
+    });
+
+    let preparedPayload: LiveUpsertDebugPayload | null = null;
+
+    try {
+      const result = await upsertLiveSession({
+        tripId,
+        userId,
+        pos,
+        status: liveStatus,
+        lastStopName: lastStopName ?? null,
+        onPreparedPayload: (payload) => {
+          preparedPayload = payload;
+          updateDebug({ lastUpsertPayload: payload, lastUpsertError: null });
+        },
+      });
+
+      lastSentRef.current = pos;
+      if (source === "immediate") lastImmediateSentAtRef.current = Date.now();
+
+      const successTime = new Date().toISOString();
+      updateDebug({
+        lastUpsertPayload: preparedPayload ?? result.payload,
+        lastStoredRow: result.storedRow,
+        lastUpsertError: null,
+        canSendImmediate: source === "immediate" ? false : Date.now() - lastImmediateSentAtRef.current >= 5_000,
+        ...(source === "immediate" ? { lastImmediateUpsertSuccessTime: successTime } : {}),
+        ...(source === "heartbeat" ? { lastHeartbeatUpsertSuccessTime: successTime } : {}),
+        ...(source === "manual" ? { lastManualUpsertSuccessTime: successTime } : {}),
+      });
+
+      return { ok: true as const, payload: result.payload, storedRow: result.storedRow };
+    } catch (error) {
+      const message = toErrorMessage(error);
+      updateDebug({
+        lastUpsertPayload: preparedPayload,
+        lastUpsertError: message,
+      });
+      return { ok: false as const, error: message };
+    }
+  };
 
   useEffect(() => {
-    if (!broadcastable) return;
+    if (!broadcastable) {
+      updateDebug({ watchStarted: false, watchIdExists: false, canSendImmediate: false });
+      return;
+    }
 
     // Guard browser-only APIs (SSR + non-geolocation contexts).
     if (typeof window === "undefined" || typeof navigator === "undefined" || !("geolocation" in navigator) || !navigator.geolocation) {
       setPermState("denied");
+      updateDebug({ watchStarted: false, watchIdExists: false, canSendImmediate: false });
       return;
     }
 
@@ -184,15 +394,8 @@ export function useLiveBroadcaster(opts: {
       const pos = lastPosRef.current;
       if (!pos) return;
       if (!Number.isFinite(pos.lat) || !Number.isFinite(pos.lng)) return;
-      try {
-        await upsertLiveSession({
-          tripId,
-          userId: userId!,
-          pos,
-          status: status as LiveStatus,
-          lastStopName: lastStopName ?? null,
-        });
-        lastSentRef.current = pos;
+      const result = await sendPosition("heartbeat", pos);
+      if (result.ok) {
         console.log("[live] heartbeat upsert success", {
           lat: pos.lat,
           lng: pos.lng,
@@ -200,8 +403,8 @@ export function useLiveBroadcaster(opts: {
           heading: pos.heading ?? null,
           speed: pos.speed ?? null,
         });
-      } catch (e) {
-        console.warn("[live] heartbeat upsert failed", e);
+      } else {
+        console.warn("[live] heartbeat upsert failed", result.error);
       }
     };
 
@@ -235,20 +438,19 @@ export function useLiveBroadcaster(opts: {
               });
               console.log("[live] gps refs", { prevGps, lastSent });
 
-              let movedSincePrevGps = !prevGps;
-              let movedSinceLastSent = !lastSent;
+              let distanceSincePrevGpsKm: number | null = null;
+              let distanceSinceLastSentKm: number | null = null;
 
               if (prevGps) {
                 try {
-                  const delta = distanceKm(
+                  distanceSincePrevGpsKm = distanceKm(
                     { lat: prevGps.lat, lng: prevGps.lng },
                     { lat: next.lat, lng: next.lng },
                   );
-                  movedSincePrevGps = delta >= 0.025;
                   if (status === "active") {
                     // Ignore noise (<5m) and unrealistic jumps (>2km between samples).
-                    if (delta >= 0.005 && delta <= 2) {
-                      trackingApi.addDistance(tripId, delta);
+                    if (distanceSincePrevGpsKm >= 0.005 && distanceSincePrevGpsKm <= 2) {
+                      trackingApi.addDistance(tripId, distanceSincePrevGpsKm);
                     }
                   }
                 } catch (e) {
@@ -257,35 +459,39 @@ export function useLiveBroadcaster(opts: {
               }
 
               if (lastSent) {
-                movedSinceLastSent = distanceKm(
+                distanceSinceLastSentKm = distanceKm(
                   { lat: lastSent.lat, lng: lastSent.lng },
                   { lat: next.lat, lng: next.lng },
-                ) >= 0.025;
+                );
               }
 
               lastPosRef.current = next;
 
               const now = Date.now();
               const canSendImmediate = now - lastImmediateSentAtRef.current >= 5_000;
+              const movedEnough = distanceSinceLastSentKm === null || distanceSinceLastSentKm >= immediateDebugThresholdKm;
+              updateDebug({
+                lastGpsFixTime: next.updatedAt ?? null,
+                lastGpsFixLat: next.lat,
+                lastGpsFixLng: next.lng,
+                lastGpsAccuracy: next.accuracy ?? null,
+                previousGpsLat: prevGps?.lat ?? null,
+                previousGpsLng: prevGps?.lng ?? null,
+                distanceSincePreviousGpsKm: distanceSincePrevGpsKm,
+                distanceSinceLastSentKm,
+                movedEnough,
+                canSendImmediate,
+              });
               console.log("[live] movement check", {
-                movedSincePrevGps,
-                movedSinceLastSent,
+                distanceSincePrevGpsKm,
+                distanceSinceLastSentKm,
+                movedEnough,
                 canSendImmediate,
               });
 
-              if ((movedSincePrevGps || movedSinceLastSent) && canSendImmediate) {
-                try {
-                  await upsertLiveSession({
-                    tripId,
-                    userId: userId!,
-                    pos: next,
-                    status: status as LiveStatus,
-                    lastStopName: lastStopName ?? null,
-                  });
-
-                  lastSentRef.current = next;
-                  lastImmediateSentAtRef.current = now;
-
+              if (canSendImmediate) {
+                const result = await sendPosition("immediate", next);
+                if (result.ok) {
                   console.log("[live] immediate upsert success", {
                     lat: next.lat,
                     lng: next.lng,
@@ -293,8 +499,8 @@ export function useLiveBroadcaster(opts: {
                     heading: next.heading ?? null,
                     speed: next.speed ?? null,
                   });
-                } catch (e) {
-                  console.warn("[live] immediate upsert failed", e);
+                } else {
+                  console.warn("[live] immediate upsert failed", result.error);
                 }
               }
             } catch (e) {
@@ -306,6 +512,7 @@ export function useLiveBroadcaster(opts: {
           if (stopped) return;
           try {
             if (err && err.code === err.PERMISSION_DENIED) setPermState("denied");
+            updateDebug({ lastUpsertError: err?.message ?? "Geolocation error" });
             console.warn("[live] geolocation error", err?.message);
           } catch (e) {
             console.warn("[live] watchPosition error handler failed", e);
@@ -313,9 +520,19 @@ export function useLiveBroadcaster(opts: {
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
       );
+      updateDebug({
+        watchStarted: true,
+        watchIdExists: watchId !== null,
+        canSendImmediate: Date.now() - lastImmediateSentAtRef.current >= 5_000,
+      });
     } catch (e) {
       console.warn("[live] watchPosition failed", e);
       setPermState("denied");
+      updateDebug({
+        watchStarted: false,
+        watchIdExists: false,
+        lastUpsertError: toErrorMessage(e),
+      });
     }
 
     const initial = setTimeout(() => { void send(); }, 2_000);
@@ -325,6 +542,7 @@ export function useLiveBroadcaster(opts: {
       stopped = true;
       clearTimeout(initial);
       clearInterval(timer);
+      updateDebug({ watchStarted: false, watchIdExists: false, canSendImmediate: false });
       if (watchId !== null && navigator.geolocation?.clearWatch) {
         try { navigator.geolocation.clearWatch(watchId); }
         catch (e) { console.warn("[live] clearWatch failed", e); }
@@ -339,7 +557,14 @@ export function useLiveBroadcaster(opts: {
     }
   }, [enabled, status, tripId, userId]);
 
-  return { permState };
+  return {
+    permState,
+    debug,
+    sendTestPositionNow: async () => {
+      const result = await sendPosition("manual");
+      return result.ok;
+    },
+  };
 }
 
 // ---------- subscriber hooks ----------
