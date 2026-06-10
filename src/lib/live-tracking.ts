@@ -300,15 +300,16 @@ export function useLiveBroadcaster(opts: {
   };
 
   useEffect(() => {
-    updateDebug({
+    setDebug((prev) => ({
+      ...prev,
       broadcastable,
       liveOn: enabled,
       tripStatus: status,
       permissionState: permStateRef.current,
-      watchStarted: broadcastable ? debug.watchStarted : false,
-      watchIdExists: broadcastable ? debug.watchIdExists : false,
+      watchStarted: broadcastable ? prev.watchStarted : false,
+      watchIdExists: broadcastable ? prev.watchIdExists : false,
       canSendImmediate: broadcastable ? Date.now() - lastImmediateSentAtRef.current >= 5_000 : false,
-    });
+    }));
   }, [broadcastable, enabled, status]);
 
   const sendPosition = async (source: LiveDebugSendSource, posOverride?: LivePosition | null) => {
