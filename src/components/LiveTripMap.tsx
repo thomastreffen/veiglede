@@ -104,20 +104,28 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
     const map = mapRef.current;
     if (!map || !session) return;
     const lngLat: [number, number] = [session.lng, session.lat];
-    const phaseForMarker = phase === "waiting" ? "active" : phase;
+    const phaseForMarker: "active" | "paused" | "ended" | "stale" =
+      phase === "waiting" ? "active" : phase;
+    const speedKmh =
+      typeof session.speed === "number" && Number.isFinite(session.speed) && session.speed > 0
+        ? session.speed * 3.6
+        : null;
+    const heading =
+      typeof session.heading === "number" && Number.isFinite(session.heading)
+        ? session.heading
+        : null;
 
-    // Rebuild the marker element when the visual phase or vehicle changes so
-    // the icon/colors stay in sync with status. Otherwise just move it.
-    const currentPhase = markerElRef.current?.dataset.phase;
+    // Recreate the element only if the vehicle changed; otherwise update
+    // heading/speed/phase in place so the marker doesn't flicker.
     const currentVehicle = markerElRef.current?.dataset.vehicle;
-    const needsRebuild =
-      !markerRef.current ||
-      currentPhase !== phaseForMarker ||
-      currentVehicle !== (vehicle ?? "");
+    const needsRebuild = !markerRef.current || currentVehicle !== (vehicle ?? "");
 
     if (needsRebuild) {
-      const el = createLiveMarkerEl(vehicle ?? null, { phase: phaseForMarker });
-      el.dataset.vehicle = vehicle ?? "";
+      const el = createLiveMarkerEl(vehicle ?? null, {
+        phase: phaseForMarker,
+        heading,
+        speedKmh,
+      });
       markerElRef.current = el;
       if (markerRef.current) markerRef.current.remove();
       markerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
@@ -126,9 +134,17 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
       map.flyTo({ center: lngLat, zoom: 13, duration: 800 });
     } else {
       markerRef.current!.setLngLat(lngLat);
+      if (markerElRef.current) {
+        updateLiveMarkerEl(markerElRef.current, {
+          phase: phaseForMarker,
+          heading,
+          speedKmh,
+        });
+      }
       map.easeTo({ center: lngLat, duration: 600 });
     }
   }, [session, phase, vehicle]);
+
 
 
   const speedKmh =
