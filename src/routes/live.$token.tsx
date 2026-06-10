@@ -63,7 +63,7 @@ function LiveFollowPage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         <div className="mt-5">
-          <LiveTripMap session={session} height="68vh" />
+          <LiveTripMap session={session} height="420px" />
         </div>
         {session?.last_stop_name && (
           <p className="mt-4 text-xs text-muted-foreground">
