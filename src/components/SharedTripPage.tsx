@@ -136,6 +136,10 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
           </div>
         </section>
 
+        <p className="mt-3 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground">Delt turplan.</span> Dette er en read-only visning av ruta og roadbooken. Live-posisjon vises ikke her.
+        </p>
+
         <LiveSharedBlock tripId={trip.id} />
 
         <section className="mt-4 grid grid-cols-3 gap-3">
