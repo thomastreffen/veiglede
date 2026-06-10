@@ -125,6 +125,8 @@ export function TripTracker({
         liveActive={liveActive}
         liveSession={ownLive}
         lastSeenStr={lastSeenStr}
+        pageVisibility={liveDebug.pageVisibility}
+        lastVisibilityChangeTime={liveDebug.lastVisibilityChangeTime}
       />
 
       {user && liveOn && <LiveDebugPanel debug={liveDebug} onSendTestPositionNow={sendTestPositionNow} />}
