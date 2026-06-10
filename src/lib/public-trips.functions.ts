@@ -16,6 +16,13 @@ export interface PublicTripPayload {
   trip?: Json;
   days?: Json[];
   stops?: Json[];
+  /** Owner info for attribution + linking to public profile. */
+  owner?: {
+    displayName: string;
+    username?: string;
+    avatarUrl?: string;
+    isPublicProfile: boolean;
+  };
 }
 
 /**
