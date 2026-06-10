@@ -3,22 +3,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { toast } from "sonner";
 import { fetchPublicTrips, type PublicTripSummary } from "@/lib/public-trips";
-import { publicPlaceName } from "@/lib/public-place";
 import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
 import { PublicUserCard } from "@/components/PublicUserCard";
+import { PublicTripCard } from "@/components/PublicTripCard";
 import {
-  COVERS, VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta,
-  type CoverKey, type VehicleType, type RouteStyle,
+  VEHICLES, ROUTE_STYLES,
+  type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Compass, MapPin, Clock, Route as RouteIcon, Camera, ArrowRight, Sparkles, Share2, Users,
-} from "lucide-react";
-import { TripReactionsRow } from "@/components/TripReactionsRow";
-import { SaveTripButton } from "@/components/SaveTripButton";
+import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn } from "lucide-react";
 import { useT } from "@/i18n/provider";
+import { useAuth } from "@/lib/auth";
 
 const ExploreSearch = z.object({
   tab: z.enum(["turer", "brukere"]).optional(),
