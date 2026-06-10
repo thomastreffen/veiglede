@@ -220,3 +220,147 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
     </div>
   );
 }
+
+function LiveShareCard({
+  user, liveOn, setLiveOn, permDenied, tripStatus, liveActive, liveSession, lastSeenStr,
+}: {
+  user: { id: string } | null;
+  liveOn: boolean;
+  setLiveOn: (v: boolean) => void;
+  permDenied: boolean;
+  tripStatus: "idle" | "active" | "paused" | "completed";
+  liveActive: boolean;
+  liveSession: LiveSession | null;
+  lastSeenStr: string | null;
+}) {
+  const token = liveSession?.live_share_token ?? null;
+  const liveUrl = token ? `https://veiglede.no/live/${token}` : null;
+
+  const helper = !user
+    ? "Logg inn for å dele posisjon live."
+    : !liveOn
+      ? "Del posisjonen din med venner og familie mens du er på tur."
+      : permDenied
+        ? "Posisjonstilgang blokkert. Aktiver i nettleseren for å dele."
+        : "Reisefølget kan se hvor du er. Oppdateres hvert 30. sekund.";
+
+  // Determine state badge
+  let badge: { label: string; cls: string; pulse?: boolean } | null = null;
+  let showButtons = false;
+  let showWaiting = false;
+
+  if (liveOn && user && !permDenied) {
+    if (tripStatus === "completed") {
+      badge = { label: "Live deling avsluttet", cls: "border-border bg-background/40 text-muted-foreground" };
+    } else if (tripStatus === "paused") {
+      badge = { label: "Live deling pauset", cls: "border-amber-500/40 bg-amber-500/10 text-amber-400" };
+      showButtons = !!liveUrl;
+    } else if (liveActive && liveUrl) {
+      badge = {
+        label: `Live deling aktiv${lastSeenStr ? ` · Sist oppdatert ${lastSeenStr}` : ""}`,
+        cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+        pulse: true,
+      };
+      showButtons = true;
+    } else {
+      showWaiting = true;
+    }
+  }
+
+  async function copyLink() {
+    if (!liveUrl) return;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(liveUrl);
+        toast.success("Live-lenke kopiert!");
+      } else {
+        throw new Error("clipboard unavailable");
+      }
+    } catch {
+      toast.error("Kunne ikke kopiere lenken.");
+    }
+  }
+
+  async function invite() {
+    if (!liveUrl) return;
+    const nav = typeof navigator !== "undefined" ? navigator : null;
+    if (nav && typeof nav.share === "function") {
+      try {
+        await nav.share({
+          title: "Følg turen min live på Veiglede",
+          text: "Jeg deler posisjonen min mens jeg er på tur.",
+          url: liveUrl,
+        });
+        return;
+      } catch (err) {
+        // User cancellation: no toast
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        // Fall through to clipboard fallback
+      }
+    }
+    try {
+      if (nav?.clipboard?.writeText) {
+        await nav.clipboard.writeText(liveUrl);
+        toast.success("Live-lenke kopiert!");
+      } else {
+        toast.error("Kunne ikke dele lenken.");
+      }
+    } catch {
+      toast.error("Kunne ikke dele lenken.");
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-background/40 p-3 space-y-3">
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={liveOn}
+          onChange={(e) => setLiveOn(e.target.checked)}
+          disabled={!user}
+          className="mt-0.5 h-5 w-5 accent-primary"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+            <Radio className={`h-3.5 w-3.5 ${liveOn ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
+            Del posisjon live
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{helper}</p>
+        </div>
+      </label>
+
+      {showWaiting && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-background/40 px-3 py-2 text-xs">
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-pulse" />
+          Venter på GPS-posisjon…
+        </div>
+      )}
+
+      {badge && (
+        <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${badge.cls}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${badge.pulse ? "bg-current animate-pulse" : "bg-current/70"}`} />
+          {badge.label}
+        </div>
+      )}
+
+      {showButtons && liveUrl && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={copyLink}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm font-semibold hover:border-primary min-h-[44px]"
+          >
+            <Copy className="h-4 w-4" /> Kopier live-lenke
+          </button>
+          <button
+            type="button"
+            onClick={invite}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:brightness-110 min-h-[44px]"
+          >
+            <Share2 className="h-4 w-4" /> Inviter reisefølge
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
