@@ -130,8 +130,10 @@ export interface PublicTripSummary {
   startDate?: string;
   shareToken: string;
   ownerName?: string;
+  ownerUsername?: string;
   ownerAvatarUrl?: string;
   createdAt: number;
+  copyCount: number;
 }
 
 /**
