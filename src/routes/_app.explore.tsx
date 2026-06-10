@@ -195,7 +195,7 @@ function TripsTab() {
           <SelectTrigger><SelectValue placeholder="Sortering" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="newest">Nyeste</SelectItem>
-            <SelectItem value="popular">Mest kopiert</SelectItem>
+            <SelectItem value="popular">Mest lagret</SelectItem>
           </SelectContent>
         </Select>
       </section>
