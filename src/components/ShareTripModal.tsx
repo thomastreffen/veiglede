@@ -215,12 +215,23 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
           </div>
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               const v = !isPublic;
               if (!v && !window.confirm("Når du slår av deling, vil lenken ikke lenger fungere. Vil du fortsette?")) return;
-              if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
-              tripsApi.setTripPublic(trip.id, v);
-              void flushTripsNow();
+              try {
+                if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
+                tripsApi.setTripPublic(trip.id, v);
+                try { await flushTripsNow(); } catch { /* will retry via sync queue */ }
+                if (v) {
+                  toast.success("Turen er delt", {
+                    description: "Alle med lenken kan se turplanen.",
+                  });
+                } else {
+                  toast.success("Turplanen er nå privat");
+                }
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Kunne ikke oppdatere deling");
+              }
             }}
             className={
               isPublic
