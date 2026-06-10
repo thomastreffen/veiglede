@@ -151,13 +151,23 @@ export function useLiveBroadcaster(opts: {
   const { tripId, userId, enabled, status, lastStopName } = opts;
   const interval = opts.intervalMs ?? 30_000;
   const lastPosRef = useRef<LivePosition | null>(null);
-  const [permState, setPermState] = useState<"unknown" | "granted" | "denied" | "prompt">("unknown");
+  const permStateRef = useRef<"unknown" | "granted" | "denied" | "prompt">("unknown");
+  const [permState, setPermStateRaw] = useState<"unknown" | "granted" | "denied" | "prompt">("unknown");
+
+  // Only trigger a re-render when the permission state actually changes.
+  const setPermState = (next: "unknown" | "granted" | "denied" | "prompt") => {
+    if (permStateRef.current === next) return;
+    permStateRef.current = next;
+    try { setPermStateRaw(next); } catch (e) { console.warn("[live] setPermState failed", e); }
+  };
 
   const broadcastable = enabled && !!userId && (status === "active" || status === "paused");
 
   useEffect(() => {
     if (!broadcastable) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
+
+    // Guard browser-only APIs (SSR + non-geolocation contexts).
+    if (typeof window === "undefined" || typeof navigator === "undefined" || !("geolocation" in navigator) || !navigator.geolocation) {
       setPermState("denied");
       return;
     }
@@ -166,54 +176,84 @@ export function useLiveBroadcaster(opts: {
     let watchId: number | null = null;
 
     const send = async () => {
+      if (stopped) return;
       const pos = lastPosRef.current;
-      if (!pos || stopped) return;
-      await upsertLiveSession({
-        tripId,
-        userId: userId!,
-        pos,
-        status: status as LiveStatus,
-        lastStopName: lastStopName ?? null,
-      });
+      if (!pos) return;
+      try {
+        await upsertLiveSession({
+          tripId,
+          userId: userId!,
+          pos,
+          status: status as LiveStatus,
+          lastStopName: lastStopName ?? null,
+        });
+      } catch (e) {
+        console.warn("[live] upsert send failed", e);
+      }
     };
 
-    watchId = navigator.geolocation.watchPosition(
-      (p) => {
-        setPermState("granted");
-        const next: LivePosition = {
-          lat: p.coords.latitude,
-          lng: p.coords.longitude,
-          heading: p.coords.heading,
-          speed: p.coords.speed,
-        };
-        const prev = lastPosRef.current;
-        if (prev && status === "active") {
-          const delta = distanceKm(
-            { lat: prev.lat, lng: prev.lng },
-            { lat: next.lat, lng: next.lng },
-          );
-          // Ignore noise (<5m) and unrealistic jumps (>2km between samples).
-          if (delta >= 0.005 && delta <= 2) {
-            trackingApi.addDistance(tripId, delta);
+    try {
+      watchId = navigator.geolocation.watchPosition(
+        (p) => {
+          if (stopped) return;
+          try {
+            setPermState("granted");
+            const lat = p?.coords?.latitude;
+            const lng = p?.coords?.longitude;
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+            const next: LivePosition = {
+              lat: lat as number,
+              lng: lng as number,
+              heading: p.coords.heading ?? null,
+              speed: p.coords.speed ?? null,
+            };
+            const prev = lastPosRef.current;
+            if (prev && status === "active") {
+              try {
+                const delta = distanceKm(
+                  { lat: prev.lat, lng: prev.lng },
+                  { lat: next.lat, lng: next.lng },
+                );
+                // Ignore noise (<5m) and unrealistic jumps (>2km between samples).
+                if (delta >= 0.005 && delta <= 2) {
+                  trackingApi.addDistance(tripId, delta);
+                }
+              } catch (e) {
+                console.warn("[live] distance accumulation failed", e);
+              }
+            }
+            lastPosRef.current = next;
+          } catch (e) {
+            console.warn("[live] watchPosition success handler failed", e);
           }
-        }
-        lastPosRef.current = next;
-      },
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) setPermState("denied");
-        console.warn("[live] geolocation error", err.message);
-      },
-      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
-    );
+        },
+        (err) => {
+          if (stopped) return;
+          try {
+            if (err && err.code === err.PERMISSION_DENIED) setPermState("denied");
+            console.warn("[live] geolocation error", err?.message);
+          } catch (e) {
+            console.warn("[live] watchPosition error handler failed", e);
+          }
+        },
+        { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
+      );
+    } catch (e) {
+      console.warn("[live] watchPosition failed", e);
+      setPermState("denied");
+    }
 
-    const initial = setTimeout(() => void send(), 2_000);
-    const timer = setInterval(() => void send(), interval);
+    const initial = setTimeout(() => { void send(); }, 2_000);
+    const timer = setInterval(() => { void send(); }, interval);
 
     return () => {
       stopped = true;
       clearTimeout(initial);
       clearInterval(timer);
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (watchId !== null && navigator.geolocation?.clearWatch) {
+        try { navigator.geolocation.clearWatch(watchId); }
+        catch (e) { console.warn("[live] clearWatch failed", e); }
+      }
     };
   }, [broadcastable, tripId, userId, status, lastStopName, interval]);
 
