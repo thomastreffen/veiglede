@@ -8,7 +8,7 @@ import {
 import { getPublicTripByToken } from "@/lib/public-trips.functions";
 import { publicPlaceName } from "@/lib/public-place";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
-import { TripComments } from "@/components/TripComments";
+
 import { LiveSharedBlock } from "@/components/LiveSharedBlock";
 import { SaveTripButton } from "@/components/SaveTripButton";
 import {
