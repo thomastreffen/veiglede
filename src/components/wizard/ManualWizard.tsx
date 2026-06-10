@@ -499,56 +499,29 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
             </span>
             <PlaceAutocomplete
               value={originText}
-              onTextChange={setOriginText}
+              onTextChange={(v) => { setOriginText(v); if (errors.origin) setErrors((e) => ({ ...e, origin: undefined })); }}
               selected={originPlace}
               onSelect={setOriginPlace}
-              placeholder="Hjemmeadresse eller by"
+              placeholder="Hvor starter turen?"
               useAnywayLabel="Bruk mitt avreisested"
             />
-            <p className="text-[11px] text-muted-foreground">
-              Startpunktet for turen — første etappe kjøres herfra til første overnatting.
-            </p>
+            {errors.origin && (
+              <p className="text-[11px] font-semibold text-destructive">{errors.origin}</p>
+            )}
           </div>
 
-          <div className="mt-4 space-y-2">
-
-
-
-            {rows.map((r, idx) => {
-              const tp = detectType(r.text, r.type);
-              const icon = tp === "lodging" ? "🏨" : "🏙️";
-              const isLast = idx === rows.length - 1;
-              return (
-                <div key={r.key}>
-                  <div className="rounded-2xl border border-border bg-surface p-3 space-y-2">
+          {viaRows.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
+                Via-stopp (valgfritt)
+              </p>
+              {viaRows.map((r, idx) => {
+                const tp = detectType(r.text, r.type);
+                const icon = tp === "lodging" ? "🏨" : "🏙️";
+                return (
+                  <div key={r.key} className="rounded-2xl border border-border bg-surface p-3 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs uppercase tracking-wider font-bold text-primary">{w.manual.dayLabel(r.dayNumber)}</span>
-                      <span className="text-sm font-semibold text-foreground">
-                        📅 {r.date ? formatDateLong(r.date) : <span className="text-muted-foreground italic">velg dato</span>}
-                      </span>
-                      <input
-                        type="date"
-                        value={r.date}
-                        onChange={(e) => updateRow(r.key, { date: e.target.value })}
-                        className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-xs"
-                        aria-label={w.manual.dateLabel}
-                      />
-                      {idx === 0 && r.date && r.date < new Date().toISOString().slice(0, 10) && (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-1">
-                          Datoen er i fortiden
-                        </span>
-                      )}
-                      <button
-                        onClick={() => removeRow(r.key)}
-                        className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-30"
-                        aria-label={w.manual.removeStop}
-                        disabled={rows.length <= 2}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl shrink-0">{idx === 0 ? "📍" : idx === rows.length - 1 ? "🏁" : icon}</span>
+                      <span className="text-xl shrink-0">{icon}</span>
                       <div className="flex-1 min-w-0">
                         <PlaceAutocomplete
                           value={r.text}
@@ -556,9 +529,33 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                           selected={r.place}
                           onSelect={(p) => updateRow(r.key, { place: p })}
                           placeholder={w.manual.placeholder}
-                          useAnywayLabel={isLast ? "Bruk min destinasjon" : undefined}
                         />
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(r.key)}
+                        className="p-2 text-muted-foreground hover:text-destructive shrink-0"
+                        aria-label={w.manual.removeStop}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 pl-7 text-[11px] text-muted-foreground">
+                      <span>Via-stopp {idx + 1}</span>
+                      <input
+                        type="date"
+                        value={r.date}
+                        onChange={(e) => updateRow(r.key, { date: e.target.value })}
+                        className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-[11px]"
+                        aria-label={w.manual.dateLabel}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateRow(r.key, { type: tp === "lodging" ? "city" : "lodging" })}
+                        className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] hover:border-primary"
+                      >
+                        {tp === "lodging" ? "🏨 Overnatting" : "🏙️ Stopp"}
+                      </button>
                     </div>
                     {tp === "lodging" && (
                       <div className="flex items-center gap-2 pl-7 text-[11px] text-muted-foreground">
@@ -576,41 +573,49 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                           className="h-6 w-6 rounded-md border border-border bg-background hover:border-primary"
                           aria-label="Flere netter"
                         >+</button>
-                        {r.text.trim() && (
-                          <span className="ml-2 italic truncate">
-                            {(r.nights ?? 1)} {(r.nights ?? 1) === 1 ? "natt" : "netter"} på {r.text.trim()}
-                          </span>
-                        )}
                       </div>
                     )}
-                    {tp !== "lodging" && !r.date && (
-                      <p className="text-[11px] text-amber-600 dark:text-amber-400 pl-7">Dato anbefales</p>
-                    )}
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  {!isLast && (
-                    <div className="flex justify-center -my-1 relative z-10">
-                      <button
-                        type="button"
-                        onClick={() => insertLodgingAfter(r.key)}
-                        className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-background px-3 py-1 text-[11px] text-muted-foreground hover:border-primary hover:text-primary"
-                      >
-                        <Plus className="h-3 w-3" /> Legg til overnatting mellom stopp
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {destinationRow && (
+            <div className="mt-4 rounded-2xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-primary">
+                  🏁 Destinasjon
+                </span>
+                <input
+                  type="date"
+                  value={destinationRow.date}
+                  onChange={(e) => updateRow(destinationRow.key, { date: e.target.value })}
+                  className="bg-background border border-border rounded-md px-2 py-1 text-[11px]"
+                  aria-label={w.manual.dateLabel}
+                />
+              </div>
+              <PlaceAutocomplete
+                value={destinationRow.text}
+                onTextChange={(v) => { updateRow(destinationRow.key, { text: v }); if (errors.destination) setErrors((e) => ({ ...e, destination: undefined })); }}
+                selected={destinationRow.place}
+                onSelect={(p) => updateRow(destinationRow.key, { place: p })}
+                placeholder="Hvor skal du?"
+                useAnywayLabel="Bruk min destinasjon"
+              />
+              {errors.destination && (
+                <p className="text-[11px] font-semibold text-destructive">{errors.destination}</p>
+              )}
+            </div>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={addRow}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm hover:border-primary"
+              onClick={insertViaStop}
+              className="inline-flex items-center gap-2 rounded-full border border-dashed border-border bg-surface px-4 py-2 text-sm hover:border-primary hover:text-primary"
             >
-              <Plus className="h-4 w-4" /> {w.manual.addStop}
+              <Plus className="h-4 w-4" /> Legg til via-stopp
             </button>
             <button
               type="button"
@@ -624,8 +629,14 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           <div className="mt-10 sticky bottom-24 md:bottom-0 md:static">
             <button
               type="button"
-              onClick={() => setStep(2)}
-              disabled={!canContinue}
+              onClick={() => {
+                const next: typeof errors = {};
+                if (!hasOrigin) next.origin = "Velg avreisested";
+                if (!hasDestination) next.destination = "Velg destinasjon";
+                if (next.origin || next.destination) { setErrors(next); return; }
+                setErrors({});
+                setStep(2);
+              }}
               className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20 disabled:opacity-50"
             >
               {w.common.continue} <ArrowRight className="h-5 w-5" strokeWidth={3} />
