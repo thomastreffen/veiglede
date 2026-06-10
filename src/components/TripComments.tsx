@@ -94,7 +94,7 @@ export function TripComments({ tripId }: Props) {
           <li key={c.id} className="flex gap-2.5 rounded-xl border border-border/60 bg-background/40 p-3">
             <span className="h-8 w-8 rounded-full bg-primary/15 grid place-items-center text-[11px] font-bold text-primary shrink-0 overflow-hidden">
               {c.user_avatar_url ? (
-                <img src={c.user_avatar_url} alt="" className="h-full w-full object-cover" />
+                <AvatarImg value={c.user_avatar_url} className="h-full w-full object-cover" />
               ) : (
                 (c.user_name?.[0] ?? "?").toUpperCase()
               )}
