@@ -158,7 +158,31 @@ function PublicProfilePage() {
               <p className="mt-3 text-sm text-muted-foreground">Ingen offentlige turer enda.</p>
             ) : (
               <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {trips.map((t: PublicProfileTrip) => <ProfileTripCard key={t.shareToken} t={t} ownerName={profile.displayName} />)}
+                {trips.map((t: PublicProfileTrip) => (
+                  <li key={t.shareToken}>
+                    <PublicTripCard
+                      trip={{
+                        id: t.id,
+                        title: t.title,
+                        subtitle: t.subtitle,
+                        region: t.region,
+                        origin: t.origin,
+                        destination: t.destination,
+                        distanceKm: t.distanceKm,
+                        drivingTime: t.drivingTime,
+                        stopsCount: t.stopsCount,
+                        cover: t.cover,
+                        style: t.style,
+                        vehicle: t.vehicle,
+                        shareToken: t.shareToken,
+                      }}
+                      ownerName={profile.displayName}
+                      ownerUsername={profile.username}
+                      ownerAvatarUrl={profile.avatarUrl}
+                      status="offentlig"
+                    />
+                  </li>
+                ))}
               </ul>
             )}
           </section>
