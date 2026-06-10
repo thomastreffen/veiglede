@@ -104,18 +104,47 @@ export function OpenInMaps({ origin, destination, stops = [], tripTitle, tripId,
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  // Determine the "next stop" for active navigation.
+  // Determine the "next stop" for active navigation — skip departure/start markers.
   const nextStop = useMemo<StopLike | null>(() => {
-    const candidates = stops.filter((s) => s.type !== "pause");
+    const isDeparture = (s: StopLike) => {
+      const t = (s.type ?? "").toLowerCase();
+      if (t === "departure" || t === "start" || t === "origin") return true;
+      const name = (s.name ?? "").trim().toLowerCase();
+      return /^(avgang|departure|start)\b/.test(name);
+    };
+    const candidates = stops.filter((s) => s.type !== "pause" && !isDeparture(s));
     if (candidates.length === 0) return null;
     const visited = new Set(tracking?.visitedStopIds ?? []);
     const next = candidates.find((s) => !s.id || !visited.has(s.id));
     return next ?? candidates[candidates.length - 1] ?? null;
   }, [stops, tracking?.visitedStopIds]);
 
-  const nextLabel = nextStop?.name || nextStop?.location || destination;
-  const navGmaps = nextStop ? gmapsNavigateUrl(nextStop, destination) : `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(destination)}`;
-  const navAmaps = nextStop ? amapsNavigateUrl(nextStop, destination) : `${isIos() ? "maps://" : "https://maps.apple.com/"}?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+  const hasNext = !!nextStop;
+  const nextLabel = nextStop?.name || nextStop?.location || "";
+  const navGmaps = nextStop ? gmapsNavigateUrl(nextStop, destination) : "";
+  const navAmaps = nextStop ? amapsNavigateUrl(nextStop, destination) : "";
+  const navWaze = nextStop
+    ? (typeof nextStop.lat === "number" && typeof nextStop.lng === "number"
+        ? `https://waze.com/ul?ll=${nextStop.lat},${nextStop.lng}&navigate=yes`
+        : `https://waze.com/ul?q=${encodeURIComponent(nextStop.location || nextStop.name || "")}&navigate=yes`)
+    : "";
+
+  // Start from planned origin → next real stop
+  const fromOriginGmaps = nextStop
+    ? `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${encodeURIComponent(origin)}&destination=${
+        typeof nextStop.lat === "number" && typeof nextStop.lng === "number"
+          ? `${Math.round(nextStop.lat * 1e6) / 1e6},${Math.round(nextStop.lng * 1e6) / 1e6}`
+          : encodeURIComponent(nextStop.location || nextStop.name || "")
+      }`
+    : "";
+  const fromOriginAmaps = nextStop
+    ? `${isIos() ? "maps://" : "https://maps.apple.com/"}?saddr=${encodeURIComponent(origin)}&daddr=${
+        typeof nextStop.lat === "number" && typeof nextStop.lng === "number"
+          ? `${Math.round(nextStop.lat * 1e6) / 1e6},${Math.round(nextStop.lng * 1e6) / 1e6}`
+          : encodeURIComponent(nextStop.location || nextStop.name || "")
+      }&dirflg=d`
+    : "";
+
 
   const { gmaps, amaps, waze, shareUrl, shareText, copyText, totalCount } = useMemo(() => {
     const isRoundTrip = origin === destination && stops.length > 0;
