@@ -202,14 +202,12 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
             </span>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm text-foreground break-words">
-                {isPublic
-                  ? "🌍 Offentlig — synlig for alle"
-                  : "🔒 Privat — kun synlig for deg og reisefølget"}
+                {isPublic ? "Turplan delt med lenke" : "Turplan er privat"}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground break-words">
                 {isPublic
-                  ? "Alle med lenken kan se ruta og roadbooken. Eksakte adresser skjules i offentlig visning."
-                  : "Lenken er deaktivert — kun du og inviterte kan åpne turen."}
+                  ? "Alle med lenken kan se turplanen, men ikke live-posisjonen din. Eksakte adresser skjules i offentlig visning."
+                  : "Bare du kan se denne turplanen. Slå på deling for å lage en lenke."}
               </p>
             </div>
           </div>
@@ -217,17 +215,18 @@ export function ShareTripModal({ trip, open, onOpenChange }: Props) {
             type="button"
             onClick={() => {
               const v = !isPublic;
+              if (!v && !window.confirm("Når du slår av deling, vil lenken ikke lenger fungere. Vil du fortsette?")) return;
               if (v && !trip.shareToken) tripsApi.ensureShareToken(trip.id);
               tripsApi.setTripPublic(trip.id, v);
               void flushTripsNow();
             }}
             className={
               isPublic
-                ? "w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary min-h-[44px]"
+                ? "w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-foreground hover:border-destructive hover:text-destructive min-h-[44px]"
                 : "w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 min-h-[44px]"
             }
           >
-            {isPublic ? <><Lock className="h-3.5 w-3.5" /> Gjør privat</> : <><Globe className="h-3.5 w-3.5" /> Del offentlig</>}
+            {isPublic ? <><Lock className="h-3.5 w-3.5" /> Slå av deling av turplan</> : <><Globe className="h-3.5 w-3.5" /> Del turplan med lenke</>}
           </button>
         </div>
 
