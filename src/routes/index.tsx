@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import {
   ArrowRight,
@@ -149,7 +149,7 @@ function getSeason(month: number) {
 }
 
 function Landing() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const t = useT();
   const [heroIndex, setHeroIndex] = useState(0);
   const [scrolled, setScrolled] = useState(false);
@@ -157,6 +157,9 @@ function Landing() {
   if (typeof document !== "undefined") {
     if (document.title !== t.meta.title) document.title = t.meta.title;
   }
+
+  // Logged-in users get the personalized Home dashboard instead of the marketing page.
+  if (!loading && user) return <Navigate to="/home" replace />;
 
   useEffect(() => {
     const id = setInterval(() => {
