@@ -6,7 +6,7 @@ import {
 
 import {
   Link2, Copy, Check, BookOpen, UserPlus, Globe, Lock,
-  Radio, MapPin, Camera, Users, Eye, Trash2, Send,
+  Radio, MapPin, Camera, Users, Eye, Trash2, Send, Share2,
 } from "lucide-react";
 import { tripsApi, type Trip } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
