@@ -197,9 +197,10 @@ export const feedFromFollowsFn = createServerFn({ method: "GET" })
       .from("profiles").select("id, display_name, avatar_url").in("id", ids);
     const byId = new Map<string, { name?: string; avatar?: string }>();
     for (const p of profiles ?? []) {
+      const avatar = (await signAvatarServer((p.avatar_url as string | null) ?? undefined)) ?? undefined;
       byId.set(p.id as string, {
         name: (p.display_name as string | null) ?? undefined,
-        avatar: (p.avatar_url as string | null) ?? undefined,
+        avatar,
       });
     }
     return collected
