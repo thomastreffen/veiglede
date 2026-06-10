@@ -275,7 +275,10 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
           </section>
         )}
 
-        <TripComments tripId={trip.id} />
+        <section className="mt-8 rounded-2xl border border-dashed border-border bg-surface/40 p-5 text-center">
+          <p className="text-sm font-medium">Kommentarer kommer snart</p>
+          <p className="mt-1 text-xs text-muted-foreground">Vi jobber med å la reisefølget legge igjen kommentarer på delte turer.</p>
+        </section>
 
         <section className="mt-8 rounded-2xl border border-dashed border-border p-5 text-center">
           <p className="text-xs text-muted-foreground">Inspirert? Lag din egen versjon.</p>
