@@ -582,14 +582,14 @@ function ProfileFieldsEditor() {
       toast.error(res.error);
       return;
     }
-    const { error } = await supabase.from("profiles").update({ avatar_url: res.url }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ avatar_url: res.path }).eq("id", user.id);
     if (error) {
       setUploading(false);
       toast.error("Kunne ikke lagre profilbilde");
       return;
     }
-    setAvatarUrl(res.url);
-    setInitial((p) => ({ ...p, avatarUrl: res.url }));
+    setAvatarUrl(res.path);
+    setInitial((p) => ({ ...p, avatarUrl: res.path }));
     cleanupOldAvatars(user.id, res.path).catch(() => undefined);
     setUploading(false);
     toast.success("Profilbilde oppdatert");
