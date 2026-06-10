@@ -3,28 +3,28 @@ import { toast } from "sonner";
 import { trackingApi, useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { tripsApi } from "@/lib/trips-store";
 import type { Stop } from "@/lib/trips-store";
-import { Play, Pause, RotateCcw, Flag, Plus, Check, MapPin, Camera, Clock, Sparkles, Radio, Copy, Share2, ChevronDown, Bug, Send } from "lucide-react";
+import { Plus, Check, MapPin, Camera, Clock, Sparkles, Radio, ChevronDown, Bug, Send } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import {
-  useLiveBroadcaster, useLiveOptIn, endLiveSession, isLiveActive, type LiveSession, type LiveBroadcasterDebugState,
+  useLiveBroadcaster, useLiveOptIn, endLiveSession, type LiveSession, type LiveBroadcasterDebugState,
 } from "@/lib/live-tracking";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export function TripTracker({
-  tripId, tripStops, vehicleLabel, liveSession,
+  tripId, tripStops, vehicleLabel,
 }: { tripId: string; tripStops: Stop[]; vehicleLabel: string; liveSession?: LiveSession | null }) {
   const t = useTripTracking(tripId);
   const meta = statusMeta(t.status);
   const { user } = useAuth();
   const [spontInput, setSpontInput] = useState("");
-  const [liveOn, setLiveOn] = useLiveOptIn(tripId);
+  const [liveOn] = useLiveOptIn(tripId);
   const visitedCount = t.visitedStopIds.length;
 
   const lastVisited = t.visitedStopIds.length
     ? tripStops.find((s) => s.id === t.visitedStopIds[t.visitedStopIds.length - 1])?.name ?? null
     : null;
 
-  const { permState, debug: liveDebug, sendTestPositionNow } = useLiveBroadcaster({
+  const { debug: liveDebug, sendTestPositionNow } = useLiveBroadcaster({
     tripId,
     userId: user?.id ?? null,
     enabled: liveOn,
@@ -32,11 +32,6 @@ export function TripTracker({
     lastStopName: lastVisited,
   });
 
-  const ownLive = liveOn ? (liveSession ?? null) : null;
-  const liveActive = isLiveActive(ownLive);
-  const lastSeenStr = ownLive?.updated_at
-    ? new Date(ownLive.updated_at).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })
-    : null;
 
   // Clean up live session when trip is completed/reset or toggle is turned off.
   useEffect(() => {
