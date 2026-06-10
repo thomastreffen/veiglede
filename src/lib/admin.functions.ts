@@ -280,7 +280,7 @@ export const adminGetUserDetailsFn = createServerFn({ method: "GET" })
             id: profile.id as string,
             display_name: (profile.display_name as string | null) ?? null,
             username: (profile.username as string | null) ?? null,
-            avatar_url: (profile.avatar_url as string | null) ?? null,
+            avatar_url: await signAvatarServer((profile.avatar_url as string | null) ?? null),
             bio: (profile.bio as string | null) ?? null,
             role: (profile.role as string | null) ?? "user",
             is_active: profile.is_active !== false,
