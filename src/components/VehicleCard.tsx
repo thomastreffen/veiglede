@@ -23,13 +23,16 @@ export function VehicleCard({ vehicle, isDefault, onEdit, onSetDefault, extraCon
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <p className="font-display text-lg uppercase leading-tight">{vehicle.name}</p>
+            <p className="font-display text-lg uppercase leading-tight truncate">{vehicle.name}</p>
             {isDefault && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                 <Check className="h-3 w-3" /> Standard
               </span>
             )}
           </div>
+          {vehicle.nickname && (
+            <p className="mt-0.5 text-sm italic text-primary/90 truncate">"{vehicle.nickname}"</p>
+          )}
           <p className="mt-0.5 text-[11px] text-muted-foreground">{tm.emoji} {tm.label} · {em.emoji} {em.label}</p>
           <p className="mt-1.5 text-[11px] text-primary uppercase tracking-wider">{sm.emoji} {sm.label}</p>
           {vehicle.stopInterests.length > 0 && (
@@ -42,6 +45,11 @@ export function VehicleCard({ vehicle, isDefault, onEdit, onSetDefault, extraCon
           <Pencil className="h-4 w-4" />
         </button>
       </div>
+      {vehicle.description && (
+        <p className="mt-3 text-xs leading-relaxed text-foreground/80 italic border-l-2 border-primary/40 pl-3">
+          {vehicle.description}
+        </p>
+      )}
       <div className="mt-3 flex items-center justify-between gap-2">
         {!isDefault ? (
           <button onClick={onSetDefault} className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary">
