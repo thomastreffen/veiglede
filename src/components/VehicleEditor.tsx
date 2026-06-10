@@ -177,6 +177,31 @@ export function VehicleEditor({ open, onOpenChange, vehicle, onSaved }: Props) {
             />
           </Field>
 
+          {/* Nickname */}
+          <Field label="Kallenavn (valgfritt)">
+            <input
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value.slice(0, 40))}
+              placeholder='F.eks. "Grusgnageren"'
+              maxLength={40}
+              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+          </Field>
+
+          {/* Description */}
+          <Field label="Kort beskrivelse (valgfritt)">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value.slice(0, 240))}
+              placeholder="Liker fjelloverganger, småveier og grus."
+              maxLength={240}
+              rows={2}
+              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary resize-none"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground text-right">{description.length}/240</p>
+          </Field>
+
+
           {/* Type + Energy */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Type">
