@@ -152,19 +152,39 @@ function TripsTab() {
   const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
 
   // Opt-in precise geolocation — never requested without an explicit click.
+  // Mobile-friendly: low-accuracy first pass, generous timeout, distinct error states.
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ready" | "denied">("idle");
+  type GeoStatus = "idle" | "loading" | "ready" | "denied" | "timeout" | "unsupported" | "error";
+  const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
   const requestLocation = () => {
-    if (!("geolocation" in navigator)) { setGeoStatus("denied"); return; }
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setGeoStatus("unsupported");
+      return;
+    }
+    // Some mobile browsers require a secure context; surface that as "unsupported".
+    if (typeof window !== "undefined" && window.isSecureContext === false) {
+      setGeoStatus("unsupported");
+      return;
+    }
     setGeoStatus("loading");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoStatus("ready");
       },
-      () => setGeoStatus("denied"),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 },
+      (err) => {
+        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+        if (err.code === 1) setGeoStatus("denied");
+        else if (err.code === 3) setGeoStatus("timeout");
+        else setGeoStatus("error");
+      },
+      // Low accuracy + generous timeout works far better on iOS Safari / Android Chrome.
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 10 * 60 * 1000 },
     );
+  };
+  const scrollToManualPicker = () => {
+    if (typeof document === "undefined") return;
+    document.getElementById("manual-area-picker")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const regions = useMemo(() => {
@@ -200,10 +220,13 @@ function TripsTab() {
   }, [country, macroRegion, region, style, vehicle, locale, userLocation, stats]);
 
   // "Turer nær deg" — only populated after the user opts into geolocation.
+  // Within 500 km counts as "actually near you"; beyond that we show a friendly empty state.
+  const NEAR_THRESHOLD_KM = 500;
   const nearMe = useMemo(() => {
     if (!userLocation) return [] as CuratedTrip[];
     return [...CURATED_TRIPS]
       .map((c) => ({ c, d: distanceToTrip(userLocation, c) }))
+      .filter((x) => x.d <= NEAR_THRESHOLD_KM)
       .sort((a, b) => a.d - b.d)
       .slice(0, 6)
       .map((x) => x.c);
@@ -290,11 +313,48 @@ function TripsTab() {
           className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 disabled:opacity-60"
         >
           {geoStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
-          {geoStatus === "loading" ? nearMeT.loading : geoStatus === "ready" ? nearMeT.nearYou : nearMeT.cta}
+          {geoStatus === "loading"
+            ? nearMeT.loading
+            : geoStatus === "ready"
+              ? nearMeT.nearYou
+              : geoStatus === "denied" || geoStatus === "timeout" || geoStatus === "error"
+                ? "Prøv igjen"
+                : nearMeT.cta}
         </button>
+        {(geoStatus === "denied" || geoStatus === "timeout" || geoStatus === "error" || geoStatus === "unsupported") && (
+          <button
+            type="button"
+            onClick={scrollToManualPicker}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+          >
+            <MapPin className="h-3.5 w-3.5" /> Velg område manuelt
+          </button>
+        )}
         <p className="text-[11px] text-muted-foreground">{nearMeT.tip}</p>
-        {geoStatus === "denied" && <p className="text-[11px] text-amber-500">{nearMeT.denied}</p>}
+        {geoStatus === "denied" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Posisjonen ble avslått. Du kan endre tillatelsen i nettleserinnstillingene, eller velge område manuelt under.
+          </p>
+        )}
+        {geoStatus === "timeout" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Vi klarte ikke hente posisjonen akkurat nå. Du kan prøve igjen eller velge område manuelt.
+          </p>
+        )}
+        {geoStatus === "error" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Noe gikk galt under posisjonshentingen. Prøv igjen eller velg område manuelt.
+          </p>
+        )}
+        {geoStatus === "unsupported" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Nettleseren din støtter ikke posisjon her. Velg område manuelt under.
+          </p>
+        )}
       </section>
+
+      {/* Manual area picker anchor — country + macro-region chips. */}
+      <div id="manual-area-picker" />
 
       {/* Country chips */}
       <section className="mt-4 flex flex-wrap gap-2">
@@ -354,18 +414,33 @@ function TripsTab() {
       </section>
 
       {/* Turer nær deg — only after explicit opt-in via "Vis turer nær meg". */}
-      {userLocation && nearMe.length > 0 && (
+      {userLocation && (
         <section className="mt-8">
           <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
             <Navigation className="h-3 w-3" /> {nearMeT.nearYou}
           </p>
           <h2 className="font-display text-xl uppercase mt-1">{nearMeT.nearYou}</h2>
-          <p className="text-xs text-muted-foreground">{nearMeT.tip}</p>
-          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {nearMe.map((c) => (
-              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
-            ))}
-          </ul>
+          {nearMe.length > 0 ? (
+            <>
+              <p className="text-xs text-muted-foreground">{nearMeT.tip}</p>
+              <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {nearMe.map((c) => (
+                  <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-5">
+              <p className="text-sm text-muted-foreground">
+                Vi fant ingen kuraterte ruter helt nær deg ennå. Her er populære ruter i Norge i mellomtiden:
+              </p>
+              <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {CURATED_TRIPS.filter((c) => c.country === "no").slice(0, 3).map((c) => (
+                  <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 
@@ -378,7 +453,11 @@ function TripsTab() {
               <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
             </p>
             <h2 className="font-display text-xl uppercase mt-1">
-              {macroRegion !== "all" ? `Populært i ${MACRO_REGION_LABEL[macroRegion]}` : "Inspirasjon for neste tur"}
+              {country !== "all" && curatedSplit.primary.length === 0
+                ? `Ingen kuraterte ruter i ${COUNTRY_LABEL[country as Country]} ennå`
+                : macroRegion !== "all"
+                  ? `Populært i ${MACRO_REGION_LABEL[macroRegion]}`
+                  : "Inspirasjon for neste tur"}
             </h2>
             <p className="text-xs text-muted-foreground">Ekte ruter med ferdig roadbook — klare til å brukes som mal eller kopieres.</p>
           </div>
@@ -389,6 +468,47 @@ function TripsTab() {
               <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
             ))}
           </ul>
+        ) : country !== "all" ? (
+          // Country selected, but we haven't seeded curated routes there yet.
+          <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-6">
+            <p className="text-sm text-muted-foreground">
+              Vi har ikke lagt inn kuraterte ruter i {COUNTRY_LABEL[country as Country]} ennå.
+              Du kan fortsatt planlegge din egen tur — eller la deg inspirere av Norge-ruter.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/trips/new"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15"
+              >
+                <RouteIcon className="h-3.5 w-3.5" /> Planlegg en egen tur i {COUNTRY_LABEL[country as Country]}
+              </Link>
+              <button
+                type="button"
+                onClick={() => setCountry("no")}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
+              >
+                Se Norge-ruter
+              </button>
+              <a
+                href="mailto:hei@veiglede.no?subject=Forslag%20til%20kuratert%20rute"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+              >
+                Foreslå en rute
+              </a>
+            </div>
+            {CURATED_TRIPS.filter((c) => c.country === "no").length > 0 && (
+              <div className="mt-5">
+                <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+                  Populære Norge-ruter for utenlandske besøkende
+                </h3>
+                <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {CURATED_TRIPS.filter((c) => c.country === "no").slice(0, 6).map((c) => (
+                    <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-6">
             <p className="font-display text-lg uppercase">Ingen kuraterte ruter i {macroRegion !== "all" ? MACRO_REGION_LABEL[macroRegion] : "dette utvalget"} ennå</p>
