@@ -166,18 +166,30 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     }
     setOriginLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (p) => {
+      async (p) => {
         const lat = p.coords.latitude;
         const lng = p.coords.longitude;
+        let friendly: string | null = null;
+        try {
+          const res = await fetch(`/api/public/google-places?action=reverse&lat=${lat}&lng=${lng}`);
+          if (res.ok) {
+            const data = (await res.json()) as { label?: string | null };
+            if (data.label && typeof data.label === "string") friendly = data.label;
+          }
+        } catch {
+          // ignore — fall back to "Min posisjon"
+        }
+        const displayName = friendly ?? "Min posisjon";
         const place: ResolvedPlace = {
           id: `gps-${Date.now()}`,
-          label: `Min posisjon (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-          name: "Min posisjon",
+          label: friendly ? `Min posisjon — ${friendly}` : "Min posisjon",
+          name: displayName,
+          secondary: friendly ? "Min posisjon" : undefined,
           lat, lng,
           type: "address",
           source: "manual",
         };
-        setOriginText("Min posisjon");
+        setOriginText(displayName);
         setOriginPlace(place);
         setErrors((e) => ({ ...e, origin: undefined }));
         setOriginLocating(false);
