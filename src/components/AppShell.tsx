@@ -180,6 +180,7 @@ export function AppShell() {
       <MobileBottomNav pathname={pathname} nav={nav} quickActionsLabel={t.app.nav.quickActions} />
 
       <HelpBot />
+      <GlobalLiveDriver />
     </div>
   );
 }
