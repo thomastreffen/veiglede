@@ -25,10 +25,16 @@ import {
 } from "./types";
 
 type SendSource = "immediate" | "heartbeat" | "manual" | "poll" | "resume";
-const AUTO_SEND_THROTTLE_MS = 5_000;
-const POLL_INTERVAL_MS = 10_000;
-const DEFAULT_HEARTBEAT_MS = 30_000;
-const STALE_AFTER_MS = 2 * 60_000;
+// Minimum time between auto sends. While moving we want frequent updates so
+// the public follower sees a live feel, not 30-second snapshots.
+const AUTO_SEND_THROTTLE_MS = 3_000;
+// If the user has moved at least this many meters since the last sent
+// position, bypass the time throttle entirely (subject to a hard floor).
+const MOVED_FAR_M = 15;
+const AUTO_SEND_HARD_FLOOR_MS = 1_500;
+const POLL_INTERVAL_MS = 8_000;
+const DEFAULT_HEARTBEAT_MS = 15_000;
+const STALE_AFTER_MS = 90_000;
 
 function toErrorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
