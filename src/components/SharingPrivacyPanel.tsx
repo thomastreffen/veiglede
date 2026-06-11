@@ -36,6 +36,10 @@ export function SharingPrivacyPanel({ trip, tracking, liveSession, onOpenShare }
   const { user } = useAuth();
   const [liveOn, setLiveOn] = useLiveOptIn(tripId);
   const session = liveSession ?? null;
+  // Read-only subscription so we can show "stale" hints to the owner when
+  // the browser/OS has paused background location updates.
+  const { snapshot: broadcastSnapshot } = useLiveBroadcaster({ tripId });
+  const broadcastStale = broadcastSnapshot.status === "stale";
 
   const [copied, setCopied] = useState(false);
 
