@@ -48,6 +48,8 @@ export function PublicTripCard({
   ownerName,
   ownerAvatarUrl,
   ownerUsername,
+  vehicleIdentity,
+  stats,
   status = "delt",
   hideCopy = false,
 }: Props) {
