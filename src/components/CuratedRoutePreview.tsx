@@ -13,6 +13,8 @@ interface Props {
   points: RoutePoint[];
   className?: string;
   interactive?: boolean;
+  /** When false, points are only used to fit the viewport (no markers/line). */
+  showMarkers?: boolean;
 }
 
 /**
