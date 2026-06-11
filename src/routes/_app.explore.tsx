@@ -220,10 +220,13 @@ function TripsTab() {
   }, [country, macroRegion, region, style, vehicle, locale, userLocation, stats]);
 
   // "Turer nær deg" — only populated after the user opts into geolocation.
+  // Within 500 km counts as "actually near you"; beyond that we show a friendly empty state.
+  const NEAR_THRESHOLD_KM = 500;
   const nearMe = useMemo(() => {
     if (!userLocation) return [] as CuratedTrip[];
     return [...CURATED_TRIPS]
       .map((c) => ({ c, d: distanceToTrip(userLocation, c) }))
+      .filter((x) => x.d <= NEAR_THRESHOLD_KM)
       .sort((a, b) => a.d - b.d)
       .slice(0, 6)
       .map((x) => x.c);
