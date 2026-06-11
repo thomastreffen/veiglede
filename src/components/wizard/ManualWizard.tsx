@@ -148,6 +148,43 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   // Trip origin — the actual departure point, separate from the first overnight stop.
   const [originText, setOriginText] = useState<string>("");
   const [originPlace, setOriginPlace] = useState<ResolvedPlace | null>(null);
+  const [originLocating, setOriginLocating] = useState(false);
+
+  const useMyLocationAsOrigin = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation?.getCurrentPosition) {
+      toast.error("Posisjon er ikke støttet i denne nettleseren.");
+      return;
+    }
+    setOriginLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        const lat = p.coords.latitude;
+        const lng = p.coords.longitude;
+        const place: ResolvedPlace = {
+          id: `gps-${Date.now()}`,
+          label: `Min posisjon (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+          name: "Min posisjon",
+          lat, lng,
+          type: "address",
+          source: "manual",
+        };
+        setOriginText("Min posisjon");
+        setOriginPlace(place);
+        setErrors((e) => ({ ...e, origin: undefined }));
+        setOriginLocating(false);
+        toast.success("Bruker din nåværende posisjon som avreisested.");
+      },
+      (err) => {
+        setOriginLocating(false);
+        if (err && err.code === err.PERMISSION_DENIED) {
+          setErrors((e) => ({ ...e, origin: "Vi fikk ikke tilgang til posisjonen din. Skriv inn avreisested manuelt." }));
+        } else {
+          toast.error("Klarte ikke å hente posisjonen din.");
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 15_000 },
+    );
+  };
 
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId) ?? defaultVehicle;
 
