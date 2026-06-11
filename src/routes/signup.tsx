@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AuthButtons } from "@/components/AuthButtons";
 import { useAuth } from "@/lib/auth";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
+import { consumeReturnTo } from "@/lib/return-to";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Opprett konto — Veiglede" }] }),
@@ -13,10 +14,13 @@ function SignupPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    // Don't force onboarding here — the AppShell gate + auth callback
-    // decide based on profiles.onboarded_at, so existing Google users
-    // who click "Opprett konto" land in /trips, not onboarding.
-    if (user) navigate({ to: "/trips", replace: true });
+    if (!user) return;
+    const returnTo = consumeReturnTo();
+    if (returnTo) {
+      window.location.replace(returnTo);
+      return;
+    }
+    navigate({ to: "/trips", replace: true });
   }, [user, navigate]);
 
   return (
