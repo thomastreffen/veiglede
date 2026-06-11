@@ -132,15 +132,30 @@ function TripsTab() {
   const [region, setRegion] = useState<string>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
+  const [country, setCountry] = useState<"all" | Country>("all");
   const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
 
   const regions = useMemo(() => {
     const set = new Set<string>();
     trips.forEach((tr) => { if (tr.region) set.add(tr.region); });
+    CURATED_TRIPS.forEach((c) => { if (c.region) set.add(c.region); });
     return Array.from(set).sort();
   }, [trips]);
 
+  // Curated trips matching the current filters — always available, never empty.
+  const curatedFiltered = useMemo(() => {
+    return CURATED_TRIPS.filter((c) => {
+      if (country !== "all" && c.country !== country) return false;
+      if (region !== "all" && c.region !== region) return false;
+      if (style !== "all" && c.style !== style) return false;
+      if (vehicle !== "all" && !c.vehicleSuitability.includes(vehicle)) return false;
+      return true;
+    });
+  }, [country, region, style, vehicle]);
+
   const filtered = useMemo(() => {
+    // Country filter only applies to curated trips (user trips have no country yet).
+    if (country !== "all") return [] as PublicTripSummary[];
     const list = trips.filter((tr) => {
       if (region !== "all" && tr.region !== region) return false;
       if (vehicle !== "all" && tr.vehicle !== vehicle) return false;
@@ -158,7 +173,7 @@ function TripsTab() {
       return [...list].sort((a, b) => s(b.id).reactions - s(a.id).reactions || (b.createdAt - a.createdAt));
     }
     return list;
-  }, [trips, region, vehicle, style, sort, stats]);
+  }, [trips, country, region, vehicle, style, sort, stats]);
 
   // "Populære turer" highlight strip: top 3 by combined save+drive intent.
   const popular = useMemo(() => {
@@ -190,8 +205,18 @@ function TripsTab() {
 
   return (
     <>
+      {/* Country chips */}
+      <section className="mt-6 flex flex-wrap gap-2">
+        <FilterPill active={country === "all"} onClick={() => setCountry("all")}>🌍 Alle land</FilterPill>
+        {(["no", "se", "dk", "de"] as Country[]).map((c) => (
+          <FilterPill key={c} active={country === c} onClick={() => setCountry(c)}>
+            {COUNTRY_LABEL[c]}
+          </FilterPill>
+        ))}
+      </section>
+
       {/* Filters + sort */}
-      <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <section className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={region} onValueChange={setRegion}>
           <SelectTrigger><SelectValue placeholder={ex.region} /></SelectTrigger>
           <SelectContent>
@@ -224,10 +249,30 @@ function TripsTab() {
         </Select>
       </section>
 
-      {/* Populære turer */}
-      {popular.length > 0 && sort === "newest" && (
+      {/* Curated — always available, never empty */}
+      {curatedFiltered.length > 0 && (
         <section className="mt-8">
-          <h2 className="font-display text-xl uppercase">Populære turer</h2>
+          <div className="flex items-end justify-between gap-3 flex-wrap">
+            <div>
+              <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
+                <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
+              </p>
+              <h2 className="font-display text-xl uppercase mt-1">Inspirasjon for neste tur</h2>
+              <p className="text-xs text-muted-foreground">Ekte ruter med roadbook, klare til å kopieres eller tilpasses.</p>
+            </div>
+          </div>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {curatedFiltered.map((c) => (
+              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Populære turer */}
+      {popular.length > 0 && sort === "newest" && country === "all" && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl uppercase">Populære turer fra fellesskapet</h2>
           <p className="text-xs text-muted-foreground">Turene som andre lagrer og vil kjøre akkurat nå.</p>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {popular.map(renderCard)}
