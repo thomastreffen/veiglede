@@ -27,6 +27,7 @@ import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
+import { OffRouteBanner } from "@/components/OffRouteBanner";
 import { useLiveSession } from "@/lib/live-tracking";
 import { TripMemories } from "@/components/TripMemories";
 import { TripPhotosGallery } from "@/components/TripPhotosGallery";
