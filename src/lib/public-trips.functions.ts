@@ -147,7 +147,7 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
         originLoc: undefined,
         destinationLoc: undefined,
       };
-      return { found: true, trip: safeTrip, days, stops, owner };
+      return { found: true, trip: safeTrip, days, stops, owner, vehicleIdentity };
     }
 
     return { found: false };
