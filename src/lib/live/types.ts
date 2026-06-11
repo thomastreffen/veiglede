@@ -47,6 +47,8 @@ export interface LiveBroadcaster {
 
   start(tripId: string, options: StartOptions): Promise<void>;
   stop(tripId: string): Promise<void>;
+  /** Stop every active trip — used on logout / account teardown. */
+  stopAll(): Promise<void>;
 
   /** Update mutable inputs without restarting the broadcaster. */
   update(tripId: string, patch: Partial<StartOptions>): void;
