@@ -48,8 +48,10 @@ export function PlannerWorkspace({ children, points, summary, routeGeometry }: P
             points={mapPoints}
             interactive
             showMarkers={hasPoints}
+            routeGeometry={hasPoints ? routeGeometry : undefined}
             className="absolute inset-0 h-full w-full"
           />
+
 
           {summary && (
             <div className="pointer-events-none absolute top-4 left-4 right-4 flex justify-center">
