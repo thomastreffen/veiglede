@@ -763,17 +763,27 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
               type="button"
               onClick={insertViaStop}
               className="inline-flex items-center gap-2 rounded-full border border-dashed border-border bg-surface px-4 py-2 text-sm hover:border-primary hover:text-primary"
+              title="Et raskt stopp underveis på samme etappe"
             >
               <Plus className="h-4 w-4" /> Legg til via-stopp
             </button>
             <button
               type="button"
+              onClick={insertNextDestination}
+              className="inline-flex items-center gap-2 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
+              title="En ny hoveddestinasjon — får sin egen dag/etappe i roadbooken"
+            >
+              <Plus className="h-4 w-4" /> Legg til neste destinasjon
+            </button>
+            <button
+              type="button"
               onClick={() => setImportOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm hover:border-primary hover:text-primary"
             >
               <FileText className="h-4 w-4" /> {w.manual.importButton}
             </button>
           </div>
+
 
           <div className="mt-10 sticky bottom-24 md:bottom-0 md:static">
             <button
