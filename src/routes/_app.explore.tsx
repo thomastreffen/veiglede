@@ -353,7 +353,24 @@ function TripsTab() {
         </Select>
       </section>
 
+      {/* Turer nær deg — only after explicit opt-in via "Vis turer nær meg". */}
+      {userLocation && nearMe.length > 0 && (
+        <section className="mt-8">
+          <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
+            <Navigation className="h-3 w-3" /> {nearMeT.nearYou}
+          </p>
+          <h2 className="font-display text-xl uppercase mt-1">{nearMeT.nearYou}</h2>
+          <p className="text-xs text-muted-foreground">{nearMeT.tip}</p>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {nearMe.map((c) => (
+              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Curated — primary list filtered/sorted by selected macro-region. */}
+
       <section className="mt-8">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div>
