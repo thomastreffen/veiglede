@@ -78,7 +78,7 @@ export function CuratedRoutePreview({ points, className, interactive = false, sh
       map.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfg?.maptilerKey, JSON.stringify(points), interactive]);
+  }, [cfg?.maptilerKey, JSON.stringify(points), interactive, showMarkers]);
 
   if (!cfg?.maptilerKey) {
     return (
