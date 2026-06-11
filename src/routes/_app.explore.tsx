@@ -134,19 +134,39 @@ function TripsTab() {
   });
   const stats: Record<string, TripSocialStats> = statsMap ?? {};
 
+  const { locale } = useI18n();
+  const nearMeT = NEAR_ME_LABELS[locale];
+  const foreignHeadline = FOREIGN_NORWAY_HEADLINE[locale];
+
   const [region, setRegion] = useState<string>("all");
   const [macroRegion, setMacroRegion] = useState<"all" | MacroRegion>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
-  const [country, setCountry] = useState<"all" | Country>("all");
+  // Default country derives from active locale, but the user can override.
+  const [countryTouched, setCountryTouched] = useState(false);
+  const [country, setCountryState] = useState<"all" | Country>(() => homeCountryForLocale(locale));
+  const setCountry = (c: "all" | Country) => { setCountryTouched(true); setCountryState(c); };
+  useEffect(() => {
+    if (!countryTouched) setCountryState(homeCountryForLocale(locale));
+  }, [locale, countryTouched]);
   const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
 
-  const regions = useMemo(() => {
-    const set = new Set<string>();
-    trips.forEach((tr) => { if (tr.region) set.add(tr.region); });
-    CURATED_TRIPS.forEach((c) => { if (c.region) set.add(c.region); });
-    return Array.from(set).sort();
-  }, [trips]);
+  // Opt-in precise geolocation — never requested without an explicit click.
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ready" | "denied">("idle");
+  const requestLocation = () => {
+    if (!("geolocation" in navigator)) { setGeoStatus("denied"); return; }
+    setGeoStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus("ready");
+      },
+      () => setGeoStatus("denied"),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 },
+    );
+  };
+
 
   // Curated trips matching the current filters — always available, never empty.
   // When a macro-region is selected, we keep ALL curated trips but sort them by
