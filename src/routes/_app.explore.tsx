@@ -111,17 +111,27 @@ function TripsTab() {
   const t = useT();
   const ex = t.app.explore;
   const fetcher = useServerFn(fetchPublicTrips);
+  const fetchStats = useServerFn(getTripSocialStatsFn);
   const { data, isLoading } = useQuery({
     queryKey: ["public-trips"],
     queryFn: () => fetcher(),
     staleTime: 60_000,
   });
   const trips = data ?? [];
+  const tripIds = useMemo(() => trips.map((t) => t.id).filter(Boolean), [trips]);
+
+  const { data: statsMap } = useQuery({
+    queryKey: ["trip-social-stats", tripIds],
+    enabled: tripIds.length > 0,
+    queryFn: () => fetchStats({ data: { tripIds } }),
+    staleTime: 60_000,
+  });
+  const stats: Record<string, TripSocialStats> = statsMap ?? {};
 
   const [region, setRegion] = useState<string>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
-  const [sort, setSort] = useState<"newest" | "popular">("newest");
+  const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
 
   const regions = useMemo(() => {
     const set = new Set<string>();
@@ -136,19 +146,28 @@ function TripsTab() {
       if (style !== "all" && tr.style !== style) return false;
       return true;
     });
-    if (sort === "popular") {
-      return [...list].sort((a, b) => (b.copyCount - a.copyCount) || (b.createdAt - a.createdAt));
+    const s = (id: string) => stats[id] ?? { drive: 0, saves: 0, reactions: 0 };
+    if (sort === "most_saved") {
+      return [...list].sort((a, b) => (s(b.id).saves + b.copyCount) - (s(a.id).saves + a.copyCount) || (b.createdAt - a.createdAt));
+    }
+    if (sort === "most_drive") {
+      return [...list].sort((a, b) => s(b.id).drive - s(a.id).drive || (b.createdAt - a.createdAt));
+    }
+    if (sort === "most_reactions") {
+      return [...list].sort((a, b) => s(b.id).reactions - s(a.id).reactions || (b.createdAt - a.createdAt));
     }
     return list;
-  }, [trips, region, vehicle, style, sort]);
+  }, [trips, region, vehicle, style, sort, stats]);
 
-  // "Populære turer" highlight strip: top 3 by copyCount (only when there are copies).
+  // "Populære turer" highlight strip: top 3 by combined save+drive intent.
   const popular = useMemo(() => {
     return [...trips]
-      .filter((tr) => tr.copyCount > 0)
-      .sort((a, b) => b.copyCount - a.copyCount)
-      .slice(0, 3);
-  }, [trips]);
+      .map((tr) => ({ tr, score: (stats[tr.id]?.drive ?? 0) + (stats[tr.id]?.saves ?? 0) + tr.copyCount }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((x) => x.tr);
+  }, [trips, stats]);
 
   const renderCard = (tr: PublicTripSummary) => (
     <li key={tr.shareToken}>
@@ -162,6 +181,7 @@ function TripsTab() {
         ownerName={tr.ownerName}
         ownerUsername={tr.ownerUsername}
         ownerAvatarUrl={tr.ownerAvatarUrl}
+        stats={stats[tr.id]}
         status="offentlig"
       />
     </li>
