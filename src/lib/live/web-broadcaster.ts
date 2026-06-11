@@ -171,6 +171,13 @@ export class WebLiveBroadcaster implements LiveBroadcaster {
     }, 0);
   }
 
+  async stopAll(): Promise<void> {
+    const ids = Array.from(this.trips.keys());
+    await Promise.all(ids.map((id) => this.stop(id)));
+  }
+
+
+
   update(tripId: string, patch: Partial<StartOptions>): void {
     const s = this.trips.get(tripId);
     if (!s) return;
