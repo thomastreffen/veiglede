@@ -43,12 +43,11 @@ export function GlobalLiveDriver() {
             continue;
           }
           if (t.status === "idle") {
-            // Keep broadcaster running so it sends a heartbeat showing
-            // "waiting" position once GPS resolves — but don't start until
-            // tripStatus is broadcastable. Use "paused" as a neutral
-            // pre-trip state so the singleton attaches geolocation +
-            // wakeLock proactively.
-            void broadcaster.start(tripId, { userId: uid, tripStatus: "paused" });
+            // Live opt-in is on but the trip hasn't started yet. Don't
+            // publish anything — the broadcaster only sends "active" or
+            // "paused". Once the user taps Start tur, the next sync tick
+            // will start broadcasting.
+            void broadcaster.stop(tripId);
             continue;
           }
           void broadcaster.start(tripId, { userId: uid, tripStatus: t.status });
