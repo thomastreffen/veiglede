@@ -452,9 +452,11 @@ function Landing() {
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
               {SCENIC_ROUTES.map((s) => (
-                <div
+                <Link
                   key={s.name}
-                  className="group relative overflow-hidden rounded-2xl aspect-[3/4] shadow-lg"
+                  to="/inspirasjon/$slug"
+                  params={{ slug: s.slug }}
+                  className="group relative overflow-hidden rounded-2xl aspect-[3/4] shadow-lg block"
                 >
                   <img
                     src={s.img}
@@ -475,7 +477,7 @@ function Landing() {
                     </p>
                     <p className="mt-1 text-xs text-white/70">{s.km}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
