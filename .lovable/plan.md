@@ -1,73 +1,85 @@
-# Web inspiration + real suggested trips
+## Goal
+Make Veiglede feel like a proper web product on desktop without disturbing mobile. The work is layout-only — no feature, copy, or visual-style changes beyond container widths and column structure.
 
-A large effort. I'll deliver it in clean, shippable phases. Each phase is independently useful and stops short of native app, chat, or "nearby users" work.
+## Root cause
+`AppShell.tsx` wraps every page's `<main>` in `mx-auto max-w-5xl` (1024 px). Every page inherits that cap, so even pages that opt into wider grids get clipped. Header and footer share the same cap. Most route files then add another `max-w-2xl`/`max-w-3xl` inside, narrowing things further.
 
-## Phase 1 — Real suggested trip objects (foundation)
+## Approach
+Introduce a small layout primitive and one shell change. Then opt pages into the right width — no global visual redesign.
 
-Add a curated trips data source so seed content behaves like real public trips.
+### 1. Layout primitive (`src/components/layout/PageContainer.tsx`)
+A single component with a `width` prop. Mobile is unchanged (full-bleed inside the existing px padding); desktop picks a max-width.
 
-- New file `src/lib/curated-trips.ts` — typed catalogue (id, slug, title, region, country, vehicleSuitability[], style, distanceKm, drivingTime, stopsCount, shortDescription, whyDrive, cover, mapPreview, geometry?, suggestedStops[], source: `'curated' | 'ai' | 'user'`).
-- Seed 7 real Norwegian routes: Lofoten rundt, Atlanterhavsveien, Hardanger rundt, Sognefjellet, Drammen–Rødberg–Gaustatoppen, Fin runde fra Drammen, Sognefjellet til Drammen.
-- New route `src/routes/inspirasjon.$slug.tsx` — public roadbook-style page for a curated trip (works logged-out). Renders hero, why drive it, suggested stops, map preview, social signals strip, and CTAs.
-- Reusable `CuratedTripPage` component (mirrors `SharedTripPage` styling) with CTAs:
-  - "Se roadbook" (jumps to stops section)
-  - "Vil kjøre denne" (uses curated trip id as reaction target; reuses `toggleReactionFn` with `tripId = "curated:<slug>"`)
-  - "Kopier til mine turer" (auth-gated, server fn that materializes curated trip into the user's trips blob)
-  - "Tilpass ruten" (sends to new trip wizard prefilled)
-- New server fn `copyCuratedTripFn` in `src/lib/curated-trips.functions.ts` that writes a real trip+days+stops into the caller's `trips` blob.
+```text
+width="narrow"      max-w-3xl     reading/forms (settings sub-pages, legal, auth)
+width="content"     max-w-5xl     current default — list pages, simple content
+width="wide"        max-w-7xl     dashboards, explore, trip detail, profile
+width="full"        no max-w      planner/map workspaces
+```
 
-## Phase 2 — Landing page hooks into real curated trips
+All variants keep `mx-auto w-full px-4 md:px-6`.
 
-- Replace static `POPULAR_ROUTES` cards on `src/routes/index.tsx` with curated trip summaries linking to `/inspirasjon/$slug`.
-- Each card shows distance, time, style, vehicle suitability, and a small "X vil kjøre" chip (bulk fetched via existing `getTripSocialStatsFn` keyed by curated id).
+### 2. AppShell change
+- Remove the `max-w-5xl` cap from `<main>`; keep it on header/footer only (header stays comfortable, footer stays readable).
+- `<main>` becomes `flex-1 w-full pb-[...] md:pb-12 pt-2` with no horizontal padding — each page owns its container via `PageContainer`.
+- Header inner wrapper widens to `max-w-7xl` so nav doesn't feel cramped on 1440 px+.
 
-## Phase 3 — Desktop-first Utforsk layout
+This is the single change that unblocks every page; pages that don't get touched in this pass still render at the old width by wrapping their existing content in `<PageContainer width="content">`.
 
-Rework `src/routes/_app.explore.tsx`:
+### 3. Per-page opt-ins (this pass)
 
-- Below `md`: keep current card-first mobile layout.
-- At `lg+`: split layout
-  ```text
-  [ filters/search (col-3) | trip cards list (col-4) | selected preview + details (col-5) ]
-  ```
-- Map preview area uses existing `MapPreview` for the selected trip.
-- New `ExploreFilters` component (region, country, vehicle, style, distance, duration, sort).
-- Merge curated + user-public trips into one list (curated trips always available, no empty-state).
+**Home (`_app.home.tsx`)** — `width="wide"`
+- `lg:grid-cols-12` shell
+- Hero spans 12; "Fortsett reisen" promotes from 1-col → `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
+- "Populært i Veiglede" / curated → `lg:grid-cols-3 xl:grid-cols-4`
+- "Fra folk du følger" (col-span-8) + "Din garasje" (col-span-4) side-by-side at `lg`
+- "Forslag for [vehicle]" → horizontal scroll on mobile, grid at `lg`
 
-## Phase 4 — Filters & sorts
+**Explore (`_app.explore.tsx`)** — `width="wide"`
+- Filter row uses full width
+- Region chips full-width row
+- Curated grid → `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
+- Public trip grid same breakpoints
 
-Extend `validateSearch` schema with: `country`, `region`, `vehicle`, `style`, `minKm`, `maxKm`, `sort` (newest | popular | drive | saved). Filters applied client-side over merged list (curated + public). Sort `popular` uses social stats already fetched.
+**Settings (`_app.settings.tsx`)** — `width="wide"`
+- `lg:grid-cols-[280px_minmax(0,1fr)]`
+- Left rail: identity card, avatar, public-profile link, account actions, in-page nav
+- Right column: existing settings sections stacked
 
-Filter chips: Norge, Sverige, Danmark, Tyskland · MC, Amcar, Veteranbil, Bobil, Elbil · Svingete vei, Rolig cruise, Fototur, Kaffestopp, Nasjonale turistveier, Fjellovergang, Kystvei. Stored as enums in `curated-trips.ts` so future user trips can adopt the same vocabulary.
+**Garage (`_app.garage.tsx`)** — `width="wide"`
+- Vehicle cards → `sm:grid-cols-2 lg:grid-cols-3`
 
-## Phase 5 — Location-based suggestions (light)
+**Trip detail (`_app.trips.$tripId.tsx`)** — `width="wide"`
+- Hero/summary spans full width, stats become a horizontal row at `md+`
+- Below hero: `lg:grid-cols-[minmax(0,1fr)_360px]` — map + roadbook left, Turkontroll/actions sticky right
+- Roadbook keeps its current internal layout
 
-- New `RegionPicker` (city/region/country dropdown, saved to `localStorage`, no geolocation prompt).
-- Optional one-tap "Bruk min posisjon" with explicit consent — used only to sort curated trips by distance to first stop. No location ever leaves the client.
+**Trip roadbook (`_app.trips.$tripId.roadbook.tsx`)** — `width="wide"`, two-column at `lg` (day list left, day detail right) using existing components.
 
-## Phase 6 — Social intent: "Åpen for turfølge"
+**Public/curated trip (`SharedTripPage`, `CuratedTripPage`)** — `width="wide"`
+- Wide hero
+- `lg:grid-cols-12`: map+roadbook col-span-8, stats/social/creator col-span-4 sticky
 
-- Add reaction-adjacent intent flag without new tables: extend `trip_reactions.reaction` enum with `convoy` (= "åpen for å kjøre med andre"). Migration + Zod enum bump.
-- On `WillDriveButton`: after "Vil kjøre" is active, show secondary checkbox "Åpen for å kjøre med andre" that toggles `convoy`.
-- Show "N åpen for turfølge" chip on trip cards/pages.
-- No chat, no groups, no nearby-users matching now. Data model only.
+**Planner** — already uses `PlannerWorkspace`. Wrap its desktop branch in `width="full"` (no horizontal padding, no max-width) so the `-mx-*` workaround disappears. Mobile branch wraps in `width="content"`.
 
-## Phase 7 — Public route page polish
+**Trips list (`_app.trips.tsx`)** — `width="wide"`, trip cards `sm:grid-cols-2 lg:grid-cols-3`.
 
-Promote `SharedTripPage` + new `CuratedTripPage` to the "engagement hub" shape: hero, why-drive, vehicle/style badges, stops, map, creator card, social action bar (already built), "X vil kjøre / Y åpen for turfølge / Z lagret" strip.
+**Profile (`u.$username.tsx`)** — `width="wide"`, two-column at `lg` (identity/vehicles left, trips right).
 
-## Phase 8 — Out of scope (explicit)
+**Untouched in this pass** (keep current width via `width="content"` or `"narrow"`): legal pages, auth pages, partner dashboard, admin, fordeler, help. They already read well at current widths.
 
-- Native app, push, background location.
-- Chat, DMs, groups, "nearby users" matching.
-- Removing or changing existing trip creation flow.
-- Mobile redesign — mobile stays card-first.
+### 4. Mobile guarantee
+Every change is gated on `lg:` (≥1024 px) or larger. Below `lg`, layout is identical to today. `pb-[calc(10rem+env(safe-area-inset-bottom))]` for the bottom nav stays on `<main>`. Bottom nav, FAB, mobile header — all untouched.
 
-## Technical notes
+## Out of scope
+- Visual restyle of cards/colors/typography
+- New features or new data fetching
+- Reworking individual card components beyond grid placement
+- Map workspace behavior (already addressed in the prior task)
 
-- Curated trips use stable ids prefixed `curated:<slug>` so existing `trip_reactions` / `saved_trips` tables work with no schema change (besides the `convoy` enum value).
-- One migration: `ALTER TABLE trip_reactions ... CHECK (reaction IN ('fire','road','pin','coffee','drive','convoy'))`.
-- One new server fn (`copyCuratedTripFn`), one new route, one new lib module, two new components (`CuratedTripPage`, `ExploreFilters`), edits to `index.tsx`, `_app.explore.tsx`, `WillDriveButton`, `social.functions.ts`, `PublicTripCard`.
-- Roughly 8–10 file changes plus the curated catalogue.
-
-Approve and I'll ship phases 1–4 first (real curated trips + landing wiring + desktop explore layout + filters), then 5–7 in a follow-up so each step is reviewable.
+## Definition of done
+- `max-w-5xl` constraint removed from `<main>`; pages choose their own width.
+- Home, Explore, Settings, Garage, Trip detail, Public/curated trip, Trips list, Profile use full desktop width with multi-column layouts at `lg+`.
+- Planner desktop branch fills the screen without `-mx-*` hacks.
+- Mobile (< `lg`) renders identically to today on every touched page.
+- No TypeScript errors.

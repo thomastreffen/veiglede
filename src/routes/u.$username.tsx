@@ -86,19 +86,19 @@ function PublicProfilePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-5xl mx-auto px-4 py-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <header className="flex flex-col sm:flex-row sm:items-center gap-5">
           <div className="h-24 w-24 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-display text-5xl overflow-hidden shrink-0">
             {profile.avatarUrl
               ? <AvatarImg value={profile.avatarUrl} className="h-full w-full object-cover" />
               : initialLetter}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="font-display text-3xl md:text-4xl uppercase truncate">{profile.displayName}</h1>
             <p className="text-sm text-muted-foreground">@{profile.username}</p>
             {profile.bio && <p className="mt-2 text-sm leading-relaxed max-w-prose">{profile.bio}</p>}
             {showStats && stats && (
-              <div className="mt-2 space-y-0.5 text-xs uppercase tracking-wider">
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-0.5 text-xs uppercase tracking-wider">
                 <p className="text-primary">{stats.tripsCount} turer</p>
                 <p className="text-muted-foreground">{stats.totalKm.toLocaleString("nb-NO")} km planlagt</p>
                 <p className="text-muted-foreground">{stats.drivenKm.toLocaleString("nb-NO")} km kjørt</p>
@@ -110,10 +110,12 @@ function PublicProfilePage() {
           </div>
         </header>
 
+
         {showGarage && vehicles.length > 0 && (
           <section className="mt-10">
             <h2 className="font-display text-xl uppercase">Garasje</h2>
-            <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
               {vehicles.map((v: PublicProfileVehicle) => {
 
                 const tm = vehicleMeta(v.type as VehicleType);
@@ -157,7 +159,7 @@ function PublicProfilePage() {
             {trips.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">Ingen offentlige turer enda.</p>
             ) : (
-              <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {trips.map((t: PublicProfileTrip) => (
                   <li key={t.shareToken}>
                     <PublicTripCard

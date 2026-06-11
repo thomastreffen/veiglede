@@ -102,7 +102,7 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto max-w-2xl flex items-center justify-between px-4 py-3">
+        <div className="mx-auto max-w-7xl flex items-center justify-between px-4 py-3">
           <Link to="/" aria-label="Veiglede"><VeigledeLogo size="md" /></Link>
           <div className="flex items-center gap-2">
             <SaveTripButton
@@ -127,7 +127,8 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-4 pb-16">
+      <div className="mx-auto max-w-4xl px-4 pb-16">
+
         <section className={`mt-4 relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${COVERS[trip.cover as CoverKey]} p-6 md:p-8`}>
           <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/40 to-transparent" />
           <div className="relative">

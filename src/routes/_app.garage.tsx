@@ -62,7 +62,7 @@ function GaragePage() {
   };
 
   return (
-    <div className="py-5 md:py-8 max-w-5xl mx-auto">
+    <div className="py-5 md:py-8 w-full">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{g.eyebrow}</p>
@@ -89,7 +89,7 @@ function GaragePage() {
       {vehicles.length === 0 ? (
         <EmptyState onAdd={openNew} g={g} />
       ) : (
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {vehicles.map((vh) => {
             const vehicleTrips = trips.filter(
               (tr) =>
