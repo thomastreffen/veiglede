@@ -15,6 +15,10 @@ import {
   MapPin, Clock, Route as RouteIcon, Sparkles, Eye, Lock, Camera, Compass, ExternalLink,
 } from "lucide-react";
 import { CopyTripButton } from "@/components/CopyTripButton";
+import { WillDriveButton } from "@/components/WillDriveButton";
+import { TripReactionsRow } from "@/components/TripReactionsRow";
+import { VehicleIdentityCard } from "@/components/VehicleIdentityCard";
+import { CreatorCard } from "@/components/CreatorCard";
 import { AvatarImg } from "@/lib/avatar";
 import { useState } from "react";
 
