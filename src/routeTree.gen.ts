@@ -32,6 +32,7 @@ import { Route as PartnerDashboardRouteImport } from './routes/partner.dashboard
 import { Route as LiveTokenRouteImport } from './routes/live.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as InspirasjonSlugRouteImport } from './routes/inspirasjon.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiInboundEmailRouteImport } from './routes/api/inbound-email'
@@ -189,6 +190,11 @@ const JoinTokenRoute = JoinTokenRouteImport.update({
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InspirasjonSlugRoute = InspirasjonSlugRouteImport.update({
+  id: '/inspirasjon/$slug',
+  path: '/inspirasjon/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -458,6 +464,7 @@ export interface FileRoutesByFullPath {
   '/api/inbound-email': typeof ApiInboundEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/inspirasjon/$slug': typeof InspirasjonSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/live/$token': typeof LiveTokenRoute
@@ -524,6 +531,7 @@ export interface FileRoutesByTo {
   '/api/inbound-email': typeof ApiInboundEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/inspirasjon/$slug': typeof InspirasjonSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/live/$token': typeof LiveTokenRoute
@@ -593,6 +601,7 @@ export interface FileRoutesById {
   '/api/inbound-email': typeof ApiInboundEmailRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/inspirasjon/$slug': typeof InspirasjonSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/live/$token': typeof LiveTokenRoute
@@ -663,6 +672,7 @@ export interface FileRouteTypes {
     | '/api/inbound-email'
     | '/auth/callback'
     | '/email/unsubscribe'
+    | '/inspirasjon/$slug'
     | '/invite/$token'
     | '/join/$token'
     | '/live/$token'
@@ -729,6 +739,7 @@ export interface FileRouteTypes {
     | '/api/inbound-email'
     | '/auth/callback'
     | '/email/unsubscribe'
+    | '/inspirasjon/$slug'
     | '/invite/$token'
     | '/join/$token'
     | '/live/$token'
@@ -797,6 +808,7 @@ export interface FileRouteTypes {
     | '/api/inbound-email'
     | '/auth/callback'
     | '/email/unsubscribe'
+    | '/inspirasjon/$slug'
     | '/invite/$token'
     | '/join/$token'
     | '/live/$token'
@@ -847,6 +859,7 @@ export interface RootRouteChildren {
   ApiInboundEmailRoute: typeof ApiInboundEmailRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  InspirasjonSlugRoute: typeof InspirasjonSlugRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   LiveTokenRoute: typeof LiveTokenRoute
@@ -1029,6 +1042,13 @@ declare module '@tanstack/react-router' {
       path: '/invite/$token'
       fullPath: '/invite/$token'
       preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inspirasjon/$slug': {
+      id: '/inspirasjon/$slug'
+      path: '/inspirasjon/$slug'
+      fullPath: '/inspirasjon/$slug'
+      preLoaderRoute: typeof InspirasjonSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -1478,6 +1498,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiInboundEmailRoute: ApiInboundEmailRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  InspirasjonSlugRoute: InspirasjonSlugRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   LiveTokenRoute: LiveTokenRoute,
