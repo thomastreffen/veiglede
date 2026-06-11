@@ -120,6 +120,32 @@ export function PublicTripCard({
           </div>
         </Link>
 
+        {vehicleIdentity && (
+          <div className="mt-2">
+            <VehicleIdentityLine vehicle={vehicleIdentity} />
+          </div>
+        )}
+
+        {stats && (stats.drive > 0 || stats.saves > 0 || stats.reactions > 0) && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {stats.drive > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                <Flag className="h-3 w-3" /> {stats.drive} vil kjøre
+              </span>
+            )}
+            {stats.saves > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Bookmark className="h-3 w-3" /> {stats.saves} lagret
+              </span>
+            )}
+            {stats.reactions > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Flame className="h-3 w-3" /> {stats.reactions} reaksjoner
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
           <Link
             to="/tur/delt/$shareToken"
