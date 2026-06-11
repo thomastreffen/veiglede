@@ -127,7 +127,7 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 pb-16">
+      <div className="mx-auto max-w-4xl px-4 pb-16">
 
         <section className={`mt-4 relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${COVERS[trip.cover as CoverKey]} p-6 md:p-8`}>
           <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/40 to-transparent" />
