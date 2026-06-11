@@ -69,10 +69,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Veiglede — AI-drevet roadtrip-planlegger" },
       { name: "description", content: "Veiglede er en moderne AI-drevet roadtrip-planlegger for folk som elsker veien — ikke bare målet." },
-      { name: "theme-color", content: "#f97316" },
+      // theme-color: dark cockpit by default, warm sand for users in light mode.
+      // Matches the standalone PWA background so iOS doesn't flash white on launch.
+      { name: "theme-color", content: "#13131c", media: "(prefers-color-scheme: dark)" },
+      { name: "theme-color", content: "#f7f3ea", media: "(prefers-color-scheme: light)" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      // black-translucent lets us draw under the status bar / Dynamic Island.
+      // Combined with `viewport-fit=cover` and the `.pt-safe` / `top:0` CSS
+      // rules in styles.css, headers stay clear of the iOS clock & battery.
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Veiglede" },
+      { name: "format-detection", content: "telephone=no" },
       { property: "og:title", content: "Veiglede — AI-drevet roadtrip-planlegger" },
       { name: "twitter:title", content: "Veiglede — AI-drevet roadtrip-planlegger" },
       { property: "og:description", content: "Veiglede er en moderne AI-drevet roadtrip-planlegger for folk som elsker veien — ikke bare målet." },
