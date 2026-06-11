@@ -1,6 +1,5 @@
 import { type ReactNode } from "react";
 import { CuratedRoutePreview, type RoutePoint } from "@/components/CuratedRoutePreview";
-import { Map as MapIcon } from "lucide-react";
 
 interface Props {
   /** The left-side planning form (the existing wizard UI). */
@@ -11,56 +10,57 @@ interface Props {
   summary?: ReactNode;
 }
 
+/** Default view: Norway, roughly centered, fits whole country. */
+const DEFAULT_NORWAY_POINTS: RoutePoint[] = [
+  { lat: 58.0, lng: 5.5 },   // SW corner
+  { lat: 71.1, lng: 28.5 },  // NE corner (Nordkapp area)
+];
+
 /**
- * Desktop-first split layout for trip planning.
- *
- * - On `lg` and up: left sidebar with the planning form, large map workspace
- *   filling the rest of the screen — sofa-planning workspace.
- * - Below `lg`: renders children as-is so the existing mobile step-based
- *   wizard remains card-first and untouched.
+ * Desktop-first split layout for trip planning. The map is always rendered
+ * and interactive; instructional copy appears as an overlay, never as a
+ * replacement for the map.
  */
 export function PlannerWorkspace({ children, points, summary }: Props) {
+  const hasPoints = points.length > 0;
+  const mapPoints = hasPoints ? points : DEFAULT_NORWAY_POINTS;
+
   return (
     <>
       {/* Mobile / tablet: unchanged card-based wizard */}
       <div className="lg:hidden">{children}</div>
 
       {/* Desktop: map-first workspace */}
-      <div className="hidden lg:grid lg:grid-cols-[420px_minmax(0,1fr)] xl:grid-cols-[460px_minmax(0,1fr)] gap-0 h-[calc(100vh-4rem)] -mx-4 md:-mx-8">
+      <div className="hidden lg:grid lg:grid-cols-[400px_minmax(0,1fr)] xl:grid-cols-[440px_minmax(0,1fr)] gap-0 h-[calc(100vh-4rem)] -mx-4 md:-mx-8">
         {/* Left planning rail */}
         <aside className="border-r border-border bg-surface overflow-y-auto">
           <div className="p-5 xl:p-6">{children}</div>
         </aside>
 
-        {/* Right map workspace */}
+        {/* Right map workspace — always interactive */}
         <section className="relative bg-surface-2 overflow-hidden">
-          {points.length === 0 ? (
-            <div className="absolute inset-0 grid place-items-center text-center p-10">
-              <div className="max-w-sm">
-                <div className="mx-auto h-16 w-16 rounded-2xl border-2 border-dashed border-border bg-surface grid place-items-center">
-                  <MapIcon className="h-7 w-7 text-muted-foreground" />
-                </div>
-                <h2 className="mt-6 font-display text-2xl uppercase">Planlegg på stort kart</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Velg avreisested og destinasjon i panelet til venstre — ruten dukker opp her med en gang vi har koordinater.
+          <CuratedRoutePreview
+            points={mapPoints}
+            interactive
+            className="absolute inset-0 h-full w-full"
+          />
+
+          {summary && (
+            <div className="pointer-events-none absolute top-4 left-4 right-4 flex justify-center">
+              <div className="pointer-events-auto rounded-2xl border border-border bg-background/90 backdrop-blur px-4 py-2 text-xs font-semibold uppercase tracking-wider shadow-lg">
+                {summary}
+              </div>
+            </div>
+          )}
+
+          {!hasPoints && (
+            <div className="pointer-events-none absolute bottom-6 left-6 right-6 flex justify-center">
+              <div className="pointer-events-auto max-w-md rounded-2xl border border-border bg-background/90 backdrop-blur px-5 py-3 text-center shadow-lg">
+                <p className="text-sm text-foreground">
+                  Velg avreisested og destinasjon i panelet til venstre — markører og rute dukker opp på kartet med en gang.
                 </p>
               </div>
             </div>
-          ) : (
-            <>
-              <CuratedRoutePreview
-                points={points}
-                interactive
-                className="absolute inset-0 h-full w-full"
-              />
-              {summary && (
-                <div className="pointer-events-none absolute top-4 left-4 right-4 flex justify-center">
-                  <div className="pointer-events-auto rounded-2xl border border-border bg-background/90 backdrop-blur px-4 py-2 text-xs font-semibold uppercase tracking-wider shadow-lg">
-                    {summary}
-                  </div>
-                </div>
-              )}
-            </>
           )}
         </section>
       </div>
