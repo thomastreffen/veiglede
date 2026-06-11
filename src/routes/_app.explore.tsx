@@ -12,7 +12,7 @@ import {
   VEHICLES, ROUTE_STYLES,
   type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
-import { CURATED_TRIPS, COUNTRY_LABEL, type Country, type CuratedTrip } from "@/lib/curated-trips";
+import { CURATED_TRIPS, COUNTRY_LABEL, MACRO_REGION_LABEL, type Country, type CuratedTrip, type MacroRegion } from "@/lib/curated-trips";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame } from "lucide-react";
 import { useT } from "@/i18n/provider";
@@ -133,6 +133,7 @@ function TripsTab() {
   const stats: Record<string, TripSocialStats> = statsMap ?? {};
 
   const [region, setRegion] = useState<string>("all");
+  const [macroRegion, setMacroRegion] = useState<"all" | MacroRegion>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
   const [country, setCountry] = useState<"all" | Country>("all");
@@ -149,12 +150,13 @@ function TripsTab() {
   const curatedFiltered = useMemo(() => {
     return CURATED_TRIPS.filter((c) => {
       if (country !== "all" && c.country !== country) return false;
+      if (macroRegion !== "all" && !c.macroRegions.includes(macroRegion)) return false;
       if (region !== "all" && c.region !== region) return false;
       if (style !== "all" && c.style !== style) return false;
       if (vehicle !== "all" && !c.vehicleSuitability.includes(vehicle)) return false;
       return true;
     });
-  }, [country, region, style, vehicle]);
+  }, [country, macroRegion, region, style, vehicle]);
 
   const filtered = useMemo(() => {
     // Country filter only applies to curated trips (user trips have no country yet).
