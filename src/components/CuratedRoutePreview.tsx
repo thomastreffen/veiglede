@@ -48,14 +48,35 @@ export function CuratedRoutePreview({ points, className, interactive = false, sh
     const markers: maplibregl.Marker[] = [];
     map.on("load", () => {
       if (showMarkers) {
+        const viaCount = Math.max(0, points.length - 2);
+        let viaIdx = 0;
         points.forEach((p, i) => {
           const isStart = i === 0;
           const isEnd = i === points.length - 1 && points.length > 1;
-          const color = isStart ? "#ff6b35" : isEnd ? "#10b981" : "#94a3b8";
-          const m = new maplibregl.Marker({ color }).setLngLat([p.lng, p.lat]);
+          // Build a custom DOM marker with a label (S / 1..N / F)
+          const el = document.createElement("div");
+          const bg = isStart ? "#ff6b35" : isEnd ? "#10b981" : "#0f172a";
+          const fg = "#ffffff";
+          let label: string;
+          if (isStart) label = "S";
+          else if (isEnd) label = "F";
+          else { viaIdx += 1; label = String(viaIdx); }
+          el.style.cssText = [
+            "width:28px", "height:28px", "border-radius:9999px",
+            `background:${bg}`, `color:${fg}`,
+            "display:grid", "place-items:center",
+            "font-weight:800", "font-size:12px",
+            "border:2px solid #ffffff",
+            "box-shadow:0 2px 6px rgba(0,0,0,0.35)",
+            "font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif",
+          ].join(";");
+          el.textContent = label;
+          el.title = p.label ?? label;
+          const m = new maplibregl.Marker({ element: el, anchor: "center" }).setLngLat([p.lng, p.lat]);
           if (p.label) m.setPopup(new maplibregl.Popup({ offset: 18, closeButton: false }).setText(p.label));
           m.addTo(map);
           markers.push(m);
+          void viaCount;
         });
         const hasRealRoute = !!(routeGeometry && routeGeometry.length > 1);
         if (hasRealRoute) {
