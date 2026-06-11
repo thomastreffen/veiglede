@@ -167,6 +167,15 @@ function TripsTab() {
     );
   };
 
+  const regions = useMemo(() => {
+    const set = new Set<string>();
+    trips.forEach((tr) => { if (tr.region) set.add(tr.region); });
+    CURATED_TRIPS.forEach((c) => { if (c.region) set.add(c.region); });
+    return Array.from(set).sort();
+  }, [trips]);
+
+
+
 
   // Curated trips matching the current filters — always available, never empty.
   // When a macro-region is selected, we keep ALL curated trips but sort them by
