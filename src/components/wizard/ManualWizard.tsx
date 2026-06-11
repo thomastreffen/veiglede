@@ -713,13 +713,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                         {isDest ? "🏁 Destinasjon" : "🛣️ Via-stopp"}
                       </button>
 
-                      <input
-                        type="date"
-                        value={r.date}
-                        onChange={(e) => updateRow(r.key, { date: e.target.value })}
-                        className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-[11px]"
-                        aria-label={w.manual.dateLabel}
-                      />
+
                       <button
                         type="button"
                         onClick={() => updateRow(r.key, { type: tp === "lodging" ? "city" : "lodging" })}
