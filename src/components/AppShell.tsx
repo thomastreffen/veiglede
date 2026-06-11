@@ -110,7 +110,7 @@ export function AppShell() {
   return (
     <div className="min-h-screen flex flex-col bg-background bg-glow-orange">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto max-w-5xl flex items-center justify-between px-4 md:px-6 py-3.5">
+        <div className="mx-auto max-w-7xl flex items-center justify-between px-4 md:px-6 py-3.5">
           <Link to="/"><VeigledeMark /></Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">
             {nav.map((n) => (
@@ -165,12 +165,12 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="flex-1 mx-auto w-full max-w-5xl px-4 md:px-6 pb-[calc(10rem+env(safe-area-inset-bottom))] md:pb-12 pt-2">
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 md:px-6 pb-[calc(10rem+env(safe-area-inset-bottom))] md:pb-12 pt-2">
         <Outlet />
       </main>
 
       <footer className="hidden md:block border-t border-border/40 mt-8">
-        <div className="mx-auto max-w-5xl px-4 md:px-6 py-5 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 py-5 flex items-center justify-between text-xs text-muted-foreground">
           <span>© Veiglede</span>
           <Link to="/hjelp" className="hover:text-foreground">Trenger du hjelp?</Link>
         </div>
