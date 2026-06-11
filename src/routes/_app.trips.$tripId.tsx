@@ -361,11 +361,12 @@ function TripPlanner() {
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
           {td.mapDisclaimer}
         </p>
-        {tracking.status === "active" && livePos && (
-          <OffRouteBanner trip={trip} stops={tripStops} livePos={{ lat: livePos.lat, lng: livePos.lng }} />
-        )}
-        <DetourTotals trip={trip} stops={tripStops} />
       </section>
+      {tracking.status === "active" && livePos && (
+        <OffRouteBanner trip={trip} stops={tripStops} livePos={{ lat: livePos.lat, lng: livePos.lng }} />
+      )}
+      <DetourTotals trip={trip} stops={tripStops} />
+
 
 
       {/* Planning actions — flexible trip model */}
