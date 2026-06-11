@@ -345,7 +345,8 @@ function TripPlanner() {
 
 
       {/* Map */}
-      <section className="mt-4">
+      <section className="mt-4 lg:hidden">
+
         <TripMap
           trip={trip}
           days={tripDays}
