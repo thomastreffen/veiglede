@@ -649,7 +649,24 @@ function TripPlanner() {
         </div>
       )}
     </div>
+    </div>
+    <aside className="hidden lg:block bg-surface-2 overflow-hidden">
+      <TripMap
+        trip={trip}
+        days={tripDays}
+        stops={tripStops}
+        selectedStopId={selectedStopId}
+        onSelectStop={handleSelectStop}
+        suggestionPins={suggestionPins}
+        hoveredSuggestionId={null}
+        height="h-full"
+        livePosition={livePos}
+      />
+    </aside>
+    </div>
+    </div>
   );
+
 }
 
 type Td = ReturnType<typeof useT>["app"]["tripDetail"];
