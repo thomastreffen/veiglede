@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -13,10 +13,12 @@ import {
   type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
 import { CURATED_TRIPS, COUNTRY_LABEL, MACRO_REGION_LABEL, curatedRegionRelevance, type Country, type CuratedTrip, type MacroRegion } from "@/lib/curated-trips";
+import { curatedRelevanceScore, distanceToTrip, homeCountryForLocale, isForeignVisitorLocale, NEAR_ME_LABELS, FOREIGN_NORWAY_HEADLINE } from "@/lib/location-relevance";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame } from "lucide-react";
-import { useT } from "@/i18n/provider";
+import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame, Navigation, Loader2 } from "lucide-react";
+import { useT, useI18n } from "@/i18n/provider";
 import { useAuth } from "@/lib/auth";
+
 
 const ExploreSearch = z.object({
   tab: z.enum(["turer", "brukere"]).optional(),
@@ -132,12 +134,38 @@ function TripsTab() {
   });
   const stats: Record<string, TripSocialStats> = statsMap ?? {};
 
+  const { locale } = useI18n();
+  const nearMeT = NEAR_ME_LABELS[locale];
+  const foreignHeadline = FOREIGN_NORWAY_HEADLINE[locale];
+
   const [region, setRegion] = useState<string>("all");
   const [macroRegion, setMacroRegion] = useState<"all" | MacroRegion>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
-  const [country, setCountry] = useState<"all" | Country>("all");
+  // Default country derives from active locale, but the user can override.
+  const [countryTouched, setCountryTouched] = useState(false);
+  const [country, setCountryState] = useState<"all" | Country>(() => homeCountryForLocale(locale));
+  const setCountry = (c: "all" | Country) => { setCountryTouched(true); setCountryState(c); };
+  useEffect(() => {
+    if (!countryTouched) setCountryState(homeCountryForLocale(locale));
+  }, [locale, countryTouched]);
   const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
+
+  // Opt-in precise geolocation — never requested without an explicit click.
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ready" | "denied">("idle");
+  const requestLocation = () => {
+    if (!("geolocation" in navigator)) { setGeoStatus("denied"); return; }
+    setGeoStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus("ready");
+      },
+      () => setGeoStatus("denied"),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 },
+    );
+  };
 
   const regions = useMemo(() => {
     const set = new Set<string>();
@@ -145,6 +173,9 @@ function TripsTab() {
     CURATED_TRIPS.forEach((c) => { if (c.region) set.add(c.region); });
     return Array.from(set).sort();
   }, [trips]);
+
+
+
 
   // Curated trips matching the current filters — always available, never empty.
   // When a macro-region is selected, we keep ALL curated trips but sort them by
@@ -157,9 +188,33 @@ function TripsTab() {
       if (vehicle !== "all" && !c.vehicleSuitability.includes(vehicle)) return false;
       return true;
     });
-    if (macroRegion === "all") return base;
-    return [...base].sort((a, b) => curatedRegionRelevance(a, macroRegion) - curatedRegionRelevance(b, macroRegion));
-  }, [country, macroRegion, region, style, vehicle]);
+    if (macroRegion !== "all") {
+      return [...base].sort((a, b) => curatedRegionRelevance(a, macroRegion) - curatedRegionRelevance(b, macroRegion));
+    }
+    // No explicit region — rank by locale/country/vehicle/style/proximity relevance.
+    return [...base].sort((a, b) => {
+      const sa = curatedRelevanceScore(a, { locale, country, macroRegion, vehicle, style, userLocation: userLocation ?? undefined, social: stats[a.id] });
+      const sb = curatedRelevanceScore(b, { locale, country, macroRegion, vehicle, style, userLocation: userLocation ?? undefined, social: stats[b.id] });
+      return sb - sa;
+    });
+  }, [country, macroRegion, region, style, vehicle, locale, userLocation, stats]);
+
+  // "Turer nær deg" — only populated after the user opts into geolocation.
+  const nearMe = useMemo(() => {
+    if (!userLocation) return [] as CuratedTrip[];
+    return [...CURATED_TRIPS]
+      .map((c) => ({ c, d: distanceToTrip(userLocation, c) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 6)
+      .map((x) => x.c);
+  }, [userLocation]);
+
+  // Foreign-visitor Norway suggestions — surfaced when the active locale isn't Norwegian.
+  const foreignNorwaySuggestions = useMemo(() => {
+    if (!isForeignVisitorLocale(locale)) return [] as CuratedTrip[];
+    return CURATED_TRIPS.filter((c) => c.country === "no").slice(0, 6);
+  }, [locale]);
+
 
   /** Split curated list into "relevant" (score 0-3) vs "other popular" (score 4) for the selected macro region. */
   const curatedSplit = useMemo(() => {
@@ -226,8 +281,23 @@ function TripsTab() {
 
   return (
     <>
+      {/* Opt-in "near me" CTA — never auto-requests geolocation. */}
+      <section className="mt-6 rounded-2xl border border-border bg-surface/60 p-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={requestLocation}
+          disabled={geoStatus === "loading"}
+          className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 disabled:opacity-60"
+        >
+          {geoStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
+          {geoStatus === "loading" ? nearMeT.loading : geoStatus === "ready" ? nearMeT.nearYou : nearMeT.cta}
+        </button>
+        <p className="text-[11px] text-muted-foreground">{nearMeT.tip}</p>
+        {geoStatus === "denied" && <p className="text-[11px] text-amber-500">{nearMeT.denied}</p>}
+      </section>
+
       {/* Country chips */}
-      <section className="mt-6 flex flex-wrap gap-2">
+      <section className="mt-4 flex flex-wrap gap-2">
         <FilterPill active={country === "all"} onClick={() => setCountry("all")}>🌍 Alle land</FilterPill>
         {(["no", "se", "dk", "de"] as Country[]).map((c) => (
           <FilterPill key={c} active={country === c} onClick={() => setCountry(c)}>
@@ -235,6 +305,7 @@ function TripsTab() {
           </FilterPill>
         ))}
       </section>
+
 
       {/* Macro-region chips (kuraterte Norges-regioner) */}
       {country === "no" || country === "all" ? (
@@ -282,7 +353,24 @@ function TripsTab() {
         </Select>
       </section>
 
+      {/* Turer nær deg — only after explicit opt-in via "Vis turer nær meg". */}
+      {userLocation && nearMe.length > 0 && (
+        <section className="mt-8">
+          <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
+            <Navigation className="h-3 w-3" /> {nearMeT.nearYou}
+          </p>
+          <h2 className="font-display text-xl uppercase mt-1">{nearMeT.nearYou}</h2>
+          <p className="text-xs text-muted-foreground">{nearMeT.tip}</p>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {nearMe.map((c) => (
+              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Curated — primary list filtered/sorted by selected macro-region. */}
+
       <section className="mt-8">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div>
@@ -326,6 +414,23 @@ function TripsTab() {
           </ul>
         </section>
       )}
+
+      {/* Foreign visitor — "Norway roadtrips worth planning". */}
+      {foreignHeadline && foreignNorwaySuggestions.length > 0 && country !== "no" && (
+        <section className="mt-8">
+          <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
+            <Sparkles className="h-3 w-3" /> {COUNTRY_LABEL.no}
+          </p>
+          <h2 className="font-display text-xl uppercase mt-1">{foreignHeadline}</h2>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {foreignNorwaySuggestions.map((c) => (
+              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+
 
 
       {/* Populære turer */}
