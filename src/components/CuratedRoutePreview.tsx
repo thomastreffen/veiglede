@@ -57,7 +57,23 @@ export function CuratedRoutePreview({ points, className, interactive = false, sh
           m.addTo(map);
           markers.push(m);
         });
-        if (points.length > 1) {
+        const hasRealRoute = !!(routeGeometry && routeGeometry.length > 1);
+        if (hasRealRoute) {
+          map.addSource("route", {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              properties: {},
+              geometry: { type: "LineString", coordinates: routeGeometry!.map((p) => [p.lng, p.lat]) },
+            },
+          });
+          map.addLayer({
+            id: "route",
+            type: "line",
+            source: "route",
+            paint: { "line-color": "#ff6b35", "line-width": 4, "line-opacity": 0.9 },
+          });
+        } else if (points.length > 1) {
           map.addSource("line", {
             type: "geojson",
             data: {
@@ -70,13 +86,14 @@ export function CuratedRoutePreview({ points, className, interactive = false, sh
             id: "line",
             type: "line",
             source: "line",
-            paint: { "line-color": "#ff6b35", "line-width": 3, "line-dasharray": [2, 2], "line-opacity": 0.85 },
+            paint: { "line-color": "#ff6b35", "line-width": 3, "line-dasharray": [2, 2], "line-opacity": 0.7 },
           });
         }
       }
-      if (points.length > 1) {
+      const fitPts = (routeGeometry && routeGeometry.length > 1) ? routeGeometry : points;
+      if (fitPts.length > 1) {
         const bounds = new maplibregl.LngLatBounds();
-        points.forEach((p) => bounds.extend([p.lng, p.lat]));
+        fitPts.forEach((p) => bounds.extend([p.lng, p.lat]));
         map.fitBounds(bounds, { padding: 50, duration: 0, maxZoom: 9 });
       }
     });
@@ -85,7 +102,8 @@ export function CuratedRoutePreview({ points, className, interactive = false, sh
       map.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfg?.maptilerKey, JSON.stringify(points), interactive, showMarkers]);
+  }, [cfg?.maptilerKey, JSON.stringify(points), JSON.stringify(routeGeometry), interactive, showMarkers]);
+
 
   if (!cfg?.maptilerKey) {
     return (
