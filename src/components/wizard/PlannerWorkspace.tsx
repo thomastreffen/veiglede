@@ -36,10 +36,10 @@ export function PlannerWorkspace({ children, points, summary, routeGeometry }: P
 
       {/* Desktop: map-first workspace */}
       <div className="hidden lg:block relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
-        <div className="grid lg:grid-cols-[400px_minmax(0,1fr)] xl:grid-cols-[440px_minmax(0,1fr)] gap-0 h-[calc(100vh-4rem)]">
+        <div className="grid lg:grid-cols-[460px_minmax(0,1fr)] xl:grid-cols-[500px_minmax(0,1fr)] gap-0 h-[calc(100vh-4rem)]">
         {/* Left planning rail */}
         <aside className="border-r border-border bg-surface overflow-y-auto">
-          <div className="p-5 xl:p-6">{children}</div>
+          <div className="p-6 xl:p-7">{children}</div>
         </aside>
 
         {/* Right map workspace — always interactive */}
