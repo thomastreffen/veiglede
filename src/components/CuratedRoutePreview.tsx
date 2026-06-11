@@ -15,6 +15,12 @@ interface Props {
   interactive?: boolean;
   /** When false, points are only used to fit the viewport (no markers/line). */
   showMarkers?: boolean;
+  /**
+   * Real road geometry (decoded polyline). When provided we draw a solid
+   * orange line along the actual route, instead of the schematic dashed
+   * straight line between points.
+   */
+  routeGeometry?: { lat: number; lng: number }[];
 }
 
 /**
@@ -24,7 +30,8 @@ interface Props {
  * plus a dashed line between them as a "schematic" of the route. The exact
  * road geometry will be computed when the user copies the trip and edits it.
  */
-export function CuratedRoutePreview({ points, className, interactive = false, showMarkers = true }: Props) {
+export function CuratedRoutePreview({ points, className, interactive = false, showMarkers = true, routeGeometry }: Props) {
+
   const ref = useRef<HTMLDivElement>(null);
   const cfg = useRuntimeMapConfig();
 
