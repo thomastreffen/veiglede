@@ -158,9 +158,6 @@ function Landing() {
     if (document.title !== t.meta.title) document.title = t.meta.title;
   }
 
-  // Logged-in users get the personalized Home dashboard instead of the marketing page.
-  if (!loading && user) return <Navigate to="/home" replace />;
-
   useEffect(() => {
     const id = setInterval(() => {
       setHeroIndex((i) => (i + 1) % HERO_IMAGES.length);
@@ -176,6 +173,13 @@ function Landing() {
   }, []);
 
   const season = useMemo(() => getSeason(new Date().getMonth()), []);
+
+  // Logged-in users get the personalized Home dashboard instead of the
+  // marketing page. Keep this AFTER all hooks above so the hook order is
+  // stable across the loading → authenticated transition. Otherwise React
+  // throws "Rendered fewer hooks than expected" on the very first load,
+  // surfacing as "This page didn't load. Try again or head home."
+  if (!loading && user) return <Navigate to="/home" replace />;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#1a1a1a]">
