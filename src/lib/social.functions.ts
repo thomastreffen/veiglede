@@ -4,8 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { signAvatarServer } from "@/lib/avatar.server";
 
-const ReactionEnum = z.enum(["fire", "clap", "pin"]);
+const ReactionEnum = z.enum(["fire", "road", "pin", "coffee", "drive"]);
 export type ReactionKey = z.infer<typeof ReactionEnum>;
+export const REACTION_KEYS: ReactionKey[] = ["fire", "road", "pin", "coffee", "drive"];
 
 const UuidSchema = z.string().uuid();
 
