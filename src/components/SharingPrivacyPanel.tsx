@@ -301,6 +301,12 @@ export function SharingPrivacyPanel({ trip, tracking, liveSession, onOpenShare }
                 Bakgrunnsdeling kan stoppe når mobilen låses eller nettleseren legges i bakgrunnen. Hold Veiglede åpen for best resultat.
               </p>
             )}
+            {liveOn && broadcastStale && (
+              <p className="mt-1 inline-flex items-start gap-1.5 text-[11px] text-amber-500 font-semibold leading-relaxed">
+                <span>⚠️</span>
+                Nettleseren kan ha satt live-deling på pause. Åpne Veiglede for å sende ny posisjon.
+              </p>
+            )}
           </div>
         </div>
 
