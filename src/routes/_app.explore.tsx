@@ -119,7 +119,10 @@ function TripsTab() {
     staleTime: 60_000,
   });
   const trips = data ?? [];
-  const tripIds = useMemo(() => trips.map((t) => t.id).filter(Boolean), [trips]);
+  const tripIds = useMemo(
+    () => [...trips.map((t) => t.id).filter(Boolean), ...CURATED_TRIPS.map((c) => c.id)],
+    [trips],
+  );
 
   const { data: statsMap } = useQuery({
     queryKey: ["trip-social-stats", tripIds],
