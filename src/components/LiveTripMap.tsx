@@ -73,14 +73,15 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
     return () => { cancelled = true; };
   }, []);
 
+  // Mount the map ONCE per mapKey. Re-mounting on every session update is
+  // what caused the public follower page to "blink" / reload on every fix.
   useEffect(() => {
     if (!mapKey || !containerRef.current || mapRef.current) return;
-    const initial = session ? [session.lng, session.lat] as [number, number] : [10.75, 60.0] as [number, number];
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${mapKey}`,
-      center: initial,
-      zoom: session ? 12 : 5,
+      center: [10.75, 60.0],
+      zoom: 5,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
@@ -89,16 +90,24 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
     const raf = requestAnimationFrame(() => { try { map.resize(); } catch {} });
     const t1 = setTimeout(() => { try { map.resize(); } catch {} }, 100);
     const t2 = setTimeout(() => { try { map.resize(); } catch {} }, 400);
+    // Disable auto-follow when the viewer pans/zooms manually.
+    const onUserMove = (e: { originalEvent?: unknown }) => {
+      if (e.originalEvent) setFollowLive(false);
+    };
+    map.on("dragstart", onUserMove);
+    map.on("zoomstart", onUserMove);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t1);
       clearTimeout(t2);
+      map.off("dragstart", onUserMove);
+      map.off("zoomstart", onUserMove);
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
       markerElRef.current = null;
     };
-  }, [mapKey, session]);
+  }, [mapKey]);
 
   useEffect(() => {
     const map = mapRef.current;
