@@ -264,6 +264,15 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
             Sist oppdatert {formatRelative(session.updated_at)}
           </div>
         )}
+        {session && !followLive && (
+          <button
+            type="button"
+            onClick={handleFollow}
+            className="absolute left-3 bottom-3 z-30 rounded-full bg-primary text-primary-foreground px-3 py-2 text-[12px] font-semibold shadow-md"
+          >
+            Følg live-posisjon
+          </button>
+        )}
         {bottomMessage && (
           <div className="absolute bottom-3 left-3 max-w-[60%] rounded-xl border border-border bg-background/90 backdrop-blur p-3 text-xs text-foreground">
             {bottomMessage}
