@@ -532,12 +532,16 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   const mapPoints: RoutePoint[] = useMemo(() => {
     const pts: RoutePoint[] = [];
     if (originPlace) pts.push({ lat: originPlace.lat, lng: originPlace.lng, label: originPlace.name ?? originPlace.label ?? "Start" });
-    for (const r of viaRows) {
+    for (let i = 0; i < rows.length - 1; i++) {
+      const r = rows[i];
       if (r.place) pts.push({ lat: r.place.lat, lng: r.place.lng, label: r.place.name ?? r.text });
     }
-    if (destinationRow?.place) pts.push({ lat: destinationRow.place.lat, lng: destinationRow.place.lng, label: destinationRow.place.name ?? destinationRow.text });
+    const last = rows[rows.length - 1];
+    if (last?.place) pts.push({ lat: last.place.lat, lng: last.place.lng, label: last.place.name ?? last.text });
     return pts;
-  }, [originPlace, viaRows, destinationRow]);
+  }, [originPlace, rows]);
+  const mapPointsKey = useMemo(() => mapPoints.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join("|"), [mapPoints]);
+
 
   // Live route preview: when we have ≥2 resolved points, ask the routing
   // engine for the real road geometry so the map shows the actual route
