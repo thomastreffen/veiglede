@@ -539,12 +539,68 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     return pts;
   }, [originPlace, viaRows, destinationRow]);
 
-  const mapSummary = mapPoints.length >= 2
-    ? `${styleMeta(style).label}${selectedVehicle ? ` · ${selectedVehicle.name}` : ""} · ${mapPoints.length} punkter`
-    : selectedVehicle ? `${styleMeta(style).label} · ${selectedVehicle.name}` : undefined;
+  // Live route preview: when we have ≥2 resolved points, ask the routing
+  // engine for the real road geometry so the map shows the actual route
+  // (not just a dashed straight line). Debounced + abortable so typing in
+  // the planner doesn't fire a request on every keystroke.
+  const [livePreview, setLivePreview] = useState<{
+    geometry: { lat: number; lng: number }[];
+    distanceKm: number;
+    durationMin: number;
+    pending: boolean;
+  } | null>(null);
+  const livePreviewSeq = useRef(0);
+  useEffect(() => {
+    if (mapPoints.length < 2) { setLivePreview(null); return; }
+    const seq = ++livePreviewSeq.current;
+    setLivePreview((p) => (p ? { ...p, pending: true } : { geometry: [], distanceKm: 0, durationMin: 0, pending: true }));
+    const handle = setTimeout(async () => {
+      try {
+        const origin = mapPoints[0];
+        const destination = mapPoints[mapPoints.length - 1];
+        const waypoints = mapPoints.slice(1, -1);
+        const r = await getRoute({
+          origin: { lat: origin.lat, lng: origin.lng },
+          destination: { lat: destination.lat, lng: destination.lng },
+          waypoints: waypoints.length ? waypoints.map((w) => ({ lat: w.lat, lng: w.lng })) : undefined,
+          vehicleType: selectedVehicle?.type,
+          routeStyle: style,
+          avoidHighways: avoidHighway,
+          avoidFerries: !!selectedVehicle?.drivingFlags?.["no-ferry"],
+        });
+        if (seq !== livePreviewSeq.current) return;
+        setLivePreview({
+          geometry: r.geometry,
+          distanceKm: r.distanceKm,
+          durationMin: r.durationMin,
+          pending: false,
+        });
+      } catch {
+        if (seq !== livePreviewSeq.current) return;
+        setLivePreview((p) => (p ? { ...p, pending: false } : null));
+      }
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [mapPoints, style, avoidHighway, selectedVehicle?.type, selectedVehicle?.drivingFlags]);
+
+  const mapSummary = (() => {
+    if (livePreview && livePreview.geometry.length > 1) {
+      const h = Math.floor(livePreview.durationMin / 60);
+      const m = Math.round(livePreview.durationMin % 60);
+      const dur = h ? `${h}t ${m}min` : `${m}min`;
+      return `${livePreview.distanceKm} km · ${dur}${livePreview.pending ? " · oppdaterer…" : ""}`;
+    }
+    if (mapPoints.length >= 2) return `${mapPoints.length} punkter · beregner rute…`;
+    return selectedVehicle ? `${styleMeta(style).label} · ${selectedVehicle.name}` : undefined;
+  })();
 
   return (
-    <PlannerWorkspace points={mapPoints} summary={mapSummary}>
+    <PlannerWorkspace
+      points={mapPoints}
+      summary={mapSummary}
+      routeGeometry={livePreview?.geometry}
+    >
+
     <div className="py-4 md:py-8 max-w-2xl mx-auto pb-32 md:pb-12 lg:py-0 lg:max-w-none lg:pb-12">
 
       <div className="flex items-center justify-between">
