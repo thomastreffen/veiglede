@@ -12,8 +12,9 @@ import {
   VEHICLES, ROUTE_STYLES,
   type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
+import { CURATED_TRIPS, COUNTRY_LABEL, type Country, type CuratedTrip } from "@/lib/curated-trips";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn } from "lucide-react";
+import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame } from "lucide-react";
 import { useT } from "@/i18n/provider";
 import { useAuth } from "@/lib/auth";
 
