@@ -282,7 +282,7 @@ function TripsTab() {
         </Select>
       </section>
 
-      {/* Curated — always rendered. If macroRegion has no matches, fall back to "alle". */}
+      {/* Curated — primary list filtered/sorted by selected macro-region. */}
       <section className="mt-8">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div>
@@ -290,21 +290,21 @@ function TripsTab() {
               <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
             </p>
             <h2 className="font-display text-xl uppercase mt-1">
-              {macroRegion !== "all" ? `Inspirasjon i ${MACRO_REGION_LABEL[macroRegion]}` : "Inspirasjon for neste tur"}
+              {macroRegion !== "all" ? `Populært i ${MACRO_REGION_LABEL[macroRegion]}` : "Inspirasjon for neste tur"}
             </h2>
-            <p className="text-xs text-muted-foreground">Ekte ruter med roadbook, klare til å kopieres eller tilpasses.</p>
+            <p className="text-xs text-muted-foreground">Ekte ruter med ferdig roadbook — klare til å brukes som mal eller kopieres.</p>
           </div>
         </div>
-        {curatedFiltered.length > 0 ? (
+        {curatedSplit.primary.length > 0 ? (
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {curatedFiltered.map((c) => (
+            {curatedSplit.primary.map((c) => (
               <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
             ))}
           </ul>
         ) : (
           <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-6">
             <p className="font-display text-lg uppercase">Ingen kuraterte ruter i {macroRegion !== "all" ? MACRO_REGION_LABEL[macroRegion] : "dette utvalget"} ennå</p>
-            <p className="mt-1 text-xs text-muted-foreground">Her er noen nærliggende forslag i mellomtiden:</p>
+            <p className="mt-1 text-xs text-muted-foreground">Vi jobber med flere — i mellomtiden, prøv disse:</p>
             <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {CURATED_TRIPS.slice(0, 3).map((c) => (
                 <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
@@ -313,6 +313,20 @@ function TripsTab() {
           </div>
         )}
       </section>
+
+      {/* Andre populære turer i Norge — only when a macro-region is selected. */}
+      {macroRegion !== "all" && curatedSplit.other.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl uppercase">Andre populære turer i Norge</h2>
+          <p className="text-xs text-muted-foreground">Klassikere utenfor {MACRO_REGION_LABEL[macroRegion]} — verdt en lengre tur.</p>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {curatedSplit.other.slice(0, 8).map((c) => (
+              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
 
       {/* Populære turer */}
       {popular.length > 0 && sort === "newest" && country === "all" && (
