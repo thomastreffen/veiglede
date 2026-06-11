@@ -53,7 +53,11 @@ export function CopyTripButton({
     return (
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate({ to: "/auth" }); }}
+        onClick={(e) => {
+          e.preventDefault(); e.stopPropagation();
+          const redirect = typeof window !== "undefined" ? window.location.pathname : undefined;
+          navigate({ to: "/auth", search: { redirect } });
+        }}
         className={cls}
       >
         <LogIn className="h-4 w-4" /> Logg inn for å kopiere tur
