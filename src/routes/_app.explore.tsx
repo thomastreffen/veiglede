@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -13,10 +13,12 @@ import {
   type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
 import { CURATED_TRIPS, COUNTRY_LABEL, MACRO_REGION_LABEL, curatedRegionRelevance, type Country, type CuratedTrip, type MacroRegion } from "@/lib/curated-trips";
+import { curatedRelevanceScore, distanceToTrip, homeCountryForLocale, isForeignVisitorLocale, NEAR_ME_LABELS, FOREIGN_NORWAY_HEADLINE } from "@/lib/location-relevance";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame } from "lucide-react";
-import { useT } from "@/i18n/provider";
+import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame, Navigation, Loader2 } from "lucide-react";
+import { useT, useI18n } from "@/i18n/provider";
 import { useAuth } from "@/lib/auth";
+
 
 const ExploreSearch = z.object({
   tab: z.enum(["turer", "brukere"]).optional(),
