@@ -548,6 +548,14 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
               placeholder="Hvor starter turen?"
               useAnywayLabel="Bruk mitt avreisested"
             />
+            <button
+              type="button"
+              onClick={useMyLocationAsOrigin}
+              disabled={originLocating}
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-background px-3 py-1.5 text-[12px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
+            >
+              {originLocating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "📍"} Bruk min posisjon
+            </button>
             {errors.origin && (
               <p className="text-[11px] font-semibold text-destructive">{errors.origin}</p>
             )}
