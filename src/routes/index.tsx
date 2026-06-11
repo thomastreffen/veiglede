@@ -87,10 +87,10 @@ const REGIONS = [
   { name: "Sørlandet", km: "200–600 km", img: routeAtlanterhavsveien, color: "#c9a84c" },
 ];
 
-const SCENIC_ROUTES = [
-  { name: "Atlanterhavsveien", km: "~ 160 km", img: routeAtlanterhavsveien },
-  { name: "Trollstigen", km: "106 km", img: routeTrollstigen },
-  { name: "Sognefjellet", km: "108 km", img: routeSognefjellet },
+const SCENIC_ROUTES: Array<{ name: string; km: string; img: string; slug: string }> = [
+  { name: "Atlanterhavsveien", km: "~ 160 km", img: routeAtlanterhavsveien, slug: "atlanterhavsveien" },
+  { name: "Trollstigen", km: "106 km", img: routeTrollstigen, slug: "sognefjellet" },
+  { name: "Sognefjellet", km: "108 km", img: routeSognefjellet, slug: "sognefjellet" },
 ];
 
 const STEP_ICONS = [Bike, Sparkles, Share2, Camera];
