@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Plus, Trash2, Sparkles, Loader2, FileText, X, Check } from "lucide-react";
