@@ -399,6 +399,65 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
+/* ============ CURATED CARD ============ */
+
+function CuratedTripCard({ trip, stats }: { trip: CuratedTrip; stats?: TripSocialStats }) {
+  return (
+    <Link
+      to="/inspirasjon/$slug"
+      params={{ slug: trip.slug }}
+      className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/60 transition-colors h-full"
+    >
+      <div className="relative h-32">
+        <img src={trip.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
+        <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/15 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+          <Sparkles className="h-2.5 w-2.5" /> Kuratert
+        </span>
+        <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full border border-border bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] text-muted-foreground">
+          {COUNTRY_LABEL[trip.country]}
+        </span>
+      </div>
+      <div className="p-4">
+        <p className="text-[10px] uppercase tracking-wider text-primary">{trip.region}</p>
+        <h3 className="mt-0.5 font-display text-lg uppercase leading-tight group-hover:text-primary">{trip.title}</h3>
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{trip.shortDescription}</p>
+        <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground truncate">
+          <MapPin className="h-3 w-3 shrink-0 text-primary" />
+          {trip.origin} → {trip.destination}
+        </p>
+        <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><RouteIcon className="h-3 w-3" /> {trip.distanceKm} km</span>
+          <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> {trip.stopsCount} stopp</span>
+          <span className="inline-flex items-center gap-1 truncate" title={trip.drivingTime}>{trip.drivingTime}</span>
+        </div>
+        {stats && (stats.drive > 0 || stats.saves > 0 || stats.reactions > 0) && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {stats.drive > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                <Flag className="h-3 w-3" /> {stats.drive} vil kjøre
+              </span>
+            )}
+            {stats.saves > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Bookmark className="h-3 w-3" /> {stats.saves} lagret
+              </span>
+            )}
+            {stats.reactions > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Flame className="h-3 w-3" /> {stats.reactions} reaksjoner
+              </span>
+            )}
+          </div>
+        )}
+        <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+          Se roadbook <ArrowRight className="h-3 w-3" />
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 /* ============ EMPTY STATE ============ */
 
 function EmptyState({ title, body }: { title: string; body: string }) {
