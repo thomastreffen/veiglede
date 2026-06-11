@@ -62,7 +62,7 @@ function GaragePage() {
   };
 
   return (
-    <div className="py-5 md:py-8 max-w-5xl mx-auto">
+    <div className="py-5 md:py-8 w-full">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{g.eyebrow}</p>
