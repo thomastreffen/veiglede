@@ -415,6 +415,23 @@ function TripsTab() {
         </section>
       )}
 
+      {/* Foreign visitor — "Norway roadtrips worth planning". */}
+      {foreignHeadline && foreignNorwaySuggestions.length > 0 && country !== "no" && (
+        <section className="mt-8">
+          <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
+            <Sparkles className="h-3 w-3" /> {COUNTRY_LABEL.no}
+          </p>
+          <h2 className="font-display text-xl uppercase mt-1">{foreignHeadline}</h2>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {foreignNorwaySuggestions.map((c) => (
+              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+
+
 
       {/* Populære turer */}
       {popular.length > 0 && sort === "newest" && country === "all" && (
