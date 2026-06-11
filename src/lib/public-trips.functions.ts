@@ -18,11 +18,32 @@ export interface PublicTripPayload {
   stops?: Json[];
   /** Owner info for attribution + linking to public profile. */
   owner?: {
+    id?: string;
     displayName: string;
     username?: string;
     avatarUrl?: string;
     isPublicProfile: boolean;
   };
+  /** Resolved garage vehicle identity (only when public). */
+  vehicleIdentity?: {
+    name?: string;
+    type: string;
+    energy?: string;
+    description?: string;
+  };
+}
+
+/** Human label for vehicle energy/fuel type (kept in sync with vehicles-store). */
+function energyLabel(e?: string): string | undefined {
+  switch (e) {
+    case "petrol": return "Bensin";
+    case "diesel": return "Diesel";
+    case "electric": return "Elektrisk";
+    case "hybrid":
+    case "hybrid-petrol": return "Hybrid (bensin)";
+    case "hybrid-diesel": return "Hybrid (diesel)";
+    default: return undefined;
+  }
 }
 
 /**
