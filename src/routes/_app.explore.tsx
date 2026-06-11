@@ -212,11 +212,13 @@ function TripsTab() {
             {ROUTE_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.emoji} {s.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={sort} onValueChange={(v) => setSort(v as "newest" | "popular")}>
+        <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
           <SelectTrigger><SelectValue placeholder="Sortering" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="newest">Nyeste</SelectItem>
-            <SelectItem value="popular">Mest lagret</SelectItem>
+            <SelectItem value="most_drive">🏁 Mest "Vil kjøre"</SelectItem>
+            <SelectItem value="most_saved">💾 Mest lagret</SelectItem>
+            <SelectItem value="most_reactions">🔥 Mest reaksjoner</SelectItem>
           </SelectContent>
         </Select>
       </section>
@@ -225,7 +227,7 @@ function TripsTab() {
       {popular.length > 0 && sort === "newest" && (
         <section className="mt-8">
           <h2 className="font-display text-xl uppercase">Populære turer</h2>
-          <p className="text-xs text-muted-foreground">Turene som andre lagrer akkurat nå.</p>
+          <p className="text-xs text-muted-foreground">Turene som andre lagrer og vil kjøre akkurat nå.</p>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {popular.map(renderCard)}
           </ul>
@@ -235,7 +237,10 @@ function TripsTab() {
       {/* Main list */}
       <section className="mt-8">
         <h2 className="font-display text-xl uppercase">
-          {sort === "popular" ? "Mest lagret" : "Nye offentlige turer"}
+          {sort === "most_drive" ? "Mest «Vil kjøre»"
+            : sort === "most_saved" ? "Mest lagret"
+            : sort === "most_reactions" ? "Mest reaksjoner"
+            : "Nye offentlige turer"}
         </h2>
         {isLoading ? (
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
