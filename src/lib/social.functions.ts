@@ -122,12 +122,15 @@ export const toggleReactionFn = createServerFn({ method: "POST" })
     return { active: true };
   });
 
-export interface TripReactionCounts {
-  fire: number;
-  clap: number;
-  pin: number;
+export type TripReactionCounts = {
+  [K in ReactionKey]: number;
+} & {
   mine: ReactionKey[];
-}
+};
+
+const emptyCounts = (): TripReactionCounts => ({
+  fire: 0, road: 0, pin: 0, coffee: 0, drive: 0, mine: [],
+});
 
 export const getTripReactionsFn = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({
@@ -139,11 +142,11 @@ export const getTripReactionsFn = createServerFn({ method: "POST" })
       .from("trip_reactions").select("trip_id, reaction, user_id")
       .in("trip_id", data.tripIds);
     const out: Record<string, TripReactionCounts> = {};
-    for (const id of data.tripIds) out[id] = { fire: 0, clap: 0, pin: 0, mine: [] };
+    for (const id of data.tripIds) out[id] = emptyCounts();
     for (const r of rows ?? []) {
       const tid = r.trip_id as string;
       const k = r.reaction as ReactionKey;
-      if (!out[tid]) continue;
+      if (!out[tid] || !REACTION_KEYS.includes(k)) continue;
       out[tid][k] += 1;
       if (data.viewerId && r.user_id === data.viewerId) out[tid].mine.push(k);
     }
