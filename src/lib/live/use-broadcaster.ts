@@ -95,15 +95,13 @@ export function useLiveBroadcasterAdapter(args: UseLiveBroadcasterArgs): UseLive
     }
   }, [broadcaster, enabled, userId, tripId, status, lastStopName, intervalMs]);
 
-  // Stop on unmount only if this hook was the starter.
-  useEffect(() => {
-    return () => {
-      if (startedRef.current) {
-        startedRef.current = false;
-        void broadcaster.stop(tripId);
-      }
-    };
-  }, [broadcaster, tripId]);
+  // IMPORTANT: do NOT stop the broadcaster on unmount.
+  // "Ended" must only happen when the user explicitly stops sharing or the
+  // trip is marked completed. Navigating between trip subpages (overview →
+  // roadbook → stop detail) unmounts this hook, but the broadcaster is a
+  // singleton that should keep publishing in the background. The next mount
+  // (start) is a no-op for an already-running trip.
+  // The trip page owns explicit stop via its own UI (Stopp live-deling).
 
   return {
     snapshot,
