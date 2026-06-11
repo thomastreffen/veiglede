@@ -310,11 +310,48 @@ function TripsTab() {
           className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 disabled:opacity-60"
         >
           {geoStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
-          {geoStatus === "loading" ? nearMeT.loading : geoStatus === "ready" ? nearMeT.nearYou : nearMeT.cta}
+          {geoStatus === "loading"
+            ? nearMeT.loading
+            : geoStatus === "ready"
+              ? nearMeT.nearYou
+              : geoStatus === "denied" || geoStatus === "timeout" || geoStatus === "error"
+                ? "Prøv igjen"
+                : nearMeT.cta}
         </button>
+        {(geoStatus === "denied" || geoStatus === "timeout" || geoStatus === "error" || geoStatus === "unsupported") && (
+          <button
+            type="button"
+            onClick={scrollToManualPicker}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+          >
+            <MapPin className="h-3.5 w-3.5" /> Velg område manuelt
+          </button>
+        )}
         <p className="text-[11px] text-muted-foreground">{nearMeT.tip}</p>
-        {geoStatus === "denied" && <p className="text-[11px] text-amber-500">{nearMeT.denied}</p>}
+        {geoStatus === "denied" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Posisjonen ble avslått. Du kan endre tillatelsen i nettleserinnstillingene, eller velge område manuelt under.
+          </p>
+        )}
+        {geoStatus === "timeout" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Vi klarte ikke hente posisjonen akkurat nå. Du kan prøve igjen eller velge område manuelt.
+          </p>
+        )}
+        {geoStatus === "error" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Noe gikk galt under posisjonshentingen. Prøv igjen eller velg område manuelt.
+          </p>
+        )}
+        {geoStatus === "unsupported" && (
+          <p className="text-[11px] text-amber-500 basis-full">
+            Nettleseren din støtter ikke posisjon her. Velg område manuelt under.
+          </p>
+        )}
       </section>
+
+      {/* Manual area picker anchor — country + macro-region chips. */}
+      <div id="manual-area-picker" />
 
       {/* Country chips */}
       <section className="mt-4 flex flex-wrap gap-2">
