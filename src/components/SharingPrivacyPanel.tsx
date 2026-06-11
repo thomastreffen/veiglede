@@ -5,6 +5,7 @@ import { flushTripsNow } from "@/lib/cloud-sync";
 import {
   useLiveOptIn, isLiveActive, endLiveSession, type LiveSession,
 } from "@/lib/live-tracking";
+import { useLiveBroadcaster } from "@/lib/live-tracking";
 import { trackingApi, statusMeta, type TripStatus, type TripTracking } from "@/lib/trip-tracking";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -35,6 +36,10 @@ export function SharingPrivacyPanel({ trip, tracking, liveSession, onOpenShare }
   const { user } = useAuth();
   const [liveOn, setLiveOn] = useLiveOptIn(tripId);
   const session = liveSession ?? null;
+  // Read-only subscription so we can show "stale" hints to the owner when
+  // the browser/OS has paused background location updates.
+  const { snapshot: broadcastSnapshot } = useLiveBroadcaster({ tripId });
+  const broadcastStale = broadcastSnapshot.status === "stale";
 
   const [copied, setCopied] = useState(false);
 
@@ -294,6 +299,12 @@ export function SharingPrivacyPanel({ trip, tracking, liveSession, onOpenShare }
             {liveOn && (
               <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
                 Bakgrunnsdeling kan stoppe når mobilen låses eller nettleseren legges i bakgrunnen. Hold Veiglede åpen for best resultat.
+              </p>
+            )}
+            {liveOn && broadcastStale && (
+              <p className="mt-1 inline-flex items-start gap-1.5 text-[11px] text-amber-500 font-semibold leading-relaxed">
+                <span>⚠️</span>
+                Nettleseren kan ha satt live-deling på pause. Åpne Veiglede for å sende ny posisjon.
               </p>
             )}
           </div>

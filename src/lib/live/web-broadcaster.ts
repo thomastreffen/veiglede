@@ -25,10 +25,16 @@ import {
 } from "./types";
 
 type SendSource = "immediate" | "heartbeat" | "manual" | "poll" | "resume";
-const AUTO_SEND_THROTTLE_MS = 5_000;
-const POLL_INTERVAL_MS = 10_000;
-const DEFAULT_HEARTBEAT_MS = 30_000;
-const STALE_AFTER_MS = 2 * 60_000;
+// Minimum time between auto sends. While moving we want frequent updates so
+// the public follower sees a live feel, not 30-second snapshots.
+const AUTO_SEND_THROTTLE_MS = 3_000;
+// If the user has moved at least this many meters since the last sent
+// position, bypass the time throttle entirely (subject to a hard floor).
+const MOVED_FAR_M = 15;
+const AUTO_SEND_HARD_FLOOR_MS = 1_500;
+const POLL_INTERVAL_MS = 8_000;
+const DEFAULT_HEARTBEAT_MS = 15_000;
+const STALE_AFTER_MS = 90_000;
 
 function toErrorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -164,6 +170,13 @@ export class WebLiveBroadcaster implements LiveBroadcaster {
       if (cur === s) this.trips.delete(tripId);
     }, 0);
   }
+
+  async stopAll(): Promise<void> {
+    const ids = Array.from(this.trips.keys());
+    await Promise.all(ids.map((id) => this.stop(id)));
+  }
+
+
 
   update(tripId: string, patch: Partial<StartOptions>): void {
     const s = this.trips.get(tripId);
@@ -345,7 +358,22 @@ export class WebLiveBroadcaster implements LiveBroadcaster {
 
     if (source !== "manual") {
       const sinceLast = Date.now() - s.lastAutoSentAt;
-      if (sinceLast < AUTO_SEND_THROTTLE_MS) {
+      // Distance bypass: if user moved >= MOVED_FAR_M since last sent
+      // position, only enforce the hard floor (avoid spamming sub-1.5s).
+      const movedFar = (() => {
+        const last = s.lastSent;
+        const cur = s.lastPos;
+        if (!last || !cur) return false;
+        try {
+          const km = distanceKm(
+            { lat: last.lat, lng: last.lng },
+            { lat: cur.lat, lng: cur.lng },
+          );
+          return km * 1000 >= MOVED_FAR_M;
+        } catch { return false; }
+      })();
+      const minGap = movedFar ? AUTO_SEND_HARD_FLOOR_MS : AUTO_SEND_THROTTLE_MS;
+      if (sinceLast < minGap) {
         return { ok: false, error: `throttled (${sinceLast}ms)` };
       }
     }

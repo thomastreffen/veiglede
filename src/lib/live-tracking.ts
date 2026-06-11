@@ -139,6 +139,27 @@ export function useLiveOptIn(tripId: string): [boolean, (v: boolean) => void] {
   return [on, (v) => setLiveOptIn(tripId, v)];
 }
 
+/** Returns all trip ids currently opted in for live sharing. */
+export function useLiveOptInTripIds(): string[] {
+  const [ids, setIds] = useState<string[]>(() => Object.keys(readOptInMap()));
+  useEffect(() => {
+    const sync = () => setIds(Object.keys(readOptInMap()));
+    if (typeof window === "undefined") return;
+    window.addEventListener("vg:live-optin-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("vg:live-optin-change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  return ids;
+}
+
+/** Clear every live opt-in flag (used on logout). */
+export function clearAllLiveOptIns() {
+  writeOptInMap({});
+}
+
 // ---------- share-token cache (per tripId+userId) ----------
 const tokenCache = new Map<string, string>();
 function cacheKey(tripId: string, userId: string) { return `${tripId}::${userId}`; }

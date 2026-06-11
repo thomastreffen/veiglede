@@ -22,6 +22,7 @@ export class NativeLiveBroadcaster implements LiveBroadcaster {
     console.warn(`[live:native] start(${tripId}) — ${NOT_IMPLEMENTED}`);
   }
   async stop(_tripId: string): Promise<void> { /* noop */ }
+  async stopAll(): Promise<void> { /* noop */ }
   update(_tripId: string, _patch: Partial<StartOptions>): void { /* noop */ }
 
   getStatus(tripId: string): BroadcastSnapshot {
