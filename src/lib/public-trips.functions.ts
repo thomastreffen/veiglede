@@ -18,11 +18,32 @@ export interface PublicTripPayload {
   stops?: Json[];
   /** Owner info for attribution + linking to public profile. */
   owner?: {
+    id?: string;
     displayName: string;
     username?: string;
     avatarUrl?: string;
     isPublicProfile: boolean;
   };
+  /** Resolved garage vehicle identity (only when public). */
+  vehicleIdentity?: {
+    name?: string;
+    type: string;
+    energy?: string;
+    description?: string;
+  };
+}
+
+/** Human label for vehicle energy/fuel type (kept in sync with vehicles-store). */
+function energyLabel(e?: string): string | undefined {
+  switch (e) {
+    case "petrol": return "Bensin";
+    case "diesel": return "Diesel";
+    case "electric": return "Elektrisk";
+    case "hybrid":
+    case "hybrid-petrol": return "Hybrid (bensin)";
+    case "hybrid-diesel": return "Hybrid (diesel)";
+    default: return undefined;
+  }
 }
 
 /**
@@ -76,10 +97,29 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
           const avatarUrl = (await signAvatarServer((ownerProfile.avatar_url as string | null) ?? undefined)) ?? undefined;
           const isPublicProfile = ownerProfile.is_public === true && !!ownerProfile.username;
           owner = {
+            id: ownerId,
             displayName: (ownerProfile.display_name as string | null) ?? (ownerProfile.username as string | null) ?? "En reisende",
             username: isPublicProfile ? (ownerProfile.username as string) : undefined,
             avatarUrl,
             isPublicProfile,
+          };
+        }
+      }
+
+      // Resolve vehicle identity from the owner's garage when public.
+      let vehicleIdentity: PublicTripPayload["vehicleIdentity"] | undefined;
+      const vehicleId = typeof match["vehicleId"] === "string" ? (match["vehicleId"] as string) : undefined;
+      if (ownerId && vehicleId) {
+        const { data: vrow } = await supabaseAdmin
+          .from("vehicles").select("data").eq("user_id", ownerId).maybeSingle();
+        const vBlob = (vrow?.data as { vehicles?: Array<Record<string, unknown>> } | null) ?? null;
+        const veh = vBlob?.vehicles?.find((v) => v?.id === vehicleId);
+        if (veh && veh.isPublic !== false) {
+          vehicleIdentity = {
+            name: typeof veh.name === "string" ? veh.name : undefined,
+            type: typeof veh.type === "string" ? veh.type : String(match["vehicle"] ?? "car"),
+            energy: energyLabel(typeof veh.energy === "string" ? veh.energy : undefined),
+            description: typeof veh.description === "string" ? veh.description : undefined,
           };
         }
       }
@@ -107,7 +147,7 @@ export const getPublicTripByToken = createServerFn({ method: "GET" })
         originLoc: undefined,
         destinationLoc: undefined,
       };
-      return { found: true, trip: safeTrip, days, stops, owner };
+      return { found: true, trip: safeTrip, days, stops, owner, vehicleIdentity };
     }
 
     return { found: false };

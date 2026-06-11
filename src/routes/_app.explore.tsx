@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { fetchPublicTrips, type PublicTripSummary } from "@/lib/public-trips";
 import { fetchPublicProfilesFn } from "@/lib/public-profiles.functions";
+import { getTripSocialStatsFn, type TripSocialStats } from "@/lib/social.functions";
 import { PublicUserCard } from "@/components/PublicUserCard";
 import { PublicTripCard } from "@/components/PublicTripCard";
 import {
@@ -110,17 +111,27 @@ function TripsTab() {
   const t = useT();
   const ex = t.app.explore;
   const fetcher = useServerFn(fetchPublicTrips);
+  const fetchStats = useServerFn(getTripSocialStatsFn);
   const { data, isLoading } = useQuery({
     queryKey: ["public-trips"],
     queryFn: () => fetcher(),
     staleTime: 60_000,
   });
   const trips = data ?? [];
+  const tripIds = useMemo(() => trips.map((t) => t.id).filter(Boolean), [trips]);
+
+  const { data: statsMap } = useQuery({
+    queryKey: ["trip-social-stats", tripIds],
+    enabled: tripIds.length > 0,
+    queryFn: () => fetchStats({ data: { tripIds } }),
+    staleTime: 60_000,
+  });
+  const stats: Record<string, TripSocialStats> = statsMap ?? {};
 
   const [region, setRegion] = useState<string>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
-  const [sort, setSort] = useState<"newest" | "popular">("newest");
+  const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
 
   const regions = useMemo(() => {
     const set = new Set<string>();
@@ -135,19 +146,28 @@ function TripsTab() {
       if (style !== "all" && tr.style !== style) return false;
       return true;
     });
-    if (sort === "popular") {
-      return [...list].sort((a, b) => (b.copyCount - a.copyCount) || (b.createdAt - a.createdAt));
+    const s = (id: string) => stats[id] ?? { drive: 0, saves: 0, reactions: 0 };
+    if (sort === "most_saved") {
+      return [...list].sort((a, b) => (s(b.id).saves + b.copyCount) - (s(a.id).saves + a.copyCount) || (b.createdAt - a.createdAt));
+    }
+    if (sort === "most_drive") {
+      return [...list].sort((a, b) => s(b.id).drive - s(a.id).drive || (b.createdAt - a.createdAt));
+    }
+    if (sort === "most_reactions") {
+      return [...list].sort((a, b) => s(b.id).reactions - s(a.id).reactions || (b.createdAt - a.createdAt));
     }
     return list;
-  }, [trips, region, vehicle, style, sort]);
+  }, [trips, region, vehicle, style, sort, stats]);
 
-  // "Populære turer" highlight strip: top 3 by copyCount (only when there are copies).
+  // "Populære turer" highlight strip: top 3 by combined save+drive intent.
   const popular = useMemo(() => {
     return [...trips]
-      .filter((tr) => tr.copyCount > 0)
-      .sort((a, b) => b.copyCount - a.copyCount)
-      .slice(0, 3);
-  }, [trips]);
+      .map((tr) => ({ tr, score: (stats[tr.id]?.drive ?? 0) + (stats[tr.id]?.saves ?? 0) + tr.copyCount }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((x) => x.tr);
+  }, [trips, stats]);
 
   const renderCard = (tr: PublicTripSummary) => (
     <li key={tr.shareToken}>
@@ -161,6 +181,7 @@ function TripsTab() {
         ownerName={tr.ownerName}
         ownerUsername={tr.ownerUsername}
         ownerAvatarUrl={tr.ownerAvatarUrl}
+        stats={stats[tr.id]}
         status="offentlig"
       />
     </li>
@@ -191,11 +212,13 @@ function TripsTab() {
             {ROUTE_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.emoji} {s.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={sort} onValueChange={(v) => setSort(v as "newest" | "popular")}>
+        <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
           <SelectTrigger><SelectValue placeholder="Sortering" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="newest">Nyeste</SelectItem>
-            <SelectItem value="popular">Mest lagret</SelectItem>
+            <SelectItem value="most_drive">🏁 Mest "Vil kjøre"</SelectItem>
+            <SelectItem value="most_saved">💾 Mest lagret</SelectItem>
+            <SelectItem value="most_reactions">🔥 Mest reaksjoner</SelectItem>
           </SelectContent>
         </Select>
       </section>
@@ -204,7 +227,7 @@ function TripsTab() {
       {popular.length > 0 && sort === "newest" && (
         <section className="mt-8">
           <h2 className="font-display text-xl uppercase">Populære turer</h2>
-          <p className="text-xs text-muted-foreground">Turene som andre lagrer akkurat nå.</p>
+          <p className="text-xs text-muted-foreground">Turene som andre lagrer og vil kjøre akkurat nå.</p>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {popular.map(renderCard)}
           </ul>
@@ -214,7 +237,10 @@ function TripsTab() {
       {/* Main list */}
       <section className="mt-8">
         <h2 className="font-display text-xl uppercase">
-          {sort === "popular" ? "Mest lagret" : "Nye offentlige turer"}
+          {sort === "most_drive" ? "Mest «Vil kjøre»"
+            : sort === "most_saved" ? "Mest lagret"
+            : sort === "most_reactions" ? "Mest reaksjoner"
+            : "Nye offentlige turer"}
         </h2>
         {isLoading ? (
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

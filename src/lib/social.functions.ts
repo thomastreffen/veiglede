@@ -4,8 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { signAvatarServer } from "@/lib/avatar.server";
 
-const ReactionEnum = z.enum(["fire", "clap", "pin"]);
+const ReactionEnum = z.enum(["fire", "road", "pin", "coffee", "drive"]);
 export type ReactionKey = z.infer<typeof ReactionEnum>;
+export const REACTION_KEYS: ReactionKey[] = ["fire", "road", "pin", "coffee", "drive"];
 
 const UuidSchema = z.string().uuid();
 
@@ -121,12 +122,15 @@ export const toggleReactionFn = createServerFn({ method: "POST" })
     return { active: true };
   });
 
-export interface TripReactionCounts {
-  fire: number;
-  clap: number;
-  pin: number;
+export type TripReactionCounts = {
+  [K in ReactionKey]: number;
+} & {
   mine: ReactionKey[];
-}
+};
+
+const emptyCounts = (): TripReactionCounts => ({
+  fire: 0, road: 0, pin: 0, coffee: 0, drive: 0, mine: [],
+});
 
 export const getTripReactionsFn = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({
@@ -138,11 +142,11 @@ export const getTripReactionsFn = createServerFn({ method: "POST" })
       .from("trip_reactions").select("trip_id, reaction, user_id")
       .in("trip_id", data.tripIds);
     const out: Record<string, TripReactionCounts> = {};
-    for (const id of data.tripIds) out[id] = { fire: 0, clap: 0, pin: 0, mine: [] };
+    for (const id of data.tripIds) out[id] = emptyCounts();
     for (const r of rows ?? []) {
       const tid = r.trip_id as string;
       const k = r.reaction as ReactionKey;
-      if (!out[tid]) continue;
+      if (!out[tid] || !REACTION_KEYS.includes(k)) continue;
       out[tid][k] += 1;
       if (data.viewerId && r.user_id === data.viewerId) out[tid].mine.push(k);
     }
@@ -166,6 +170,41 @@ export const toggleSaveTripFn = createServerFn({ method: "POST" })
     }
     await supabase.from("saved_trips").insert({ user_id: userId, source_trip_id: data.sourceTripId });
     return { saved: true };
+  });
+
+/* ============ TRIP SOCIAL STATS (bulk) ============ */
+
+export interface TripSocialStats {
+  drive: number;
+  saves: number;
+  reactions: number;
+}
+
+/** Bulk lightweight stats for many trips at once (no per-user info). */
+export const getTripSocialStatsFn = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({
+    tripIds: z.array(TripIdSchema).min(1).max(200),
+  }).parse(input))
+  .handler(async ({ data }): Promise<Record<string, TripSocialStats>> => {
+    const out: Record<string, TripSocialStats> = {};
+    for (const id of data.tripIds) out[id] = { drive: 0, saves: 0, reactions: 0 };
+
+    const [{ data: reactionRows }, { data: saveRows }] = await Promise.all([
+      supabaseAdmin.from("trip_reactions").select("trip_id, reaction").in("trip_id", data.tripIds),
+      supabaseAdmin.from("saved_trips").select("source_trip_id").in("source_trip_id", data.tripIds),
+    ]);
+    for (const r of reactionRows ?? []) {
+      const tid = r.trip_id as string;
+      if (!out[tid]) continue;
+      out[tid].reactions += 1;
+      if (r.reaction === "drive") out[tid].drive += 1;
+    }
+    for (const r of saveRows ?? []) {
+      const tid = r.source_trip_id as string;
+      if (!out[tid]) continue;
+      out[tid].saves += 1;
+    }
+    return out;
   });
 
 export const listSavedTripIdsFn = createServerFn({ method: "GET" })
