@@ -22,7 +22,9 @@ function getPhase(session: LiveSession | null | undefined): Phase {
   if (!session) return "waiting";
   if (session.status === "completed") return "ended";
   const age = Date.now() - new Date(session.updated_at).getTime();
-  if (age >= 5 * 60 * 1000) return "stale";
+  // 2 minutes without an update is treated as stale on the public follower
+  // view — phones often suspend background tabs and geolocation after this.
+  if (age >= 2 * 60 * 1000) return "stale";
   if (session.status === "paused") return "paused";
   return "active";
 }
