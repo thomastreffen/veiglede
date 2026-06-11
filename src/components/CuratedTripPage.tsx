@@ -15,7 +15,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { setReturnTo } from "@/lib/return-to";
 import {
-  CURATED_TRIPS, getCuratedTrip, COUNTRY_LABEL, curatedTripPoints,
+  CURATED_TRIPS, getCuratedTrip, COUNTRY_LABEL, curatedTripPoints, getCuratedGeometry,
   type CuratedTrip,
 } from "@/lib/curated-trips";
 
@@ -50,6 +50,7 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
   const navigate = useNavigate();
   const [copying, setCopying] = useState(false);
   const points = useMemo(() => curatedTripPoints(trip), [trip]);
+  const geom = useMemo(() => getCuratedGeometry(trip.slug), [trip.slug]);
 
   const gotoLoginWithReturn = () => {
     if (typeof window !== "undefined") setReturnTo(window.location.pathname);
@@ -80,8 +81,12 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
         vehicle: trip.vehicleSuitability[0] ?? "car",
         aiSummary: trip.whyDrive,
         // Real numeric fields so the copied trip doesn't show 0 km / 0 min.
-        routeDistanceKm: trip.distanceKm,
-        routeDurationMin: trip.estimatedDurationMin,
+        routeDistanceKm: geom?.distanceKm ?? trip.distanceKm,
+        routeDurationMin: geom?.durationMin ?? trip.estimatedDurationMin,
+        // Pre-computed road geometry so the planner shows the full route
+        // immediately on "Tilpass ruten" — no rebuild required.
+        routeGeometry: geom?.geometry,
+        routeProvider: geom?.provider,
         originLoc: trip.originLoc,
         destinationLoc: trip.destinationLoc,
         isRoundTrip: trip.originLoc.lat === trip.destinationLoc.lat
@@ -168,10 +173,18 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
                 <p className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-primary">
                   <MapPin className="h-4 w-4" /> Ruteoversikt
                 </p>
-                <p className="text-[11px] text-muted-foreground">Skjematisk — faktisk vei beregnes når du kopierer turen.</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {geom ? `Faktisk veirute — ${geom.distanceKm} km · ${Math.round(geom.durationMin / 60 * 10) / 10} t` : "Skjematisk — faktisk vei beregnes når du kopierer turen."}
+                </p>
               </div>
-              <CuratedRoutePreview points={points} interactive className="h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-border" />
+              <CuratedRoutePreview
+                points={points}
+                routeGeometry={geom?.geometry}
+                interactive
+                className="h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-border"
+              />
             </section>
+
 
             {/* Why drive */}
             <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
