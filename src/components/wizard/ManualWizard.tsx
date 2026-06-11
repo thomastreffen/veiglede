@@ -557,7 +557,10 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (mapPoints.length < 2) { setLivePreview(null); return; }
     const seq = ++livePreviewSeq.current;
-    setLivePreview((p) => (p ? { ...p, pending: true } : { geometry: [], distanceKm: 0, durationMin: 0, pending: true }));
+    // Drop any prior route geometry immediately so the map never shows a
+    // stale route line for a different set of stops. The dashed schematic
+    // preview takes over until the real road route arrives.
+    setLivePreview({ geometry: [], distanceKm: 0, durationMin: 0, pending: true });
     const handle = setTimeout(async () => {
       try {
         const origin = mapPoints[0];
@@ -581,12 +584,12 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
         });
       } catch {
         if (seq !== livePreviewSeq.current) return;
-        setLivePreview((p) => (p ? { ...p, pending: false } : null));
+        setLivePreview({ geometry: [], distanceKm: 0, durationMin: 0, pending: false });
       }
-    }, 500);
+    }, 400);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapPointsKey, style, avoidHighway, selectedVehicle?.type]);
+  }, [mapPointsKey, style, avoidHighway, selectedVehicle?.type, selectedVehicle?.drivingFlags?.["no-ferry"]]);
 
 
   const mapSummary = (() => {
