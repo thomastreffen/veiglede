@@ -215,7 +215,11 @@ function TripPlanner() {
 
 
   return (
+    <div className="lg:relative lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen">
+    <div className="lg:grid lg:grid-cols-[minmax(0,540px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,620px)_minmax(0,1fr)] lg:h-[calc(100vh-4rem)]">
+    <div className="lg:overflow-y-auto lg:border-r lg:border-border lg:px-5">
     <div className="py-4">
+
       <DemoDebugPanel
         title="Planner debug"
         items={[
@@ -341,7 +345,8 @@ function TripPlanner() {
 
 
       {/* Map */}
-      <section className="mt-4">
+      <section className="mt-4 lg:hidden">
+
         <TripMap
           trip={trip}
           days={tripDays}
@@ -356,11 +361,12 @@ function TripPlanner() {
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
           {td.mapDisclaimer}
         </p>
-        {tracking.status === "active" && livePos && (
-          <OffRouteBanner trip={trip} stops={tripStops} livePos={{ lat: livePos.lat, lng: livePos.lng }} />
-        )}
-        <DetourTotals trip={trip} stops={tripStops} />
       </section>
+      {tracking.status === "active" && livePos && (
+        <OffRouteBanner trip={trip} stops={tripStops} livePos={{ lat: livePos.lat, lng: livePos.lng }} />
+      )}
+      <DetourTotals trip={trip} stops={tripStops} />
+
 
 
       {/* Planning actions — flexible trip model */}
@@ -645,7 +651,24 @@ function TripPlanner() {
         </div>
       )}
     </div>
+    </div>
+    <aside className="hidden lg:block bg-surface-2 overflow-hidden">
+      <TripMap
+        trip={trip}
+        days={tripDays}
+        stops={tripStops}
+        selectedStopId={selectedStopId}
+        onSelectStop={handleSelectStop}
+        suggestionPins={suggestionPins}
+        hoveredSuggestionId={null}
+        height="h-full"
+        livePosition={livePos}
+      />
+    </aside>
+    </div>
+    </div>
   );
+
 }
 
 type Td = ReturnType<typeof useT>["app"]["tripDetail"];
