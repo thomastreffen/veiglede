@@ -799,6 +799,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
         />
       )}
     </div>
+    </PlannerWorkspace>
   );
 }
 
