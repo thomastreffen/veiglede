@@ -435,7 +435,11 @@ function TripsTab() {
               <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
             </p>
             <h2 className="font-display text-xl uppercase mt-1">
-              {macroRegion !== "all" ? `Populært i ${MACRO_REGION_LABEL[macroRegion]}` : "Inspirasjon for neste tur"}
+              {country !== "all" && curatedSplit.primary.length === 0
+                ? `Ingen kuraterte ruter i ${COUNTRY_LABEL[country as Country]} ennå`
+                : macroRegion !== "all"
+                  ? `Populært i ${MACRO_REGION_LABEL[macroRegion]}`
+                  : "Inspirasjon for neste tur"}
             </h2>
             <p className="text-xs text-muted-foreground">Ekte ruter med ferdig roadbook — klare til å brukes som mal eller kopieres.</p>
           </div>
@@ -446,6 +450,47 @@ function TripsTab() {
               <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
             ))}
           </ul>
+        ) : country !== "all" ? (
+          // Country selected, but we haven't seeded curated routes there yet.
+          <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-6">
+            <p className="text-sm text-muted-foreground">
+              Vi har ikke lagt inn kuraterte ruter i {COUNTRY_LABEL[country as Country]} ennå.
+              Du kan fortsatt planlegge din egen tur — eller la deg inspirere av Norge-ruter.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/trips/new"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15"
+              >
+                <RouteIcon className="h-3.5 w-3.5" /> Planlegg en egen tur i {COUNTRY_LABEL[country as Country]}
+              </Link>
+              <button
+                type="button"
+                onClick={() => setCountry("no")}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
+              >
+                Se Norge-ruter
+              </button>
+              <a
+                href="mailto:hei@veiglede.no?subject=Forslag%20til%20kuratert%20rute"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+              >
+                Foreslå en rute
+              </a>
+            </div>
+            {CURATED_TRIPS.filter((c) => c.country === "no").length > 0 && (
+              <div className="mt-5">
+                <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+                  Populære Norge-ruter for utenlandske besøkende
+                </h3>
+                <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {CURATED_TRIPS.filter((c) => c.country === "no").slice(0, 6).map((c) => (
+                    <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-6">
             <p className="font-display text-lg uppercase">Ingen kuraterte ruter i {macroRegion !== "all" ? MACRO_REGION_LABEL[macroRegion] : "dette utvalget"} ennå</p>
