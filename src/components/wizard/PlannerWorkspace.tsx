@@ -8,6 +8,9 @@ interface Props {
   points: RoutePoint[];
   /** Optional summary shown above the map. */
   summary?: ReactNode;
+  /** Real road geometry — when provided the map draws the actual route line. */
+  routeGeometry?: { lat: number; lng: number }[];
+
 }
 
 /** Default view: Norway, roughly centered, fits whole country. */
