@@ -298,10 +298,17 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
           </section>
         )}
 
-        <section className="mt-8 rounded-2xl border border-dashed border-border bg-surface/40 p-5 text-center">
-          <p className="text-sm font-medium">Kommentarer kommer snart</p>
-          <p className="mt-1 text-xs text-muted-foreground">Vi jobber med å la reisefølget legge igjen kommentarer på delte turer.</p>
-        </section>
+        {data.owner && (
+          <div className="mt-8">
+            <CreatorCard
+              ownerId={data.owner.id}
+              displayName={data.owner.displayName}
+              username={data.owner.username}
+              avatarUrl={data.owner.avatarUrl}
+              isPublicProfile={data.owner.isPublicProfile}
+            />
+          </div>
+        )}
 
         <section className="mt-8 rounded-2xl border border-dashed border-border p-5 text-center">
           <p className="text-xs text-muted-foreground">Inspirert? Lag din egen versjon.</p>
