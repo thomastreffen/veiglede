@@ -111,11 +111,13 @@ export function CuratedRoutePreview({ points, className, interactive = false, sh
           });
         }
       }
-      const fitPts = (routeGeometry && routeGeometry.length > 1) ? routeGeometry : points;
+      const fitPts: { lat: number; lng: number }[] = [];
+      if (routeGeometry && routeGeometry.length > 1) fitPts.push(...routeGeometry);
+      fitPts.push(...points);
       if (fitPts.length > 1) {
         const bounds = new maplibregl.LngLatBounds();
         fitPts.forEach((p) => bounds.extend([p.lng, p.lat]));
-        map.fitBounds(bounds, { padding: 50, duration: 0, maxZoom: 9 });
+        map.fitBounds(bounds, { padding: 80, duration: 0, maxZoom: 11 });
       }
     });
     return () => {
