@@ -152,19 +152,39 @@ function TripsTab() {
   const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
 
   // Opt-in precise geolocation — never requested without an explicit click.
+  // Mobile-friendly: low-accuracy first pass, generous timeout, distinct error states.
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ready" | "denied">("idle");
+  type GeoStatus = "idle" | "loading" | "ready" | "denied" | "timeout" | "unsupported" | "error";
+  const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
   const requestLocation = () => {
-    if (!("geolocation" in navigator)) { setGeoStatus("denied"); return; }
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setGeoStatus("unsupported");
+      return;
+    }
+    // Some mobile browsers require a secure context; surface that as "unsupported".
+    if (typeof window !== "undefined" && window.isSecureContext === false) {
+      setGeoStatus("unsupported");
+      return;
+    }
     setGeoStatus("loading");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoStatus("ready");
       },
-      () => setGeoStatus("denied"),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 },
+      (err) => {
+        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+        if (err.code === 1) setGeoStatus("denied");
+        else if (err.code === 3) setGeoStatus("timeout");
+        else setGeoStatus("error");
+      },
+      // Low accuracy + generous timeout works far better on iOS Safari / Android Chrome.
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 10 * 60 * 1000 },
     );
+  };
+  const scrollToManualPicker = () => {
+    if (typeof document === "undefined") return;
+    document.getElementById("manual-area-picker")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const regions = useMemo(() => {
