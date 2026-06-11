@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Plus, Trash2, Sparkles, Loader2, FileText, X, Check } from "lucide-react";
@@ -12,6 +12,8 @@ import { getRoute } from "@/lib/routing";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { importTripFromTextFn, type ImportedStop } from "@/lib/trip-import.functions";
+import { PlannerWorkspace } from "@/components/wizard/PlannerWorkspace";
+import type { RoutePoint } from "@/components/CuratedRoutePreview";
 
 interface Row {
   key: string;
