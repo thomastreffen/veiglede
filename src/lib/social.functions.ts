@@ -172,6 +172,41 @@ export const toggleSaveTripFn = createServerFn({ method: "POST" })
     return { saved: true };
   });
 
+/* ============ TRIP SOCIAL STATS (bulk) ============ */
+
+export interface TripSocialStats {
+  drive: number;
+  saves: number;
+  reactions: number;
+}
+
+/** Bulk lightweight stats for many trips at once (no per-user info). */
+export const getTripSocialStatsFn = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({
+    tripIds: z.array(TripIdSchema).min(1).max(200),
+  }).parse(input))
+  .handler(async ({ data }): Promise<Record<string, TripSocialStats>> => {
+    const out: Record<string, TripSocialStats> = {};
+    for (const id of data.tripIds) out[id] = { drive: 0, saves: 0, reactions: 0 };
+
+    const [{ data: reactionRows }, { data: saveRows }] = await Promise.all([
+      supabaseAdmin.from("trip_reactions").select("trip_id, reaction").in("trip_id", data.tripIds),
+      supabaseAdmin.from("saved_trips").select("source_trip_id").in("source_trip_id", data.tripIds),
+    ]);
+    for (const r of reactionRows ?? []) {
+      const tid = r.trip_id as string;
+      if (!out[tid]) continue;
+      out[tid].reactions += 1;
+      if (r.reaction === "drive") out[tid].drive += 1;
+    }
+    for (const r of saveRows ?? []) {
+      const tid = r.source_trip_id as string;
+      if (!out[tid]) continue;
+      out[tid].saves += 1;
+    }
+    return out;
+  });
+
 export const listSavedTripIdsFn = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<string[]> => {
