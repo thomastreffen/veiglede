@@ -898,7 +898,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
               onClick={goGenerate}
               className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20"
             >
-              <Sparkles className="h-5 w-5" /> {w.common.calculate}
+              <Sparkles className="h-5 w-5" /> Beregn og bygg roadbook
             </button>
           </div>
         </>
