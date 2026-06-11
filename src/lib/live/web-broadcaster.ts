@@ -351,7 +351,22 @@ export class WebLiveBroadcaster implements LiveBroadcaster {
 
     if (source !== "manual") {
       const sinceLast = Date.now() - s.lastAutoSentAt;
-      if (sinceLast < AUTO_SEND_THROTTLE_MS) {
+      // Distance bypass: if user moved >= MOVED_FAR_M since last sent
+      // position, only enforce the hard floor (avoid spamming sub-1.5s).
+      const movedFar = (() => {
+        const last = s.lastSent;
+        const cur = s.lastPos;
+        if (!last || !cur) return false;
+        try {
+          const km = distanceKm(
+            { lat: last.lat, lng: last.lng },
+            { lat: cur.lat, lng: cur.lng },
+          );
+          return km * 1000 >= MOVED_FAR_M;
+        } catch { return false; }
+      })();
+      const minGap = movedFar ? AUTO_SEND_HARD_FLOOR_MS : AUTO_SEND_THROTTLE_MS;
+      if (sinceLast < minGap) {
         return { ok: false, error: `throttled (${sinceLast}ms)` };
       }
     }
