@@ -71,11 +71,11 @@ const HERO_IMAGES = [
   routeTrollstigen,
 ];
 
-const POPULAR_ROUTES = [
-  { img: routeLofoten, name: "Lofoten rundt", days: 5, km: "~ 850 km", styleKey: "svingete" as const },
-  { img: routeAtlanterhavsveien, name: "Atlanterhavsveien", days: 1, km: "~ 160 km", styleKey: "fototur" as const },
-  { img: routeHardanger, name: "Hardanger rundt", days: 3, km: "~ 600 km", styleKey: "cruise" as const },
-  { img: routeSognefjellet, name: "Sognefjellet", days: 1, km: "~ 235 km", styleKey: "svingete" as const },
+const POPULAR_ROUTES: Array<{ img: string; name: string; days: number; km: string; styleKey: "svingete" | "fototur" | "cruise"; slug: string }> = [
+  { img: routeLofoten, name: "Lofoten rundt", days: 5, km: "~ 230 km", styleKey: "svingete", slug: "lofoten-rundt" },
+  { img: routeAtlanterhavsveien, name: "Atlanterhavsveien", days: 1, km: "~ 160 km", styleKey: "fototur", slug: "atlanterhavsveien" },
+  { img: routeHardanger, name: "Hardanger rundt", days: 3, km: "~ 600 km", styleKey: "cruise", slug: "hardanger-rundt" },
+  { img: routeSognefjellet, name: "Sognefjellet", days: 1, km: "~ 108 km", styleKey: "svingete", slug: "sognefjellet" },
 ];
 
 const REGIONS = [
