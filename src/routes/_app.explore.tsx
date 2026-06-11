@@ -220,6 +220,18 @@ function TripsTab() {
         ))}
       </section>
 
+      {/* Macro-region chips (kuraterte Norges-regioner) */}
+      {country === "no" || country === "all" ? (
+        <section className="mt-3 flex flex-wrap gap-2">
+          <FilterPill active={macroRegion === "all"} onClick={() => setMacroRegion("all")}>📍 Hele Norge</FilterPill>
+          {(Object.keys(MACRO_REGION_LABEL) as MacroRegion[]).map((m) => (
+            <FilterPill key={m} active={macroRegion === m} onClick={() => setMacroRegion(m)}>
+              {MACRO_REGION_LABEL[m]}
+            </FilterPill>
+          ))}
+        </section>
+      ) : null}
+
       {/* Filters + sort */}
       <section className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={region} onValueChange={setRegion}>
