@@ -143,12 +143,46 @@ function RootComponent() {
     // Start cloud sync once on the client
     import("@/lib/cloud-sync").then((m) => m.startCloudSync());
   }
-  // Service worker registration disabled while debugging PWA issues on iOS.
-  // useEffect(() => {
-  //   if (shouldRegisterSW()) {
-  //     navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-  //   }
-  // }, []);
+
+  // PWA / iOS standalone: when the app resumes from background (user
+  // re-opens it from the home screen) Supabase doesn't always notice the
+  // session changed in another tab/window. Force a session re-check and
+  // invalidate private query data so we never render stale logged-in or
+  // logged-out UI after resume.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let lastCheck = 0;
+    const refresh = async () => {
+      const now = Date.now();
+      if (now - lastCheck < 2000) return; // debounce
+      lastCheck = now;
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const before = (await supabase.auth.getSession()).data.session?.user?.id ?? null;
+        // getUser() revalidates with the auth server and refreshes the token
+        // if needed — important after a long background sleep.
+        const { data } = await supabase.auth.getUser();
+        const after = data.user?.id ?? null;
+        if (before !== after) {
+          // Identity flipped while we were away — drop every cached query
+          // so private data from the previous identity can't flash.
+          queryClient.clear();
+        } else {
+          queryClient.invalidateQueries();
+        }
+      } catch { /* ignore */ }
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [queryClient]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
@@ -159,3 +193,4 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+
