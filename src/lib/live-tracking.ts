@@ -98,12 +98,8 @@ export interface LiveBroadcasterDebugState {
   wakeLockActive: boolean;
 }
 
-function toErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  try { return JSON.stringify(error); }
-  catch { return "Unknown error"; }
-}
+// (toErrorMessage moved into WebLiveBroadcaster; no longer needed here.)
+
 
 // NOTE: createLiveBroadcasterDebugState (the previous in-hook factory for
 // the debug snapshot) has moved into WebLiveBroadcaster. This file now only
