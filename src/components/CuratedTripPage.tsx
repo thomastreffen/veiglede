@@ -1,18 +1,23 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  MapPin, Clock, Route as RouteIcon, Sparkles, Compass, BookOpen, Copy, Loader2, Flag,
+  MapPin, Clock, Route as RouteIcon, Sparkles, Compass, BookOpen, Copy, Loader2, Flag, LogIn,
 } from "lucide-react";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { WillDriveButton } from "@/components/WillDriveButton";
 import { TripReactionsRow } from "@/components/TripReactionsRow";
+import { CuratedRoutePreview } from "@/components/CuratedRoutePreview";
 import {
   COVERS, vehicleMeta, styleMeta, tripsApi,
   type CoverKey, type Trip, type Stop,
 } from "@/lib/trips-store";
 import { useAuth } from "@/lib/auth";
-import { CURATED_TRIPS, getCuratedTrip, COUNTRY_LABEL, type CuratedTrip } from "@/lib/curated-trips";
+import { setReturnTo } from "@/lib/return-to";
+import {
+  CURATED_TRIPS, getCuratedTrip, COUNTRY_LABEL, curatedTripPoints,
+  type CuratedTrip,
+} from "@/lib/curated-trips";
 
 export function curatedTripHead(slug: string) {
   const trip = getCuratedTrip(slug);
@@ -44,13 +49,19 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [copying, setCopying] = useState(false);
+  const points = useMemo(() => curatedTripPoints(trip), [trip]);
 
-  const copyToMyTrips = async () => {
-    if (!user) { navigate({ to: "/auth" }); return; }
+  const gotoLoginWithReturn = () => {
+    if (typeof window !== "undefined") setReturnTo(window.location.pathname);
+    navigate({ to: "/login" });
+  };
+
+  const copyToMyTrips = async (intent: "copy" | "customize" = "copy") => {
+    if (!user) { gotoLoginWithReturn(); return; }
     if (copying) return;
     const existing = tripsApi.findCopyByOriginalId(trip.id);
     if (existing) {
-      toast(`Du har allerede kopiert denne — åpner kopien.`);
+      toast(intent === "customize" ? "Du har allerede en kopi — åpner den for redigering." : "Du har allerede kopiert denne — åpner kopien.");
       navigate({ to: "/trips/$tripId", params: { tripId: existing.id } });
       return;
     }
@@ -68,6 +79,13 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
         style: trip.style,
         vehicle: trip.vehicleSuitability[0] ?? "car",
         aiSummary: trip.whyDrive,
+        // Real numeric fields so the copied trip doesn't show 0 km / 0 min.
+        routeDistanceKm: trip.distanceKm,
+        routeDurationMin: trip.estimatedDurationMin,
+        originLoc: trip.originLoc,
+        destinationLoc: trip.destinationLoc,
+        isRoundTrip: trip.originLoc.lat === trip.destinationLoc.lat
+          && trip.originLoc.lng === trip.destinationLoc.lng,
       };
       const sourceDays = trip.days.map((d, i) => ({
         id: `cur-day-${i}`,
@@ -88,6 +106,8 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
             type: st.type,
             description: st.description,
             estimatedTime: st.estimatedTime,
+            lat: st.lat,
+            lng: st.lng,
           });
         });
       });
@@ -96,7 +116,7 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
         originalTripId: trip.id,
         inspiredByDisplayName: "Veiglede",
       });
-      toast.success("Turen er kopiert til Mine turer");
+      toast.success(intent === "customize" ? "Kopiert og klar til å tilpasses." : "Turen er kopiert til Mine turer");
       navigate({ to: "/trips/$tripId", params: { tripId: copy.id } });
     } catch (err) {
       console.error(err);
@@ -109,7 +129,7 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto max-w-5xl flex items-center justify-between px-4 py-3">
+        <div className="mx-auto max-w-7xl flex items-center justify-between px-4 py-3">
           <Link to="/" aria-label="Veiglede"><VeigledeLogo size="md" /></Link>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-primary">
             <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
@@ -117,9 +137,9 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-4 pb-16">
+      <div className="mx-auto max-w-7xl px-4 pb-16">
         {/* Hero */}
-        <section className={`mt-4 relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${COVERS[trip.cover as CoverKey]} p-6 md:p-10 min-h-[280px]`}>
+        <section className={`mt-4 relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${COVERS[trip.cover as CoverKey]} p-6 md:p-10 min-h-[260px]`}>
           <img src={trip.coverImage} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/40 to-transparent" />
           <div className="relative">
@@ -138,91 +158,110 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
           </div>
         </section>
 
-        {/* CTA bar */}
-        <section className="mt-5 rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <WillDriveButton tripId={trip.id} />
-            <button
-              type="button"
-              onClick={copyToMyTrips}
-              disabled={copying}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-4 py-2 text-xs font-semibold hover:border-primary hover:text-primary disabled:opacity-60"
-            >
-              {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-              Kopier til mine turer
-            </button>
-            <Link
-              to="/trips/new"
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-4 py-2 text-xs font-semibold hover:border-primary hover:text-primary"
-            >
-              <Compass className="h-4 w-4" /> Tilpass ruten
-            </Link>
-            <a
-              href="#roadbook"
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-4 py-2 text-xs font-semibold hover:border-primary hover:text-primary"
-            >
-              <BookOpen className="h-4 w-4" /> Se roadbook
-            </a>
+        {/* Desktop split: main col + sticky sidebar. Mobile stacks naturally. */}
+        <div className="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Main column */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Map preview */}
+            <section>
+              <div className="flex items-end justify-between mb-2">
+                <p className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-primary">
+                  <MapPin className="h-4 w-4" /> Ruteoversikt
+                </p>
+                <p className="text-[11px] text-muted-foreground">Skjematisk — faktisk vei beregnes når du kopierer turen.</p>
+              </div>
+              <CuratedRoutePreview points={points} interactive className="h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-border" />
+            </section>
+
+            {/* Why drive */}
+            <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+              <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
+                <Sparkles className="h-4 w-4" /> Hvorfor kjøre denne?
+              </p>
+              <p className="mt-3 text-sm md:text-base leading-relaxed text-foreground/90">{trip.whyDrive}</p>
+            </section>
+
+            {/* Roadbook */}
+            <section id="roadbook">
+              <h2 className="font-display text-2xl md:text-3xl uppercase">Roadbook — dag for dag</h2>
+              <ol className="mt-4 space-y-3">
+                {trip.days.map((day, i) => (
+                  <li key={i} className="rounded-2xl border border-border bg-surface p-4 md:p-5">
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-display text-2xl uppercase text-primary">Dag {i + 1}</span>
+                    </div>
+                    <p className="font-display text-lg md:text-xl uppercase">{day.title}</p>
+                    {day.summary && <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{day.summary}</p>}
+                    <ul className="mt-3 space-y-2">
+                      {day.stops.map((stop, j) => (
+                        <li key={j} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                          <div className="flex items-start gap-2.5 text-sm">
+                            <span className="h-7 w-7 rounded-lg bg-surface-2 grid place-items-center shrink-0 text-base">
+                              {stopEmoji(stop.type)}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium">{stop.name}</p>
+                              {stop.location && <p className="text-[11px] text-muted-foreground">{stop.location}</p>}
+                              {stop.description && <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{stop.description}</p>}
+                            </div>
+                            {stop.estimatedTime && <span className="text-[11px] text-muted-foreground shrink-0">{stop.estimatedTime}</span>}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ol>
+            </section>
           </div>
-          <div className="mt-3">
-            <TripReactionsRow tripId={trip.id} size="sm" hideDrive />
-          </div>
-        </section>
 
-        {/* Stats */}
-        <section className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat Icon={RouteIcon} label="Distanse" value={`${trip.distanceKm} km`} />
-          <Stat Icon={Clock} label="Kjøretid" value={trip.drivingTime} />
-          <Stat Icon={MapPin} label="Stopp" value={String(trip.stopsCount)} />
-          <Stat Icon={Flag} label="Best for" value={v.label} />
-        </section>
+          {/* Sidebar */}
+          <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-20 lg:self-start">
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <Stat Icon={RouteIcon} label="Distanse" value={`${trip.distanceKm} km`} />
+              <Stat Icon={Clock} label="Kjøretid" value={trip.drivingTime} />
+              <Stat Icon={MapPin} label="Stopp" value={String(trip.stopsCount)} />
+              <Stat Icon={Flag} label="Best for" value={v.label} />
+            </div>
 
-        {/* Why drive */}
-        <section className="mt-6 rounded-2xl border border-border bg-surface p-5 md:p-6">
-          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary">
-            <Sparkles className="h-4 w-4" /> Hvorfor kjøre denne?
-          </p>
-          <p className="mt-3 text-sm md:text-base leading-relaxed text-foreground/90">{trip.whyDrive}</p>
-        </section>
-
-        {/* Roadbook */}
-        <section id="roadbook" className="mt-8">
-          <h2 className="font-display text-2xl md:text-3xl uppercase">Roadbook — dag for dag</h2>
-          <ol className="mt-4 space-y-3">
-            {trip.days.map((day, i) => (
-              <li key={i} className="rounded-2xl border border-border bg-surface p-4 md:p-5">
-                <div className="flex items-baseline gap-3">
-                  <span className="font-display text-2xl uppercase text-primary">Dag {i + 1}</span>
-                </div>
-                <p className="font-display text-lg md:text-xl uppercase">{day.title}</p>
-                {day.summary && <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{day.summary}</p>}
-                <ul className="mt-3 space-y-2">
-                  {day.stops.map((stop, j) => (
-                    <li key={j} className="rounded-xl border border-border/60 bg-background/40 p-3">
-                      <div className="flex items-start gap-2.5 text-sm">
-                        <span className="h-7 w-7 rounded-lg bg-surface-2 grid place-items-center shrink-0 text-base">
-                          {stopEmoji(stop.type)}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium">{stop.name}</p>
-                          {stop.location && <p className="text-[11px] text-muted-foreground">{stop.location}</p>}
-                          {stop.description && <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{stop.description}</p>}
-                        </div>
-                        {stop.estimatedTime && <span className="text-[11px] text-muted-foreground shrink-0">{stop.estimatedTime}</span>}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        </section>
+            {/* CTA bar */}
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <WillDriveButton tripId={trip.id} />
+              <button
+                type="button"
+                onClick={() => copyToMyTrips("copy")}
+                disabled={copying}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-4 py-2.5 text-xs font-semibold hover:border-primary hover:text-primary disabled:opacity-60"
+              >
+                {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : !user ? <LogIn className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {!user ? "Logg inn for å kopiere" : "Kopier til mine turer"}
+              </button>
+              <button
+                type="button"
+                onClick={() => copyToMyTrips("customize")}
+                disabled={copying}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-4 py-2.5 text-xs font-semibold hover:border-primary hover:text-primary disabled:opacity-60"
+              >
+                {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Compass className="h-4 w-4" />}
+                Tilpass ruten
+              </button>
+              <a
+                href="#roadbook"
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 px-4 py-2.5 text-xs font-semibold hover:border-primary hover:text-primary"
+              >
+                <BookOpen className="h-4 w-4" /> Hopp til roadbook
+              </a>
+              <TripReactionsRow tripId={trip.id} size="sm" hideDrive />
+            </div>
+          </aside>
+        </div>
 
         {/* Related curated */}
         <section className="mt-10">
           <h2 className="font-display text-2xl uppercase">Andre kuraterte turer</h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {CURATED_TRIPS.filter((c) => c.slug !== trip.slug).slice(0, 3).map((c) => (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {CURATED_TRIPS.filter((c) => c.slug !== trip.slug).slice(0, 4).map((c) => (
               <Link
                 key={c.slug}
                 to="/inspirasjon/$slug"
@@ -244,20 +283,6 @@ function CuratedTripView({ trip }: { trip: CuratedTrip }) {
               </Link>
             ))}
           </div>
-        </section>
-
-        {/* Bottom CTA */}
-        <section className="mt-10 rounded-2xl border border-dashed border-border p-6 text-center">
-          <p className="text-xs text-muted-foreground">Vil du gjøre den til din?</p>
-          <p className="font-display text-2xl uppercase mt-1">Kopier turen og tilpass etter eget hode.</p>
-          <button
-            onClick={copyToMyTrips}
-            disabled={copying}
-            className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-60"
-          >
-            {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-            Kopier til mine turer
-          </button>
         </section>
       </div>
     </div>

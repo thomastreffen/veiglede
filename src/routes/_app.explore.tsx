@@ -12,7 +12,7 @@ import {
   VEHICLES, ROUTE_STYLES,
   type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
-import { CURATED_TRIPS, COUNTRY_LABEL, type Country, type CuratedTrip } from "@/lib/curated-trips";
+import { CURATED_TRIPS, COUNTRY_LABEL, MACRO_REGION_LABEL, type Country, type CuratedTrip, type MacroRegion } from "@/lib/curated-trips";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame } from "lucide-react";
 import { useT } from "@/i18n/provider";
@@ -133,6 +133,7 @@ function TripsTab() {
   const stats: Record<string, TripSocialStats> = statsMap ?? {};
 
   const [region, setRegion] = useState<string>("all");
+  const [macroRegion, setMacroRegion] = useState<"all" | MacroRegion>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
   const [country, setCountry] = useState<"all" | Country>("all");
@@ -149,12 +150,13 @@ function TripsTab() {
   const curatedFiltered = useMemo(() => {
     return CURATED_TRIPS.filter((c) => {
       if (country !== "all" && c.country !== country) return false;
+      if (macroRegion !== "all" && !c.macroRegions.includes(macroRegion)) return false;
       if (region !== "all" && c.region !== region) return false;
       if (style !== "all" && c.style !== style) return false;
       if (vehicle !== "all" && !c.vehicleSuitability.includes(vehicle)) return false;
       return true;
     });
-  }, [country, region, style, vehicle]);
+  }, [country, macroRegion, region, style, vehicle]);
 
   const filtered = useMemo(() => {
     // Country filter only applies to curated trips (user trips have no country yet).
@@ -218,6 +220,18 @@ function TripsTab() {
         ))}
       </section>
 
+      {/* Macro-region chips (kuraterte Norges-regioner) */}
+      {country === "no" || country === "all" ? (
+        <section className="mt-3 flex flex-wrap gap-2">
+          <FilterPill active={macroRegion === "all"} onClick={() => setMacroRegion("all")}>📍 Hele Norge</FilterPill>
+          {(Object.keys(MACRO_REGION_LABEL) as MacroRegion[]).map((m) => (
+            <FilterPill key={m} active={macroRegion === m} onClick={() => setMacroRegion(m)}>
+              {MACRO_REGION_LABEL[m]}
+            </FilterPill>
+          ))}
+        </section>
+      ) : null}
+
       {/* Filters + sort */}
       <section className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={region} onValueChange={setRegion}>
@@ -252,25 +266,37 @@ function TripsTab() {
         </Select>
       </section>
 
-      {/* Curated — always available, never empty */}
-      {curatedFiltered.length > 0 && (
-        <section className="mt-8">
-          <div className="flex items-end justify-between gap-3 flex-wrap">
-            <div>
-              <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
-                <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
-              </p>
-              <h2 className="font-display text-xl uppercase mt-1">Inspirasjon for neste tur</h2>
-              <p className="text-xs text-muted-foreground">Ekte ruter med roadbook, klare til å kopieres eller tilpasses.</p>
-            </div>
+      {/* Curated — always rendered. If macroRegion has no matches, fall back to "alle". */}
+      <section className="mt-8">
+        <div className="flex items-end justify-between gap-3 flex-wrap">
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
+              <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
+            </p>
+            <h2 className="font-display text-xl uppercase mt-1">
+              {macroRegion !== "all" ? `Inspirasjon i ${MACRO_REGION_LABEL[macroRegion]}` : "Inspirasjon for neste tur"}
+            </h2>
+            <p className="text-xs text-muted-foreground">Ekte ruter med roadbook, klare til å kopieres eller tilpasses.</p>
           </div>
+        </div>
+        {curatedFiltered.length > 0 ? (
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {curatedFiltered.map((c) => (
               <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : (
+          <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-6">
+            <p className="font-display text-lg uppercase">Ingen kuraterte ruter i {macroRegion !== "all" ? MACRO_REGION_LABEL[macroRegion] : "dette utvalget"} ennå</p>
+            <p className="mt-1 text-xs text-muted-foreground">Her er noen nærliggende forslag i mellomtiden:</p>
+            <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {CURATED_TRIPS.slice(0, 3).map((c) => (
+                <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
 
       {/* Populære turer */}
       {popular.length > 0 && sort === "newest" && country === "all" && (

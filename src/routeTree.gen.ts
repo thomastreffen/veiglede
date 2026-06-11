@@ -18,10 +18,12 @@ import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HjelpRouteImport } from './routes/hjelp'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PartnerIndexRouteImport } from './routes/partner.index'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as SharedTripIdRouteImport } from './routes/shared.$tripId'
@@ -123,6 +125,11 @@ const HjelpRoute = HjelpRouteImport.update({
   path: '/hjelp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -141,6 +148,11 @@ const PartnerIndexRoute = PartnerIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PartnerRoute,
+} as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -203,9 +215,9 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
 } as any)
 const ApiInboundEmailRoute = ApiInboundEmailRouteImport.update({
   id: '/api/inbound-email',
@@ -432,6 +444,7 @@ const AppTripsTripIdStopsStopIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
@@ -475,6 +488,7 @@ export interface FileRoutesByFullPath {
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
+  '/auth/': typeof AuthIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
@@ -541,6 +555,7 @@ export interface FileRoutesByTo {
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
   '/admin': typeof AdminIndexRoute
+  '/auth': typeof AuthIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/trips/new': typeof AppTripsNewRoute
@@ -569,6 +584,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
@@ -612,6 +628,7 @@ export interface FileRoutesById {
   '/shared/$tripId': typeof SharedTripIdRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
+  '/auth/': typeof AuthIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/_app/trips/$tripId': typeof AppTripsTripIdRouteWithChildren
   '/_app/trips/new': typeof AppTripsNewRoute
@@ -640,6 +657,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/auth'
     | '/hjelp'
     | '/login'
     | '/map-test'
@@ -683,6 +701,7 @@ export interface FileRouteTypes {
     | '/shared/$tripId'
     | '/u/$username'
     | '/admin/'
+    | '/auth/'
     | '/partner/'
     | '/trips/$tripId'
     | '/trips/new'
@@ -749,6 +768,7 @@ export interface FileRouteTypes {
     | '/shared/$tripId'
     | '/u/$username'
     | '/admin'
+    | '/auth'
     | '/partner'
     | '/trips/$tripId'
     | '/trips/new'
@@ -776,6 +796,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/admin'
+    | '/auth'
     | '/hjelp'
     | '/login'
     | '/map-test'
@@ -819,6 +840,7 @@ export interface FileRouteTypes {
     | '/shared/$tripId'
     | '/u/$username'
     | '/admin/'
+    | '/auth/'
     | '/partner/'
     | '/_app/trips/$tripId'
     | '/_app/trips/new'
@@ -847,6 +869,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
   HjelpRoute: typeof HjelpRoute
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
@@ -857,7 +880,6 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   VilkarRoute: typeof VilkarRoute
   ApiInboundEmailRoute: typeof ApiInboundEmailRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InspirasjonSlugRoute: typeof InspirasjonSlugRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -946,6 +968,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HjelpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -973,6 +1002,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/'
       preLoaderRoute: typeof PartnerIndexRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -1060,10 +1096,10 @@ declare module '@tanstack/react-router' {
     }
     '/auth/callback': {
       id: '/auth/callback'
-      path: '/auth/callback'
+      path: '/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/api/inbound-email': {
       id: '/api/inbound-email'
@@ -1448,6 +1484,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthIndexRoute: AuthIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface PartnerDashboardRouteChildren {
   PartnerDashboardBenefitsRoute: typeof PartnerDashboardBenefitsRoute
   PartnerDashboardInvoicesRoute: typeof PartnerDashboardInvoicesRoute
@@ -1486,6 +1534,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
   HjelpRoute: HjelpRoute,
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
@@ -1496,7 +1545,6 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   VilkarRoute: VilkarRoute,
   ApiInboundEmailRoute: ApiInboundEmailRoute,
-  AuthCallbackRoute: AuthCallbackRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InspirasjonSlugRoute: InspirasjonSlugRoute,
   InviteTokenRoute: InviteTokenRoute,
