@@ -47,6 +47,8 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
   const markerElRef = useRef<HTMLElement | null>(null);
   const [mapKey, setMapKey] = useState<string | null>(null);
   const [keyError, setKeyError] = useState<string | null>(null);
+  const [followLive, setFollowLive] = useState<boolean>(true);
+  const didInitialCenterRef = useRef(false);
   // Always call the hook; pass null when caller supplies the session directly.
   const hookSession = useLiveSession(sessionProp === undefined ? tripId ?? null : null);
   const session = sessionProp !== undefined ? sessionProp : hookSession;
