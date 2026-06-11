@@ -1,8 +1,7 @@
 // Live trip sharing — broadcast & subscribe to current position.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { distanceKm } from "@/lib/geo";
-import { trackingApi } from "@/lib/trip-tracking";
+
 
 const LS_KEY = "vg.live-sharing.optin.v1";
 
@@ -106,51 +105,10 @@ function toErrorMessage(error: unknown) {
   catch { return "Unknown error"; }
 }
 
-function createLiveBroadcasterDebugState(input: {
-  enabled: boolean;
-  status: LiveStatus | "idle";
-  broadcastable: boolean;
-  permissionState: LivePermissionState;
-}): LiveBroadcasterDebugState {
-  return {
-    broadcastable: input.broadcastable,
-    liveOn: input.enabled,
-    tripStatus: input.status,
-    permissionState: input.permissionState,
-    watchStarted: false,
-    watchId: null,
-    watchIdExists: false,
-    gpsFixCount: 0,
-    heartbeatIntervalActive: false,
-    pollingActive: false,
-    lastGpsFixTime: null,
-    lastGpsFixLat: null,
-    lastGpsFixLng: null,
-    lastGpsAccuracy: null,
-    previousGpsLat: null,
-    previousGpsLng: null,
-    distanceSincePreviousGpsKm: null,
-    distanceSinceLastSentKm: null,
-    movedEnough: false,
-    canSendImmediate: false,
-    lastAutomaticUpsertAttemptTime: null,
-    lastAutomaticUpsertSuccessTime: null,
-    lastAutomaticUpsertError: null,
-    lastSendSource: null,
-    lastHeartbeatUpsertAttemptTime: null,
-    lastHeartbeatUpsertSuccessTime: null,
-    lastHeartbeatUpsertError: null,
-    lastManualUpsertAttemptTime: null,
-    lastManualUpsertSuccessTime: null,
-    lastUpsertPayload: null,
-    lastStoredRow: null,
-    lastUpsertError: null,
-    pageVisibility: typeof document !== "undefined" && document.visibilityState === "hidden" ? "hidden" : "visible",
-    lastVisibilityChangeTime: null,
-    lastResumeSendTime: null,
-    wakeLockActive: false,
-  };
-}
+// NOTE: createLiveBroadcasterDebugState (the previous in-hook factory for
+// the debug snapshot) has moved into WebLiveBroadcaster. This file now only
+// owns shared types, primitives (upsert/update/end), and the opt-in store.
+
 
 // ---------- per-trip opt-in (localStorage) ----------
 function readOptInMap(): Record<string, boolean> {
