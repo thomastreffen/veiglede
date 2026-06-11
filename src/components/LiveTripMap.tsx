@@ -22,7 +22,9 @@ function getPhase(session: LiveSession | null | undefined): Phase {
   if (!session) return "waiting";
   if (session.status === "completed") return "ended";
   const age = Date.now() - new Date(session.updated_at).getTime();
-  if (age >= 5 * 60 * 1000) return "stale";
+  // 2 minutes without an update is treated as stale on the public follower
+  // view — phones often suspend background tabs and geolocation after this.
+  if (age >= 2 * 60 * 1000) return "stale";
   if (session.status === "paused") return "paused";
   return "active";
 }
@@ -47,6 +49,8 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
   const markerElRef = useRef<HTMLElement | null>(null);
   const [mapKey, setMapKey] = useState<string | null>(null);
   const [keyError, setKeyError] = useState<string | null>(null);
+  const [followLive, setFollowLive] = useState<boolean>(true);
+  const didInitialCenterRef = useRef(false);
   // Always call the hook; pass null when caller supplies the session directly.
   const hookSession = useLiveSession(sessionProp === undefined ? tripId ?? null : null);
   const session = sessionProp !== undefined ? sessionProp : hookSession;
@@ -73,14 +77,15 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
     return () => { cancelled = true; };
   }, []);
 
+  // Mount the map ONCE per mapKey. Re-mounting on every session update is
+  // what caused the public follower page to "blink" / reload on every fix.
   useEffect(() => {
     if (!mapKey || !containerRef.current || mapRef.current) return;
-    const initial = session ? [session.lng, session.lat] as [number, number] : [10.75, 60.0] as [number, number];
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${mapKey}`,
-      center: initial,
-      zoom: session ? 12 : 5,
+      center: [10.75, 60.0],
+      zoom: 5,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
@@ -89,16 +94,24 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
     const raf = requestAnimationFrame(() => { try { map.resize(); } catch {} });
     const t1 = setTimeout(() => { try { map.resize(); } catch {} }, 100);
     const t2 = setTimeout(() => { try { map.resize(); } catch {} }, 400);
+    // Disable auto-follow when the viewer pans/zooms manually.
+    const onUserMove = (e: { originalEvent?: unknown }) => {
+      if (e.originalEvent) setFollowLive(false);
+    };
+    map.on("dragstart", onUserMove);
+    map.on("zoomstart", onUserMove);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t1);
       clearTimeout(t2);
+      map.off("dragstart", onUserMove);
+      map.off("zoomstart", onUserMove);
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
       markerElRef.current = null;
     };
-  }, [mapKey, session]);
+  }, [mapKey]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -131,7 +144,6 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
       markerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat(lngLat)
         .addTo(map);
-      map.flyTo({ center: lngLat, zoom: 13, duration: 800 });
     } else {
       markerRef.current!.setLngLat(lngLat);
       if (markerElRef.current) {
@@ -141,9 +153,28 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
           speedKmh,
         });
       }
-      map.easeTo({ center: lngLat, duration: 600 });
     }
-  }, [session, phase, vehicle]);
+    // Center on the very first fix so the follower instantly sees the driver,
+    // then only re-center when follow mode is active.
+    if (!didInitialCenterRef.current) {
+      didInitialCenterRef.current = true;
+      try { map.flyTo({ center: lngLat, zoom: 13, duration: 800 }); } catch {}
+    } else if (followLive) {
+      try { map.easeTo({ center: lngLat, duration: 600 }); } catch {}
+    }
+  }, [session, phase, vehicle, followLive]);
+
+  const handleFollow = () => {
+    if (!session) return;
+    setFollowLive(true);
+    try {
+      mapRef.current?.flyTo({
+        center: [session.lng, session.lat],
+        zoom: Math.max(mapRef.current.getZoom(), 14),
+        duration: 500,
+      });
+    } catch {}
+  };
 
 
 
@@ -168,9 +199,9 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
 
   const bottomMessage =
     !session ? "Venter på første posisjon…" :
-    phase === "paused" ? "Live deling er pauset" :
-    phase === "stale" ? "Posisjonen er ikke nylig oppdatert" :
-    phase === "ended" ? "Live deling er avsluttet" :
+    phase === "paused" ? "Live-deling er pauset." :
+    phase === "stale" ? "Live-posisjonen oppdateres ikke akkurat nå. Telefonen kan være låst eller uten dekning." :
+    phase === "ended" ? "Live-deling er avsluttet." :
     null;
 
 
@@ -234,6 +265,15 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
           <div className="absolute right-3 bottom-3 rounded-full bg-background/90 backdrop-blur border border-border px-3 py-1.5 text-[11px] text-muted-foreground">
             Sist oppdatert {formatRelative(session.updated_at)}
           </div>
+        )}
+        {session && !followLive && (
+          <button
+            type="button"
+            onClick={handleFollow}
+            className="absolute left-3 bottom-3 z-30 rounded-full bg-primary text-primary-foreground px-3 py-2 text-[12px] font-semibold shadow-md"
+          >
+            Følg live-posisjon
+          </button>
         )}
         {bottomMessage && (
           <div className="absolute bottom-3 left-3 max-w-[60%] rounded-xl border border-border bg-background/90 backdrop-blur p-3 text-xs text-foreground">

@@ -27,6 +27,7 @@ import { SaveTripPrompt } from "@/components/SaveTripPrompt";
 import { TripReactionsRow } from "@/components/TripReactionsRow";
 import { useAuth } from "@/lib/auth";
 import { TripTracker } from "@/components/TripTracker";
+import { OffRouteBanner } from "@/components/OffRouteBanner";
 import { useLiveSession } from "@/lib/live-tracking";
 import { TripMemories } from "@/components/TripMemories";
 import { TripPhotosGallery } from "@/components/TripPhotosGallery";
@@ -355,6 +356,9 @@ function TripPlanner() {
         <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
           {td.mapDisclaimer}
         </p>
+        {tracking.status === "active" && livePos && (
+          <OffRouteBanner trip={trip} stops={tripStops} livePos={{ lat: livePos.lat, lng: livePos.lng }} />
+        )}
         <DetourTotals trip={trip} stops={tripStops} />
       </section>
 
