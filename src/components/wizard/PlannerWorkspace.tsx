@@ -42,6 +42,7 @@ export function PlannerWorkspace({ children, points, summary }: Props) {
           <CuratedRoutePreview
             points={mapPoints}
             interactive
+            showMarkers={hasPoints}
             className="absolute inset-0 h-full w-full"
           />
 
