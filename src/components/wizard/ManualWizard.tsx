@@ -585,7 +585,9 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
       }
     }, 500);
     return () => clearTimeout(handle);
-  }, [mapPoints, style, avoidHighway, selectedVehicle?.type, selectedVehicle?.drivingFlags]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapPointsKey, style, avoidHighway, selectedVehicle?.type]);
+
 
   const mapSummary = (() => {
     if (livePreview && livePreview.geometry.length > 1) {
