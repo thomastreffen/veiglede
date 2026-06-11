@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Route as RouteIcon, Clock, MapPin, ArrowRight, BookOpen, Camera } from "lucide-react";
+import { Route as RouteIcon, Clock, MapPin, ArrowRight, BookOpen, Camera, Flag, Bookmark, Flame } from "lucide-react";
 import { COVERS, vehicleMeta, styleMeta, type CoverKey, type VehicleType, type RouteStyle } from "@/lib/trips-store";
 import { getPublicPlaceLabel } from "@/lib/public-place";
 import { AvatarImg } from "@/lib/avatar";
 import { CopyTripButton } from "@/components/CopyTripButton";
+import { VehicleIdentityLine, type VehicleIdentity } from "@/components/VehicleIdentityCard";
 
 export interface PublicTripCardData {
   id: string;
@@ -26,6 +27,10 @@ interface Props {
   ownerName?: string;
   ownerAvatarUrl?: string;
   ownerUsername?: string;
+  /** Optional resolved garage vehicle identity for the inline "Kjørt med …" line. */
+  vehicleIdentity?: VehicleIdentity;
+  /** Lightweight social stats for activity chips. */
+  stats?: { drive: number; saves: number; reactions: number };
   /** Status label shown as a badge on the cover. */
   status?: "delt" | "offentlig" | "roadbook";
   /** Hide the "Kopier tur" action (e.g. when the viewer is the owner). */
