@@ -796,3 +796,45 @@ export const COUNTRY_LABEL: Record<Country, string> = {
   dk: "Danmark",
   de: "Tyskland",
 };
+
+// ---- Seed-time route geometry ---------------------------------------------
+// Geometry for each curated trip is computed at seed time by the script
+// `scripts/seed-curated-geometry.ts` and committed to `curated-geometry.json`.
+// At runtime we just look it up by slug — no API call needed.
+import curatedGeometryJson from "./curated-geometry.json";
+
+interface CuratedGeometryEntry {
+  geometry: Array<{ lat: number; lng: number }>;
+  distanceKm: number;
+  durationMin: number;
+  provider?: string;
+  computedAt?: string;
+}
+
+const CURATED_GEOMETRY = curatedGeometryJson as Record<string, CuratedGeometryEntry>;
+
+export function getCuratedGeometry(slug: string): CuratedGeometryEntry | null {
+  return CURATED_GEOMETRY[slug] ?? null;
+}
+
+/**
+ * Region-relevance score for sorting curated trips against a selected macro
+ * region. Lower = more relevant.
+ *   0 = entire trip inside the region (start AND end)
+ *   1 = starts in region
+ *   2 = ends in region
+ *   3 = passes through region
+ *   4 = unrelated
+ */
+export function curatedRegionRelevance(c: CuratedTrip, region: MacroRegion): number {
+  const regions = c.macroRegions;
+  if (regions.length === 0) return 4;
+  const starts = regions[0] === region;
+  const ends = regions[regions.length - 1] === region;
+  if (starts && ends) return 0;
+  if (starts) return 1;
+  if (ends) return 2;
+  if (regions.includes(region)) return 3;
+  return 4;
+}
+
