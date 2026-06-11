@@ -8,6 +8,9 @@ interface Props {
   points: RoutePoint[];
   /** Optional summary shown above the map. */
   summary?: ReactNode;
+  /** Real road geometry — when provided the map draws the actual route line. */
+  routeGeometry?: { lat: number; lng: number }[];
+
 }
 
 /** Default view: Norway, roughly centered, fits whole country. */
@@ -21,7 +24,8 @@ const DEFAULT_NORWAY_POINTS: RoutePoint[] = [
  * and interactive; instructional copy appears as an overlay, never as a
  * replacement for the map.
  */
-export function PlannerWorkspace({ children, points, summary }: Props) {
+export function PlannerWorkspace({ children, points, summary, routeGeometry }: Props) {
+
   const hasPoints = points.length > 0;
   const mapPoints = hasPoints ? points : DEFAULT_NORWAY_POINTS;
 
@@ -44,8 +48,10 @@ export function PlannerWorkspace({ children, points, summary }: Props) {
             points={mapPoints}
             interactive
             showMarkers={hasPoints}
+            routeGeometry={hasPoints ? routeGeometry : undefined}
             className="absolute inset-0 h-full w-full"
           />
+
 
           {summary && (
             <div className="pointer-events-none absolute top-4 left-4 right-4 flex justify-center">

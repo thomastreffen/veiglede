@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Plus, Trash2, Sparkles, Loader2, FileText, X, Check } from "lucide-react";
@@ -23,7 +23,14 @@ interface Row {
   dayNumber: number;
   type?: "lodging" | "city" | "waypoint";
   nights?: number;
+  /**
+   * "destination" = a main leg / next destination (own day in the roadbook).
+   * "via" (default) = a quick stop along the current leg.
+   * The very last row is always treated as the trip's final destination.
+   */
+  kind?: "via" | "destination";
 }
+
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function newRow(): Row { return { key: uid(), text: "", place: null, date: "", dayNumber: 1 }; }
@@ -233,13 +240,30 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     if (rs.length === 0) return rs;
     const last = rs[rs.length - 1];
     const newVia = makeRowAfter(rs[rs.length - 2] ?? undefined);
+    newVia.kind = "via";
     // Insert before the destination so the destination stays last.
     const next = [...rs.slice(0, -1), newVia, last];
     return cascadeDates(next);
   });
 
+  /**
+   * Append a brand new destination ("Neste destinasjon"). The current last
+   * row stops being the final destination and becomes a main intermediate
+   * stop (kind = "destination"), so it still gets its own day/leg in the
+   * roadbook, instead of being treated as a quick via-stop.
+   */
+  const insertNextDestination = () => setRows((rs) => {
+    if (rs.length === 0) return [makeRowAfter(undefined)];
+    const promoted = { ...rs[rs.length - 1], kind: "destination" as const };
+    const newDest = makeRowAfter(promoted);
+    newDest.kind = undefined;
+    const next = [...rs.slice(0, -1), promoted, newDest];
+    return cascadeDates(next);
+  });
+
   // validRows is kept for downstream goGenerate code that expects an array of stops.
   const validRows = rows.filter((r) => r.text.trim().length > 0);
+
 
   const ensurePlace = async (r: Row): Promise<ResolvedPlace | null> => {
     if (r.place) return r.place;
@@ -508,19 +532,81 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   const mapPoints: RoutePoint[] = useMemo(() => {
     const pts: RoutePoint[] = [];
     if (originPlace) pts.push({ lat: originPlace.lat, lng: originPlace.lng, label: originPlace.name ?? originPlace.label ?? "Start" });
-    for (const r of viaRows) {
+    for (let i = 0; i < rows.length - 1; i++) {
+      const r = rows[i];
       if (r.place) pts.push({ lat: r.place.lat, lng: r.place.lng, label: r.place.name ?? r.text });
     }
-    if (destinationRow?.place) pts.push({ lat: destinationRow.place.lat, lng: destinationRow.place.lng, label: destinationRow.place.name ?? destinationRow.text });
+    const last = rows[rows.length - 1];
+    if (last?.place) pts.push({ lat: last.place.lat, lng: last.place.lng, label: last.place.name ?? last.text });
     return pts;
-  }, [originPlace, viaRows, destinationRow]);
+  }, [originPlace, rows]);
+  const mapPointsKey = useMemo(() => mapPoints.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join("|"), [mapPoints]);
 
-  const mapSummary = mapPoints.length >= 2
-    ? `${styleMeta(style).label}${selectedVehicle ? ` · ${selectedVehicle.name}` : ""} · ${mapPoints.length} punkter`
-    : selectedVehicle ? `${styleMeta(style).label} · ${selectedVehicle.name}` : undefined;
+
+  // Live route preview: when we have ≥2 resolved points, ask the routing
+  // engine for the real road geometry so the map shows the actual route
+  // (not just a dashed straight line). Debounced + abortable so typing in
+  // the planner doesn't fire a request on every keystroke.
+  const [livePreview, setLivePreview] = useState<{
+    geometry: { lat: number; lng: number }[];
+    distanceKm: number;
+    durationMin: number;
+    pending: boolean;
+  } | null>(null);
+  const livePreviewSeq = useRef(0);
+  useEffect(() => {
+    if (mapPoints.length < 2) { setLivePreview(null); return; }
+    const seq = ++livePreviewSeq.current;
+    setLivePreview((p) => (p ? { ...p, pending: true } : { geometry: [], distanceKm: 0, durationMin: 0, pending: true }));
+    const handle = setTimeout(async () => {
+      try {
+        const origin = mapPoints[0];
+        const destination = mapPoints[mapPoints.length - 1];
+        const waypoints = mapPoints.slice(1, -1);
+        const r = await getRoute({
+          origin: { lat: origin.lat, lng: origin.lng },
+          destination: { lat: destination.lat, lng: destination.lng },
+          waypoints: waypoints.length ? waypoints.map((w) => ({ lat: w.lat, lng: w.lng })) : undefined,
+          vehicleType: selectedVehicle?.type,
+          routeStyle: style,
+          avoidHighways: avoidHighway,
+          avoidFerries: !!selectedVehicle?.drivingFlags?.["no-ferry"],
+        });
+        if (seq !== livePreviewSeq.current) return;
+        setLivePreview({
+          geometry: r.geometry,
+          distanceKm: r.distanceKm,
+          durationMin: r.durationMin,
+          pending: false,
+        });
+      } catch {
+        if (seq !== livePreviewSeq.current) return;
+        setLivePreview((p) => (p ? { ...p, pending: false } : null));
+      }
+    }, 500);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapPointsKey, style, avoidHighway, selectedVehicle?.type]);
+
+
+  const mapSummary = (() => {
+    if (livePreview && livePreview.geometry.length > 1) {
+      const h = Math.floor(livePreview.durationMin / 60);
+      const m = Math.round(livePreview.durationMin % 60);
+      const dur = h ? `${h}t ${m}min` : `${m}min`;
+      return `${livePreview.distanceKm} km · ${dur}${livePreview.pending ? " · oppdaterer…" : ""}`;
+    }
+    if (mapPoints.length >= 2) return `${mapPoints.length} punkter · beregner rute…`;
+    return selectedVehicle ? `${styleMeta(style).label} · ${selectedVehicle.name}` : undefined;
+  })();
 
   return (
-    <PlannerWorkspace points={mapPoints} summary={mapSummary}>
+    <PlannerWorkspace
+      points={mapPoints}
+      summary={mapSummary}
+      routeGeometry={livePreview?.geometry}
+    >
+
     <div className="py-4 md:py-8 max-w-2xl mx-auto pb-32 md:pb-12 lg:py-0 lg:max-w-none lg:pb-12">
 
       <div className="flex items-center justify-between">
@@ -582,13 +668,20 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           {viaRows.length > 0 && (
             <div className="mt-4 space-y-2">
               <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
-                Via-stopp (valgfritt)
+                Stopp og destinasjoner underveis
               </p>
               {viaRows.map((r, idx) => {
                 const tp = detectType(r.text, r.type);
-                const icon = tp === "lodging" ? "🏨" : "🏙️";
+                const isDest = r.kind === "destination";
+                const icon = isDest ? "🏁" : tp === "lodging" ? "🏨" : "🏙️";
                 return (
-                  <div key={r.key} className="rounded-2xl border border-border bg-surface p-3 space-y-2">
+                  <div
+                    key={r.key}
+                    className={cn(
+                      "rounded-2xl border bg-surface p-3 space-y-2",
+                      isDest ? "border-primary/40 bg-primary/5" : "border-border",
+                    )}
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-xl shrink-0">{icon}</span>
                       <div className="flex-1 min-w-0">
@@ -597,7 +690,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                           onTextChange={(v) => updateRow(r.key, { text: v })}
                           selected={r.place}
                           onSelect={(p) => updateRow(r.key, { place: p })}
-                          placeholder={w.manual.placeholder}
+                          placeholder={isDest ? "Neste destinasjon" : w.manual.placeholder}
                         />
                       </div>
                       <button
@@ -610,7 +703,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                       </button>
                     </div>
                     <div className="flex items-center gap-2 pl-7 text-[11px] text-muted-foreground">
-                      <span>Via-stopp {idx + 1}</span>
+                      <span>{isDest ? `Destinasjon ${idx + 1}` : `Via-stopp ${idx + 1}`}</span>
                       <input
                         type="date"
                         value={r.date}
@@ -618,6 +711,15 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                         className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-[11px]"
                         aria-label={w.manual.dateLabel}
                       />
+                      <button
+                        type="button"
+                        onClick={() => updateRow(r.key, { kind: isDest ? "via" : "destination" })}
+                        className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] hover:border-primary"
+                      >
+                        {isDest ? "🏁 Destinasjon" : "🛣️ Via-stopp"}
+                      </button>
+
+
                       <button
                         type="button"
                         onClick={() => updateRow(r.key, { type: tp === "lodging" ? "city" : "lodging" })}
@@ -683,17 +785,27 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
               type="button"
               onClick={insertViaStop}
               className="inline-flex items-center gap-2 rounded-full border border-dashed border-border bg-surface px-4 py-2 text-sm hover:border-primary hover:text-primary"
+              title="Et raskt stopp underveis på samme etappe"
             >
               <Plus className="h-4 w-4" /> Legg til via-stopp
             </button>
             <button
               type="button"
+              onClick={insertNextDestination}
+              className="inline-flex items-center gap-2 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
+              title="En ny hoveddestinasjon — får sin egen dag/etappe i roadbooken"
+            >
+              <Plus className="h-4 w-4" /> Legg til neste destinasjon
+            </button>
+            <button
+              type="button"
               onClick={() => setImportOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm hover:border-primary hover:text-primary"
             >
               <FileText className="h-4 w-4" /> {w.manual.importButton}
             </button>
           </div>
+
 
           <div className="mt-10 sticky bottom-24 md:bottom-0 md:static">
             <button
