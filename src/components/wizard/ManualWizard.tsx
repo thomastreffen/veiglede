@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Plus, Trash2, Sparkles, Loader2, FileText, X, Check } from "lucide-react";
@@ -12,6 +12,8 @@ import { getRoute } from "@/lib/routing";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { importTripFromTextFn, type ImportedStop } from "@/lib/trip-import.functions";
+import { PlannerWorkspace } from "@/components/wizard/PlannerWorkspace";
+import type { RoutePoint } from "@/components/CuratedRoutePreview";
 
 interface Row {
   key: string;
@@ -503,8 +505,24 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     );
   }
 
+  const mapPoints: RoutePoint[] = useMemo(() => {
+    const pts: RoutePoint[] = [];
+    if (originPlace) pts.push({ lat: originPlace.lat, lng: originPlace.lng, label: originPlace.name ?? originPlace.label ?? "Start" });
+    for (const r of viaRows) {
+      if (r.place) pts.push({ lat: r.place.lat, lng: r.place.lng, label: r.place.name ?? r.text });
+    }
+    if (destinationRow?.place) pts.push({ lat: destinationRow.place.lat, lng: destinationRow.place.lng, label: destinationRow.place.name ?? destinationRow.text });
+    return pts;
+  }, [originPlace, viaRows, destinationRow]);
+
+  const mapSummary = mapPoints.length >= 2
+    ? `${styleMeta(style).label}${selectedVehicle ? ` · ${selectedVehicle.name}` : ""} · ${mapPoints.length} punkter`
+    : selectedVehicle ? `${styleMeta(style).label} · ${selectedVehicle.name}` : undefined;
+
   return (
-    <div className="py-4 md:py-8 max-w-2xl mx-auto pb-32 md:pb-12">
+    <PlannerWorkspace points={mapPoints} summary={mapSummary}>
+    <div className="py-4 md:py-8 max-w-2xl mx-auto pb-32 md:pb-12 lg:py-0 lg:max-w-none lg:pb-12">
+
       <div className="flex items-center justify-between">
         <button onClick={step === 1 ? onBack : () => setStep(1)} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> {step === 1 ? w.common.backToMode : w.common.back}
@@ -781,6 +799,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
         />
       )}
     </div>
+    </PlannerWorkspace>
   );
 }
 
