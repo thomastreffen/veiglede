@@ -27,9 +27,13 @@ function shortenPlace(raw: string): string {
 function LiveFollowPage() {
   const { token } = Route.useParams();
   const { session, loading } = useLiveSessionByToken(token);
+  // "Ended" is reserved for sessions the driver explicitly stopped
+  // (status = "completed"). Anything else — active, paused, or stale —
+  // must not be displayed as "Avsluttet" on the public follower page.
+  const ended = session?.status === "completed";
   const live = isLiveActive(session);
-  const ended = session?.status === "completed" || (!!session && !live);
-  const paused = live && session?.status === "paused";
+  const paused = !ended && session?.status === "paused";
+  const stale = !!session && !ended && !paused && !live;
 
   // Fetch the trip's vehicle type once so we can show the matching marker.
   // Safe-by-design RPC: only returns { vehicle_type: 'car' | 'motorcycle' | 'rv' | null }.
@@ -53,11 +57,15 @@ function LiveFollowPage() {
   }, [token]);
 
 
-  const badge = live
-    ? (paused ? "Pauset" : "Live")
-    : ended
-      ? "Avsluttet"
-      : "Venter";
+  const badge = ended
+    ? "Avsluttet"
+    : paused
+      ? "Pauset"
+      : live
+        ? "Live"
+        : stale
+          ? "Stille"
+          : "Venter";
 
   const description = loading
     ? "Henter posisjon…"
@@ -67,8 +75,8 @@ function LiveFollowPage() {
         ? "Live deling er avsluttet. Du kan trygt lukke denne siden."
         : paused
           ? "Føreren har pauset live-deling. Siden oppdateres automatisk når den starter igjen."
-          : !live
-            ? "Venter på ny posisjon. Føreren må ha Veiglede åpen for live-oppdatering."
+          : stale
+            ? "Live-posisjonen oppdateres ikke akkurat nå. Telefonen kan være låst eller uten dekning – siden fortsetter å forsøke."
             : "Posisjonen oppdateres automatisk så lenge føreren deler.";
 
   return (
