@@ -240,13 +240,30 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     if (rs.length === 0) return rs;
     const last = rs[rs.length - 1];
     const newVia = makeRowAfter(rs[rs.length - 2] ?? undefined);
+    newVia.kind = "via";
     // Insert before the destination so the destination stays last.
     const next = [...rs.slice(0, -1), newVia, last];
     return cascadeDates(next);
   });
 
+  /**
+   * Append a brand new destination ("Neste destinasjon"). The current last
+   * row stops being the final destination and becomes a main intermediate
+   * stop (kind = "destination"), so it still gets its own day/leg in the
+   * roadbook, instead of being treated as a quick via-stop.
+   */
+  const insertNextDestination = () => setRows((rs) => {
+    if (rs.length === 0) return [makeRowAfter(undefined)];
+    const promoted = { ...rs[rs.length - 1], kind: "destination" as const };
+    const newDest = makeRowAfter(promoted);
+    newDest.kind = undefined;
+    const next = [...rs.slice(0, -1), promoted, newDest];
+    return cascadeDates(next);
+  });
+
   // validRows is kept for downstream goGenerate code that expects an array of stops.
   const validRows = rows.filter((r) => r.text.trim().length > 0);
+
 
   const ensurePlace = async (r: Row): Promise<ResolvedPlace | null> => {
     if (r.place) return r.place;
