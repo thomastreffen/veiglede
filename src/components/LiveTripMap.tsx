@@ -142,7 +142,6 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
       markerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat(lngLat)
         .addTo(map);
-      map.flyTo({ center: lngLat, zoom: 13, duration: 800 });
     } else {
       markerRef.current!.setLngLat(lngLat);
       if (markerElRef.current) {
@@ -152,9 +151,28 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
           speedKmh,
         });
       }
-      map.easeTo({ center: lngLat, duration: 600 });
     }
-  }, [session, phase, vehicle]);
+    // Center on the very first fix so the follower instantly sees the driver,
+    // then only re-center when follow mode is active.
+    if (!didInitialCenterRef.current) {
+      didInitialCenterRef.current = true;
+      try { map.flyTo({ center: lngLat, zoom: 13, duration: 800 }); } catch {}
+    } else if (followLive) {
+      try { map.easeTo({ center: lngLat, duration: 600 }); } catch {}
+    }
+  }, [session, phase, vehicle, followLive]);
+
+  const handleFollow = () => {
+    if (!session) return;
+    setFollowLive(true);
+    try {
+      mapRef.current?.flyTo({
+        center: [session.lng, session.lat],
+        zoom: Math.max(mapRef.current.getZoom(), 14),
+        duration: 500,
+      });
+    } catch {}
+  };
 
 
 
