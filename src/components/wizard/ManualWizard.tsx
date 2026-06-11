@@ -23,7 +23,14 @@ interface Row {
   dayNumber: number;
   type?: "lodging" | "city" | "waypoint";
   nights?: number;
+  /**
+   * "destination" = a main leg / next destination (own day in the roadbook).
+   * "via" (default) = a quick stop along the current leg.
+   * The very last row is always treated as the trip's final destination.
+   */
+  kind?: "via" | "destination";
 }
+
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function newRow(): Row { return { key: uid(), text: "", place: null, date: "", dayNumber: 1 }; }
