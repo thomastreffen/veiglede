@@ -18,6 +18,7 @@ import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as MapTestRouteImport } from './routes/map-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HjelpRouteImport } from './routes/hjelp'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -124,6 +125,11 @@ const HjelpRoute = HjelpRouteImport.update({
   path: '/hjelp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -144,9 +150,9 @@ const PartnerIndexRoute = PartnerIndexRouteImport.update({
   getParentRoute: () => PartnerRoute,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
-  id: '/auth/',
-  path: '/auth/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -438,6 +444,7 @@ const AppTripsTripIdStopsStopIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
@@ -577,6 +584,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/hjelp': typeof HjelpRoute
   '/login': typeof LoginRoute
   '/map-test': typeof MapTestRoute
@@ -649,6 +657,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/auth'
     | '/hjelp'
     | '/login'
     | '/map-test'
@@ -787,6 +796,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/admin'
+    | '/auth'
     | '/hjelp'
     | '/login'
     | '/map-test'
@@ -859,6 +869,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
   HjelpRoute: typeof HjelpRoute
   LoginRoute: typeof LoginRoute
   MapTestRoute: typeof MapTestRoute
@@ -878,7 +889,6 @@ export interface RootRouteChildren {
   SharedShareTokenRoute: typeof SharedShareTokenRoute
   SharedTripIdRoute: typeof SharedTripIdRoute
   UUsernameRoute: typeof UUsernameRoute
-  AuthIndexRoute: typeof AuthIndexRoute
   ApiPublicDirectionsRoute: typeof ApiPublicDirectionsRoute
   ApiPublicGooglePlacesRoute: typeof ApiPublicGooglePlacesRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
@@ -958,6 +968,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HjelpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -988,10 +1005,10 @@ declare module '@tanstack/react-router' {
     }
     '/auth/': {
       id: '/auth/'
-      path: '/auth'
+      path: '/'
       fullPath: '/auth/'
       preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -1467,6 +1484,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthIndexRoute: AuthIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface PartnerDashboardRouteChildren {
   PartnerDashboardBenefitsRoute: typeof PartnerDashboardBenefitsRoute
   PartnerDashboardInvoicesRoute: typeof PartnerDashboardInvoicesRoute
@@ -1505,6 +1534,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
   HjelpRoute: HjelpRoute,
   LoginRoute: LoginRoute,
   MapTestRoute: MapTestRoute,
@@ -1524,7 +1554,6 @@ const rootRouteChildren: RootRouteChildren = {
   SharedShareTokenRoute: SharedShareTokenRoute,
   SharedTripIdRoute: SharedTripIdRoute,
   UUsernameRoute: UUsernameRoute,
-  AuthIndexRoute: AuthIndexRoute,
   ApiPublicDirectionsRoute: ApiPublicDirectionsRoute,
   ApiPublicGooglePlacesRoute: ApiPublicGooglePlacesRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
@@ -1543,13 +1572,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
