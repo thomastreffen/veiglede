@@ -24,7 +24,8 @@ const DEFAULT_NORWAY_POINTS: RoutePoint[] = [
  * and interactive; instructional copy appears as an overlay, never as a
  * replacement for the map.
  */
-export function PlannerWorkspace({ children, points, summary }: Props) {
+export function PlannerWorkspace({ children, points, summary, routeGeometry }: Props) {
+
   const hasPoints = points.length > 0;
   const mapPoints = hasPoints ? points : DEFAULT_NORWAY_POINTS;
 
