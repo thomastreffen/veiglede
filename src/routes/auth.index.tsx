@@ -8,7 +8,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
  * If the caller already stored a `returnTo` path via `setReturnTo`,
  * the login page will consume it once the user signs in.
  */
-export const Route = createFileRoute("/auth")({
+export const Route = createFileRoute("/auth/")({
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : undefined,
     mode: s.mode === "signup" ? "signup" : undefined,
