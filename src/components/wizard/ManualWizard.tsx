@@ -662,13 +662,20 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
           {viaRows.length > 0 && (
             <div className="mt-4 space-y-2">
               <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
-                Via-stopp (valgfritt)
+                Stopp og destinasjoner underveis
               </p>
               {viaRows.map((r, idx) => {
                 const tp = detectType(r.text, r.type);
-                const icon = tp === "lodging" ? "🏨" : "🏙️";
+                const isDest = r.kind === "destination";
+                const icon = isDest ? "🏁" : tp === "lodging" ? "🏨" : "🏙️";
                 return (
-                  <div key={r.key} className="rounded-2xl border border-border bg-surface p-3 space-y-2">
+                  <div
+                    key={r.key}
+                    className={cn(
+                      "rounded-2xl border bg-surface p-3 space-y-2",
+                      isDest ? "border-primary/40 bg-primary/5" : "border-border",
+                    )}
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-xl shrink-0">{icon}</span>
                       <div className="flex-1 min-w-0">
@@ -677,7 +684,7 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                           onTextChange={(v) => updateRow(r.key, { text: v })}
                           selected={r.place}
                           onSelect={(p) => updateRow(r.key, { place: p })}
-                          placeholder={w.manual.placeholder}
+                          placeholder={isDest ? "Neste destinasjon" : w.manual.placeholder}
                         />
                       </div>
                       <button
@@ -690,7 +697,22 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
                       </button>
                     </div>
                     <div className="flex items-center gap-2 pl-7 text-[11px] text-muted-foreground">
-                      <span>Via-stopp {idx + 1}</span>
+                      <span>{isDest ? `Destinasjon ${idx + 1}` : `Via-stopp ${idx + 1}`}</span>
+                      <input
+                        type="date"
+                        value={r.date}
+                        onChange={(e) => updateRow(r.key, { date: e.target.value })}
+                        className="ml-auto bg-background border border-border rounded-md px-2 py-1 text-[11px]"
+                        aria-label={w.manual.dateLabel}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateRow(r.key, { kind: isDest ? "via" : "destination" })}
+                        className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] hover:border-primary"
+                      >
+                        {isDest ? "🏁 Destinasjon" : "🛣️ Via-stopp"}
+                      </button>
+
                       <input
                         type="date"
                         value={r.date}
