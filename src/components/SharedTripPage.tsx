@@ -162,24 +162,43 @@ export function SharedTripPage({ shareToken }: { shareToken: string }) {
           <p className="mt-3 text-sm text-foreground/85 leading-relaxed">
             Se roadbooken nedenfor, eller kopier turen til dine egne turer og gjør den til din.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 items-center">
+            <WillDriveButton tripId={trip.id} />
             <CopyTripButton
               shareToken={shareToken}
               originalTripId={trip.id}
               inspiredByDisplayName={data.owner?.displayName}
-              variant="primary"
+              variant="secondary"
+              label="Kopier til mine turer"
             />
             {data.owner?.isPublicProfile && data.owner.username && (
               <Link
                 to="/u/$username"
                 params={{ username: data.owner.username }}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-background/60 backdrop-blur px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
+                className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background/60 backdrop-blur px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
               >
-                <ExternalLink className="h-4 w-4" /> Se offentlig profil
+                <ExternalLink className="h-3.5 w-3.5" /> Profil
               </Link>
             )}
           </div>
+          <div className="mt-3">
+            <TripReactionsRow tripId={trip.id} size="sm" hideDrive />
+          </div>
         </section>
+
+        {data.vehicleIdentity && (
+          <div className="mt-4">
+            <VehicleIdentityCard
+              vehicle={{
+                name: data.vehicleIdentity.name,
+                type: data.vehicleIdentity.type as Trip["vehicle"],
+                energy: data.vehicleIdentity.energy,
+                description: data.vehicleIdentity.description,
+              }}
+              style={trip.style}
+            />
+          </div>
+        )}
 
         <p className="mt-3 rounded-xl border border-border bg-surface px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
           <span className="font-semibold text-foreground">Delt turplan.</span> Dette er en read-only visning av ruta og roadbooken. Live-posisjon vises ikke her.
