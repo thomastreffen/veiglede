@@ -12,7 +12,7 @@ import {
   VEHICLES, ROUTE_STYLES,
   type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
-import { CURATED_TRIPS, COUNTRY_LABEL, MACRO_REGION_LABEL, type Country, type CuratedTrip, type MacroRegion } from "@/lib/curated-trips";
+import { CURATED_TRIPS, COUNTRY_LABEL, MACRO_REGION_LABEL, curatedRegionRelevance, type Country, type CuratedTrip, type MacroRegion } from "@/lib/curated-trips";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame } from "lucide-react";
 import { useT } from "@/i18n/provider";
@@ -147,16 +147,32 @@ function TripsTab() {
   }, [trips]);
 
   // Curated trips matching the current filters — always available, never empty.
+  // When a macro-region is selected, we keep ALL curated trips but sort them by
+  // region relevance (entirely-inside → starts → ends → passes-through → other).
   const curatedFiltered = useMemo(() => {
-    return CURATED_TRIPS.filter((c) => {
+    const base = CURATED_TRIPS.filter((c) => {
       if (country !== "all" && c.country !== country) return false;
-      if (macroRegion !== "all" && !c.macroRegions.includes(macroRegion)) return false;
       if (region !== "all" && c.region !== region) return false;
       if (style !== "all" && c.style !== style) return false;
       if (vehicle !== "all" && !c.vehicleSuitability.includes(vehicle)) return false;
       return true;
     });
+    if (macroRegion === "all") return base;
+    return [...base].sort((a, b) => curatedRegionRelevance(a, macroRegion) - curatedRegionRelevance(b, macroRegion));
   }, [country, macroRegion, region, style, vehicle]);
+
+  /** Split curated list into "relevant" (score 0-3) vs "other popular" (score 4) for the selected macro region. */
+  const curatedSplit = useMemo(() => {
+    if (macroRegion === "all") return { primary: curatedFiltered, other: [] as CuratedTrip[] };
+    const primary: CuratedTrip[] = [];
+    const other: CuratedTrip[] = [];
+    for (const c of curatedFiltered) {
+      if (curatedRegionRelevance(c, macroRegion) < 4) primary.push(c);
+      else other.push(c);
+    }
+    return { primary, other };
+  }, [curatedFiltered, macroRegion]);
+
 
   const filtered = useMemo(() => {
     // Country filter only applies to curated trips (user trips have no country yet).
