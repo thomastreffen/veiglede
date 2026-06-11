@@ -1,16 +1,21 @@
-// React adapter around the singleton LiveBroadcaster. Owns no geolocation
-// logic itself — that lives in WebLiveBroadcaster (and later
-// NativeLiveBroadcaster). Trip UI consumes this hook only.
-import { useEffect, useRef, useState } from "react";
+// React adapter around the singleton LiveBroadcaster.
+//
+// IMPORTANT: This hook is now READ-ONLY. Lifecycle (start/stop/update) is
+// owned by <GlobalLiveDriver /> (mounted once in AppShell) so that the
+// broadcaster survives internal navigation between trip subpages, /home,
+// /garage, /settings, etc. Mount/unmount of trip UI must NEVER start or
+// stop publishing — only explicit user action ("Stopp live-deling"),
+// trip completion, or logout should.
+import { useEffect, useState } from "react";
 import { getLiveBroadcaster } from "./factory";
-import type { BroadcastSnapshot, StartOptions } from "./types";
+import type { BroadcastSnapshot } from "./types";
 import type { LiveBroadcasterDebugState, LiveStatus } from "@/lib/live-tracking";
 
 export interface UseLiveBroadcasterArgs {
   tripId: string;
-  userId: string | null | undefined;
-  enabled: boolean;
-  status: LiveStatus | "idle";
+  userId?: string | null | undefined;
+  enabled?: boolean;
+  status?: LiveStatus | "idle";
   lastStopName?: string | null;
   intervalMs?: number;
 }
@@ -61,47 +66,14 @@ const FALLBACK_DEBUG: LiveBroadcasterDebugState = {
 };
 
 export function useLiveBroadcasterAdapter(args: UseLiveBroadcasterArgs): UseLiveBroadcasterResult {
-  const { tripId, userId, enabled, status, lastStopName, intervalMs } = args;
+  const { tripId } = args;
   const broadcaster = getLiveBroadcaster();
   const [snapshot, setSnapshot] = useState<BroadcastSnapshot>(() => broadcaster.getStatus(tripId));
-  const startedRef = useRef(false);
 
-  // Subscribe to status updates for this trip.
   useEffect(() => {
     const unsub = broadcaster.subscribeStatus(tripId, setSnapshot);
     return () => { unsub(); };
   }, [broadcaster, tripId]);
-
-  // Drive lifecycle: start/stop when enabled+userId+status changes.
-  useEffect(() => {
-    if (!enabled || !userId) {
-      if (startedRef.current) {
-        startedRef.current = false;
-        void broadcaster.stop(tripId);
-      }
-      return;
-    }
-    const opts: StartOptions = {
-      userId,
-      tripStatus: status,
-      lastStopName: lastStopName ?? null,
-      intervalMs,
-    };
-    if (!startedRef.current) {
-      startedRef.current = true;
-      void broadcaster.start(tripId, opts);
-    } else {
-      broadcaster.update(tripId, opts);
-    }
-  }, [broadcaster, enabled, userId, tripId, status, lastStopName, intervalMs]);
-
-  // IMPORTANT: do NOT stop the broadcaster on unmount.
-  // "Ended" must only happen when the user explicitly stops sharing or the
-  // trip is marked completed. Navigating between trip subpages (overview →
-  // roadbook → stop detail) unmounts this hook, but the broadcaster is a
-  // singleton that should keep publishing in the background. The next mount
-  // (start) is a no-op for an already-running trip.
-  // The trip page owns explicit stop via its own UI (Stopp live-deling).
 
   return {
     snapshot,
