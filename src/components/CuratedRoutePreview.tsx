@@ -13,6 +13,8 @@ interface Props {
   points: RoutePoint[];
   className?: string;
   interactive?: boolean;
+  /** When false, points are only used to fit the viewport (no markers/line). */
+  showMarkers?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * plus a dashed line between them as a "schematic" of the route. The exact
  * road geometry will be computed when the user copies the trip and edits it.
  */
-export function CuratedRoutePreview({ points, className, interactive = false }: Props) {
+export function CuratedRoutePreview({ points, className, interactive = false, showMarkers = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const cfg = useRuntimeMapConfig();
 
@@ -38,30 +40,34 @@ export function CuratedRoutePreview({ points, className, interactive = false }: 
     });
     const markers: maplibregl.Marker[] = [];
     map.on("load", () => {
-      points.forEach((p, i) => {
-        const isStart = i === 0;
-        const isEnd = i === points.length - 1 && points.length > 1;
-        const color = isStart ? "#ff6b35" : isEnd ? "#10b981" : "#94a3b8";
-        const m = new maplibregl.Marker({ color }).setLngLat([p.lng, p.lat]);
-        if (p.label) m.setPopup(new maplibregl.Popup({ offset: 18, closeButton: false }).setText(p.label));
-        m.addTo(map);
-        markers.push(m);
-      });
+      if (showMarkers) {
+        points.forEach((p, i) => {
+          const isStart = i === 0;
+          const isEnd = i === points.length - 1 && points.length > 1;
+          const color = isStart ? "#ff6b35" : isEnd ? "#10b981" : "#94a3b8";
+          const m = new maplibregl.Marker({ color }).setLngLat([p.lng, p.lat]);
+          if (p.label) m.setPopup(new maplibregl.Popup({ offset: 18, closeButton: false }).setText(p.label));
+          m.addTo(map);
+          markers.push(m);
+        });
+        if (points.length > 1) {
+          map.addSource("line", {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              properties: {},
+              geometry: { type: "LineString", coordinates: points.map((p) => [p.lng, p.lat]) },
+            },
+          });
+          map.addLayer({
+            id: "line",
+            type: "line",
+            source: "line",
+            paint: { "line-color": "#ff6b35", "line-width": 3, "line-dasharray": [2, 2], "line-opacity": 0.85 },
+          });
+        }
+      }
       if (points.length > 1) {
-        map.addSource("line", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            properties: {},
-            geometry: { type: "LineString", coordinates: points.map((p) => [p.lng, p.lat]) },
-          },
-        });
-        map.addLayer({
-          id: "line",
-          type: "line",
-          source: "line",
-          paint: { "line-color": "#ff6b35", "line-width": 3, "line-dasharray": [2, 2], "line-opacity": 0.85 },
-        });
         const bounds = new maplibregl.LngLatBounds();
         points.forEach((p) => bounds.extend([p.lng, p.lat]));
         map.fitBounds(bounds, { padding: 50, duration: 0, maxZoom: 9 });
@@ -72,7 +78,7 @@ export function CuratedRoutePreview({ points, className, interactive = false }: 
       map.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfg?.maptilerKey, JSON.stringify(points), interactive]);
+  }, [cfg?.maptilerKey, JSON.stringify(points), interactive, showMarkers]);
 
   if (!cfg?.maptilerKey) {
     return (
