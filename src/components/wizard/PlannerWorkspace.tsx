@@ -65,6 +65,7 @@ export function PlannerWorkspace({ children, points, summary }: Props) {
             </div>
           )}
         </section>
+        </div>
       </div>
     </>
   );
