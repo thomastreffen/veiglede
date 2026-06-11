@@ -188,9 +188,33 @@ function TripsTab() {
       if (vehicle !== "all" && !c.vehicleSuitability.includes(vehicle)) return false;
       return true;
     });
-    if (macroRegion === "all") return base;
-    return [...base].sort((a, b) => curatedRegionRelevance(a, macroRegion) - curatedRegionRelevance(b, macroRegion));
-  }, [country, macroRegion, region, style, vehicle]);
+    if (macroRegion !== "all") {
+      return [...base].sort((a, b) => curatedRegionRelevance(a, macroRegion) - curatedRegionRelevance(b, macroRegion));
+    }
+    // No explicit region — rank by locale/country/vehicle/style/proximity relevance.
+    return [...base].sort((a, b) => {
+      const sa = curatedRelevanceScore(a, { locale, country, macroRegion, vehicle, style, userLocation: userLocation ?? undefined, social: stats[a.id] });
+      const sb = curatedRelevanceScore(b, { locale, country, macroRegion, vehicle, style, userLocation: userLocation ?? undefined, social: stats[b.id] });
+      return sb - sa;
+    });
+  }, [country, macroRegion, region, style, vehicle, locale, userLocation, stats]);
+
+  // "Turer nær deg" — only populated after the user opts into geolocation.
+  const nearMe = useMemo(() => {
+    if (!userLocation) return [] as CuratedTrip[];
+    return [...CURATED_TRIPS]
+      .map((c) => ({ c, d: distanceToTrip(userLocation, c) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 6)
+      .map((x) => x.c);
+  }, [userLocation]);
+
+  // Foreign-visitor Norway suggestions — surfaced when the active locale isn't Norwegian.
+  const foreignNorwaySuggestions = useMemo(() => {
+    if (!isForeignVisitorLocale(locale)) return [] as CuratedTrip[];
+    return CURATED_TRIPS.filter((c) => c.country === "no").slice(0, 6);
+  }, [locale]);
+
 
   /** Split curated list into "relevant" (score 0-3) vs "other popular" (score 4) for the selected macro region. */
   const curatedSplit = useMemo(() => {
