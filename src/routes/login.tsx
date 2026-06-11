@@ -4,6 +4,7 @@ import { AuthButtons } from "@/components/AuthButtons";
 import { useAuth } from "@/lib/auth";
 import { VeigledeLogo } from "@/components/VeigledeLogo";
 import { consumePendingInvite } from "@/lib/trip-invites";
+import { consumeReturnTo } from "@/lib/return-to";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Logg inn — Veiglede" }] }),
@@ -18,9 +19,16 @@ function LoginPage() {
     const pending = consumePendingInvite();
     if (pending) {
       navigate({ to: "/join/$token", params: { token: pending }, replace: true });
-    } else {
-      navigate({ to: "/trips", replace: true });
+      return;
     }
+    const returnTo = consumeReturnTo();
+    if (returnTo) {
+      // External navigation so the returnTo path can be anything in the app
+      // (curated inspiration pages, shared trips, etc.) without listing routes.
+      window.location.replace(returnTo);
+      return;
+    }
+    navigate({ to: "/trips", replace: true });
   }, [user, navigate]);
 
   return (
