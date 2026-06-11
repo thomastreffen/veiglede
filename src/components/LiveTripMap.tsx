@@ -199,9 +199,9 @@ export function LiveTripMap({ tripId, session: sessionProp, vehicle, height, cla
 
   const bottomMessage =
     !session ? "Venter på første posisjon…" :
-    phase === "paused" ? "Live deling er pauset" :
-    phase === "stale" ? "Posisjonen er ikke nylig oppdatert" :
-    phase === "ended" ? "Live deling er avsluttet" :
+    phase === "paused" ? "Live-deling er pauset." :
+    phase === "stale" ? "Live-posisjonen oppdateres ikke akkurat nå. Telefonen kan være låst eller uten dekning." :
+    phase === "ended" ? "Live-deling er avsluttet." :
     null;
 
 
