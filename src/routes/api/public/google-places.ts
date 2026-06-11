@@ -120,6 +120,46 @@ export const Route = createFileRoute("/api/public/google-places")({
           }
         }
 
+        if (action === "reverse") {
+          const lat = Number(url.searchParams.get("lat"));
+          const lng = Number(url.searchParams.get("lng"));
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            return json({ error: "bad-latlng" }, 400);
+          }
+          try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 5000);
+            const res = await fetch(
+              `${GATEWAY_URL}/maps/api/geocode/json?latlng=${lat},${lng}&language=no&result_type=street_address|premise|route|locality|postal_town`,
+              { signal: ctrl.signal, headers: { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": mapsKey } },
+            );
+            clearTimeout(t);
+            if (!res.ok) return json({ error: `reverse-${res.status}` }, 502);
+            const data = (await res.json()) as {
+              results?: Array<{
+                formatted_address?: string;
+                address_components?: Array<{ long_name?: string; types?: string[] }>;
+                types?: string[];
+              }>;
+            };
+            const first = data.results?.[0];
+            if (!first) return json({ label: null });
+            // Prefer a short "Street + City" or just "City" label.
+            const comps = first.address_components ?? [];
+            const pick = (t: string) => comps.find((c) => c.types?.includes(t))?.long_name;
+            const street = pick("route");
+            const num = pick("street_number");
+            const city = pick("postal_town") ?? pick("locality") ?? pick("administrative_area_level_2");
+            let label: string | null = null;
+            if (street && city) label = num ? `${street} ${num}, ${city}` : `${street}, ${city}`;
+            else if (city) label = city;
+            else label = first.formatted_address ?? null;
+            return json({ label, address: first.formatted_address ?? null });
+          } catch (err) {
+            return json({ error: `reverse-error-${(err as Error)?.name ?? "unknown"}` }, 502);
+          }
+        }
+
         // autocomplete
         const rawInput = (url.searchParams.get("input") ?? "").trim().slice(0, 200);
         if (rawInput.length < 2) return json({ results: [] });
