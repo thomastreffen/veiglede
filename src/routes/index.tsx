@@ -607,10 +607,11 @@ function Landing() {
           {POPULAR_ROUTES.map((r) => (
             <Link
               key={r.name}
-              to="/trips/new"
+              to="/inspirasjon/$slug"
+              params={{ slug: r.slug }}
               className="group rounded-2xl border border-black/5 bg-white shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
             >
-              <div className="aspect-[4/3] overflow-hidden">
+              <div className="aspect-[4/3] overflow-hidden relative">
                 <img
                   src={r.img}
                   alt={r.name}
@@ -619,9 +620,12 @@ function Landing() {
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
+                <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white/90 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+                  <Sparkles className="h-2.5 w-2.5" /> Kuratert
+                </span>
               </div>
               <div className="p-4">
-                <h3 className="font-display text-base uppercase tracking-wide">{r.name}</h3>
+                <h3 className="font-display text-base uppercase tracking-wide group-hover:text-primary transition-colors">{r.name}</h3>
                 <div className="mt-2 flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-[#1a1a1a]/55">
                   <span>{t.routes.days(r.days)}</span>
                   <span>{r.km}</span>
@@ -629,6 +633,9 @@ function Landing() {
                     <RouteIcon className="h-3 w-3" /> {t.routes.styles[r.styleKey]}
                   </span>
                 </div>
+                <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                  Se roadbook <ArrowRight className="h-3 w-3" />
+                </p>
               </div>
             </Link>
           ))}
