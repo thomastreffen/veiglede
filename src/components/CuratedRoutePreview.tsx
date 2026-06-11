@@ -24,7 +24,7 @@ interface Props {
  * plus a dashed line between them as a "schematic" of the route. The exact
  * road geometry will be computed when the user copies the trip and edits it.
  */
-export function CuratedRoutePreview({ points, className, interactive = false }: Props) {
+export function CuratedRoutePreview({ points, className, interactive = false, showMarkers = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const cfg = useRuntimeMapConfig();
 
