@@ -414,18 +414,33 @@ function TripsTab() {
       </section>
 
       {/* Turer nær deg — only after explicit opt-in via "Vis turer nær meg". */}
-      {userLocation && nearMe.length > 0 && (
+      {userLocation && (
         <section className="mt-8">
           <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
             <Navigation className="h-3 w-3" /> {nearMeT.nearYou}
           </p>
           <h2 className="font-display text-xl uppercase mt-1">{nearMeT.nearYou}</h2>
-          <p className="text-xs text-muted-foreground">{nearMeT.tip}</p>
-          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {nearMe.map((c) => (
-              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
-            ))}
-          </ul>
+          {nearMe.length > 0 ? (
+            <>
+              <p className="text-xs text-muted-foreground">{nearMeT.tip}</p>
+              <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {nearMe.map((c) => (
+                  <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/40 p-5">
+              <p className="text-sm text-muted-foreground">
+                Vi fant ingen kuraterte ruter helt nær deg ennå. Her er populære ruter i Norge i mellomtiden:
+              </p>
+              <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {CURATED_TRIPS.filter((c) => c.country === "no").slice(0, 3).map((c) => (
+                  <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 
