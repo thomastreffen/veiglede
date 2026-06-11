@@ -12,8 +12,9 @@ import {
   VEHICLES, ROUTE_STYLES,
   type VehicleType, type RouteStyle,
 } from "@/lib/trips-store";
+import { CURATED_TRIPS, COUNTRY_LABEL, type Country, type CuratedTrip } from "@/lib/curated-trips";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn } from "lucide-react";
+import { Compass, Route as RouteIcon, ArrowRight, Users, Sparkles, LogIn, MapPin, Flag, Bookmark, Flame } from "lucide-react";
 import { useT } from "@/i18n/provider";
 import { useAuth } from "@/lib/auth";
 
@@ -118,7 +119,10 @@ function TripsTab() {
     staleTime: 60_000,
   });
   const trips = data ?? [];
-  const tripIds = useMemo(() => trips.map((t) => t.id).filter(Boolean), [trips]);
+  const tripIds = useMemo(
+    () => [...trips.map((t) => t.id).filter(Boolean), ...CURATED_TRIPS.map((c) => c.id)],
+    [trips],
+  );
 
   const { data: statsMap } = useQuery({
     queryKey: ["trip-social-stats", tripIds],
@@ -131,15 +135,30 @@ function TripsTab() {
   const [region, setRegion] = useState<string>("all");
   const [vehicle, setVehicle] = useState<"all" | VehicleType>("all");
   const [style, setStyle] = useState<"all" | RouteStyle>("all");
+  const [country, setCountry] = useState<"all" | Country>("all");
   const [sort, setSort] = useState<"newest" | "most_saved" | "most_drive" | "most_reactions">("newest");
 
   const regions = useMemo(() => {
     const set = new Set<string>();
     trips.forEach((tr) => { if (tr.region) set.add(tr.region); });
+    CURATED_TRIPS.forEach((c) => { if (c.region) set.add(c.region); });
     return Array.from(set).sort();
   }, [trips]);
 
+  // Curated trips matching the current filters — always available, never empty.
+  const curatedFiltered = useMemo(() => {
+    return CURATED_TRIPS.filter((c) => {
+      if (country !== "all" && c.country !== country) return false;
+      if (region !== "all" && c.region !== region) return false;
+      if (style !== "all" && c.style !== style) return false;
+      if (vehicle !== "all" && !c.vehicleSuitability.includes(vehicle)) return false;
+      return true;
+    });
+  }, [country, region, style, vehicle]);
+
   const filtered = useMemo(() => {
+    // Country filter only applies to curated trips (user trips have no country yet).
+    if (country !== "all") return [] as PublicTripSummary[];
     const list = trips.filter((tr) => {
       if (region !== "all" && tr.region !== region) return false;
       if (vehicle !== "all" && tr.vehicle !== vehicle) return false;
@@ -157,7 +176,7 @@ function TripsTab() {
       return [...list].sort((a, b) => s(b.id).reactions - s(a.id).reactions || (b.createdAt - a.createdAt));
     }
     return list;
-  }, [trips, region, vehicle, style, sort, stats]);
+  }, [trips, country, region, vehicle, style, sort, stats]);
 
   // "Populære turer" highlight strip: top 3 by combined save+drive intent.
   const popular = useMemo(() => {
@@ -189,8 +208,18 @@ function TripsTab() {
 
   return (
     <>
+      {/* Country chips */}
+      <section className="mt-6 flex flex-wrap gap-2">
+        <FilterPill active={country === "all"} onClick={() => setCountry("all")}>🌍 Alle land</FilterPill>
+        {(["no", "se", "dk", "de"] as Country[]).map((c) => (
+          <FilterPill key={c} active={country === c} onClick={() => setCountry(c)}>
+            {COUNTRY_LABEL[c]}
+          </FilterPill>
+        ))}
+      </section>
+
       {/* Filters + sort */}
-      <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <section className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={region} onValueChange={setRegion}>
           <SelectTrigger><SelectValue placeholder={ex.region} /></SelectTrigger>
           <SelectContent>
@@ -223,10 +252,30 @@ function TripsTab() {
         </Select>
       </section>
 
-      {/* Populære turer */}
-      {popular.length > 0 && sort === "newest" && (
+      {/* Curated — always available, never empty */}
+      {curatedFiltered.length > 0 && (
         <section className="mt-8">
-          <h2 className="font-display text-xl uppercase">Populære turer</h2>
+          <div className="flex items-end justify-between gap-3 flex-wrap">
+            <div>
+              <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-primary">
+                <Sparkles className="h-3 w-3" /> Kuratert av Veiglede
+              </p>
+              <h2 className="font-display text-xl uppercase mt-1">Inspirasjon for neste tur</h2>
+              <p className="text-xs text-muted-foreground">Ekte ruter med roadbook, klare til å kopieres eller tilpasses.</p>
+            </div>
+          </div>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {curatedFiltered.map((c) => (
+              <li key={c.slug}><CuratedTripCard trip={c} stats={stats[c.id]} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Populære turer */}
+      {popular.length > 0 && sort === "newest" && country === "all" && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl uppercase">Populære turer fra fellesskapet</h2>
           <p className="text-xs text-muted-foreground">Turene som andre lagrer og vil kjøre akkurat nå.</p>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {popular.map(renderCard)}
@@ -347,6 +396,65 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
     >
       {children}
     </button>
+  );
+}
+
+/* ============ CURATED CARD ============ */
+
+function CuratedTripCard({ trip, stats }: { trip: CuratedTrip; stats?: TripSocialStats }) {
+  return (
+    <Link
+      to="/inspirasjon/$slug"
+      params={{ slug: trip.slug }}
+      className="group block rounded-2xl border border-border bg-surface overflow-hidden hover:border-primary/60 transition-colors h-full"
+    >
+      <div className="relative h-32">
+        <img src={trip.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
+        <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/15 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+          <Sparkles className="h-2.5 w-2.5" /> Kuratert
+        </span>
+        <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full border border-border bg-background/70 backdrop-blur px-2 py-0.5 text-[10px] text-muted-foreground">
+          {COUNTRY_LABEL[trip.country]}
+        </span>
+      </div>
+      <div className="p-4">
+        <p className="text-[10px] uppercase tracking-wider text-primary">{trip.region}</p>
+        <h3 className="mt-0.5 font-display text-lg uppercase leading-tight group-hover:text-primary">{trip.title}</h3>
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{trip.shortDescription}</p>
+        <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground truncate">
+          <MapPin className="h-3 w-3 shrink-0 text-primary" />
+          {trip.origin} → {trip.destination}
+        </p>
+        <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><RouteIcon className="h-3 w-3" /> {trip.distanceKm} km</span>
+          <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> {trip.stopsCount} stopp</span>
+          <span className="inline-flex items-center gap-1 truncate" title={trip.drivingTime}>{trip.drivingTime}</span>
+        </div>
+        {stats && (stats.drive > 0 || stats.saves > 0 || stats.reactions > 0) && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {stats.drive > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                <Flag className="h-3 w-3" /> {stats.drive} vil kjøre
+              </span>
+            )}
+            {stats.saves > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Bookmark className="h-3 w-3" /> {stats.saves} lagret
+              </span>
+            )}
+            {stats.reactions > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Flame className="h-3 w-3" /> {stats.reactions} reaksjoner
+              </span>
+            )}
+          </div>
+        )}
+        <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+          Se roadbook <ArrowRight className="h-3 w-3" />
+        </p>
+      </div>
+    </Link>
   );
 }
 

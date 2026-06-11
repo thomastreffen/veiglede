@@ -71,11 +71,11 @@ const HERO_IMAGES = [
   routeTrollstigen,
 ];
 
-const POPULAR_ROUTES = [
-  { img: routeLofoten, name: "Lofoten rundt", days: 5, km: "~ 850 km", styleKey: "svingete" as const },
-  { img: routeAtlanterhavsveien, name: "Atlanterhavsveien", days: 1, km: "~ 160 km", styleKey: "fototur" as const },
-  { img: routeHardanger, name: "Hardanger rundt", days: 3, km: "~ 600 km", styleKey: "cruise" as const },
-  { img: routeSognefjellet, name: "Sognefjellet", days: 1, km: "~ 235 km", styleKey: "svingete" as const },
+const POPULAR_ROUTES: Array<{ img: string; name: string; days: number; km: string; styleKey: "svingete" | "fototur" | "cruise"; slug: string }> = [
+  { img: routeLofoten, name: "Lofoten rundt", days: 5, km: "~ 230 km", styleKey: "svingete", slug: "lofoten-rundt" },
+  { img: routeAtlanterhavsveien, name: "Atlanterhavsveien", days: 1, km: "~ 160 km", styleKey: "fototur", slug: "atlanterhavsveien" },
+  { img: routeHardanger, name: "Hardanger rundt", days: 3, km: "~ 600 km", styleKey: "cruise", slug: "hardanger-rundt" },
+  { img: routeSognefjellet, name: "Sognefjellet", days: 1, km: "~ 108 km", styleKey: "svingete", slug: "sognefjellet" },
 ];
 
 const REGIONS = [
@@ -87,10 +87,10 @@ const REGIONS = [
   { name: "Sørlandet", km: "200–600 km", img: routeAtlanterhavsveien, color: "#c9a84c" },
 ];
 
-const SCENIC_ROUTES = [
-  { name: "Atlanterhavsveien", km: "~ 160 km", img: routeAtlanterhavsveien },
-  { name: "Trollstigen", km: "106 km", img: routeTrollstigen },
-  { name: "Sognefjellet", km: "108 km", img: routeSognefjellet },
+const SCENIC_ROUTES: Array<{ name: string; km: string; img: string; slug: string }> = [
+  { name: "Atlanterhavsveien", km: "~ 160 km", img: routeAtlanterhavsveien, slug: "atlanterhavsveien" },
+  { name: "Trollstigen", km: "106 km", img: routeTrollstigen, slug: "sognefjellet" },
+  { name: "Sognefjellet", km: "108 km", img: routeSognefjellet, slug: "sognefjellet" },
 ];
 
 const STEP_ICONS = [Bike, Sparkles, Share2, Camera];
@@ -452,9 +452,11 @@ function Landing() {
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
               {SCENIC_ROUTES.map((s) => (
-                <div
+                <Link
                   key={s.name}
-                  className="group relative overflow-hidden rounded-2xl aspect-[3/4] shadow-lg"
+                  to="/inspirasjon/$slug"
+                  params={{ slug: s.slug }}
+                  className="group relative overflow-hidden rounded-2xl aspect-[3/4] shadow-lg block"
                 >
                   <img
                     src={s.img}
@@ -475,7 +477,7 @@ function Landing() {
                     </p>
                     <p className="mt-1 text-xs text-white/70">{s.km}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -607,10 +609,11 @@ function Landing() {
           {POPULAR_ROUTES.map((r) => (
             <Link
               key={r.name}
-              to="/trips/new"
+              to="/inspirasjon/$slug"
+              params={{ slug: r.slug }}
               className="group rounded-2xl border border-black/5 bg-white shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
             >
-              <div className="aspect-[4/3] overflow-hidden">
+              <div className="aspect-[4/3] overflow-hidden relative">
                 <img
                   src={r.img}
                   alt={r.name}
@@ -619,9 +622,12 @@ function Landing() {
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
+                <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white/90 backdrop-blur px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+                  <Sparkles className="h-2.5 w-2.5" /> Kuratert
+                </span>
               </div>
               <div className="p-4">
-                <h3 className="font-display text-base uppercase tracking-wide">{r.name}</h3>
+                <h3 className="font-display text-base uppercase tracking-wide group-hover:text-primary transition-colors">{r.name}</h3>
                 <div className="mt-2 flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-[#1a1a1a]/55">
                   <span>{t.routes.days(r.days)}</span>
                   <span>{r.km}</span>
@@ -629,6 +635,9 @@ function Landing() {
                     <RouteIcon className="h-3 w-3" /> {t.routes.styles[r.styleKey]}
                   </span>
                 </div>
+                <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                  Se roadbook <ArrowRight className="h-3 w-3" />
+                </p>
               </div>
             </Link>
           ))}
