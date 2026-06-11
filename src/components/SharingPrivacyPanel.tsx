@@ -288,7 +288,12 @@ export function SharingPrivacyPanel({ trip, tracking, liveSession, onOpenShare }
             {liveActive && lastSeenStr && (
               <p className="mt-1 inline-flex items-center gap-1.5 text-[11px] text-primary font-semibold">
                 <Radio className="h-3 w-3 animate-pulse" />
-                Live deling aktiv · Sist oppdatert {lastSeenStr}
+                Sender live-posisjon · Sist sendt {lastSeenStr}
+              </p>
+            )}
+            {liveOn && (
+              <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                Bakgrunnsdeling kan stoppe når mobilen låses eller nettleseren legges i bakgrunnen. Hold Veiglede åpen for best resultat.
               </p>
             )}
           </div>
