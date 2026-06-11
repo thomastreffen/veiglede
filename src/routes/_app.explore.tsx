@@ -281,8 +281,23 @@ function TripsTab() {
 
   return (
     <>
+      {/* Opt-in "near me" CTA — never auto-requests geolocation. */}
+      <section className="mt-6 rounded-2xl border border-border bg-surface/60 p-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={requestLocation}
+          disabled={geoStatus === "loading"}
+          className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 disabled:opacity-60"
+        >
+          {geoStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
+          {geoStatus === "loading" ? nearMeT.loading : geoStatus === "ready" ? nearMeT.nearYou : nearMeT.cta}
+        </button>
+        <p className="text-[11px] text-muted-foreground">{nearMeT.tip}</p>
+        {geoStatus === "denied" && <p className="text-[11px] text-amber-500">{nearMeT.denied}</p>}
+      </section>
+
       {/* Country chips */}
-      <section className="mt-6 flex flex-wrap gap-2">
+      <section className="mt-4 flex flex-wrap gap-2">
         <FilterPill active={country === "all"} onClick={() => setCountry("all")}>🌍 Alle land</FilterPill>
         {(["no", "se", "dk", "de"] as Country[]).map((c) => (
           <FilterPill key={c} active={country === c} onClick={() => setCountry(c)}>
@@ -290,6 +305,7 @@ function TripsTab() {
           </FilterPill>
         ))}
       </section>
+
 
       {/* Macro-region chips (kuraterte Norges-regioner) */}
       {country === "no" || country === "all" ? (
