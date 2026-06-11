@@ -127,7 +127,7 @@ function Roadbook() {
         </div>
       </header>
 
-      <section className="mt-8 mx-auto max-w-2xl print:hidden">
+      <section className="mt-8 mx-auto max-w-2xl print:hidden lg:hidden">
         <TripMap
           trip={trip}
           days={tripDays}
@@ -379,8 +379,18 @@ function Roadbook() {
         <p style={{ fontStyle: "italic", marginTop: "2px" }}>{rb.veigledeTagline}</p>
       </div>
     </div>
+    <aside className="hidden lg:block bg-surface-2 overflow-hidden print:hidden">
+      <TripMap
+        trip={trip}
+        days={tripDays}
+        stops={tripStops}
+        height="h-full"
+      />
+    </aside>
+    </div>
   );
 }
+
 
 function formatPauseLabel(min: number): string {
   if (min >= 60 && min % 60 === 0) {
