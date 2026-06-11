@@ -55,7 +55,9 @@ function Roadbook() {
   };
 
   return (
-    <div className="py-4 print-roadbook">
+    <div className="py-4 print-roadbook lg:relative lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen lg:py-0 lg:grid lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)] lg:h-[calc(100vh-4rem)] lg:gap-0">
+    <div className="lg:overflow-y-auto lg:px-6 xl:px-8 lg:py-6 lg:border-r lg:border-border lg:bg-surface">
+
       {/* Print-only header */}
       <div className="print-only mb-4" style={{ borderBottom: "1px solid #000", paddingBottom: "8px" }}>
         <p style={{ fontSize: "10pt", letterSpacing: "0.2em", textTransform: "uppercase" }}>{rb.printRoadbook}</p>
