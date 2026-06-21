@@ -6,7 +6,7 @@ import { useT } from "@/i18n/provider";
 import { useVehicles, energyTypeToSource, type Vehicle } from "@/lib/vehicles-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
-import type { ResolvedPlace } from "@/lib/places/geocoder";
+import { manualPlace, type ResolvedPlace } from "@/lib/places/geocoder";
 import { tripsApi, ROUTE_STYLES, styleMeta, vehicleMeta, type RouteStyle, type CoverKey, type StopType, looksLikeLodging } from "@/lib/trips-store";
 import { getRoute } from "@/lib/routing";
 import { cn } from "@/lib/utils";
@@ -63,6 +63,13 @@ function cityNameFromLabel(label: string, place: ResolvedPlace | null): string {
     return parts[1].replace(/^\d{3,5}\s+/, "").trim() || first;
   }
   return first;
+}
+
+function usableLoc(place: ResolvedPlace | null | undefined): { lat: number; lng: number } | undefined {
+  if (!place || place.needsDetails) return undefined;
+  if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng)) return undefined;
+  if (place.lat === 0 && place.lng === 0) return undefined;
+  return { lat: place.lat, lng: place.lng };
 }
 
 function addDays(iso: string, n: number): string {
@@ -137,7 +144,16 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
   const navigate = useNavigate();
   const prefs = useDriverPrefs();
   const { vehicles, defaultId } = useVehicles();
-  const defaultVehicle: Vehicle | undefined = vehicles.find((v) => v.id === defaultId) ?? vehicles[0];
+  const fallbackVehicle: Vehicle = useMemo(() => ({
+    id: "manual-default-car",
+    name: "Bil",
+    type: "car",
+    energy: "petrol",
+    defaultStyle: "scenic",
+    drivingFlags: {},
+    stopInterests: ["food", "viewpoint", "attraction", "rest"],
+  }), []);
+  const defaultVehicle: Vehicle = vehicles.find((v) => v.id === defaultId) ?? vehicles[0] ?? fallbackVehicle;
 
   const [step, setStep] = useState<1 | 2>(1);
   const [rows, setRows] = useState<Row[]>(() => {
@@ -278,11 +294,15 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
 
 
   const ensurePlace = async (r: Row): Promise<ResolvedPlace | null> => {
-    if (r.place) return r.place;
+    if (r.place) {
+      if (!r.place.needsDetails) return r.place;
+      const { resolveGooglePlace } = await import("@/lib/places/geocoder");
+      return (await resolveGooglePlace(r.place)) ?? manualPlace(r.text.trim()) ?? null;
+    }
     const { searchPlaces, resolveGooglePlace } = await import("@/lib/places/geocoder");
     const res = await searchPlaces(r.text.trim(), new AbortController().signal);
     const first = res.results[0];
-    if (!first) return null;
+    if (!first) return manualPlace(r.text.trim());
     if (first.needsDetails) return await resolveGooglePlace(first);
     return first;
   };
@@ -293,142 +313,34 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
       return;
     }
     setGenerating(true);
+    let trip: ReturnType<typeof tripsApi.createTrip> | null = null;
     try {
-      // 0) Resolve the origin first (free-text fallback to a manual place if needed).
-      let originResolved: ResolvedPlace | null = originPlace;
-      const originLabel = (originText.trim() || originPlace?.name || "").trim();
-      if (!originResolved && originLabel) {
-        const { searchPlaces, resolveGooglePlace } = await import("@/lib/places/geocoder");
-        const r = await searchPlaces(originLabel, new AbortController().signal);
-        const first = r.results[0];
-        if (first) originResolved = first.needsDetails ? await resolveGooglePlace(first) : first;
+      const routeRows = rows.filter((r) => r.text.trim().length > 0 || !!r.place);
+      if (routeRows.length === 0) {
+        toast.error(w.manual.tooFewStops);
+        setGenerating(false);
+        return;
       }
 
-      // 1) Resolve places for every row in parallel.
-      const resolvedPlaces = await Promise.all(validRows.map((r) => ensurePlace(r)));
-
-      // Soft warning when we could not pin coordinates for origin/destination.
-      const destResolved = resolvedPlaces[resolvedPlaces.length - 1];
-      if (!originResolved || !destResolved) {
-        toast.warning("Vi fant ikke nøyaktig posisjon. Prøv å velge et adresseforslag eller juster adressen.");
-      }
-
-      // 2) Expand multi-night lodging rows into consecutive days.
-      type Step = {
-        row: Row;
-        place: ResolvedPlace | null;
-        date: string;
-        isRestDay: boolean;
-      };
-      const steps: Step[] = [];
-      validRows.forEach((r, i) => {
-        const place = resolvedPlaces[i];
-        const tp = detectType(r.text, r.type);
-        const nights = tp === "lodging" ? Math.max(1, r.nights ?? 1) : 1;
-        for (let n = 0; n < nights; n++) {
-          steps.push({
-            row: r,
-            place,
-            date: r.date ? addDays(r.date, n) : "",
-            isRestDay: n > 0,
-          });
-        }
-      });
-
-      // 3) Compute per-leg routes sequentially.
-      // legs[i] = leg INTO step[i]. legs[0] = origin → step[0].
+      const originLabel = (originText.trim() || originPlace?.name || "Avreise").trim();
+      const destinationLabel = (routeRows[routeRows.length - 1]?.text.trim() || routeRows[routeRows.length - 1]?.place?.name || "Destinasjon").trim();
+      const rawNames = [originLabel, ...routeRows.map((r) => (r.text.trim() || r.place?.name || "Stopp").trim())];
+      const rawDedup = rawNames.filter((c, i) => i === 0 || c !== rawNames[i - 1]);
+      const title = rawDedup.length <= 3
+        ? rawDedup.join(" → ")
+        : `${rawDedup[0]} → ${rawDedup.slice(1, -1).slice(0, 2).join(" → ")} → ${rawDedup[rawDedup.length - 1]}`;
       const energy = energyTypeToSource(selectedVehicle.energy);
       const vt = selectedVehicle.type;
-      type Leg = { distanceKm: number; durationMin: number; geometry?: { lat: number; lng: number }[] };
-      const legs: Leg[] = [];
-      let firstLegRoute: Awaited<ReturnType<typeof getRoute>> | null = null;
-      const fullGeometry: { lat: number; lng: number }[] = [];
+      const startDate = (routeRows.find((r) => r.date)?.date) || undefined;
 
-      const computeLeg = async (
-        from: ResolvedPlace | null, to: ResolvedPlace | null, restDay: boolean,
-      ): Promise<Leg> => {
-        if (restDay || !from || !to) return { distanceKm: 0, durationMin: 0 };
-        if (from.lat === to.lat && from.lng === to.lng) return { distanceKm: 0, durationMin: 0 };
-        const r = await getRoute({
-          origin: { lat: from.lat, lng: from.lng },
-          destination: { lat: to.lat, lng: to.lng },
-          vehicleType: vt,
-          routeStyle: style,
-          avoidHighways: avoidHighway,
-          avoidFerries: !!selectedVehicle.drivingFlags?.["no-ferry"],
-        });
-        return { distanceKm: r.distanceKm, durationMin: r.durationMin, geometry: r.geometry };
-      };
-
-      // Leg 0: origin → first stop.
-      const leg0Origin = originResolved;
-      const leg0Dest = steps[0]?.place ?? null;
-      if (leg0Origin && leg0Dest) {
-        const r0 = await getRoute({
-          origin: { lat: leg0Origin.lat, lng: leg0Origin.lng },
-          destination: { lat: leg0Dest.lat, lng: leg0Dest.lng },
-          vehicleType: vt,
-          routeStyle: style,
-          avoidHighways: avoidHighway,
-          avoidFerries: !!selectedVehicle.drivingFlags?.["no-ferry"],
-        });
-        firstLegRoute = r0;
-        legs.push({ distanceKm: r0.distanceKm, durationMin: r0.durationMin, geometry: r0.geometry });
-        if (r0.geometry?.length) fullGeometry.push(...r0.geometry);
-      } else {
-        legs.push({ distanceKm: 0, durationMin: 0 });
-      }
-
-      // Legs 1..n-1: step[i-1] → step[i].
-      for (let i = 1; i < steps.length; i++) {
-        const prev = steps[i - 1];
-        const cur = steps[i];
-        const leg = await computeLeg(prev.place, cur.place, cur.isRestDay);
-        legs.push(leg);
-        if (leg.geometry?.length) fullGeometry.push(...leg.geometry);
-      }
-
-      const totalDistanceKm = Math.round(legs.reduce((a, l) => a + l.distanceKm, 0));
-      const totalDurationMin = legs.reduce((a, l) => a + l.durationMin, 0);
-      const drivingTime = totalDurationMin
-        ? `${Math.floor(totalDurationMin / 60)}t ${Math.round(totalDurationMin % 60)}min`
-        : "—";
-
-      // 4) Round-trip detection (last step ≈ origin, within 5 km).
-      const last = steps[steps.length - 1];
-      const isRoundTrip = !!(originResolved && last?.place &&
-        haversineKm(
-          { lat: originResolved.lat, lng: originResolved.lng },
-          { lat: last.place.lat, lng: last.place.lng },
-        ) < 5);
-
-      // 5) Build a smart title using city names: origin → stops → last.
-      const originCity = originResolved
-        ? cityNameFromLabel(originLabel, originResolved)
-        : (originLabel || "Avreise");
-      const cityNames = [originCity, ...steps.map((s) => cityNameFromLabel(s.row.text, s.place))];
-      let title: string;
-      if (isRoundTrip && cityNames.length >= 2) {
-        const middle = Array.from(new Set(cityNames.slice(1, -1))).slice(0, 2);
-        title = middle.length
-          ? `${cityNames[0]} → ${middle.join(" → ")} → ${cityNames[0]}`
-          : `Rundtur ${cityNames[0]}`;
-      } else {
-        const dedup = cityNames.filter((c, i) => i === 0 || c !== cityNames[i - 1]);
-        title = dedup.length <= 3
-          ? dedup.join(" → ")
-          : `${dedup[0]} → ${dedup.slice(1, -1).slice(0, 2).join(" → ")} → ${dedup[dedup.length - 1]}`;
-      }
-
-      const startDate = (validRows.find((r) => r.date)?.date) || undefined;
-      const destinationLabel = last?.row.text ?? "";
-      const toResolved = last?.place ?? null;
-
-      const trip = tripsApi.createTrip({
+      // 1) Persist the draft before geocoding, route generation, map enrichment
+      // or any other provider call. From here on,
+      // provider failures must never block trip creation.
+      trip = tripsApi.createTrip({
         title,
         subtitle: `${styleMeta(style).label} med ${selectedVehicle.name}`,
         region: "Norge",
-        origin: originLabel || originCity,
+        origin: originLabel,
         destination: destinationLabel,
         startDate,
         vehicle: vt,
@@ -436,110 +348,175 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
         vehicleName: selectedVehicle.name,
         energy,
         style,
-        distanceKm: totalDistanceKm,
-        drivingTime,
+        distanceKm: 0,
+        drivingTime: "—",
         cover: pickCover(style),
-        isRoundTrip,
         source: "manual",
-        originLoc: originResolved ? { lat: originResolved.lat, lng: originResolved.lng } : undefined,
-        destinationLoc: toResolved ? { lat: toResolved.lat, lng: toResolved.lng } : undefined,
-        destinationPlaceTypes: toResolved?.placeTypes,
-        originPlaceTypes: originResolved?.placeTypes,
-        routeGeometry: fullGeometry.length ? fullGeometry : firstLegRoute?.geometry,
-        routeDistanceKm: totalDistanceKm,
-        routeDurationMin: totalDurationMin,
-        routeProvider: firstLegRoute?.provider,
-        routeProfile: firstLegRoute?.profile,
-        routeAvoidHighways: firstLegRoute?.avoidOptions?.highways,
-        routeAvoidFerries: firstLegRoute?.avoidOptions?.ferries,
       });
 
-      // 6) Ensure one day per step.
-      const dayCount = steps.length;
-      if (dayCount > 1) tripsApi.splitIntoDays(trip.id, dayCount);
+      try {
+        type Leg = { distanceKm: number; durationMin: number; geometry?: { lat: number; lng: number }[] };
+        type Step = { row: Row; place: ResolvedPlace | null; date: string; isRestDay: boolean };
+        let originResolved: ResolvedPlace | null = originPlace;
+        if (originResolved?.needsDetails) {
+          const { resolveGooglePlace } = await import("@/lib/places/geocoder");
+          originResolved = (await resolveGooglePlace(originResolved)) ?? manualPlace(originLabel) ?? originResolved;
+        } else if (!originResolved && originLabel) {
+          const { searchPlaces, resolveGooglePlace } = await import("@/lib/places/geocoder");
+          const r = await searchPlaces(originLabel, new AbortController().signal);
+          const first = r.results[0];
+          originResolved = first ? (first.needsDetails ? await resolveGooglePlace(first) : first) : manualPlace(originLabel);
+        }
 
-      const bundle = tripsApi.getTripBundle(trip.id);
-      const orderedDays = [...bundle.days].sort((a, b) => a.dayNumber - b.dayNumber);
-
-      // 7) Set per-day route data + date + title.
-      steps.forEach((s, i) => {
-        const day = orderedDays[i];
-        if (!day) return;
-        const leg = legs[i]; // leg INTO this day
-        const prevCity = i === 0
-          ? originCity
-          : cityNameFromLabel(steps[i - 1].row.text, steps[i - 1].place);
-        const curCity = cityNameFromLabel(s.row.text, s.place);
-        const dayTitle = s.isRestDay
-          ? `Hviledag i ${curCity}`
-          : `${prevCity} → ${curCity}`;
-        tripsApi.updateDay(day.id, {
-          dayNumber: i + 1,
-          date: s.date || undefined,
-          title: dayTitle,
-          dayDistanceKm: leg ? Math.round(leg.distanceKm) : 0,
-          dayDrivingTimeMin: leg ? Math.round(leg.durationMin) : 0,
-          dayRouteGeometry: leg?.geometry,
+        const resolvedPlaces = await Promise.all(routeRows.map((r) => ensurePlace(r)));
+        const steps: Step[] = [];
+        routeRows.forEach((r, i) => {
+          const place = resolvedPlaces[i];
+          const tp = detectType(r.text || place?.name || "", r.type);
+          const nights = tp === "lodging" ? Math.max(1, r.nights ?? 1) : 1;
+          for (let n = 0; n < nights; n++) {
+            steps.push({ row: r, place, date: r.date ? addDays(r.date, n) : "", isRestDay: n > 0 });
+          }
         });
-      });
-
-      // 8) Move auto-created "Ankomst" stop to the final day.
-      const ankomst = bundle.stops.find((s) =>
-        s.dayId === orderedDays[0]?.id && s.name?.startsWith("Ankomst "));
-      const lastDay = orderedDays[orderedDays.length - 1];
-      if (ankomst && lastDay && lastDay.id !== ankomst.dayId) {
-        tripsApi.updateStop(ankomst.id, {
-          dayId: lastDay.id,
-          name: `Ankomst ${cityNameFromLabel(last?.row.text ?? "", last?.place ?? null)}`,
-          distanceFromPrevKm: legs[legs.length - 1] ? Math.round(legs[legs.length - 1].distanceKm) : undefined,
+        const toResolved = steps[steps.length - 1]?.place ?? null;
+        const originCity = originResolved ? cityNameFromLabel(originLabel, originResolved) : originLabel;
+        tripsApi.updateTrip(trip.id, {
+          isRoundTrip: !!(usableLoc(originResolved) && usableLoc(toResolved) && haversineKm(usableLoc(originResolved)!, usableLoc(toResolved)!) < 5),
+          originLoc: usableLoc(originResolved),
+          destinationLoc: usableLoc(toResolved),
+          destinationPlaceTypes: toResolved?.placeTypes,
+          originPlaceTypes: originResolved?.placeTypes,
         });
-      }
+        const legs: Leg[] = [];
+        let firstLegRoute: Awaited<ReturnType<typeof getRoute>> | null = null;
+        const fullGeometry: { lat: number; lng: number }[] = [];
 
-      // 9) Add intermediate stops on the right days (skip last; origin is virtual).
-      for (let i = 0; i < steps.length - 1; i++) {
-        const s = steps[i];
-        const day = orderedDays[i];
-        if (!day || s.isRestDay) continue;
-        const leg = legs[i];
-        const stopType = detectType(s.row.text, s.row.type);
-        const nights = stopType === "lodging" ? Math.max(1, s.row.nights ?? 1) : undefined;
-        const checkin = stopType === "lodging" ? (s.date || undefined) : undefined;
-        const checkout = stopType === "lodging" && checkin && nights ? addDays(checkin, nights) : undefined;
-        tripsApi.addStop(day.id, {
-          name: s.row.text.trim(),
-          type: stopType,
-          location: s.row.text.trim(),
-          lat: s.place?.lat,
-          lng: s.place?.lng,
-          placeTypes: s.place?.placeTypes,
-          distanceFromPrevKm: leg ? Math.round(leg.distanceKm) : undefined,
-          booking: stopType === "lodging"
-            ? { checkinDate: checkin, checkoutDate: checkout, nights, status: "none" as const }
-            : undefined,
+        const computeLeg = async (from: ResolvedPlace | null, to: ResolvedPlace | null, restDay: boolean): Promise<Leg> => {
+          const fromLoc = usableLoc(from);
+          const toLoc = usableLoc(to);
+          if (restDay || !fromLoc || !toLoc) return { distanceKm: 0, durationMin: 0 };
+          if (fromLoc.lat === toLoc.lat && fromLoc.lng === toLoc.lng) return { distanceKm: 0, durationMin: 0 };
+          const r = await getRoute({
+            origin: fromLoc,
+            destination: toLoc,
+            vehicleType: vt,
+            routeStyle: style,
+            avoidHighways: avoidHighway,
+            avoidFerries: !!selectedVehicle.drivingFlags?.["no-ferry"],
+          });
+          return { distanceKm: r.distanceKm, durationMin: r.durationMin, geometry: r.geometry };
+        };
+
+        const leg0Origin = originResolved;
+        const leg0Dest = steps[0]?.place ?? null;
+        const leg0 = await computeLeg(leg0Origin, leg0Dest, false);
+        legs.push(leg0);
+        if (usableLoc(leg0Origin) && usableLoc(leg0Dest)) {
+          firstLegRoute = await getRoute({
+            origin: usableLoc(leg0Origin)!,
+            destination: usableLoc(leg0Dest)!,
+            vehicleType: vt,
+            routeStyle: style,
+            avoidHighways: avoidHighway,
+            avoidFerries: !!selectedVehicle.drivingFlags?.["no-ferry"],
+          });
+          legs[0] = { distanceKm: firstLegRoute.distanceKm, durationMin: firstLegRoute.durationMin, geometry: firstLegRoute.geometry };
+        }
+        if (legs[0]?.geometry?.length) fullGeometry.push(...legs[0].geometry);
+
+        for (let i = 1; i < steps.length; i++) {
+          const leg = await computeLeg(steps[i - 1].place, steps[i].place, steps[i].isRestDay);
+          legs.push(leg);
+          if (leg.geometry?.length) fullGeometry.push(...leg.geometry);
+        }
+
+        const totalDistanceKm = Math.round(legs.reduce((a, l) => a + l.distanceKm, 0));
+        const totalDurationMin = legs.reduce((a, l) => a + l.durationMin, 0);
+        const drivingTime = totalDurationMin ? `${Math.floor(totalDurationMin / 60)}t ${Math.round(totalDurationMin % 60)}min` : "—";
+        tripsApi.updateTrip(trip.id, {
+          distanceKm: totalDistanceKm,
+          drivingTime,
+          routeGeometry: fullGeometry.length ? fullGeometry : firstLegRoute?.geometry,
+          routeDistanceKm: totalDistanceKm,
+          routeDurationMin: totalDurationMin,
+          routeProvider: firstLegRoute?.provider,
+          routeProfile: firstLegRoute?.profile,
+          routeAvoidHighways: firstLegRoute?.avoidOptions?.highways,
+          routeAvoidFerries: firstLegRoute?.avoidOptions?.ferries,
         });
-      }
 
-      if (firstLegRoute?.ferrySegments && firstLegRoute.ferrySegments.length > 0) {
-        try { tripsApi.applyFerrySegments(trip.id, firstLegRoute.ferrySegments); } catch { /* no-op */ }
+        if (steps.length > 1) tripsApi.splitIntoDays(trip.id, steps.length);
+        const bundle = tripsApi.getTripBundle(trip.id);
+        const orderedDays = [...bundle.days].sort((a, b) => a.dayNumber - b.dayNumber);
+        steps.forEach((s, i) => {
+          const day = orderedDays[i];
+          if (!day) return;
+          const leg = legs[i];
+          const prevCity = i === 0 ? originCity : cityNameFromLabel(steps[i - 1].row.text || steps[i - 1].place?.name || "Stopp", steps[i - 1].place);
+          const curCity = cityNameFromLabel(s.row.text || s.place?.name || "Stopp", s.place);
+          tripsApi.updateDay(day.id, {
+            dayNumber: i + 1,
+            date: s.date || undefined,
+            title: s.isRestDay ? `Hviledag i ${curCity}` : `${prevCity} → ${curCity}`,
+            dayDistanceKm: leg ? Math.round(leg.distanceKm) : 0,
+            dayDrivingTimeMin: leg ? Math.round(leg.durationMin) : 0,
+            dayRouteGeometry: leg?.geometry,
+          });
+        });
+
+        const ankomst = bundle.stops.find((s) => s.dayId === orderedDays[0]?.id && s.name?.startsWith("Ankomst "));
+        const lastDay = orderedDays[orderedDays.length - 1];
+        if (ankomst && lastDay && lastDay.id !== ankomst.dayId) {
+          tripsApi.updateStop(ankomst.id, {
+            dayId: lastDay.id,
+            name: `Ankomst ${cityNameFromLabel(destinationLabel, toResolved)}`,
+            distanceFromPrevKm: legs[legs.length - 1] ? Math.round(legs[legs.length - 1].distanceKm) : undefined,
+          });
+        }
+
+        for (let i = 0; i < steps.length - 1; i++) {
+          const s = steps[i];
+          const day = orderedDays[i];
+          if (!day || s.isRestDay) continue;
+          const leg = legs[i];
+          const stopName = (s.row.text.trim() || s.place?.name || "Stopp").trim();
+          const stopType = detectType(stopName, s.row.type);
+          const nights = stopType === "lodging" ? Math.max(1, s.row.nights ?? 1) : undefined;
+          const checkin = stopType === "lodging" ? (s.date || undefined) : undefined;
+          const checkout = stopType === "lodging" && checkin && nights ? addDays(checkin, nights) : undefined;
+          tripsApi.addStop(day.id, {
+            name: stopName,
+            type: stopType,
+            location: stopName,
+            lat: usableLoc(s.place)?.lat,
+            lng: usableLoc(s.place)?.lng,
+            placeTypes: s.place?.placeTypes,
+            distanceFromPrevKm: leg ? Math.round(leg.distanceKm) : undefined,
+            booking: stopType === "lodging" ? { checkinDate: checkin, checkoutDate: checkout, nights, status: "none" as const } : undefined,
+          });
+        }
+
+        if (firstLegRoute?.ferrySegments?.length) {
+          try { tripsApi.applyFerrySegments(trip.id, firstLegRoute.ferrySegments); } catch { /* no-op */ }
+        }
+      } catch (routeErr) {
+        console.warn("[manual-wizard] route enrichment failed after draft save", routeErr);
+        toast.warning("Turen er lagret som kladd. Ruten kan beregnes på nytt fra turen.");
       }
 
       toast.success(w.generate.success);
       navigate({ to: "/trips/$tripId", params: { tripId: trip.id } });
     } catch (err) {
-      console.error("[manual-wizard] generate failed", err);
+      console.error("[manual-wizard] generate failed before draft save", err);
+      if (trip) {
+        toast.warning("Turen er lagret som kladd, men rutedata mangler.");
+        navigate({ to: "/trips/$tripId", params: { tripId: trip.id } });
+        return;
+      }
       toast.error(w.generate.failed);
       setGenerating(false);
     }
   };
-
-  if (generating) {
-    return (
-      <div className="py-12 max-w-2xl mx-auto text-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-        <p className="mt-5 font-display text-2xl uppercase">{w.manual.generating}</p>
-      </div>
-    );
-  }
 
   const mapPoints: RoutePoint[] = useMemo(() => {
     const pts: RoutePoint[] = [];
@@ -614,6 +591,15 @@ export function ManualWizard({ onBack }: { onBack: () => void }) {
     if (mapPoints.length >= 2) return `${mapPoints.length} punkter · beregner rute…`;
     return selectedVehicle ? `${styleMeta(style).label} · ${selectedVehicle.name}` : undefined;
   })();
+
+  if (generating) {
+    return (
+      <div className="py-12 max-w-2xl mx-auto text-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+        <p className="mt-5 font-display text-2xl uppercase">{w.manual.generating}</p>
+      </div>
+    );
+  }
 
   return (
     <PlannerWorkspace

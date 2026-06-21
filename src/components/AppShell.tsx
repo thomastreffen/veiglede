@@ -128,7 +128,7 @@ export function AppShell() {
                 )}
               </Link>
             ))}
-            <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
+            <Link to="/trips/new" search={() => ({ restoreDraft: "fresh" })} className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110">
               <Plus className="h-4 w-4" /> {t.app.nav.newTrip}
             </Link>
             {user && isAdmin && (
@@ -216,7 +216,7 @@ function MobileBottomNav({
                 <Plus className="h-6 w-6" strokeWidth={3} />
               </button>
             ) : (
-              <Link to="/trips/new" search={() => ({ restoreDraft: "fresh", ts: String(Date.now()) })} className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background">
+              <Link to="/trips/new" search={() => ({ restoreDraft: "fresh" })} className="grid place-items-center h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 border-4 border-background">
                 <Plus className="h-6 w-6" strokeWidth={3} />
               </Link>
             )}
