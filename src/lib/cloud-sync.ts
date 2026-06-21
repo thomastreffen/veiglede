@@ -35,7 +35,7 @@ async function pullAll(userId: string) {
   const [prefsRes, vehiclesRes, tripsRes, profileRes] = await Promise.all([
     supabase.from("driver_prefs").select("data").eq("user_id", userId).maybeSingle(),
     supabase.from("vehicles").select("data").eq("id", userId).maybeSingle(),
-    supabase.from("trips").select("data").eq("id", userId).maybeSingle(),
+    supabase.from("trips").select("data").eq("user_id", userId).maybeSingle(),
     supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
   ]);
 
@@ -43,19 +43,19 @@ async function pullAll(userId: string) {
   if (prefsRes.data?.data) {
     localStorage.setItem(KEYS.prefs, JSON.stringify(prefsRes.data.data));
     didWrite = true;
-  } else if (localStorage.getItem(KEYS.prefs)) {
+  } else if (!prefsRes.error && localStorage.getItem(KEYS.prefs)) {
     void pushKey(KEYS.prefs, localStorage.getItem(KEYS.prefs)!);
   }
   if (vehiclesRes.data?.data) {
     localStorage.setItem(KEYS.vehicles, JSON.stringify(vehiclesRes.data.data));
     didWrite = true;
-  } else if (localStorage.getItem(KEYS.vehicles)) {
+  } else if (!vehiclesRes.error && localStorage.getItem(KEYS.vehicles)) {
     void pushKey(KEYS.vehicles, localStorage.getItem(KEYS.vehicles)!);
   }
   if (tripsRes.data?.data) {
     localStorage.setItem(KEYS.trips, JSON.stringify(tripsRes.data.data));
     didWrite = true;
-  } else if (localStorage.getItem(KEYS.trips)) {
+  } else if (!tripsRes.error && localStorage.getItem(KEYS.trips)) {
     void pushKey(KEYS.trips, localStorage.getItem(KEYS.trips)!);
   }
 

@@ -110,11 +110,13 @@ export function defaultsFor(type: VehicleType, energy: EnergyType): {
 
 interface State { vehicles: Vehicle[]; defaultId: string }
 
+const EMPTY_VEHICLE_STATE: State = { vehicles: [], defaultId: "" };
+
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
 function seed(): State {
   // New users start with a clean garage — no demo vehicles.
-  return { vehicles: [], defaultId: "" };
+  return EMPTY_VEHICLE_STATE;
 }
 
 const KEY = "veiglede.vehicles.v2";
@@ -160,7 +162,7 @@ function getSnapshot(): State {
   }
   return cache;
 }
-function getServerSnapshot(): State { return seed(); }
+function getServerSnapshot(): State { return EMPTY_VEHICLE_STATE; }
 
 export function useVehicles() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
