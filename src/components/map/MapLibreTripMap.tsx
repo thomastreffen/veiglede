@@ -458,7 +458,7 @@ export function MapLibreTripMap({
       }
     });
     return () => { cancelled = true; setRecalculating(false); };
-  }, [projected, trip.id, trip.routeGeometry, trip.routeWaypointsHash, trip.style]);
+  }, [projected, trip.id, trip.routeGeometry, trip.routeWaypointsHash, trip.style, trip.selectedRouteAltId]);
 
   // Add/update route layer and fit bounds. Also re-runs after setStyle().
   const addRouteAndFit = useCallback(() => {
