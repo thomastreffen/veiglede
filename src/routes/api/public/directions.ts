@@ -180,6 +180,8 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
           "routes.duration",
           "routes.distanceMeters",
           "routes.polyline.encodedPolyline",
+          "routes.routeLabels",
+          "routes.description",
           "routes.legs.steps.travelMode",
           "routes.legs.steps.staticDuration",
           "routes.legs.steps.distanceMeters",
@@ -187,6 +189,7 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
           "routes.legs.steps.startLocation.latLng",
           "routes.legs.steps.endLocation.latLng",
         ].join(","),
+
       },
       body: JSON.stringify(reqBody),
     });
