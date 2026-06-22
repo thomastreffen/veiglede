@@ -209,6 +209,9 @@ export function startCloudSync() {
     if (data.session?.user) {
       currentUserId = data.session.user.id;
       void pullAll(currentUserId);
+    } else {
+      // No signed-in user; mark sync ready so guests don't sit in a spinner.
+      setReady(true);
     }
   });
 
@@ -217,12 +220,14 @@ export function startCloudSync() {
       const uid = session?.user?.id ?? null;
       if (uid && uid !== currentUserId) {
         currentUserId = uid;
+        setReady(false);
         void pullAll(uid);
       } else {
         currentUserId = uid;
       }
     } else if (event === "SIGNED_OUT") {
       currentUserId = null;
+      setReady(true);
       // Keep local demo data so user can keep exploring as guest.
     }
   });
