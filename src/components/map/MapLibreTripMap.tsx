@@ -908,6 +908,21 @@ function pinEl(label: string, color: string) {
   return el;
 }
 
+/** Stor, tydelig start/ankomst-markør med tekstlabel synlig på kartet. */
+function endpointEl(label: string, color: string, role: "start" | "end" | "both") {
+  const el = document.createElement("div");
+  el.style.cssText = `position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:50;`;
+  const pill = document.createElement("div");
+  pill.style.cssText = `background:${color};color:#1a1a1a;font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:9999px;border:2px solid #fafafa;box-shadow:0 2px 6px rgba(0,0,0,.45);white-space:nowrap;`;
+  pill.textContent = label;
+  const dot = document.createElement("div");
+  dot.style.cssText = `margin-top:-2px;width:14px;height:14px;border-radius:9999px;background:${color};border:3px solid #fafafa;box-shadow:0 1px 3px rgba(0,0,0,.5);`;
+  el.appendChild(pill);
+  el.appendChild(dot);
+  el.setAttribute("data-vg-endpoint", role);
+  return el;
+}
+
 function stopEl(emoji: string, color: string, selected: boolean, status: "on-route" | "detour" = "on-route") {
   const size = selected ? 34 : 26;
   const el = document.createElement("div");
