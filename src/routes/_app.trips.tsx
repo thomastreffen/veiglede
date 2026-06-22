@@ -537,9 +537,14 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
         </Link>
       </div>
 
-      {allTrips.length === 0 ? (
+      {waitingForSync && allTrips.length === 0 ? (
+        <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
+          <p className="font-display text-xl uppercase animate-pulse text-muted-foreground">{tr.app.trips.mineHeading}…</p>
+        </div>
+      ) : allTrips.length === 0 ? (
         <EmptyState />
-      ) : filtered.length === 0 ? (
+      ) : null}
+      {!waitingForSync && allTrips.length > 0 && filtered.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
           <p className="font-display text-2xl uppercase">{tr.app.trips.noMatchTitle}</p>
           <p className="mt-2 text-sm text-muted-foreground">{tr.app.trips.noMatchBody}</p>
