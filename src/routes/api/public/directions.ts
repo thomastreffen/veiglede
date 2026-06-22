@@ -158,10 +158,13 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
       avoidHighways: prefs.avoidHighways,
       avoidFerries: prefs.avoidFerries,
     },
+    // Only meaningful when there are no intermediates (Google ignores it otherwise).
+    computeAlternativeRoutes: !!body.alternatives && intermediates.length === 0,
     polylineQuality: "OVERVIEW",
     languageCode: "no",
     regionCode: "NO",
   };
+
 
   try {
     const ctrl = new AbortController();
