@@ -646,13 +646,47 @@ export function MapLibreTripMap({
       markersRef.current.push(m);
     };
 
-    const originEl = pinEl("A", DAY_COLORS[0]);
-    originEl.title = `${trip.origin} · start`;
-    addMarker(projected.origin, originEl);
+    // Start / Ankomst markers — tydelige labels, høyere z-index, popup.
+    // Rundturer med samme (eller nesten samme) koordinat for start og slutt
+    // får én kombinert "START / ANKOMST" markør så de ikke overlapper.
+    const sameEndpoint = distanceKm(projected.origin, projected.destination) < 0.05;
+    const mkEndpointPopup = (role: "start" | "end" | "both", address: string, loc: LatLng) => {
+      const roleLabel = role === "start" ? "START" : role === "end" ? "ANKOMST" : "START / ANKOMST";
+      const html = `<div style="font-family:inherit;padding:2px 4px;max-width:240px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;font-weight:800;">📍 ${roleLabel}</div>
+        <div style="font-size:13px;color:#111;font-weight:600;margin-top:2px;">${escapeHtml(address)}</div>
+        <button data-vg-endpoint-center="1" style="margin-top:8px;width:100%;padding:6px 8px;border-radius:8px;border:1px solid #ccc;color:#333;background:#fff;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;">Vis i kart</button>
+      </div>`;
+      const popup = new maplibregl.Popup({ offset: 26, closeButton: true, className: "vg-popup" }).setHTML(html);
+      popup.on("open", () => {
+        requestAnimationFrame(() => {
+          popup.getElement()?.querySelector<HTMLButtonElement>("[data-vg-endpoint-center]")?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            try { map.flyTo({ center: [loc.lng, loc.lat], zoom: 14, duration: 600 }); } catch { /* noop */ }
+          });
+        });
+      });
+      return popup;
+    };
+    const attachEndpoint = (loc: LatLng, el: HTMLElement, popup: maplibregl.Popup) => {
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([loc.lng, loc.lat]).addTo(map);
+      popup.setLngLat([loc.lng, loc.lat]);
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        if (!popup.isOpen()) popup.addTo(map);
+      });
+      markersRef.current.push(marker);
+    };
 
-    const destEl = pinEl("B", "#e9b54a");
-    destEl.title = `${trip.destination} · mål`;
-    addMarker(projected.destination, destEl);
+    if (sameEndpoint) {
+      const el = endpointEl("START / ANKOMST", "#f59e3a", "both");
+      attachEndpoint(projected.origin, el, mkEndpointPopup("both", trip.origin, projected.origin));
+    } else {
+      const startEl = endpointEl("START", "#f59e3a", "start");
+      attachEndpoint(projected.origin, startEl, mkEndpointPopup("start", trip.origin, projected.origin));
+      const endEl = endpointEl("ANKOMST", "#e9b54a", "end");
+      attachEndpoint(projected.destination, endEl, mkEndpointPopup("end", trip.destination, projected.destination));
+    }
 
     projected.mapped.forEach((m) => {
       const meta = stopDisplayMeta(m.stop);
