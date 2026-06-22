@@ -403,13 +403,26 @@ type SortOption = "newest" | "oldest" | "longest" | "shortest";
 
 function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsStore>["trips"] }) {
   const tr = useT();
+  const { user, loading: authLoading } = useAuth();
+  const syncReady = useCloudSyncReady();
   const [query, setQuery] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | VehicleType>("all");
   const [styleFilter, setStyleFilter] = useState<"all" | RouteStyle>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
+  // Force a fresh cloud pull on mount so navigating to "Mine turer" never
+  // shows a stale (possibly empty) local snapshot. Same code path on
+  // desktop and mobile.
+  useEffect(() => {
+    if (!authLoading && user) {
+      void refreshCloudData();
+    }
+  }, [authLoading, user?.id]);
 
-  const q = query.trim().toLowerCase();
+  // While auth or first cloud sync is still resolving for a signed-in user,
+  // never show "0 turer" — wait. Guests skip this gate.
+  const waitingForSync = authLoading || (!!user && !syncReady);
+
   const activeCount = (q ? 1 : 0) + (vehicleFilter !== "all" ? 1 : 0) + (styleFilter !== "all" ? 1 : 0);
 
   const filtered = useMemo(() => {
