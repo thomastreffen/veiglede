@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { I18nProvider } from "@/i18n/provider";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { UpdatePrompt } from "@/components/UpdatePrompt";
 
 function shouldRegisterSW() {
   if (typeof window === "undefined") return false;
@@ -188,6 +189,7 @@ function RootComponent() {
       <I18nProvider>
         <Outlet />
         <InstallPrompt />
+        <UpdatePrompt />
         <Toaster position="top-center" richColors />
       </I18nProvider>
     </QueryClientProvider>
