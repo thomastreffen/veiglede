@@ -201,10 +201,16 @@ export interface Trip {
   routeFerryDistanceKm?: number;
   routeFerryDurationMin?: number;
   routeFallbackEstimateMin?: number;
-  // Map UX v1.1 — primary route is `routeGeometry`. Alternatives are reserved
-  // for a future routing v2 where ORS / another provider returns multiple
-  // options. Persisted so the planner can later let the user pick.
+  // Alternative ruter v1 — cachede alternativer fra routing-provider og
+  // brukerens valg. Valgt rute styrer kart, tid og kostnader.
   routeAlternatives?: RouteAlternative[];
+  /** Id of the alternative the user picked (matches RouteAlternative.id). */
+  selectedRouteAltId?: string;
+  /** Hash of (origin,dest,shapingWaypoints,vehicle,style) the alternatives were fetched for. */
+  routeAlternativesHash?: string;
+  /** Optional via-points that shape the route without becoming visible stops. */
+  shapingWaypoints?: ShapingWaypoint[];
+
   // Trip time v1 — snapshot of the time breakdown computed at generation.
   // The UI recomputes live from current stops so it stays accurate when the
   // user edits — this snapshot is kept for debug / future analytics.
@@ -271,7 +277,25 @@ export interface RouteAlternative {
   geometry: { lat: number; lng: number }[];
   provider: string;
   summary?: string;
+  /** Short helper text shown under the label, e.g. "+18 min · Via Hønefoss". */
+  description?: string;
+  /** True when this is the fastest of the alternatives. */
+  isFastest?: boolean;
+  /** Minutes slower than the fastest alternative (>=0). */
+  deltaMinFromFastest?: number;
+  /** Origin of the entry — provider-native vs. heuristic fallback. */
+  source?: "google-alt" | "google-via-hint" | "fallback";
 }
+
+/** Route-shaping waypoint: pushes the route via a coordinate without being a
+ *  visible stop in the day plan. Stored on Trip (v1) or TripDay (future). */
+export interface ShapingWaypoint {
+  id: string;
+  lat: number;
+  lng: number;
+  label?: string;
+}
+
 
 export type CoverKey = "fjord" | "mountain" | "coast" | "valley" | "lofoten" | "forest";
 
@@ -521,6 +545,77 @@ export const tripsApi = {
     refreshTripDerivedState(id);
     persist();
   },
+
+  /** Cache the alternatives returned by the routing provider for this trip. */
+  setRouteAlternatives(tripId: string, alts: RouteAlternative[], hash: string) {
+    ensureInit();
+    state = {
+      ...state,
+      trips: state.trips.map((t) =>
+        t.id === tripId
+          ? {
+              ...t,
+              routeAlternatives: alts,
+              routeAlternativesHash: hash,
+              // If the previously selected id is gone, clear it so the UI falls
+              // back to the fastest alternative.
+              selectedRouteAltId:
+                t.selectedRouteAltId && alts.some((a) => a.id === t.selectedRouteAltId)
+                  ? t.selectedRouteAltId
+                  : undefined,
+            }
+          : t,
+      ),
+    };
+    persist();
+  },
+
+  /** Apply the selected alternative — copies its geometry/distance/duration
+   *  into the trip's primary route fields so the map, time budget and cost
+   *  panel reflect the user's choice immediately. */
+  selectRouteAlternative(tripId: string, altId: string) {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    const alt = trip?.routeAlternatives?.find((a) => a.id === altId);
+    if (!trip || !alt) return;
+    state = {
+      ...state,
+      trips: state.trips.map((t) =>
+        t.id === tripId
+          ? {
+              ...t,
+              selectedRouteAltId: altId,
+              routeGeometry: alt.geometry,
+              routeDistanceKm: alt.distanceKm,
+              routeDurationMin: alt.durationMin,
+              distanceKm: Math.round(alt.distanceKm),
+              // Bumping routeWaypointsHash to a sentinel keyed on the alt id
+              // prevents MapLibreTripMap from immediately overwriting the
+              // chosen geometry with a fresh fastest-route fetch.
+              routeWaypointsHash: `alt:${altId}`,
+            }
+          : t,
+      ),
+    };
+    refreshTripDerivedState(tripId);
+    persist();
+  },
+
+  /** Replace the route-shaping via-points and invalidate the alternatives
+   *  cache so the next fetch reflects the new corridor. */
+  setShapingWaypoints(tripId: string, points: ShapingWaypoint[]) {
+    ensureInit();
+    state = {
+      ...state,
+      trips: state.trips.map((t) =>
+        t.id === tripId
+          ? { ...t, shapingWaypoints: points, routeAlternativesHash: "" }
+          : t,
+      ),
+    };
+    persist();
+  },
+
   /** Read the current trip + days + stops snapshot for a trip id. */
   getTripBundle(id: string): { trip: Trip | null; days: TripDay[]; stops: Stop[] } {
     ensureInit();

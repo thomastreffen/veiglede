@@ -49,6 +49,8 @@ import { flushTripsNow } from "@/lib/cloud-sync";
 import { Globe, Lock } from "lucide-react";
 import { PartnerStopBlock } from "@/components/PartnerStopBlock";
 import { useT } from "@/i18n/provider";
+import { RouteAlternativesPanel } from "@/components/RouteAlternativesPanel";
+
 
 
 export const Route = createFileRoute("/_app/trips/$tripId")({
@@ -372,6 +374,11 @@ function TripPlanner() {
 
       {/* Planning actions — flexible trip model */}
       <PlannerActions trip={trip} tripDays={tripDays} tripStops={tripStops} maxDrivingHours={prefs.maxDrivingHours} />
+
+      <section className="mt-4">
+        <RouteAlternativesPanel trip={trip} />
+      </section>
+
 
 
       {/* Time budget */}

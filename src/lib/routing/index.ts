@@ -139,3 +139,56 @@ export async function getRoute(input: GetRouteInput): Promise<RouteResult> {
   }
 }
 
+/** Alternative routes from the provider (Google `computeAlternativeRoutes`).
+ *  Returns 1–3 entries; index 0 is the fastest. Falls back to a single
+ *  `getRoute` result wrapped in an array on any failure. */
+export async function getRouteAlternatives(
+  input: GetRouteInput,
+): Promise<{
+  routes: Array<RouteResult & { routeLabels?: string[]; description?: string }>;
+  provider: RouteResult["provider"] | "google" | "mapbox";
+}> {
+  if (typeof fetch === "undefined") {
+    const r = await getRoute(input);
+    return { routes: [r], provider: r.provider };
+  }
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch("/api/public/directions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...input, alternatives: true }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) throw new Error(`http-${res.status}`);
+    const data = (await res.json()) as {
+      routes?: Array<Partial<RouteResult> & { routeLabels?: string[]; description?: string }>;
+      provider?: string;
+    };
+    const arr = Array.isArray(data?.routes) ? data.routes : [];
+    const normalized = arr
+      .filter((r) => Array.isArray(r.geometry) && r.geometry.length >= 2 && typeof r.distanceKm === "number" && typeof r.durationMin === "number")
+      .map((r) => ({
+        distanceKm: r.distanceKm as number,
+        durationMin: r.durationMin as number,
+        geometry: r.geometry as LatLng[],
+        provider: (r.provider as RouteResult["provider"]) ?? "ors",
+        ferrySegments: r.ferrySegments,
+        ferryDistanceKm: r.ferryDistanceKm,
+        ferryDurationMin: r.ferryDurationMin,
+        rawDistanceMeters: r.rawDistanceMeters,
+        rawDurationSeconds: r.rawDurationSeconds,
+        routeLabels: r.routeLabels,
+        description: r.description,
+      }));
+    if (normalized.length === 0) throw new Error("no-routes");
+    return { routes: normalized, provider: (data.provider as RouteResult["provider"]) ?? "ors" };
+  } catch {
+    const r = await getRoute(input);
+    return { routes: [r], provider: r.provider };
+  }
+}
+
+
