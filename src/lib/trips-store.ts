@@ -271,7 +271,25 @@ export interface RouteAlternative {
   geometry: { lat: number; lng: number }[];
   provider: string;
   summary?: string;
+  /** Short helper text shown under the label, e.g. "+18 min · Via Hønefoss". */
+  description?: string;
+  /** True when this is the fastest of the alternatives. */
+  isFastest?: boolean;
+  /** Minutes slower than the fastest alternative (>=0). */
+  deltaMinFromFastest?: number;
+  /** Origin of the entry — provider-native vs. heuristic fallback. */
+  source?: "google-alt" | "google-via-hint" | "fallback";
 }
+
+/** Route-shaping waypoint: pushes the route via a coordinate without being a
+ *  visible stop in the day plan. Stored on Trip (v1) or TripDay (future). */
+export interface ShapingWaypoint {
+  id: string;
+  lat: number;
+  lng: number;
+  label?: string;
+}
+
 
 export type CoverKey = "fjord" | "mountain" | "coast" | "valley" | "lofoten" | "forest";
 
