@@ -202,27 +202,12 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
       return null;
     }
     const data = await res.json();
-    const route = data?.routes?.[0];
-    const encoded: string = route?.polyline?.encodedPolyline ?? "";
-    if (!encoded) {
-      warnings.push("google-no-geometry");
+    const routesRaw: unknown[] = Array.isArray(data?.routes) ? data.routes : [];
+    if (routesRaw.length === 0) {
+      warnings.push("google-no-routes");
       return null;
     }
-    const geom = decodePolyline(encoded);
-    if (geom.length < 2) {
-      warnings.push("google-bad-geometry");
-      return null;
-    }
-    const rawDistanceMeters = typeof route.distanceMeters === "number" ? route.distanceMeters : 0;
-    // duration is an ISO duration string like "1234s"
-    const durRaw: string = typeof route.duration === "string" ? route.duration : "0s";
-    const rawDurationSeconds = Number(durRaw.replace(/s$/, "")) || 0;
 
-    const isRv = body.vehicleType === "rv";
-    const baseMinutes = rawDurationSeconds ? rawDurationSeconds / 60 : 0;
-    const durationMin = Math.round(baseMinutes * (isRv ? 1 / 0.85 : 1));
-
-    // Extract ferry segments from leg steps when travelMode === "FERRY".
     type FerrySegment = {
       fromLabel?: string;
       toLabel?: string;
@@ -231,9 +216,6 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
       start?: { lat: number; lng: number };
       end?: { lat: number; lng: number };
     };
-    const ferrySegments: FerrySegment[] = [];
-    let ferryDistanceMeters = 0;
-    let ferryDurationSec = 0;
     interface StepShape {
       travelMode?: string;
       staticDuration?: string;
@@ -250,58 +232,101 @@ async function tryGoogle(body: Body, warnings: string[]): Promise<Response | nul
       if (step?.travelMode === "FERRY") return true;
       const text = (step?.navigationInstruction?.instructions ?? "").toLowerCase();
       if (text && FERRY_KEYWORDS.some((k) => text.includes(k))) return true;
-      // Heuristic: short distance (<5km) but long duration (>15min) — likely a ferry crossing.
       const sd = typeof step.staticDuration === "string" ? Number(step.staticDuration.replace(/s$/, "")) : 0;
       const dm = typeof step.distanceMeters === "number" ? step.distanceMeters : 0;
       if (dm > 0 && dm < 5000 && sd > 15 * 60) return true;
       return false;
     };
-    const legs: Array<{ steps?: StepShape[] }> = Array.isArray(route?.legs) ? route.legs : [];
-    for (const leg of legs) {
-      const steps: StepShape[] = Array.isArray(leg?.steps) ? leg.steps! : [];
-      for (const step of steps) {
-        if (!isFerryStep(step)) continue;
-        const sd = typeof step.staticDuration === "string" ? Number(step.staticDuration.replace(/s$/, "")) : 0;
-        const dm = typeof step.distanceMeters === "number" ? step.distanceMeters : 0;
-        ferryDistanceMeters += dm;
-        ferryDurationSec += sd || 0;
-        const text: string = step?.navigationInstruction?.instructions ?? "";
-        // Try to parse "Take ferry from X to Y" / "Ta X-Y-ferga" / "X → Y"
-        let from: string | undefined;
-        let to: string | undefined;
-        const m1 = text.match(/(?:from|fra)\s+(.+?)\s+(?:to|til)\s+(.+?)(?:\.|$)/i);
-        const m2 = text.match(/([A-Za-zÆØÅæøå]+)[-–]([A-Za-zÆØÅæøå]+)[-\s]?(?:ferga|ferja|ferry|ferje)/i);
-        const m3 = text.match(/([A-Za-zÆØÅæøå]+)\s*→\s*([A-Za-zÆØÅæøå]+)/);
-        if (m1) { from = m1[1]?.trim(); to = m1[2]?.trim(); }
-        else if (m2) { from = m2[1]?.trim(); to = m2[2]?.trim(); }
-        else if (m3) { from = m3[1]?.trim(); to = m3[2]?.trim(); }
-        const startLL = step?.startLocation?.latLng;
-        const endLL = step?.endLocation?.latLng;
-        ferrySegments.push({
-          fromLabel: from,
-          toLabel: to,
-          durationMin: Math.max(5, Math.round((sd || 0) / 60)),
-          distanceKm: dm ? Math.round(dm / 100) / 10 : 0,
-          start: startLL ? { lat: Number(startLL.latitude), lng: Number(startLL.longitude) } : undefined,
-          end: endLL ? { lat: Number(endLL.latitude), lng: Number(endLL.longitude) } : undefined,
-        });
+
+    const isRv = body.vehicleType === "rv";
+    const parseRoute = (route: Record<string, unknown> & {
+      polyline?: { encodedPolyline?: string };
+      distanceMeters?: number;
+      duration?: string;
+      routeLabels?: string[];
+      description?: string;
+      legs?: Array<{ steps?: StepShape[] }>;
+    }) => {
+      const encoded = route?.polyline?.encodedPolyline ?? "";
+      if (!encoded) return null;
+      const geom = decodePolyline(encoded);
+      if (geom.length < 2) return null;
+      const rawDistanceMeters = typeof route.distanceMeters === "number" ? route.distanceMeters : 0;
+      const durRaw: string = typeof route.duration === "string" ? route.duration : "0s";
+      const rawDurationSeconds = Number(durRaw.replace(/s$/, "")) || 0;
+      const baseMinutes = rawDurationSeconds ? rawDurationSeconds / 60 : 0;
+      const durationMin = Math.round(baseMinutes * (isRv ? 1 / 0.85 : 1));
+
+      const ferrySegments: FerrySegment[] = [];
+      let ferryDistanceMeters = 0;
+      let ferryDurationSec = 0;
+      const legs: Array<{ steps?: StepShape[] }> = Array.isArray(route?.legs) ? route.legs : [];
+      for (const leg of legs) {
+        const steps: StepShape[] = Array.isArray(leg?.steps) ? leg.steps! : [];
+        for (const step of steps) {
+          if (!isFerryStep(step)) continue;
+          const sd = typeof step.staticDuration === "string" ? Number(step.staticDuration.replace(/s$/, "")) : 0;
+          const dm = typeof step.distanceMeters === "number" ? step.distanceMeters : 0;
+          ferryDistanceMeters += dm;
+          ferryDurationSec += sd || 0;
+          const text: string = step?.navigationInstruction?.instructions ?? "";
+          let from: string | undefined;
+          let to: string | undefined;
+          const m1 = text.match(/(?:from|fra)\s+(.+?)\s+(?:to|til)\s+(.+?)(?:\.|$)/i);
+          const m2 = text.match(/([A-Za-zÆØÅæøå]+)[-–]([A-Za-zÆØÅæøå]+)[-\s]?(?:ferga|ferja|ferry|ferje)/i);
+          const m3 = text.match(/([A-Za-zÆØÅæøå]+)\s*→\s*([A-Za-zÆØÅæøå]+)/);
+          if (m1) { from = m1[1]?.trim(); to = m1[2]?.trim(); }
+          else if (m2) { from = m2[1]?.trim(); to = m2[2]?.trim(); }
+          else if (m3) { from = m3[1]?.trim(); to = m3[2]?.trim(); }
+          const startLL = step?.startLocation?.latLng;
+          const endLL = step?.endLocation?.latLng;
+          ferrySegments.push({
+            fromLabel: from,
+            toLabel: to,
+            durationMin: Math.max(5, Math.round((sd || 0) / 60)),
+            distanceKm: dm ? Math.round(dm / 100) / 10 : 0,
+            start: startLL ? { lat: Number(startLL.latitude), lng: Number(startLL.longitude) } : undefined,
+            end: endLL ? { lat: Number(endLL.latitude), lng: Number(endLL.longitude) } : undefined,
+          });
+        }
       }
+
+      return {
+        distanceKm: rawDistanceMeters ? Math.round(rawDistanceMeters / 100) / 10 : 0,
+        durationMin,
+        geometry: geom,
+        provider: "google" as const,
+        profile: prefs.routingPreference,
+        avoidOptions: { highways: prefs.avoidHighways, ferries: prefs.avoidFerries },
+        rawDistanceMeters,
+        rawDurationSeconds,
+        ferryDistanceKm: ferryDistanceMeters ? Math.round(ferryDistanceMeters / 100) / 10 : undefined,
+        ferryDurationMin: ferryDurationSec ? Math.round(ferryDurationSec / 60) : undefined,
+        ferrySegments: ferrySegments.length ? ferrySegments : undefined,
+        routeLabels: Array.isArray(route.routeLabels) ? route.routeLabels : undefined,
+        description: typeof route.description === "string" ? route.description : undefined,
+      };
+    };
+
+    const parsed = routesRaw
+      .map((r) => parseRoute(r as Parameters<typeof parseRoute>[0]))
+      .filter((r): r is NonNullable<ReturnType<typeof parseRoute>> => r !== null);
+
+    if (parsed.length === 0) {
+      warnings.push("google-no-geometry");
+      return null;
     }
 
-    return json({
-      distanceKm: rawDistanceMeters ? Math.round(rawDistanceMeters / 100) / 10 : 0,
-      durationMin,
-      geometry: geom,
-      provider: "google" as const,
-      profile: prefs.routingPreference,
-      avoidOptions: { highways: prefs.avoidHighways, ferries: prefs.avoidFerries },
-      rawDistanceMeters,
-      rawDurationSeconds,
-      ferryDistanceKm: ferryDistanceMeters ? Math.round(ferryDistanceMeters / 100) / 10 : undefined,
-      ferryDurationMin: ferryDurationSec ? Math.round(ferryDurationSec / 60) : undefined,
-      ferrySegments: ferrySegments.length ? ferrySegments : undefined,
-      warnings: warnings.length ? warnings : undefined,
-    });
+    if (body.alternatives) {
+      return json({
+        routes: parsed,
+        provider: "google" as const,
+        warnings: warnings.length ? warnings : undefined,
+      });
+    }
+
+    return json({ ...parsed[0], warnings: warnings.length ? warnings : undefined });
+
   } catch (err) {
     warnings.push(`google-error-${(err as Error)?.name ?? "unknown"}`);
     return null;
