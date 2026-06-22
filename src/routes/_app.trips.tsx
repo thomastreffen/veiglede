@@ -423,6 +423,7 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
   // never show "0 turer" — wait. Guests skip this gate.
   const waitingForSync = authLoading || (!!user && !syncReady);
 
+  const q = query.trim().toLowerCase();
   const activeCount = (q ? 1 : 0) + (vehicleFilter !== "all" ? 1 : 0) + (styleFilter !== "all" ? 1 : 0);
 
   const filtered = useMemo(() => {
