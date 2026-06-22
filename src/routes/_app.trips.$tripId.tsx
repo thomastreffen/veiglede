@@ -1325,31 +1325,70 @@ function PlannerActions({
 
 
   const durationMin = trip.routeDurationMin ?? 0;
+  const dayCount = Math.max(1, tripDays.length);
+  // Per-day driving time — overnight stops split the route into separate days,
+  // so we approximate per-day as total driving / number of days. This matches the
+  // summary panel and ensures warnings disappear once the trip is split enough.
+  const perDayMin = durationMin / dayCount;
+  const maxDayMin = maxDrivingHours * 60;
+  const hasAnyLodging = tripStops.some((s) => s.type === "lodging");
   const allDaysHaveLodging = tripDays.length > 0 && tripDays.every((d) =>
     tripStops.some((s) => s.dayId === d.id && s.type === "lodging"));
-  const suppressLongLeg = trip.source === "manual" || allDaysHaveLodging;
-  const isLongLeg = !suppressLongLeg && durationMin > 0 && durationMin > maxDrivingHours * 60;
+  // For manual trips we trust the user's own planning.
+  const suppressLongLeg = trip.source === "manual";
+  const isLongLeg = !suppressLongLeg && durationMin > 0 && perDayMin > maxDayMin;
+
+  // Three distinct states — see product spec.
+  type WarnState = "no-lodging" | "split-leg" | "extra-lodging";
+  let warnState: WarnState | null = null;
+  if (isLongLeg) {
+    if (!hasAnyLodging) warnState = "no-lodging";
+    else if (allDaysHaveLodging) warnState = "extra-lodging";
+    else warnState = "split-leg";
+  }
+
+  const warnCopy: Record<WarnState, { title: string; body: string; primary: string; secondary: string; onPrimary: () => void }> = {
+    "no-lodging": {
+      title: `Denne etappen er lang (${trip.drivingTime}).`,
+      body: "Etappen er lengre enn ønsket kjøretid per dag. Vil du legge inn en overnatting og dele den opp?",
+      primary: "Foreslå overnatting",
+      secondary: "Behold som én dag",
+      onPrimary: () => { tripsApi.splitIntoDays(trip.id, 2); setLodgingOpen(true); },
+    },
+    "split-leg": {
+      title: "Denne dagsetappen er fortsatt lang.",
+      body: "Turen har allerede overnattinger, men denne etappen overstiger ønsket kjøretid per dag. Vil du dele opp akkurat denne etappen?",
+      primary: "Del opp etappen",
+      secondary: "Behold denne dagen",
+      onPrimary: () => { tripsApi.splitIntoDays(trip.id, tripDays.length + 1); },
+    },
+    "extra-lodging": {
+      title: "Denne dagen er fortsatt for lang.",
+      body: "Selv med stopp og overnatting i turen blir denne dagsetappen lengre enn ønsket. Vurder å legge inn en ekstra overnatting mellom start og slutt for denne dagen.",
+      primary: "Legg til ekstra overnatting",
+      secondary: "Behold dagen",
+      onPrimary: () => { setLodgingOpen(true); },
+    },
+  };
 
   return (
     <section className="mt-4 space-y-3">
-      {isLongLeg && (
+      {warnState && (
         <div className="relative z-20 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-lg">
-          <p className="text-sm font-semibold text-amber-900">Denne etappen er lang ({trip.drivingTime}).</p>
-          <p className="mt-1 text-xs text-amber-900/80">
-            Lengre enn dine {maxDrivingHours} timer kjøring per dag. Vil du dele den opp?
-          </p>
+          <p className="text-sm font-semibold text-amber-900">{warnCopy[warnState].title}</p>
+          <p className="mt-1 text-xs text-amber-900/80">{warnCopy[warnState].body}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              onClick={() => { tripsApi.splitIntoDays(trip.id, 2); setLodgingOpen(true); }}
+              onClick={warnCopy[warnState].onPrimary}
               className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:brightness-110"
             >
-              Ja, foreslå overnatting
+              {warnCopy[warnState].primary}
             </button>
             <button
               onClick={() => { /* keep as-is */ }}
               className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-900 hover:bg-amber-100"
             >
-              Nei, behold som én dag
+              {warnCopy[warnState].secondary}
             </button>
           </div>
         </div>
