@@ -545,6 +545,77 @@ export const tripsApi = {
     refreshTripDerivedState(id);
     persist();
   },
+
+  /** Cache the alternatives returned by the routing provider for this trip. */
+  setRouteAlternatives(tripId: string, alts: RouteAlternative[], hash: string) {
+    ensureInit();
+    state = {
+      ...state,
+      trips: state.trips.map((t) =>
+        t.id === tripId
+          ? {
+              ...t,
+              routeAlternatives: alts,
+              routeAlternativesHash: hash,
+              // If the previously selected id is gone, clear it so the UI falls
+              // back to the fastest alternative.
+              selectedRouteAltId:
+                t.selectedRouteAltId && alts.some((a) => a.id === t.selectedRouteAltId)
+                  ? t.selectedRouteAltId
+                  : undefined,
+            }
+          : t,
+      ),
+    };
+    persist();
+  },
+
+  /** Apply the selected alternative — copies its geometry/distance/duration
+   *  into the trip's primary route fields so the map, time budget and cost
+   *  panel reflect the user's choice immediately. */
+  selectRouteAlternative(tripId: string, altId: string) {
+    ensureInit();
+    const trip = state.trips.find((t) => t.id === tripId);
+    const alt = trip?.routeAlternatives?.find((a) => a.id === altId);
+    if (!trip || !alt) return;
+    state = {
+      ...state,
+      trips: state.trips.map((t) =>
+        t.id === tripId
+          ? {
+              ...t,
+              selectedRouteAltId: altId,
+              routeGeometry: alt.geometry,
+              routeDistanceKm: alt.distanceKm,
+              routeDurationMin: alt.durationMin,
+              distanceKm: Math.round(alt.distanceKm),
+              // Bumping routeWaypointsHash to a sentinel keyed on the alt id
+              // prevents MapLibreTripMap from immediately overwriting the
+              // chosen geometry with a fresh fastest-route fetch.
+              routeWaypointsHash: `alt:${altId}`,
+            }
+          : t,
+      ),
+    };
+    refreshTripDerivedState(tripId);
+    persist();
+  },
+
+  /** Replace the route-shaping via-points and invalidate the alternatives
+   *  cache so the next fetch reflects the new corridor. */
+  setShapingWaypoints(tripId: string, points: ShapingWaypoint[]) {
+    ensureInit();
+    state = {
+      ...state,
+      trips: state.trips.map((t) =>
+        t.id === tripId
+          ? { ...t, shapingWaypoints: points, routeAlternativesHash: "" }
+          : t,
+      ),
+    };
+    persist();
+  },
+
   /** Read the current trip + days + stops snapshot for a trip id. */
   getTripBundle(id: string): { trip: Trip | null; days: TripDay[]; stops: Stop[] } {
     ensureInit();
