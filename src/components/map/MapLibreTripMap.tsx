@@ -314,9 +314,12 @@ export function MapLibreTripMap({
   }, []);
 
   // Swap style when variant changes (without recreating the map).
+  // Skip when we've already fallen back to OSM — re-applying the broken
+  // MapTiler URL would just produce another 403 and a black canvas.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    if (osmFallbackRef.current) return;
     try { map.setStyle(styleUrl); } catch { /* noop */ }
   }, [styleUrl]);
 
