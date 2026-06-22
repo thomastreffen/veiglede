@@ -139,6 +139,9 @@ export function MapLibreTripMap({
   const lastErrorRef = useRef<string | null>(null);
   const autoCenteredLiveRef = useRef(false);
   const [followLive, setFollowLive] = useState(false);
+  // Set to true once we've swapped to the OSM raster fallback style so we
+  // don't bounce back and forth between providers.
+  const osmFallbackRef = useRef(false);
 
   const projected = useMemo(() => projectTrip(trip, days, stops), [trip, days, stops]);
 
@@ -227,9 +230,48 @@ export function MapLibreTripMap({
     onStage?.("mapCreated");
     emitDiagnostics();
 
+    // OSM raster fallback — used when MapTiler returns 403/404 (e.g. the
+    // key is domain-restricted) or any other style.json failure. Inline
+    // raster source keeps things simple: no extra deps, attribution
+    // included, no extra worker bundle.
+    const swapToOsmFallback = (reason: string) => {
+      if (osmFallbackRef.current) return;
+      osmFallbackRef.current = true;
+      lastErrorRef.current = `${reason} — switched to OSM fallback`;
+      try {
+        map.setStyle({
+          version: 8,
+          sources: {
+            osm: {
+              type: "raster",
+              tiles: [
+                "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              ],
+              tileSize: 256,
+              attribution: "© OpenStreetMap contributors",
+              maxzoom: 19,
+            },
+          },
+          layers: [{ id: "osm", type: "raster", source: "osm" }],
+          // Glyphs from a public CDN so any text labels we add later still work.
+          glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+        });
+      } catch { /* noop */ }
+      emitDiagnostics();
+    };
+
     map.on("error", (e) => {
       const msg = e.error?.message ?? "map error";
       lastErrorRef.current = msg;
+      // MapTiler 401/403/404 surface here. Swap to OSM so the user keeps a
+      // visible basemap instead of a black canvas behind the route layers.
+      const status = (e.error as { status?: number } | undefined)?.status;
+      const looksLikeStyleFailure =
+        /style|maptiler|forbidden|unauthor|restrict|404|403|401/i.test(msg) ||
+        status === 401 || status === 403 || status === 404;
+      if (looksLikeStyleFailure) swapToOsmFallback(msg);
       emitDiagnostics();
     });
 
@@ -242,6 +284,15 @@ export function MapLibreTripMap({
       onReady?.();
       emitDiagnostics();
     });
+
+    // Safety net: if neither `load` nor a definitive `error` arrives within a
+    // few seconds (e.g. browser silently drops the style fetch), assume the
+    // primary provider failed and fall back to OSM so the user sees tiles.
+    window.setTimeout(() => {
+      if (cancelled) return;
+      if (osmFallbackRef.current) return;
+      if (!map.isStyleLoaded()) swapToOsmFallback("style load timeout");
+    }, 6000);
 
     map.on("idle", emitDiagnostics);
 
