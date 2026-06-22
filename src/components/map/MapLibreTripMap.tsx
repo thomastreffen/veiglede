@@ -375,6 +375,21 @@ export function MapLibreTripMap({
       return;
     }
 
+    // Alternative-route selection: honour the user's pick. When an alt is
+    // chosen and no intermediate stops were added, render that geometry and
+    // skip the fastest-route fetch — otherwise we'd immediately overwrite it.
+    if (
+      trip.selectedRouteAltId &&
+      stopWps.length === 0 &&
+      trip.routeGeometry &&
+      trip.routeGeometry.length > 1
+    ) {
+      setRouteGeom(trip.routeGeometry);
+      prevHashRef.current = hash;
+      return;
+    }
+
+
     // Debug: log every recalc attempt with the waypoint plan so the user can
     // verify via-points are reaching ORS.
     const debug = {
