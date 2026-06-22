@@ -23,56 +23,105 @@ const KEYS = {
 
 let installed = false;
 let currentUserId: string | null = null;
+let pulling = false;
+let syncReady = false;
+const readyListeners = new Set<() => void>();
 const debounce: Record<string, ReturnType<typeof setTimeout> | undefined> = {};
 
 function fireStorageReload() {
-  // Custom event our stores can listen to — but simpler: reload the page on first sync
-  // so all useSyncExternalStore consumers pick up fresh data.
   window.dispatchEvent(new Event("veiglede:cloud-sync"));
 }
 
+function setReady(v: boolean) {
+  if (syncReady === v) return;
+  syncReady = v;
+  readyListeners.forEach((l) => l());
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("veiglede:cloud-sync-ready"));
+  }
+}
+
+export function isCloudSyncReady() { return syncReady; }
+export function onCloudSyncReady(l: () => void) {
+  readyListeners.add(l);
+  return () => readyListeners.delete(l);
+}
+export function getCurrentSyncUserId() { return currentUserId; }
+
+/** Parse a trips blob string and return how many trips it represents. */
+function tripsCount(raw: string | null): number {
+  if (!raw) return 0;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.trips)) return parsed.trips.length;
+  } catch {}
+  return 0;
+}
+
 async function pullAll(userId: string) {
-  const [prefsRes, vehiclesRes, tripsRes, profileRes] = await Promise.all([
-    supabase.from("driver_prefs").select("data").eq("user_id", userId).maybeSingle(),
-    supabase.from("vehicles").select("data").eq("id", userId).maybeSingle(),
-    supabase.from("trips").select("data").eq("user_id", userId).maybeSingle(),
-    supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
-  ]);
+  if (pulling) return;
+  pulling = true;
+  try {
+    const [prefsRes, vehiclesRes, tripsRes, profileRes] = await Promise.all([
+      supabase.from("driver_prefs").select("data").eq("user_id", userId).maybeSingle(),
+      supabase.from("vehicles").select("data").eq("id", userId).maybeSingle(),
+      supabase.from("trips").select("data").eq("user_id", userId).maybeSingle(),
+      supabase.from("profiles").select("language").eq("id", userId).maybeSingle(),
+    ]);
 
-  let didWrite = false;
-  if (prefsRes.data?.data) {
-    localStorage.setItem(KEYS.prefs, JSON.stringify(prefsRes.data.data));
-    didWrite = true;
-  } else if (!prefsRes.error && localStorage.getItem(KEYS.prefs)) {
-    void pushKey(KEYS.prefs, localStorage.getItem(KEYS.prefs)!);
-  }
-  if (vehiclesRes.data?.data) {
-    localStorage.setItem(KEYS.vehicles, JSON.stringify(vehiclesRes.data.data));
-    didWrite = true;
-  } else if (!vehiclesRes.error && localStorage.getItem(KEYS.vehicles)) {
-    void pushKey(KEYS.vehicles, localStorage.getItem(KEYS.vehicles)!);
-  }
-  if (tripsRes.data?.data) {
-    localStorage.setItem(KEYS.trips, JSON.stringify(tripsRes.data.data));
-    didWrite = true;
-  } else if (!tripsRes.error && localStorage.getItem(KEYS.trips)) {
-    void pushKey(KEYS.trips, localStorage.getItem(KEYS.trips)!);
-  }
-
-  // Language: cloud preference wins. If empty and local has one, push it up.
-  const cloudLang = (profileRes.data as { language?: string } | null)?.language;
-  if (cloudLang) {
-    const prev = localStorage.getItem(KEYS.language);
-    if (prev !== cloudLang) {
-      localStorage.setItem(KEYS.language, cloudLang);
+    let didWrite = false;
+    if (prefsRes.data?.data) {
+      localStorage.setItem(KEYS.prefs, JSON.stringify(prefsRes.data.data));
       didWrite = true;
+    } else if (!prefsRes.error && localStorage.getItem(KEYS.prefs)) {
+      void pushKey(KEYS.prefs, localStorage.getItem(KEYS.prefs)!);
     }
-  } else {
-    const localLang = localStorage.getItem(KEYS.language);
-    if (localLang) void pushKey(KEYS.language, localLang);
-  }
+    if (vehiclesRes.data?.data) {
+      localStorage.setItem(KEYS.vehicles, JSON.stringify(vehiclesRes.data.data));
+      didWrite = true;
+    } else if (!vehiclesRes.error && localStorage.getItem(KEYS.vehicles)) {
+      void pushKey(KEYS.vehicles, localStorage.getItem(KEYS.vehicles)!);
+    }
+    if (tripsRes.data?.data) {
+      localStorage.setItem(KEYS.trips, JSON.stringify(tripsRes.data.data));
+      didWrite = true;
+    } else if (!tripsRes.error) {
+      // CRITICAL: never push an empty/seed blob up — it would clobber a row
+      // that simply failed to fetch on this device. Only push local trips
+      // when there is actual content to preserve.
+      const localRaw = localStorage.getItem(KEYS.trips);
+      if (localRaw && tripsCount(localRaw) > 0) {
+        void pushKey(KEYS.trips, localRaw);
+      }
+    }
 
-  if (didWrite) fireStorageReload();
+    const cloudLang = (profileRes.data as { language?: string } | null)?.language;
+    if (cloudLang) {
+      const prev = localStorage.getItem(KEYS.language);
+      if (prev !== cloudLang) {
+        localStorage.setItem(KEYS.language, cloudLang);
+        didWrite = true;
+      }
+    } else {
+      const localLang = localStorage.getItem(KEYS.language);
+      if (localLang) void pushKey(KEYS.language, localLang);
+    }
+
+    if (didWrite) fireStorageReload();
+  } catch (e) {
+    console.warn("[cloud-sync] pull failed", e);
+  } finally {
+    pulling = false;
+    setReady(true);
+    // Always fire so late-mounted stores can re-read (event may have raced).
+    fireStorageReload();
+  }
+}
+
+/** Force a re-pull from cloud for the current user (e.g. on /trips mount). */
+export async function refreshCloudData(): Promise<void> {
+  if (typeof window === "undefined" || !currentUserId) return;
+  await pullAll(currentUserId);
 }
 
 async function pushKey(key: string, raw: string) {
