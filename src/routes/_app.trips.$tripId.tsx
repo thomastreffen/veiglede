@@ -375,6 +375,11 @@ function TripPlanner() {
       {/* Planning actions — flexible trip model */}
       <PlannerActions trip={trip} tripDays={tripDays} tripStops={tripStops} maxDrivingHours={prefs.maxDrivingHours} />
 
+      <section className="mt-4">
+        <RouteAlternativesPanel trip={trip} />
+      </section>
+
+
 
       {/* Time budget */}
       <section className="mt-4">
