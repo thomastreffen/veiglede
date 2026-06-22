@@ -201,10 +201,16 @@ export interface Trip {
   routeFerryDistanceKm?: number;
   routeFerryDurationMin?: number;
   routeFallbackEstimateMin?: number;
-  // Map UX v1.1 — primary route is `routeGeometry`. Alternatives are reserved
-  // for a future routing v2 where ORS / another provider returns multiple
-  // options. Persisted so the planner can later let the user pick.
+  // Alternative ruter v1 — cachede alternativer fra routing-provider og
+  // brukerens valg. Valgt rute styrer kart, tid og kostnader.
   routeAlternatives?: RouteAlternative[];
+  /** Id of the alternative the user picked (matches RouteAlternative.id). */
+  selectedRouteAltId?: string;
+  /** Hash of (origin,dest,shapingWaypoints,vehicle,style) the alternatives were fetched for. */
+  routeAlternativesHash?: string;
+  /** Optional via-points that shape the route without becoming visible stops. */
+  shapingWaypoints?: ShapingWaypoint[];
+
   // Trip time v1 — snapshot of the time breakdown computed at generation.
   // The UI recomputes live from current stops so it stays accurate when the
   // user edits — this snapshot is kept for debug / future analytics.
