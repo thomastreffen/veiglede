@@ -1,10 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTripsStore, tripsApi, COVERS, VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta, FEATURED_ROUTES, type CoverKey, type VehicleType, type RouteStyle } from "@/lib/trips-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { useAuth } from "@/lib/auth";
+import { isCloudSyncReady, onCloudSyncReady, refreshCloudData } from "@/lib/cloud-sync";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
 import { useVehicles } from "@/lib/vehicles-store";
 import { feedFromFollowsFn, type FeedTrip } from "@/lib/social.functions";
@@ -14,6 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+
+function subscribeReady(l: () => void) { return onCloudSyncReady(l); }
+function getReady() { return isCloudSyncReady(); }
+function getReadyServer() { return false; }
+function useCloudSyncReady() {
+  return useSyncExternalStore(subscribeReady, getReady, getReadyServer);
+}
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
