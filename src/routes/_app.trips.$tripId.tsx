@@ -217,8 +217,9 @@ function TripPlanner() {
   return (
     <div className="lg:relative lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen">
     <div className="lg:grid lg:grid-cols-[minmax(0,540px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,620px)_minmax(0,1fr)] lg:h-[calc(100vh-4rem)]">
-    <div className="lg:overflow-y-auto lg:border-r lg:border-border lg:px-5">
-    <div className="py-4">
+    <div className="min-w-0 overflow-x-hidden lg:overflow-y-auto lg:border-r lg:border-border lg:px-5">
+    <div className="min-w-0 py-4">
+
 
       <DemoDebugPanel
         title="Planner debug"

@@ -1,10 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTripsStore, tripsApi, COVERS, VEHICLES, ROUTE_STYLES, vehicleMeta, styleMeta, FEATURED_ROUTES, type CoverKey, type VehicleType, type RouteStyle } from "@/lib/trips-store";
 import { useTripTracking, statusMeta } from "@/lib/trip-tracking";
 import { useAuth } from "@/lib/auth";
+import { isCloudSyncReady, onCloudSyncReady, refreshCloudData } from "@/lib/cloud-sync";
 import { listFollowedTrips, type FollowedTrip } from "@/lib/trip-invites";
 import { useVehicles } from "@/lib/vehicles-store";
 import { feedFromFollowsFn, type FeedTrip } from "@/lib/social.functions";
@@ -14,6 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+
+function subscribeReady(l: () => void) { return onCloudSyncReady(l); }
+function getReady() { return isCloudSyncReady(); }
+function getReadyServer() { return false; }
+function useCloudSyncReady() {
+  return useSyncExternalStore(subscribeReady, getReady, getReadyServer);
+}
 
 export const Route = createFileRoute("/_app/trips")({
   head: () => ({ meta: [{ title: "Mine turer — Veiglede" }] }),
@@ -395,11 +403,25 @@ type SortOption = "newest" | "oldest" | "longest" | "shortest";
 
 function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsStore>["trips"] }) {
   const tr = useT();
+  const { user, loading: authLoading } = useAuth();
+  const syncReady = useCloudSyncReady();
   const [query, setQuery] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | VehicleType>("all");
   const [styleFilter, setStyleFilter] = useState<"all" | RouteStyle>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
+  // Force a fresh cloud pull on mount so navigating to "Mine turer" never
+  // shows a stale (possibly empty) local snapshot. Same code path on
+  // desktop and mobile.
+  useEffect(() => {
+    if (!authLoading && user) {
+      void refreshCloudData();
+    }
+  }, [authLoading, user?.id]);
+
+  // While auth or first cloud sync is still resolving for a signed-in user,
+  // never show "0 turer" — wait. Guests skip this gate.
+  const waitingForSync = authLoading || (!!user && !syncReady);
 
   const q = query.trim().toLowerCase();
   const activeCount = (q ? 1 : 0) + (vehicleFilter !== "all" ? 1 : 0) + (styleFilter !== "all" ? 1 : 0);
@@ -515,7 +537,11 @@ function SearchAndFilters({ allTrips }: { allTrips: ReturnType<typeof useTripsSt
         </Link>
       </div>
 
-      {allTrips.length === 0 ? (
+      {waitingForSync && allTrips.length === 0 ? (
+        <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
+          <p className="font-display text-xl uppercase animate-pulse text-muted-foreground">{tr.app.trips.mineHeading}…</p>
+        </div>
+      ) : allTrips.length === 0 ? (
         <EmptyState />
       ) : filtered.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-10 text-center">
