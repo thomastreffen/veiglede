@@ -1,85 +1,111 @@
-## Goal
-Make Veiglede feel like a proper web product on desktop without disturbing mobile. The work is layout-only — no feature, copy, or visual-style changes beyond container widths and column structure.
+# Alternative ruter og via-punkter
 
-## Root cause
-`AppShell.tsx` wraps every page's `<main>` in `mx-auto max-w-5xl` (1024 px). Every page inherits that cap, so even pages that opt into wider grids get clipped. Header and footer share the same cap. Most route files then add another `max-w-2xl`/`max-w-3xl` inside, narrowing things further.
+Mål: brukeren skal kunne velge mellom 2–3 naturlige veivalg per dagsetappe (à la Google Maps), og kunne påvirke ruta med via-punkter uten å rote til stoppliste/dagsplan. Valget skal være stabilt etter reload.
 
-## Approach
-Introduce a small layout primitive and one shell change. Then opt pages into the right width — no global visual redesign.
+## Anbefalt teknisk løsning
 
-### 1. Layout primitive (`src/components/layout/PageContainer.tsx`)
-A single component with a `width` prop. Mobile is unchanged (full-bleed inside the existing px padding); desktop picks a max-width.
+Google Routes API (som allerede brukes som primær provider i `src/routes/api/public/directions.ts`) støtter `computeAlternativeRoutes: true` og returnerer inntil 3 ruter med polyline, distanse, varighet og `routeLabels` (`DEFAULT_ROUTE`, `DEFAULT_ROUTE_ALTERNATE`, `FUEL_EFFICIENT`). Vi bygger funksjonen rundt dette i stedet for å rulle vår egen "naturlige via-punkter"-katalog — det er provider-arbeid.
 
-```text
-width="narrow"      max-w-3xl     reading/forms (settings sub-pages, legal, auth)
-width="content"     max-w-5xl     current default — list pages, simple content
-width="wide"        max-w-7xl     dashboards, explore, trip detail, profile
-width="full"        no max-w      planner/map workspaces
+Når Google ikke returnerer alternativer (kort avstand, sjeldent tilfelle), genererer vi best-effort kandidat ved å sende én ekstra forespørsel med et hint-via-punkt fra en kuratert liste over større norske knutepunkter mellom kjente korridorer (Hønefoss, Kongsvinger, Otta, Voss, osv.). Dette caches sammen med valget.
+
+## Datamodell
+
+Nye felt på `TripDay` (`src/lib/trips-store.ts`):
+
+```ts
+interface TripDay {
+  // ... eksisterende felt
+  /** Cachede alternative ruter for denne dagsetappen. */
+  routeAlternatives?: RouteAlternative[];
+  /** Id på valgt rutevariant (peker inn i routeAlternatives). */
+  selectedRouteAltId?: string;
+  /** Hash av endepunkter+via-punkter alternativene ble beregnet for. Brukes til invalidering. */
+  routeAlternativesHash?: string;
+  /** Brukerdefinerte via-punkter som styrer ruta uten å vises som stopp. */
+  shapingWaypoints?: ShapingWaypoint[];
+}
+
+interface RouteAlternative {
+  id: string;                  // f.eks. "alt-0"
+  label: string;               // "Raskeste", "Via Hønefoss", "Via Oslo/E6"
+  description?: string;        // "Mer naturskjønn, mindre motorvei"
+  distanceKm: number;
+  durationMin: number;
+  geometry: { lat: number; lng: number }[];
+  isFastest: boolean;
+  deltaMinFromFastest: number; // 0 for raskeste, positivt for tregere
+  source: "google-alt" | "google-via-hint" | "fallback";
+}
+
+interface ShapingWaypoint {
+  id: string;
+  lat: number;
+  lng: number;
+  label?: string;              // "Via Hønefoss"
+  // Bevisst ingen `type` — disse er IKKE stopp.
+}
 ```
 
-All variants keep `mx-auto w-full px-4 md:px-6`.
+Stop-typene utvides ikke. Skillet mellom destination/stop/accommodation/via blir:
+- destination/origin: felt på `Trip`
+- stop/attraction/accommodation: `Stop` (eksisterende)
+- via/route-shaping: `ShapingWaypoint` på `TripDay` — aldri i `stops`-listen
 
-### 2. AppShell change
-- Remove the `max-w-5xl` cap from `<main>`; keep it on header/footer only (header stays comfortable, footer stays readable).
-- `<main>` becomes `flex-1 w-full pb-[...] md:pb-12 pt-2` with no horizontal padding — each page owns its container via `PageContainer`.
-- Header inner wrapper widens to `max-w-7xl` so nav doesn't feel cramped on 1440 px+.
+## Endringer per fil
 
-This is the single change that unblocks every page; pages that don't get touched in this pass still render at the old width by wrapping their existing content in `<PageContainer width="content">`.
+1. **`src/routes/api/public/directions.ts`**
+   - Aksepter `alternatives?: boolean` og `viaHint?: LatLng` i `Body`.
+   - Send `computeAlternativeRoutes: true` til Google, utvid `X-Goog-FieldMask` med `routes.routeLabels`, `routes.description`.
+   - Returner alle ruter som `{ routes: [...] }` med samme shape som i dag (distanceKm, durationMin, geometry, ferrySegments, label, description) når `alternatives === true`. Behold dagens single-route-respons når `alternatives` er falsy (bakoverkompatibelt).
+   - Auto-navngivning på server: utled label fra `routeLabels` + heuristikk (sammenlign geometri-bbox mot kjente korridor-bbox: Oslo, Hønefoss, Gjøvik, Drammen) når Google ikke gir tekst.
 
-### 3. Per-page opt-ins (this pass)
+2. **`src/lib/routing/index.ts`**
+   - Ny `getRouteAlternatives(input)` som kaller endpoint med `alternatives: true` og normaliserer.
+   - Behold `getRoute` for koden som bare trenger raskeste.
 
-**Home (`_app.home.tsx`)** — `width="wide"`
-- `lg:grid-cols-12` shell
-- Hero spans 12; "Fortsett reisen" promotes from 1-col → `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
-- "Populært i Veiglede" / curated → `lg:grid-cols-3 xl:grid-cols-4`
-- "Fra folk du følger" (col-span-8) + "Din garasje" (col-span-4) side-by-side at `lg`
-- "Forslag for [vehicle]" → horizontal scroll on mobile, grid at `lg`
+3. **`src/lib/trips-store.ts`**
+   - Nye felt + tre nye api-metoder:
+     - `tripsApi.setRouteAlternatives(dayId, alts, hash)` — cacher resultatet.
+     - `tripsApi.selectRouteAlternative(dayId, altId)` — setter `selectedRouteAltId`, kopierer alt's `geometry/distanceKm/durationMin` inn på `TripDay.dayRouteGeometry`/`dayDistanceKm`/`dayDrivingTimeMin` slik at varsel, time budget og kart bruker valget umiddelbart.
+     - `tripsApi.setShapingWaypoints(dayId, points)` — invaliderer cache (`routeAlternativesHash` settes til "" → neste fetch henter på nytt).
+   - `refreshTripDerivedState` summerer per-dag-felt slik at trip-totaler følger valgt rute.
 
-**Explore (`_app.explore.tsx`)** — `width="wide"`
-- Filter row uses full width
-- Region chips full-width row
-- Curated grid → `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
-- Public trip grid same breakpoints
+4. **`src/components/map/MapLibreTripMap.tsx`**
+   - Ny prop: dagens valgte alternativer (eller hent fra trip-bundle).
+   - Tegn ikke-valgte alternativer som tynnere/transparent linje under valgt rute.
+   - Klikk på alternativ-linjen velger den (kaller `selectRouteAlternative`).
+   - Long-press / Shift-klikk på kartet → kall `setShapingWaypoints(dayId, [...prev, {lat,lng}])`.
 
-**Settings (`_app.settings.tsx`)** — `width="wide"`
-- `lg:grid-cols-[280px_minmax(0,1fr)]`
-- Left rail: identity card, avatar, public-profile link, account actions, in-page nav
-- Right column: existing settings sections stacked
+5. **`src/routes/_app.trips.$tripId.tsx` (dagsetappevisning)**
+   - Ny knapp per dag: "Velg annen vei" → åpner panel med liste over alternativer:
+     - Navn, distanse, kjøretid, "+18 min", kort beskrivelse, fargeprikk som matcher kart-linjen.
+     - Radio-valg; persister umiddelbart via `selectRouteAlternative`.
+     - Egen seksjon "Via-punkter": liste + "Fjern" + hjelpetekst om at de styrer ruta uten å bli stopp.
+   - Henter alternativer via TanStack Query `["routeAlts", dayId, hash]` med `staleTime` 1 time; cache + persistert i store er kilde-til-sannhet, query gjør bare fetch når hash endres.
 
-**Garage (`_app.garage.tsx`)** — `width="wide"`
-- Vehicle cards → `sm:grid-cols-2 lg:grid-cols-3`
+6. **`src/components/TripOverview.tsx` / `src/lib/trip-time.ts`**
+   - Allerede klar: leser `dayDrivingTimeMin`/`dayDistanceKm`. Ingen endring trengs — så lenge `selectRouteAlternative` skriver til disse feltene.
 
-**Trip detail (`_app.trips.$tripId.tsx`)** — `width="wide"`
-- Hero/summary spans full width, stats become a horizontal row at `md+`
-- Below hero: `lg:grid-cols-[minmax(0,1fr)_360px]` — map + roadbook left, Turkontroll/actions sticky right
-- Roadbook keeps its current internal layout
+## Caching og stabilitet
 
-**Trip roadbook (`_app.trips.$tripId.roadbook.tsx`)** — `width="wide"`, two-column at `lg` (day list left, day detail right) using existing components.
+- `routeAlternativesHash = hash(origin, destination, shapingWaypoints, vehicle, routeStyle)`. Beregnes klientsiden.
+- Henter nye alternativer kun når hash endres. Valgt `selectedRouteAltId` består så lenge id-en finnes i den nye lista; hvis ikke (ny vei er borte) faller vi tilbake til raskeste og varsler brukeren én gang via toast.
+- Alle felt persisteres gjennom eksisterende `cloud-sync` — `TripDay`-rader synces allerede.
 
-**Public/curated trip (`SharedTripPage`, `CuratedTripPage`)** — `width="wide"`
-- Wide hero
-- `lg:grid-cols-12`: map+roadbook col-span-8, stats/social/creator col-span-4 sticky
+## Ferry/long-leg-konsistens
 
-**Planner** — already uses `PlannerWorkspace`. Wrap its desktop branch in `width="full"` (no horizontal padding, no max-width) so the `-mx-*` workaround disappears. Mobile branch wraps in `width="content"`.
+`selectRouteAlternative` oppdaterer også `Trip.routeGeometry`/`routeDurationMin` ved å konkatenere alle dagers valgte geometri. Det holder kart, ferge-deteksjon (`PlannerActions` long-leg) og kostnadspanel synkronisert på samme datagrunnlag.
 
-**Trips list (`_app.trips.tsx`)** — `width="wide"`, trip cards `sm:grid-cols-2 lg:grid-cols-3`.
+## Begrensninger / out-of-scope (kan komme i del 2)
 
-**Profile (`u.$username.tsx`)** — `width="wide"`, two-column at `lg` (identity/vehicles left, trips right).
+- Full "dra ruten" (re-routing ved drag av polyline) er kompleks — vi støtter "Klikk for via-punkt" i denne iterasjonen.
+- Manuell navngivning av alternativer ("Min favorittvei via Eidsvoll") er ikke i v1.
+- AI-trips re-genererer fortsatt hele turen — alternativ-valg på AI-trips begrenses til den ene dagen brukeren redigerer.
 
-**Untouched in this pass** (keep current width via `width="content"` or `"narrow"`): legal pages, auth pages, partner dashboard, admin, fordeler, help. They already read well at current widths.
+## Foreslått rekkefølge for implementering
 
-### 4. Mobile guarantee
-Every change is gated on `lg:` (≥1024 px) or larger. Below `lg`, layout is identical to today. `pb-[calc(10rem+env(safe-area-inset-bottom))]` for the bottom nav stays on `<main>`. Bottom nav, FAB, mobile header — all untouched.
-
-## Out of scope
-- Visual restyle of cards/colors/typography
-- New features or new data fetching
-- Reworking individual card components beyond grid placement
-- Map workspace behavior (already addressed in the prior task)
-
-## Definition of done
-- `max-w-5xl` constraint removed from `<main>`; pages choose their own width.
-- Home, Explore, Settings, Garage, Trip detail, Public/curated trip, Trips list, Profile use full desktop width with multi-column layouts at `lg+`.
-- Planner desktop branch fills the screen without `-mx-*` hacks.
-- Mobile (< `lg`) renders identically to today on every touched page.
-- No TypeScript errors.
+1. Server: utvid `directions.ts` til å returnere alternativer + labels.
+2. Datamodell: nye felt på `TripDay` + tre store-metoder.
+3. UI: "Velg annen vei"-panel og kart-rendering av alternativer.
+4. Via-punkter: klikk-på-kart-flyt + hash-invalidering.
+5. QA: bekreft persistens etter reload, riktige tider i budget, ferge-deteksjon på valgt rute.
