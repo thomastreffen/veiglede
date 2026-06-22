@@ -63,6 +63,7 @@ import { Route as TurDeltShareTokenRouteImport } from './routes/tur.delt.$shareT
 import { Route as PartnerDashboardInvoicesRouteImport } from './routes/partner.dashboard.invoices'
 import { Route as PartnerDashboardBenefitsRouteImport } from './routes/partner.dashboard.benefits'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ApiPublicVersionRouteImport } from './routes/api/public/version'
 import { Route as ApiPublicPoiSearchRouteImport } from './routes/api/public.poi-search'
 import { Route as ApiPublicMapConfigRouteImport } from './routes/api/public.map-config'
 import { Route as ApiPublicGooglePlacesRouteImport } from './routes/api/public/google-places'
@@ -351,6 +352,11 @@ const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   path: '/lovable/email/suppression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicVersionRoute = ApiPublicVersionRouteImport.update({
+  id: '/api/public/version',
+  path: '/api/public/version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPoiSearchRoute = ApiPublicPoiSearchRouteImport.update({
   id: '/api/public/poi-search',
   path: '/api/public/poi-search',
@@ -496,6 +502,7 @@ export interface FileRoutesByFullPath {
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
@@ -563,6 +570,7 @@ export interface FileRoutesByTo {
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
@@ -636,6 +644,7 @@ export interface FileRoutesById {
   '/api/public/google-places': typeof ApiPublicGooglePlacesRoute
   '/api/public/map-config': typeof ApiPublicMapConfigRoute
   '/api/public/poi-search': typeof ApiPublicPoiSearchRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/partner/dashboard/benefits': typeof PartnerDashboardBenefitsRoute
   '/partner/dashboard/invoices': typeof PartnerDashboardInvoicesRoute
@@ -709,6 +718,7 @@ export interface FileRouteTypes {
     | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/poi-search'
+    | '/api/public/version'
     | '/lovable/email/suppression'
     | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
@@ -776,6 +786,7 @@ export interface FileRouteTypes {
     | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/poi-search'
+    | '/api/public/version'
     | '/lovable/email/suppression'
     | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
@@ -848,6 +859,7 @@ export interface FileRouteTypes {
     | '/api/public/google-places'
     | '/api/public/map-config'
     | '/api/public/poi-search'
+    | '/api/public/version'
     | '/lovable/email/suppression'
     | '/partner/dashboard/benefits'
     | '/partner/dashboard/invoices'
@@ -893,6 +905,7 @@ export interface RootRouteChildren {
   ApiPublicGooglePlacesRoute: typeof ApiPublicGooglePlacesRoute
   ApiPublicMapConfigRoute: typeof ApiPublicMapConfigRoute
   ApiPublicPoiSearchRoute: typeof ApiPublicPoiSearchRoute
+  ApiPublicVersionRoute: typeof ApiPublicVersionRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   TurDeltShareTokenRoute: typeof TurDeltShareTokenRoute
   ApiPublicCronGeneratePartnerInvoicesRoute: typeof ApiPublicCronGeneratePartnerInvoicesRoute
@@ -1283,6 +1296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/version': {
+      id: '/api/public/version'
+      path: '/api/public/version'
+      fullPath: '/api/public/version'
+      preLoaderRoute: typeof ApiPublicVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/poi-search': {
       id: '/api/public/poi-search'
       path: '/api/public/poi-search'
@@ -1558,6 +1578,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGooglePlacesRoute: ApiPublicGooglePlacesRoute,
   ApiPublicMapConfigRoute: ApiPublicMapConfigRoute,
   ApiPublicPoiSearchRoute: ApiPublicPoiSearchRoute,
+  ApiPublicVersionRoute: ApiPublicVersionRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   TurDeltShareTokenRoute: TurDeltShareTokenRoute,
   ApiPublicCronGeneratePartnerInvoicesRoute:
