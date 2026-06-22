@@ -25,7 +25,10 @@ interface Body {
   routeStyle?: string;
   avoidHighways?: boolean;
   avoidFerries?: boolean;
+  /** When true, return up to 3 alternative routes in `routes: [...]`. */
+  alternatives?: boolean;
 }
+
 
 function isFiniteNum(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n) && n !== 0;
