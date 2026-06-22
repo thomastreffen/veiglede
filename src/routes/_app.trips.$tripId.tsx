@@ -1234,7 +1234,7 @@ function PlannerActions({
   trip, tripDays, tripStops, maxDrivingHours,
 }: {
   trip: { id: string; destination: string; routeDurationMin?: number; drivingTime: string; startDate?: string; source?: "manual" | "ai" | "template" };
-  tripDays: { id: string; dayNumber: number }[];
+  tripDays: { id: string; dayNumber: number; title?: string; dayDrivingTimeMin?: number }[];
   tripStops: { dayId: string; type: string }[];
   maxDrivingHours: number;
 }) {
@@ -1324,28 +1324,55 @@ function PlannerActions({
   };
 
 
+  // Per-day driving time — prefer real per-day driving minutes from routing.
+  // Falls back to evenly distributing total driving when per-day isn't recorded
+  // (older trips or AI-generated trips that haven't been re-routed).
   const durationMin = trip.routeDurationMin ?? 0;
   const dayCount = Math.max(1, tripDays.length);
-  // Per-day driving time — overnight stops split the route into separate days,
-  // so we approximate per-day as total driving / number of days. This matches the
-  // summary panel and ensures warnings disappear once the trip is split enough.
-  const perDayMin = durationMin / dayCount;
   const maxDayMin = maxDrivingHours * 60;
+  const sortedDays = [...tripDays].sort((a, b) => a.dayNumber - b.dayNumber);
+  const haveRealPerDay = sortedDays.some((d) => typeof d.dayDrivingTimeMin === "number" && d.dayDrivingTimeMin > 0);
+  const evenSplitMin = durationMin / dayCount;
+  const perDayMinutes = sortedDays.map((d) =>
+    typeof d.dayDrivingTimeMin === "number" && d.dayDrivingTimeMin > 0
+      ? d.dayDrivingTimeMin
+      : evenSplitMin,
+  );
+  // Index of the longest day — that's the day the warning is about.
+  let worstIdx = 0;
+  for (let i = 1; i < perDayMinutes.length; i += 1) {
+    if (perDayMinutes[i] > perDayMinutes[worstIdx]) worstIdx = i;
+  }
+  const worstDay = sortedDays[worstIdx];
+  const worstMin = perDayMinutes[worstIdx] ?? 0;
+  const worstDayHasLodging = !!worstDay && tripStops.some((s) => s.dayId === worstDay.id && s.type === "lodging");
   const hasAnyLodging = tripStops.some((s) => s.type === "lodging");
-  const allDaysHaveLodging = tripDays.length > 0 && tripDays.every((d) =>
-    tripStops.some((s) => s.dayId === d.id && s.type === "lodging"));
-  // For manual trips we trust the user's own planning.
   const suppressLongLeg = trip.source === "manual";
-  const isLongLeg = !suppressLongLeg && durationMin > 0 && perDayMin > maxDayMin;
+  // Only warn when the *worst* day exceeds the budget — not the average. If a
+  // user has one long day and four short days, we still want to know.
+  const isLongLeg = !suppressLongLeg && worstMin > maxDayMin;
 
-  // Three distinct states — see product spec.
+  // Three distinct states based on what would actually help the user:
+  //  - no-lodging       → trip has no overnights anywhere; suggest adding one.
+  //  - extra-lodging    → the worst day already has its own lodging stop, but
+  //                       the day is still too long; suggest another overnight
+  //                       in the middle of that day.
+  //  - split-leg        → trip has lodging elsewhere but this day still needs
+  //                       to be split into two.
   type WarnState = "no-lodging" | "split-leg" | "extra-lodging";
   let warnState: WarnState | null = null;
   if (isLongLeg) {
     if (!hasAnyLodging) warnState = "no-lodging";
-    else if (allDaysHaveLodging) warnState = "extra-lodging";
+    else if (worstDayHasLodging) warnState = "extra-lodging";
     else warnState = "split-leg";
   }
+
+  const worstLabel = worstDay
+    ? (worstDay.title?.trim() ? worstDay.title : `Dag ${worstDay.dayNumber}`)
+    : "denne dagen";
+  const worstHrs = Math.floor(worstMin / 60);
+  const worstMins = Math.round(worstMin % 60);
+  const worstFmt = worstMins === 0 ? `${worstHrs}t` : `${worstHrs}t ${worstMins}min`;
 
   const warnCopy: Record<WarnState, { title: string; body: string; primary: string; secondary: string; onPrimary: () => void }> = {
     "no-lodging": {
@@ -1356,20 +1383,23 @@ function PlannerActions({
       onPrimary: () => { tripsApi.splitIntoDays(trip.id, 2); setLodgingOpen(true); },
     },
     "split-leg": {
-      title: "Denne dagsetappen er fortsatt lang.",
-      body: "Turen har allerede overnattinger, men denne etappen overstiger ønsket kjøretid per dag. Vil du dele opp akkurat denne etappen?",
+      title: `${worstLabel} er fortsatt lang (${worstFmt}).`,
+      body: "Turen har allerede overnattinger, men denne dagsetappen overstiger ønsket kjøretid per dag. Vil du dele opp akkurat denne etappen?",
       primary: "Del opp etappen",
       secondary: "Behold denne dagen",
       onPrimary: () => { tripsApi.splitIntoDays(trip.id, tripDays.length + 1); },
     },
     "extra-lodging": {
-      title: "Denne dagen er fortsatt for lang.",
-      body: "Selv med stopp og overnatting i turen blir denne dagsetappen lengre enn ønsket. Vurder å legge inn en ekstra overnatting mellom start og slutt for denne dagen.",
+      title: `${worstLabel} er fortsatt for lang (${worstFmt}).`,
+      body: "Selv med overnatting denne dagen blir dagsetappen lengre enn ønsket. Vurder å legge inn en ekstra overnatting mellom start og slutt for denne dagen.",
       primary: "Legg til ekstra overnatting",
       secondary: "Behold dagen",
       onPrimary: () => { setLodgingOpen(true); },
     },
   };
+  // Silence "haveRealPerDay is unused" while keeping the variable readable for
+  // future debugging / telemetry hooks.
+  void haveRealPerDay;
 
   return (
     <section className="mt-4 space-y-3">
