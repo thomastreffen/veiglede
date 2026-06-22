@@ -1387,7 +1387,10 @@ function PlannerActions({
       body: "Turen har allerede overnattinger, men denne dagsetappen overstiger ønsket kjøretid per dag. Vil du dele opp akkurat denne etappen?",
       primary: "Del opp etappen",
       secondary: "Behold denne dagen",
-      onPrimary: () => { tripsApi.splitIntoDays(trip.id, tripDays.length + 1); },
+      onPrimary: () => {
+        if (worstDay) tripsApi.splitDay(worstDay.id);
+        else tripsApi.splitIntoDays(trip.id, tripDays.length + 1);
+      },
     },
     "extra-lodging": {
       title: `${worstLabel} er fortsatt for lang (${worstFmt}).`,
