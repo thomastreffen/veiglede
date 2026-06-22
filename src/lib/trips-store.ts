@@ -964,6 +964,69 @@ export const tripsApi = {
     for (let i = current; i < count; i++) this.addDay(tripId);
   },
   /**
+   * Split a specific day in two. Inserts a new day immediately after the
+   * source day, bumps later days' dayNumbers, moves the second half of the
+   * source day's stops (by order) onto the new day, and splits the cached
+   * per-day driving distance/time roughly in half so the time budget reacts
+   * immediately. Returns the new day, or null if the source day is unknown.
+   */
+  splitDay(dayId: string): TripDay | null {
+    ensureInit();
+    const source = state.days.find((d) => d.id === dayId);
+    if (!source) return null;
+    const tripId = source.tripId;
+    const sourceStops = state.stops
+      .filter((s) => s.dayId === dayId)
+      .sort((a, b) => a.order - b.order);
+    const midpoint = Math.ceil(sourceStops.length / 2);
+    const moved = sourceStops.slice(midpoint);
+
+    const halfKm = typeof source.dayDistanceKm === "number" ? source.dayDistanceKm / 2 : undefined;
+    const halfMin = typeof source.dayDrivingTimeMin === "number" ? source.dayDrivingTimeMin / 2 : undefined;
+
+    const newDay: TripDay = {
+      id: uid(),
+      tripId,
+      dayNumber: source.dayNumber + 1,
+      title: `${source.title} (del 2)`,
+      date: source.date,
+      summary: "Andre halvdel — generer rute på nytt for nøyaktig kart og tider.",
+      departureTime: source.departureTime,
+      dayDistanceKm: halfKm,
+      dayDrivingTimeMin: halfMin,
+    };
+
+    state = {
+      ...state,
+      days: [
+        ...state.days.map((d) => {
+          if (d.id === source.id) {
+            // Halve the source day's cached stats; routing pass will refine.
+            return {
+              ...d,
+              title: `${source.title} (del 1)`,
+              dayDistanceKm: halfKm,
+              dayDrivingTimeMin: halfMin,
+            };
+          }
+          if (d.tripId === tripId && d.dayNumber > source.dayNumber) {
+            return { ...d, dayNumber: d.dayNumber + 1 };
+          }
+          return d;
+        }),
+        newDay,
+      ],
+      stops: state.stops.map((s) => {
+        if (!moved.some((m) => m.id === s.id)) return s;
+        const newOrder = moved.findIndex((m) => m.id === s.id);
+        return { ...s, dayId: newDay.id, order: newOrder };
+      }),
+    };
+    refreshTripDerivedState(tripId);
+    persist();
+    return newDay;
+  },
+  /**
    * Trip-planner UX v2 — add an overnight at the current destination
    * (or a specified location). Creates a lodging stop on the last day.
    */
