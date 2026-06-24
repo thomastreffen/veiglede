@@ -557,7 +557,7 @@ function persist(actionName?: string, tripId?: string) {
 }
 function subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); }
 function getSnapshot() { ensureInit(); return state; }
-function getServerSnapshot(): State { return makeEmptyState(); }
+function getServerSnapshot(): State { return EMPTY_STATE; }
 
 export function replaceTripsStateFromSync(next: unknown) {
   ensureInit();

@@ -42,7 +42,7 @@ function AuthCallback() {
       deciding = true;
       const { data, error } = await supabase.auth.getSession();
       if (cancelled) { deciding = false; return false; }
-      if (error) { setError(error.message); return true; }
+      if (error) { setError(error.message); deciding = false; return true; }
       if (!data.session) { deciding = false; return false; }
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (cancelled) { deciding = false; return false; }
