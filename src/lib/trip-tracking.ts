@@ -18,11 +18,12 @@ type State = Record<string, TripTracking>;
 
 const KEY = "veiglede.tracking.v1";
 const DEFAULT: TripTracking = { status: "idle", visitedStopIds: [], spontaneousStops: [] };
+const EMPTY_TRACKING_STATE: State = {};
 const listeners = new Set<() => void>();
 let cache: State | null = null;
 
 function load(): State {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined") return EMPTY_TRACKING_STATE;
   try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; }
 }
 function snap(): State { if (!cache) cache = load(); return cache; }
@@ -31,7 +32,7 @@ function persist() {
   listeners.forEach((l) => l());
 }
 function subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); }
-function getServerSnapshot(): State { return {}; }
+function getServerSnapshot(): State { return EMPTY_TRACKING_STATE; }
 
 export function useTripTracking(tripId: string): TripTracking {
   const s = useSyncExternalStore(subscribe, snap, getServerSnapshot);

@@ -438,22 +438,24 @@ export function MapLibreTripMap({
       });
       setRouteGeom(res.geometry);
       prevHashRef.current = hash;
-      try {
-        tripsApi.updateTrip(trip.id, {
-          routeGeometry: res.geometry,
-          routeDistanceKm: res.distanceKm,
-          routeDurationMin: res.durationMin,
-          routeWaypointsHash: hash,
-          routeProvider: res.provider,
-          distanceKm: Math.round(res.distanceKm),
-          drivingTime: formatDrivingTime(res.durationMin),
-        });
-      } catch { /* noop */ }
+      // Stabilization: map/routing effects are read-only on mount. Recomputed
+      // geometry is a visual preview only; persisting route/day structure must
+      // happen from an explicit user action so opening a trip cannot mutate it.
+      if (typeof window !== "undefined") {
+        (window as unknown as Record<string, unknown>).__veiglede_route_preview = {
+          tripId: trip.id,
+          hash,
+          provider: res.provider,
+          distanceKm: res.distanceKm,
+          durationMin: res.durationMin,
+          at: new Date().toISOString(),
+        };
+      }
       if (userChanged) {
         if (res.provider === "fallback" || res.provider === "demo") {
-          toast.warning(`Ruta kunne ikke snappes til veinettet. Viser foreløpig estimat (${Math.round(res.distanceKm)} km).`);
+          toast.warning(`Ruta kunne ikke snappes til veinettet. Viser foreløpig estimat (${Math.round(res.distanceKm)} km) uten å lagre.`);
         } else {
-          toast.success(`Ruta er oppdatert via ${stopWps.length} via-punkt${stopWps.length === 1 ? "" : "er"} (${Math.round(res.distanceKm)} km).`);
+          toast.success(`Forhåndsviser rute via ${stopWps.length} via-punkt${stopWps.length === 1 ? "" : "er"} (${Math.round(res.distanceKm)} km).`);
         }
       }
     });

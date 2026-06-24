@@ -8,6 +8,8 @@ interface AuthState {
   loading: boolean;
 }
 
+type QueryCacheHandle = { cancelQueries: () => Promise<unknown>; clear: () => void };
+
 let cache: AuthState = { user: null, session: null, loading: true };
 const listeners = new Set<() => void>();
 let initialized = false;
@@ -19,6 +21,7 @@ function init() {
   initialized = true;
   // Initial session
   supabase.auth.getSession().then(({ data }) => {
+    if (!cache.loading) return;
     cache = { user: data.session?.user ?? null, session: data.session, loading: false };
     notify();
   });
@@ -57,10 +60,35 @@ export async function signOut() {
     clearAllLiveOptIns();
   } catch { /* ignore */ }
 
-  // 3. End the Supabase session.
-  try { await supabase.auth.signOut(); } catch { /* ignore */ }
+  // 3. Stop sync before wiping local state. This cancels pending debounced
+  //    pushes/pulls so an old trips blob cannot be written back during logout.
+  try {
+    const { stopCloudSyncForLogout } = await import("@/lib/cloud-sync");
+    stopCloudSyncForLogout();
+  } catch { /* ignore */ }
 
-  // 4. Wipe all veiglede.* local/session storage keys (trips, tracking,
+  // 4. Clear in-memory app/query state before ending the auth session so no
+  //    protected data flashes while the auth event propagates.
+  try {
+    const qc = typeof window !== "undefined"
+      ? (window as unknown as { __veiglede_query_client?: QueryCacheHandle }).__veiglede_query_client
+      : undefined;
+    await qc?.cancelQueries();
+    qc?.clear();
+  } catch { /* ignore */ }
+
+  try {
+    const { clearTripsStateLocal } = await import("@/lib/trips-store");
+    clearTripsStateLocal();
+  } catch { /* ignore */ }
+
+  // 5. End the backend session globally. Then update our local auth cache
+  //    immediately; do not wait for the async auth-state listener.
+  try { await supabase.auth.signOut({ scope: "global" }); } catch { try { await supabase.auth.signOut(); } catch { /* ignore */ } }
+  cache = { user: null, session: null, loading: false };
+  notify();
+
+  // 6. Wipe all veiglede.* local/session storage keys (trips, tracking,
   //    drafts, prefs) so private content stops rendering immediately. Keep
   //    only visual theme + cross-session notices.
   if (typeof window !== "undefined") {
@@ -80,9 +108,9 @@ export async function signOut() {
       }
     } catch { /* ignore */ }
 
-    // 5. Hard redirect to the anonymous landing page. A full reload also
+    // 7. Hard redirect to the login page. A full reload also
     //    drops any in-memory cached private state (TanStack Query cache,
     //    module-level singletons, etc.) so nothing stale lingers.
-    window.location.replace("/");
+    window.location.replace("/login");
   }
 }

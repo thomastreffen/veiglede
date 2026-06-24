@@ -28,7 +28,10 @@ export async function requestAccountDeletion(): Promise<void> {
       templateData: { restoreUrl },
     });
   }
-  try { await supabase.auth.signOut(); } catch { /* noop */ }
+  try {
+    const { signOut } = await import("@/lib/auth");
+    await signOut();
+  } catch { /* noop */ }
 }
 
 export type OnboardingStatus =

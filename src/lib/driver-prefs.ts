@@ -43,7 +43,7 @@ export const STOP_INTERESTS: { value: StopType; label: string; emoji: string }[]
   { value: "rest", label: "MC / bil-stopp", emoji: "🏍️" },
 ];
 
-const DEFAULTS: DriverPrefs = {
+const DEFAULTS: DriverPrefs = Object.freeze({
   displayName: "Sjåfør",
   units: "km",
   language: "nb",
@@ -54,7 +54,7 @@ const DEFAULTS: DriverPrefs = {
   maxDrivingHours: 6,
   pauseEveryMin: 120,
   sharing: { defaultPrivate: true, allowRoadbookLink: true, showPhotos: true, liveSharing: false },
-};
+} as DriverPrefs);
 
 const KEY = "veiglede.profile.v1";
 const listeners = new Set<() => void>();
