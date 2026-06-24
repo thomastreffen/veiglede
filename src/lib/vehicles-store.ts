@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { VehicleType, RouteStyle, StopType, EnergySource } from "./trips-store";
-const EMPTY_VEHICLES: Vehicle[] = [];
 
 
 export type EnergyType =
