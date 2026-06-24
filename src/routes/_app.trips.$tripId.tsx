@@ -3,7 +3,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import {
   useTripsStore, tripsApi, stopMeta, stopDisplayMeta, STOP_TYPES, vehicleMeta, styleMeta,
   COVERS, type CoverKey, fetchRouteSuggestions, getPartnerTips, getPhotoMemories,
-  LODGING_PLACE_TYPES, looksLikeLodging,
+  LODGING_PLACE_TYPES,
   type SuggestedStop, type PartnerTip,
 } from "@/lib/trips-store";
 import { useDriverPrefs } from "@/lib/driver-prefs";
@@ -130,28 +130,6 @@ function TripPlanner() {
     window.addEventListener("trip:scroll-to-stop", onScroll);
     return () => window.removeEventListener("trip:scroll-to-stop", onScroll);
   }, []);
-
-  // Retroactive lodging detection: if the final "Ankomst {…}" destination
-  // stop is named after a known hotel chain or has lodging placeTypes,
-  // upgrade its type to "lodging" so the booking prompt appears.
-  useEffect(() => {
-    if (!trip) return;
-    for (const day of tripDays) {
-      const dayStops = tripStops
-        .filter((s) => s.dayId === day.id)
-        .sort((a, b) => a.order - b.order);
-      const last = dayStops[dayStops.length - 1];
-      if (!last) continue;
-      if (last.type === "lodging") continue;
-      const isAnkomst = last.name.toLowerCase().startsWith("ankomst ");
-      const matchName = isAnkomst && looksLikeLodging(last.name.slice("ankomst ".length), last.placeTypes);
-      const matchTypes = last.placeTypes?.some((t) => LODGING_PLACE_TYPES.includes(t));
-      if (matchName || matchTypes) {
-        tripsApi.updateStop(last.id, { type: "lodging" });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip?.id, tripStops.length]);
 
   const enrichedSuggestions = useMemo(
     () => suggestions.map((sug: SuggestedStop) => ({ sug, info: suggestionRouteInfo(sug, routePoints) })),

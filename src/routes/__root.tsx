@@ -12,6 +12,7 @@ import { I18nProvider } from "@/i18n/provider";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
+import { AuthSyncDebugPanel } from "@/components/AuthSyncDebugPanel";
 
 function shouldRegisterSW() {
   if (typeof window === "undefined") return false;
@@ -140,10 +141,15 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  if (typeof window !== "undefined") {
-    // Start cloud sync once on the client
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    (window as unknown as { __veiglede_query_client?: QueryClient }).__veiglede_query_client = queryClient;
     import("@/lib/cloud-sync").then((m) => m.startCloudSync());
-  }
+    return () => {
+      const w = window as unknown as { __veiglede_query_client?: QueryClient };
+      if (w.__veiglede_query_client === queryClient) delete w.__veiglede_query_client;
+    };
+  }, [queryClient]);
 
   // PWA / iOS standalone: when the app resumes from background (user
   // re-opens it from the home screen) Supabase doesn't always notice the
@@ -190,6 +196,7 @@ function RootComponent() {
         <Outlet />
         <InstallPrompt />
         <UpdatePrompt />
+        <AuthSyncDebugPanel />
         <Toaster position="top-center" richColors />
       </I18nProvider>
     </QueryClientProvider>

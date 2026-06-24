@@ -342,12 +342,95 @@ export interface PhotoMemory {
   stopId?: string;
 }
 
-interface State { trips: Trip[]; days: TripDay[]; stops: Stop[] }
+type DeletedTripIds = Record<string, number>;
 
-const EMPTY_STATE: State = { trips: [], days: [], stops: [] };
+export interface State {
+  trips: Trip[];
+  days: TripDay[];
+  stops: Stop[];
+  /** Monotonic local revision for the full trips blob. Used by cloud-sync to skip stale writes. */
+  revision: number;
+  /** Wall-clock timestamp for last local/cloud accepted write. */
+  updatedAt: number;
+  /** Tombstones prevent old local/cloud blobs from resurrecting deleted trips. */
+  deletedTripIds: DeletedTripIds;
+}
+
+export interface TripMutationDebug {
+  actionName: string;
+  tripId?: string;
+  timestamp: string;
+  callsite?: string;
+}
+
+const makeEmptyState = (): State => ({ trips: [], days: [], stops: [], revision: 0, updatedAt: 0, deletedTripIds: {} });
+const EMPTY_STATE: State = makeEmptyState();
 
 const KEY = "veiglede.v4";
 function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function normalizeDeletedTripIds(value: unknown): DeletedTripIds {
+  if (!value || typeof value !== "object") return {};
+  if (Array.isArray(value)) {
+    const now = Date.now();
+    return Object.fromEntries(value.filter((id) => typeof id === "string").map((id) => [id, now]));
+  }
+  const out: DeletedTripIds = {};
+  for (const [id, deletedAt] of Object.entries(value as Record<string, unknown>)) {
+    if (!id) continue;
+    const ts = typeof deletedAt === "number" && Number.isFinite(deletedAt) ? deletedAt : Number(deletedAt);
+    out[id] = Number.isFinite(ts) && ts > 0 ? ts : Date.now();
+  }
+  return out;
+}
+
+function stripDeleted(input: State): State {
+  const deleted = input.deletedTripIds ?? {};
+  const trips = (input.trips ?? []).filter((t) => !deleted[t.id]);
+  const tripIds = new Set(trips.map((t) => t.id));
+  const days = (input.days ?? []).filter((d) => tripIds.has(d.tripId));
+  const dayIds = new Set(days.map((d) => d.id));
+  const stops = (input.stops ?? []).filter((s) => dayIds.has(s.dayId));
+  return { ...input, trips, days, stops, deletedTripIds: deleted };
+}
+
+export function normalizeTripsState(input: unknown): State {
+  if (!input || typeof input !== "object") return makeEmptyState();
+  const raw = input as Partial<State> & Record<string, unknown>;
+  const normalized: State = {
+    trips: Array.isArray(raw.trips) ? (raw.trips as Trip[]) : [],
+    days: Array.isArray(raw.days) ? (raw.days as TripDay[]) : [],
+    stops: Array.isArray(raw.stops) ? (raw.stops as Stop[]) : [],
+    revision: typeof raw.revision === "number" && Number.isFinite(raw.revision) ? raw.revision : 0,
+    updatedAt: typeof raw.updatedAt === "number" && Number.isFinite(raw.updatedAt) ? raw.updatedAt : 0,
+    deletedTripIds: normalizeDeletedTripIds(raw.deletedTripIds),
+  };
+  return stripDeleted(normalized);
+}
+
+export function mergeTripsStatesForSync(localInput: unknown, cloudInput: unknown): State {
+  const local = normalizeTripsState(localInput);
+  const cloud = normalizeTripsState(cloudInput);
+  const deleted: DeletedTripIds = { ...cloud.deletedTripIds };
+  for (const [id, ts] of Object.entries(local.deletedTripIds)) {
+    deleted[id] = Math.max(deleted[id] ?? 0, ts);
+  }
+  const localClean = stripDeleted({ ...local, deletedTripIds: deleted });
+  const cloudClean = stripDeleted({ ...cloud, deletedTripIds: deleted });
+  const cloudHasData = cloudClean.trips.length > 0 || cloudClean.days.length > 0 || cloudClean.stops.length > 0;
+  const winner = cloudClean.updatedAt > localClean.updatedAt || (cloudHasData && cloudClean.updatedAt === localClean.updatedAt)
+    ? cloudClean
+    : localClean;
+  const newestDeletedAt = Math.max(0, ...Object.values(deleted));
+  return normalizeTripsState({
+    ...winner,
+    deletedTripIds: deleted,
+    updatedAt: Math.max(winner.updatedAt, newestDeletedAt),
+    revision: Math.max(localClean.revision, cloudClean.revision, winner.revision),
+  });
+}
+
+export function getTripsStorageKey() { return KEY; }
 
 function seed(): State {
   const trips: Trip[] = [
@@ -411,21 +494,26 @@ function seed(): State {
     { id: uid(), dayId: n1.id, name: "Geilo sentrum", type: "city", estimatedTime: "15:00", location: "Geilo", description: "Fjellbygd og veis ende for denne turen.", reason: "Ankomst.", durationMin: 60, order: 2 },
   );
 
-  return { trips, days, stops };
+  return normalizeTripsState({ trips, days, stops, revision: 1, updatedAt: Date.now(), deletedTripIds: {} });
 }
 
 function load(): State {
-  if (typeof window === "undefined") return EMPTY_STATE;
+  if (typeof window === "undefined") return makeEmptyState();
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) { localStorage.setItem(KEY, JSON.stringify(EMPTY_STATE)); return EMPTY_STATE; }
-    return JSON.parse(raw);
-  } catch { return EMPTY_STATE; }
+    if (!raw) {
+      const empty = makeEmptyState();
+      localStorage.setItem(KEY, JSON.stringify(empty));
+      return empty;
+    }
+    return normalizeTripsState(JSON.parse(raw));
+  } catch { return makeEmptyState(); }
 }
 
-let state: State = EMPTY_STATE;
+let state: State = makeEmptyState();
 let initialized = false;
 const listeners = new Set<() => void>();
+let lastMutation: TripMutationDebug | null = null;
 
 function ensureInit() {
   if (!initialized && typeof window !== "undefined") {
@@ -437,13 +525,64 @@ function ensureInit() {
     });
   }
 }
-function persist() {
+function inferActionName(): string {
+  const stack = new Error().stack ?? "";
+  const match = stack.match(/Object\.([A-Za-z0-9_$]+)|tripsApi\.([A-Za-z0-9_$]+)/);
+  return match?.[1] ?? match?.[2] ?? "tripsApi.persist";
+}
+
+function markMutation(actionName = inferActionName(), tripId?: string) {
+  const stack = new Error().stack?.split("\n").slice(2, 8).map((s) => s.trim()).join(" ← ");
+  lastMutation = { actionName, tripId, timestamp: new Date().toISOString(), callsite: stack };
+  if (typeof window !== "undefined") {
+    (window as unknown as { __veiglede_last_trip_mutation?: TripMutationDebug }).__veiglede_last_trip_mutation = lastMutation;
+  }
+  // eslint-disable-next-line no-console
+  console.info("[trips-store] mutation", lastMutation);
+}
+
+function touchState() {
+  state = normalizeTripsState({
+    ...state,
+    revision: (state.revision ?? 0) + 1,
+    updatedAt: Date.now(),
+  });
+}
+
+function persist(actionName?: string, tripId?: string) {
+  touchState();
+  markMutation(actionName, tripId);
   if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(state));
   listeners.forEach((l) => l());
 }
 function subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); }
 function getSnapshot() { ensureInit(); return state; }
-function getServerSnapshot(): State { return EMPTY_STATE; }
+function getServerSnapshot(): State { return makeEmptyState(); }
+
+export function replaceTripsStateFromSync(next: unknown) {
+  ensureInit();
+  state = normalizeTripsState(next);
+  if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(state));
+  listeners.forEach((l) => l());
+}
+
+export function clearTripsStateLocal() {
+  state = makeEmptyState();
+  initialized = true;
+  if (typeof window !== "undefined") localStorage.removeItem(KEY);
+  listeners.forEach((l) => l());
+}
+
+export function getTripsDebugSnapshot() {
+  ensureInit();
+  return {
+    tripsCount: state.trips.length,
+    revision: state.revision ?? 0,
+    updatedAt: state.updatedAt ?? 0,
+    deletedTripIdsCount: Object.keys(state.deletedTripIds ?? {}).length,
+    lastMutation,
+  };
+}
 
 function refreshTripDerivedState(tripId: string) {
   const trip = state.trips.find((t) => t.id === tripId);
@@ -531,11 +670,12 @@ export const tripsApi = {
 
     const finalTrip = { ...trip, stopsCount: newStops.length };
     state = {
+      ...state,
       trips: [finalTrip, ...state.trips],
       days: [...state.days, day1],
       stops: [...state.stops, ...newStops],
     };
-    persist();
+    persist("createTrip", finalTrip.id);
     return finalTrip;
   },
 
@@ -543,7 +683,7 @@ export const tripsApi = {
     ensureInit();
     state = { ...state, trips: state.trips.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
     refreshTripDerivedState(id);
-    persist();
+    persist("updateTrip", id);
   },
 
   /** Cache the alternatives returned by the routing provider for this trip. */
@@ -567,7 +707,7 @@ export const tripsApi = {
           : t,
       ),
     };
-    persist();
+    persist("setRouteAlternatives", tripId);
   },
 
   /** Apply the selected alternative — copies its geometry/distance/duration
@@ -598,7 +738,7 @@ export const tripsApi = {
       ),
     };
     refreshTripDerivedState(tripId);
-    persist();
+    persist("selectRouteAlternative", tripId);
   },
 
   /** Replace the route-shaping via-points and invalidate the alternatives
@@ -613,7 +753,7 @@ export const tripsApi = {
           : t,
       ),
     };
-    persist();
+    persist("setShapingWaypoints", tripId);
   },
 
   /** Read the current trip + days + stops snapshot for a trip id. */
@@ -627,13 +767,17 @@ export const tripsApi = {
   },
   deleteTrip(id: string) {
     ensureInit();
+    const deletedAt = Date.now();
     const dayIds = state.days.filter((d) => d.tripId === id).map((d) => d.id);
     state = {
+      ...state,
       trips: state.trips.filter((t) => t.id !== id),
       days: state.days.filter((d) => d.tripId !== id),
       stops: state.stops.filter((s) => !dayIds.includes(s.dayId)),
+      deletedTripIds: { ...(state.deletedTripIds ?? {}), [id]: deletedAt },
     };
-    persist();
+    persist("deleteTrip", id);
+    void import("@/lib/cloud-sync").then((m) => m.flushTripsNow("deleteTrip")).catch(() => undefined);
   },
   /** Find an existing copy of a public trip by its original id. */
   findCopyByOriginalId(originalTripId: string): Trip | null {
@@ -748,11 +892,12 @@ export const tripsApi = {
 
     const finalTrip = { ...newTrip, stopsCount: newStops.length };
     state = {
+      ...state,
       trips: [finalTrip, ...state.trips],
       days: [...state.days, ...newDays],
       stops: [...state.stops, ...newStops],
     };
-    persist();
+    persist("copyPublicTrip", finalTrip.id);
     return finalTrip;
   },
   addDay(tripId: string) {
@@ -760,18 +905,20 @@ export const tripsApi = {
     const next = state.days.filter((d) => d.tripId === tripId).length + 1;
     const day: TripDay = { id: uid(), tripId, dayNumber: next, title: `Dag ${next}` };
     state = { ...state, days: [...state.days, day] };
-    persist();
+    persist("addDay", tripId);
     return day;
   },
   updateDay(id: string, patch: Partial<TripDay>) {
     ensureInit();
+    const tripId = state.days.find((d) => d.id === id)?.tripId;
     state = { ...state, days: state.days.map((d) => (d.id === id ? { ...d, ...patch } : d)) };
-    persist();
+    persist("updateDay", tripId);
   },
   deleteDay(id: string) {
     ensureInit();
+    const tripId = state.days.find((d) => d.id === id)?.tripId;
     state = { ...state, days: state.days.filter((d) => d.id !== id), stops: state.stops.filter((s) => s.dayId !== id) };
-    persist();
+    persist("deleteDay", tripId);
   },
   /** Delete a day but merge its stops into the previous day (by dayNumber). No-op if first day. */
   mergeDayUp(id: string) {
@@ -797,7 +944,7 @@ export const tripsApi = {
         .map((d) => (d.tripId === day.tripId && d.dayNumber > day.dayNumber ? { ...d, dayNumber: d.dayNumber - 1 } : d)),
     };
     refreshTripDerivedState(day.tripId);
-    persist();
+    persist("mergeDayUp", day.tripId);
   },
   /** Reorder a day by ±1 (swaps dayNumber with neighbor). */
   reorderDay(id: string, direction: -1 | 1) {
@@ -817,7 +964,7 @@ export const tripsApi = {
         return d;
       }),
     };
-    persist();
+    persist("reorderDay", day.tripId);
   },
   /** Move a stop to another day (appended at end). */
   moveStopToDay(stopId: string, targetDayId: string) {
@@ -831,7 +978,7 @@ export const tripsApi = {
     };
     const tripId = getTripIdForDay(targetDayId);
     if (tripId) refreshTripDerivedState(tripId);
-    persist();
+    persist("moveStopToDay", tripId ?? undefined);
   },
   /** Duplicate a day (with all its stops) and insert immediately after the source day. */
   duplicateDay(id: string): TripDay | null {
@@ -866,7 +1013,7 @@ export const tripsApi = {
       stops: [...state.stops, ...clonedStops],
     };
     refreshTripDerivedState(day.tripId);
-    persist();
+    persist("duplicateDay", day.tripId);
     return newDay;
   },
   addStop(dayId: string, input: Partial<Stop> = {}): Stop {
@@ -923,7 +1070,7 @@ export const tripsApi = {
     state = { ...state, stops: [...state.stops, stop] };
     const tripId = getTripIdForDay(dayId);
     if (tripId) refreshTripDerivedState(tripId);
-    persist();
+    persist("addStop", tripId ?? undefined);
     return stop;
   },
   updateStop(id: string, patch: Partial<Stop>) {
@@ -934,7 +1081,7 @@ export const tripsApi = {
       const tripId = getTripIdForDay(stop.dayId);
       if (tripId) refreshTripDerivedState(tripId);
     }
-    persist();
+    persist("updateStop", stop ? getTripIdForDay(stop.dayId) ?? undefined : undefined);
   },
   deleteStop(id: string) {
     ensureInit();
@@ -944,7 +1091,7 @@ export const tripsApi = {
       const tripId = getTripIdForDay(stop.dayId);
       if (tripId) refreshTripDerivedState(tripId);
     }
-    persist();
+    persist("deleteStop", stop ? getTripIdForDay(stop.dayId) ?? undefined : undefined);
   },
   moveStop(id: string, direction: -1 | 1) {
     ensureInit();
@@ -965,7 +1112,7 @@ export const tripsApi = {
     };
     const tripId = getTripIdForDay(stop.dayId);
     if (tripId) refreshTripDerivedState(tripId);
-    persist();
+    persist("moveStop", tripId ?? undefined);
   },
   addSuggestion(tripId: string, sug: SuggestedStop): Stop | null {
     ensureInit();
@@ -1037,7 +1184,7 @@ export const tripsApi = {
           return s;
         }),
       };
-      persist();
+      persist("addSuggestionAt", tripId);
       return stop;
     }
     if (placement === "new-day" || placement === "after") {
@@ -1118,7 +1265,7 @@ export const tripsApi = {
       }),
     };
     refreshTripDerivedState(tripId);
-    persist();
+    persist("splitDay", tripId);
     return newDay;
   },
   /**
@@ -1186,7 +1333,7 @@ export const tripsApi = {
         t.id === tripId ? { ...t, shareToken: token } : t,
       ),
     };
-    persist();
+    persist("ensureShareToken", tripId);
     return token;
   },
 
@@ -1200,7 +1347,7 @@ export const tripsApi = {
       ...state,
       trips: state.trips.map((t) => (t.id === tripId ? { ...t, isPublic } : t)),
     };
-    persist();
+    persist("setTripPublic", tripId);
   },
 
   /** Add a photo to a stop. Returns false if the stop already has 5 photos. */
@@ -1216,7 +1363,7 @@ export const tripsApi = {
         s.id === stopId ? { ...s, photos: [...existing, { ...photo, addedAt: photo.addedAt ?? Date.now() }] } : s,
       ),
     };
-    persist();
+    persist("addStopPhoto", getTripIdForDay(stop.dayId) ?? undefined);
     return true;
   },
 
@@ -1228,7 +1375,7 @@ export const tripsApi = {
         s.id === stopId ? { ...s, photos: (s.photos ?? []).filter((p) => p.id !== photoId) } : s,
       ),
     };
-    persist();
+    persist("removeStopPhoto", getTripIdForDay(state.stops.find((s) => s.id === stopId)?.dayId ?? "") ?? undefined);
   },
 
   /**
@@ -1345,7 +1492,7 @@ export const tripsApi = {
         trips: state.trips.map((t) => (t.id === tripId ? { ...t, ferryDetectionHash: hash } : t)),
       };
       refreshTripDerivedState(tripId);
-      persist();
+      persist("applyFerrySegments", tripId);
     }
     return inserted;
   },
